@@ -33,14 +33,14 @@
 
 ## 已使用地址列表
 
-| 地址                                        | 说明                            |
-|--------------------------------------------|-------------------------------- |
+| 地址                                       | 说明                             |
+|--------------------------------------------|----------------------------------|
 | 0xffffffffffffffffffffffffffffffffff010000 | 存证指令                         |
 | 0xffffffffffffffffffffffffffffffffff010001 | 存 ABI 指令                      |
-| 0xffffffffffffffffffffffffffffffffff010002 | 修改合约内容指令                  |
+| 0xffffffffffffffffffffffffffffffffff010002 | 修改合约内容指令                 |
 | 0xffffffffffffffffffffffffffffffffff018000 | Go 合约指令                      |
-| 0xffffffffffffffffffffffffffffffffff020000 | 系统参数配置                      |
-| 0xffffffffffffffffffffffffffffffffff020001 | 共识节点管理                      |
+| 0xffffffffffffffffffffffffffffffffff020000 | 系统参数配置                     |
+| 0xffffffffffffffffffffffffffffffffff020001 | 共识节点管理                     |
 | 0xffffffffffffffffffffffffffffffffff020002 | 链管理                           |
 | 0xffffffffffffffffffffffffffffffffff020003 | 配额管理                         |
 | 0xffffffffffffffffffffffffffffffffff020004 | 权限管理                         |
@@ -48,15 +48,16 @@
 | 0xffffffffffffffffffffffffffffffffff020006 | 权限管理授权                     |
 | 0xffffffffffffffffffffffffffffffffff020007 | 角色管理                         |
 | 0xffffffffffffffffffffffffffffffffff020008 | 创建角色                         |
-| 0xffffffffffffffffffffffffffffffffff020009 | 组内用户管理                      |
+| 0xffffffffffffffffffffffffffffffffff020009 | 组内用户管理                     |
 | 0xffffffffffffffffffffffffffffffffff02000a | 组管理                           |
-| 0xffffffffffffffffffffffffffffffffff02000b | 创建用户组                        |
+| 0xffffffffffffffffffffffffffffffffff02000b | 创建用户组                       |
 | 0xffffffffffffffffffffffffffffffffff02000c | admin管理                        |
 | 0xffffffffffffffffffffffffffffffffff02000d | 角色授权                         |
 | 0xffffffffffffffffffffffffffffffffff02000e | 批量交易                         |
 | 0xffffffffffffffffffffffffffffffffff02000f | 急停合约                         |
 | 0xffffffffffffffffffffffffffffffffff020010 | QuotaPrice管理                   |
-| 0xffffffffffffffffffffffffffffffffff020011 | 协议版本号管理                    |
+| 0xffffffffffffffffffffffffffffffffff020011 | 协议版本号管理                   |
+| 0xffffffffffffffffffffffffffffffffff020012 | 所有组                           |
 | 0xffffffffffffffffffffffffffffffffff021000 | 发送交易                         |
 | 0xffffffffffffffffffffffffffffffffff021001 | 新建合约                         |
 | 0xffffffffffffffffffffffffffffffffff021010 | 新增权限                         |
@@ -72,11 +73,11 @@
 | 0xffffffffffffffffffffffffffffffffff02101a | 新增用户组                       |
 | 0xffffffffffffffffffffffffffffffffff02101b | 删除用户组                       |
 | 0xffffffffffffffffffffffffffffffffff02101c | 更新用户组                       |
-| 0xFfFfFFffFffffFffffffffFFFFffFfFFFF021020 | 新增节点                         |
-| 0xFffFFFfFfFFFfFfFfFfFFfffFFFFFffFFF021021 | 删除节点                         |
-| 0xFffFfffFFffFFFFfFFFFFfFfFFFfFFFfFF021022 | 更新节点                         |
-| 0xffFfffFfffFfFFFFFfFfFffFFfFfffFffF021023 | 账户配额                         |
-| 0xfffffFfFfFFfFFffFfFffFFFFfFFFfFffF021024 | 块配额                           |
-| 0xffffffffffffffffffffffffffffffffff030000 |                                 |
+| 0xffffffffffffffffffffffffffffffffff021020 | 新增节点                         |
+| 0xffffffffffffffffffffffffffffffffff021021 | 删除节点                         |
+| 0xffffffffffffffffffffffffffffffffff021022 | 更新节点                         |
+| 0xffffffffffffffffffffffffffffffffff021023 | 账户配额                         |
+| 0xffffffffffffffffffffffffffffffffff021024 | 块配额                           |
+| 0xffffffffffffffffffffffffffffffffff030000 |                                  |
 | 0xffffffffffffffffffffffffffffffffff030001 | 隐私功能                         |
 | 0xffffffffffffffffffffffffffffffffff030002 | 跨链功能                         |
