@@ -64,7 +64,7 @@ describe('\n\ntest role management contract\n\n', () => {
 
     it('should have info of new role', async () => {
       roleInstance = genContract(roleAbi, newRoleAddr);
-      const res = await roleInstance.methods.queryRole().call();
+      const res = await roleInstance.methods.queryRole().call('pending');
       logger.debug('\nInfo:\n', res);
       expect(res[0]).to.have.string(name);
       expect(res[1]).to.deep.equal(permissions);
@@ -86,7 +86,7 @@ describe('\n\ntest role management contract\n\n', () => {
     });
 
     it('should have the new role name', async () => {
-      const res = await roleInstance.methods.queryName().call();
+      const res = await roleInstance.methods.queryName().call('pending');
       logger.debug('\nNew role name:\n', res);
       expect(res).to.have.string(newName);
     });
@@ -94,7 +94,7 @@ describe('\n\ntest role management contract\n\n', () => {
 
   describe('\ntest add permissions\n', () => {
     before('Query the number of the permission', async () => {
-      const res = await roleInstance.methods.queryPermissions().call();
+      const res = await roleInstance.methods.queryPermissions().call('pending');
       logger.debug('\nThe number of the permission:\n', res.length);
       lengthOfPermissions = res.length;
     });
@@ -129,7 +129,7 @@ describe('\n\ntest role management contract\n\n', () => {
     });
 
     it('should have the added permissions: role', async () => {
-      const res = await roleInstance.methods.queryPermissions().call();
+      const res = await roleInstance.methods.queryPermissions().call('pending');
       logger.debug('\nNew Added permissions:\n', res);
       expect(newPermissionAddr).to.be.oneOf(res);
       expect(res).to.have.lengthOf.above(lengthOfPermissions);
@@ -138,7 +138,7 @@ describe('\n\ntest role management contract\n\n', () => {
 
   describe('\ntest add duplicated permissions\n', () => {
     before('Query the number of the permission', async () => {
-      const res = await roleInstance.methods.queryPermissions().call();
+      const res = await roleInstance.methods.queryPermissions().call('pending');
       logger.debug('\nThe number of the permission:\n', res.length);
       lengthOfPermissions = res.length;
     });
@@ -158,7 +158,7 @@ describe('\n\ntest role management contract\n\n', () => {
     });
 
     it('should not added into the permissions', async () => {
-      const res = await roleInstance.methods.queryPermissions().call();
+      const res = await roleInstance.methods.queryPermissions().call('pending');
       logger.debug('\nThe number of the permissions:\n', res.length);
       expect(res).to.have.lengthOf(lengthOfPermissions);
     });
@@ -179,7 +179,7 @@ describe('\n\ntest role management contract\n\n', () => {
     });
 
     it('should have deleted the permissions', async () => {
-      const res = await roleInstance.methods.queryPermissions().call();
+      const res = await roleInstance.methods.queryPermissions().call('pending');
       logger.debug('\nPermissions lefted:\n', res);
       expect(res).to.deep.equal(permissions);
     });
@@ -253,7 +253,7 @@ describe('\n\ntest role management contract\n\n', () => {
     });
 
     it('should have the added permissions: role', async () => {
-      const res = await roleInstance.methods.queryPermissions().call();
+      const res = await roleInstance.methods.queryPermissions().call('pending');
       logger.debug('\nNew Added permissions:\n', res);
       expect(addr2).to.be.oneOf(res);
     });

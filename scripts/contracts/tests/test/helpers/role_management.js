@@ -78,13 +78,13 @@ const deleteRole = async (account, role, _sender = sender) => {
 };
 
 // queryRoles
-const queryRoles = account => contract.methods.queryRoles(account).call();
+const queryRoles = account => contract.methods.queryRoles(account).call('pending');
 
 // queryAccounts
-const queryAccounts = account => contract.methods.queryAccounts(account).call();
+const queryAccounts = account => contract.methods.queryAccounts(account).call('pending');
 
 // queryPermissions
-const queryPermissions = role => contract.methods.queryPermissions(role).call();
+const queryPermissions = role => contract.methods.queryPermissions(role).call('pending');
 
 module.exports = {
   newRole,

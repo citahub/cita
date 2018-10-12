@@ -1,4 +1,4 @@
-const Nervos = require('@nervos/web3').default;
+const Nervos = require('@nervos/chain').default;
 const config = require('../config');
 const log4js = require('log4js');
 const Web3 = require('web3');

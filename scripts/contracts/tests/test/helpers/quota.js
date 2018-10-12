@@ -27,19 +27,19 @@ const setAQL = async (account, value, _sender = sender) => {
 };
 
 // getAccounts
-const getAccounts = () => contract.methods.getAccounts().call();
+const getAccounts = () => contract.methods.getAccounts().call('pending');
 
 // getQuotas
-const getQuotas = () => contract.methods.getQuotas().call();
+const getQuotas = () => contract.methods.getQuotas().call('pending');
 
 // getBQL
-const getBQL = () => contract.methods.getBQL().call();
+const getBQL = () => contract.methods.getBQL().call('pending');
 
 // getDefaultAQL
-const getDefaultAQL = () => contract.methods.getDefaultAQL().call();
+const getDefaultAQL = () => contract.methods.getDefaultAQL().call('pending');
 
 // getAQL
-const getAQL = account => contract.methods.getAQL(account).call();
+const getAQL = account => contract.methods.getAQL(account).call('pending');
 
 module.exports = {
   setBQL,

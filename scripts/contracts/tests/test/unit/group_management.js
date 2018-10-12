@@ -58,7 +58,7 @@ describe('\n\ntest group management contract\n\n', () => {
 
     it('should have info of new group', async () => {
       contract = await genContract(abi, newGroupAddr);
-      res = await contract.methods.queryInfo().call();
+      res = await contract.methods.queryInfo().call('pending');
       logger.debug('\nInfo:\n', res);
       expect(res[0]).to.have.string(name);
       expect(addr).to.be.oneOf(res[1]);
@@ -99,7 +99,7 @@ describe('\n\ntest group management contract\n\n', () => {
     });
 
     it('should have the new group name', async () => {
-      res = await contract.methods.queryName().call();
+      res = await contract.methods.queryName().call('pending');
       logger.debug('\nNew Group name:\n', res);
       expect(res).to.have.string(newName);
     });
@@ -120,7 +120,7 @@ describe('\n\ntest group management contract\n\n', () => {
     });
 
     it('should have the new group name', async () => {
-      res = await contract.methods.queryName().call();
+      res = await contract.methods.queryName().call('pending');
       logger.debug('\nNew Group name:\n', res);
       expect(res).to.have.string(newName2);
     });
@@ -128,7 +128,7 @@ describe('\n\ntest group management contract\n\n', () => {
 
   describe('\ntest add accounts\n', () => {
     before('Query the number of the accounts', async () => {
-      res = await contract.methods.queryAccounts().call();
+      res = await contract.methods.queryAccounts().call('pending');
       logger.debug('\nThe number of the accounts:\n', res.length);
       lengthOfAccounts = res.length;
     });
@@ -152,7 +152,7 @@ describe('\n\ntest group management contract\n\n', () => {
     });
 
     it('should have the added accounts', async () => {
-      res = await contract.methods.queryAccounts().call();
+      res = await contract.methods.queryAccounts().call('pending');
       logger.debug('\nNew Added accounts:\n', res);
       testAddr.map(a => expect(a).to.be.oneOf(res));
     });
@@ -160,7 +160,7 @@ describe('\n\ntest group management contract\n\n', () => {
 
   describe('\ntest add duplicate accounts\n', () => {
     before('Query the number of the accounts', async () => {
-      res = await contract.methods.queryAccounts().call();
+      res = await contract.methods.queryAccounts().call('pending');
       logger.debug('\nThe number of the accounts:\n', res.length);
       lengthOfAccounts = res.length;
     });
@@ -184,7 +184,7 @@ describe('\n\ntest group management contract\n\n', () => {
     });
 
     it('should not added into the accounts', async () => {
-      res = await contract.methods.queryAccounts().call();
+      res = await contract.methods.queryAccounts().call('pending');
       logger.debug('\nThe num of the account:\n', res.length);
       expect(res).to.have.lengthOf(lengthOfAccounts);
     });
@@ -210,7 +210,7 @@ describe('\n\ntest group management contract\n\n', () => {
     });
 
     it('should have deleted the accounts', async () => {
-      res = await contract.methods.queryAccounts().call();
+      res = await contract.methods.queryAccounts().call('pending');
       logger.debug('\nAccounts deleted:\n', res);
       testAddr.map(a => expect(a).to.not.be.oneOf(res));
     });
@@ -219,7 +219,7 @@ describe('\n\ntest group management contract\n\n', () => {
   describe('\ntest delete group\n', () => {
     before('Query the number of the accounts', async () => {
       contract = await genContract(abi, rootGroup);
-      res = await contract.methods.queryChild().call();
+      res = await contract.methods.queryChild().call('pending');
       logger.debug('\nThe number of the child group:\n', res.length);
       lengthOfChild = res.length;
     });
@@ -238,7 +238,7 @@ describe('\n\ntest group management contract\n\n', () => {
     });
 
     it('should have deleted the group', async () => {
-      res = await contract.methods.queryChild().call();
+      res = await contract.methods.queryChild().call('pending');
       logger.debug('\nNow the number of child group:\n', res.length);
       expect(res).to.have.lengthOf.below(lengthOfChild);
     });

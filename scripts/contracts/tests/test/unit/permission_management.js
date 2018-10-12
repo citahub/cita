@@ -61,7 +61,7 @@ describe('\n\ntest permission management contract\n\n', () => {
 
     it('should have info of new permission', async () => {
       contract = genContract(abi, newPermissionAddr);
-      const res = await contract.methods.queryInfo().call();
+      const res = await contract.methods.queryInfo().call('pending');
       logger.debug('\nInfo:\n', res);
       expect(res[0]).to.have.string(name);
       expect(res[1]).to.deep.equal(testAddr);
@@ -84,7 +84,7 @@ describe('\n\ntest permission management contract\n\n', () => {
     });
 
     it('should have the new permission name', async () => {
-      const res = await contract.methods.queryName().call();
+      const res = await contract.methods.queryName().call('pending');
       logger.debug('\nNew permission name:\n', res);
       expect(res).to.have.string(newName);
     });
@@ -105,7 +105,7 @@ describe('\n\ntest permission management contract\n\n', () => {
     });
 
     it('should have the added resources', async () => {
-      const res = await contract.methods.queryResource().call();
+      const res = await contract.methods.queryResource().call('pending');
       logger.debug('\nNew Added resources:\n', res);
       expect(res[0].length).to.equal(res[1].length);
       expect(cont).to.be.oneOf(res[0]);
@@ -115,7 +115,7 @@ describe('\n\ntest permission management contract\n\n', () => {
 
   describe('\ntest add duplicate resources\n', () => {
     before('Query the number of the resource', async () => {
-      const res = await contract.methods.queryResource().call();
+      const res = await contract.methods.queryResource().call('pending');
       logger.debug('\nThe number of the resource:\n', res[0].length);
       lengthOfResources = res[0].length;
     });
@@ -134,7 +134,7 @@ describe('\n\ntest permission management contract\n\n', () => {
     });
 
     it('should not added into the resources', async () => {
-      const res = await contract.methods.queryResource().call();
+      const res = await contract.methods.queryResource().call('pending');
       logger.debug('\nThe num of the resource:\n', res[0].length);
       expect(res[0]).to.have.lengthOf(lengthOfResources);
     });
@@ -155,7 +155,7 @@ describe('\n\ntest permission management contract\n\n', () => {
     });
 
     it('should have deleted the resources', async () => {
-      const res = await contract.methods.queryResource().call();
+      const res = await contract.methods.queryResource().call('pending');
       logger.debug('\nResources lefted:\n', res);
       expect(res[0]).to.deep.equal(testAddr);
       expect(res[1]).to.deep.equal(testFunc);

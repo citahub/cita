@@ -47,9 +47,9 @@ describe('\n\nDeploy a contract\n\n', () => {
 describe('\n\ntest uint\n\n', () => {
   before('get the x before set', async () => {
     contract = genContract(abi, addr);
-    res = await contract.methods.u8().call();
+    res = await contract.methods.u8().call('pending');
     logger.debug('\nThe u8:\n', res);
-    res = await contract.methods.u8map(u8).call();
+    res = await contract.methods.u8map(u8).call('pending');
     logger.debug('\nThe u8map:\n', res);
   });
 
@@ -69,25 +69,25 @@ describe('\n\ntest uint\n\n', () => {
   });
 
   it('get the res', async () => {
-    res = await contract.methods.u8().call();
+    res = await contract.methods.u8().call('pending');
     logger.debug('\nThe u8:\n', res);
     expect(res).to.equal('1');
   });
 
   it('get the res', async () => {
-    res = await contract.methods.u8array(0).call();
+    res = await contract.methods.u8array(0).call('pending');
     logger.debug('\nThe u8array:\n', res);
     expect(res).to.equal('1');
   });
 
   it('get the res', async () => {
-    res = await contract.methods.u8map(u8).call();
+    res = await contract.methods.u8map(u8).call('pending');
     logger.debug('\nThe u8map:\n', res);
     expect(res).to.equal(test);
   });
 
   it('get the res', async () => {
-    res = await contract.methods.list().call();
+    res = await contract.methods.list().call('pending');
     logger.debug('\nThe list:\n', res);
     expect(res).to.deep.equal(['1']);
   });

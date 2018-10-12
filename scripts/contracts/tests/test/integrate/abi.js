@@ -7,6 +7,12 @@ const {
   nervos, logger, genTxParams,
 } = util;
 
+const abiArray = [{
+  constant: false, inputs: [{ name: '_value', type: 'uint256' }], name: 'set', outputs: [], payable: false, stateMutability: 'nonpayable', type: 'function',
+}, {
+  constant: true, inputs: [], name: 'get', outputs: [{ name: '', type: 'uint256' }], payable: false, stateMutability: 'view', type: 'function',
+}];
+
 const abi = JSON.parse('[{"constant":false,"inputs":[{"name":"_value","type":"uint256"}],"name":"set","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"get","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]');
 const { testBin } = config;
 const { superAdmin } = config;
@@ -36,8 +42,8 @@ describe('\n\ntest store/get abi\n\n', () => {
   });
 
   it('should get the abi', async () => {
-    const res = await nervos.appchain.getAbi(addr, 'latest');
+    const res = await nervos.appchain.getAbi(addr, 'pending');
     logger.debug('\nabi of test:\n', res);
-    expect(res).to.equal(nervos.utils.utf8ToHex(JSON.stringify(abi)));
+    expect(res).to.deep.equal(abiArray);
   });
 });
