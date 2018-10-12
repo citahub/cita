@@ -48,7 +48,7 @@
    version: 1
 ```
 
-* `sysConfig` : 初始化一些系统信息
+* `SysConfig` : 初始化一些系统信息
     - `delayBlockNumber` : 表示系统合约在几个块之后生效，默认为 1 个块
     - `checkPermission` : 合约调用权限检查开关
     - `checkSendTxPermission` : 发送交易权限检查开关

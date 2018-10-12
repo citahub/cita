@@ -21,9 +21,23 @@
     - [JSON-RPC Parameters and Returns](rpc_guide/rpc_types.md)
     - [JSON-RPC List](rpc_guide/rpc.md)
     - [JSON-RPC Error Code](rpc_guide/rpc_error_code.md)
-- CITA Contracts Interfaces
-    - [Contract Interfaces List](contracts_guide/interfaces.md)
-- CITA Architecture
+- System Contracts Guide
+    - [System Config Contract Interface](contracts_guide/sys.md)
+    - [Node Management Contract Interface](contracts_guide/node.md)
+    - [Permission Management Contract Interface](contracts_guide/permission_management.md)
+    - [Authorization Management Contract Interface](contracts_guide/auth.md)
+    - [Permission Contract Interface](contracts_guide/permission.md)
+    - [Role Management Contract Interface](contracts_guide/role_management.md)
+    - [User Management Contract Interface](contracts_guide/group_management.md)
+    - [Group Contract Contract Interface](contracts_guide/group.md)
+    - [All Group Contract Contract Interface](contracts_guide/all_groups.md)
+    - [Quota Management Contract Interface](contracts_guide/quota_manager.md)
+    - [Quota Price Contract Interface](contracts_guide/quota_price.md)
+    - [Batch Tx Contract Interface](contracts_guide/batch.md)
+    - [Emergency Brake Contract Interface](contracts_guide/emergency_brake.md)
+    - [Admin Management Contract Interface](contracts_guide/admin.md)
+    - [Error Type](contracts_guide/error.md)
+- Architecture
     - [Overall Architecture](architecture/architecture.md)
     - [Components](architecture/components.md)
 - Cross Chain
