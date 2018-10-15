@@ -6,7 +6,7 @@ authors = ["Cryptape Technologies <arch@cryptape.com>"]
 [dependencies]
 serde = "1.0"
 serde_derive = "1.0"
-serde_yaml = "0.7.3"
+serde_yaml = "0.8.6"
 bincode = "0.8.0"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

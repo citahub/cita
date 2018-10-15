@@ -301,7 +301,9 @@ workflows:
 
       - "Check Contracts"
 
-      - "Test Coverage"
+      - "Test Coverage":
+          requires:
+          - "Check Basic"
 
       - "Check Clippy":
           requires:
