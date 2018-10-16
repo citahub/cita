@@ -47,7 +47,7 @@ interface NodeInterface {
 contract NodeManager is NodeInterface, Error, Check, EconomicalType {
 
     mapping(address => NodeStatus) public status;
-    // Recode the operation of the block
+    // Recode the operation of the block(deprecation)
     mapping(uint => bool) block_op;
     // Consensus node list
     address[] nodes;
@@ -60,7 +60,7 @@ contract NodeManager is NodeInterface, Error, Check, EconomicalType {
     Authorization auth = Authorization(authorizationAddr);
     SysConfig sysConfig = SysConfig(sysConfigAddr);
 
-    // Should operate one time in a block
+    // Should operate one time in a block(deprecation)
     modifier oneOperate {
         if (!block_op[block.number])
             _;
@@ -129,6 +129,7 @@ contract NodeManager is NodeInterface, Error, Check, EconomicalType {
     }
 
     /// @notice Approve the new node
+    ///         The modifier of oneOperate will be deprecated!
     /// @param _node The node to be approved
     /// @return true if successed, otherwise false
     function approveNode(address _node)
@@ -147,6 +148,7 @@ contract NodeManager is NodeInterface, Error, Check, EconomicalType {
     }
 
     /// @notice Delete the node
+    ///         The modifier of oneOperate will be deprecated!
     /// @param _node The node to be deleted
     /// @return true if successed, otherwise false
     function deleteNode(address _node)
