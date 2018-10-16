@@ -40,6 +40,9 @@
 - Architecture
     - [Overall Architecture](architecture/architecture.md)
     - [Components](architecture/components.md)
+    - [Consensus](architecture/consensus.md)
+    - [Transaction Process](architecture/transaction_process.md)
+    - [View](architecture/view.md)
 - Cross Chain
     - [Cross Chain Contract Examples](crosschain/crosschain_contract_example.md)
 - Reference
