@@ -40,8 +40,8 @@ pub struct EnvInfo {
     pub gas_limit: U256,
     /// The last 256 block hashes.
     pub last_hashes: Arc<LastHashes>,
-    /// The gas used.
-    pub gas_used: U256,
+    /// The quota used.
+    pub quota_used: U256,
     pub account_gas_limit: U256,
 }
 
@@ -54,7 +54,7 @@ impl Default for EnvInfo {
             difficulty: 0.into(),
             gas_limit: U256::from(u64::max_value()),
             last_hashes: Arc::new(vec![]),
-            gas_used: 0.into(),
+            quota_used: 0.into(),
             account_gas_limit: 0.into(),
         }
     }
@@ -70,7 +70,7 @@ impl Default for EnvInfo {
 //             gas_limit: e.gas_limit.into(),
 //             timestamp: e.timestamp.into(),
 //             last_hashes: Arc::new((1..cmp::min(number + 1, 257)).map(|i| format!("{}", number - i).as_bytes().crypt_hash()).collect()),
-//             gas_used: U256::default(),
+//             quota_used: U256::default(),
 //         }
 //     }
 // }
@@ -93,7 +93,7 @@ mod tests {
     //     assert_eq!(env_info.author, Address::from_str("000000f00000000f000000000000f00000000f00").unwrap());
     //     assert_eq!(env_info.gas_limit, 40000.into());
     //     assert_eq!(env_info.difficulty, 50000.into());
-    //     assert_eq!(env_info.gas_used, 0.into());
+    //     assert_eq!(env_info.quota_used, 0.into());
     // }
 
     #[test]

@@ -495,7 +495,7 @@ impl Chain {
         let mut hdr = Header::new();
         let log_bloom = LogBloom::from(info.get_header().get_log_bloom());
         hdr.set_gas_limit(U256::from(info.get_header().get_gas_limit()));
-        hdr.set_gas_used(U256::from(info.get_header().get_gas_used()));
+        hdr.set_quota_used(U256::from(info.get_header().get_quota_used()));
         hdr.set_number(number);
         // hdr.set_parent_hash(*block.parent_hash());
         hdr.set_parent_hash(H256::from_slice(info.get_header().get_prevhash()));
@@ -983,8 +983,8 @@ impl Chain {
         receipts.truncate(index + 1);
         let last_receipt = receipts.pop().expect("Current receipt is provided; qed");
 
-        let prior_gas_used = match receipts.last() {
-            Some(ref r) => r.gas_used,
+        let prior_quota_used = match receipts.last() {
+            Some(ref r) => r.quota_used,
             _ => 0.into(),
         };
 
@@ -1007,8 +1007,8 @@ impl Chain {
                 transaction_index: index,
                 block_hash: hash,
                 block_number: number,
-                cumulative_gas_used: last_receipt.gas_used,
-                gas_used: last_receipt.gas_used - prior_gas_used,
+                cumulative_quota_used: last_receipt.quota_used,
+                quota_used: last_receipt.quota_used - prior_quota_used,
                 contract_address,
                 logs: last_receipt
                     .logs

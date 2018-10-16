@@ -629,7 +629,7 @@ impl Executor {
             timestamp: header.timestamp(),
             difficulty: U256::default(),
             last_hashes,
-            gas_used: *header.gas_used(),
+            gas_used: *header.quota_used(),
             gas_limit: *header.gas_limit(),
             account_gas_limit: u64::max_value().into(),
         };

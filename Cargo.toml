@@ -1,10 +1,11 @@
 [workspace]
-members = ["cita-auth"
+members = [
+"cita-chain"
+,"cita-executor"
 ,"cita-jsonrpc"
-,"cita-chain"
 ,"cita-bft"
 ,"cita-network"
-,"cita-executor"
+,"cita-auth"
 ,"cita-forever"
 ,"tools/create_key_addr"
 ,"tools/snapshot_tool"
