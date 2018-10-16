@@ -1,19 +1,19 @@
 pragma solidity ^0.4.24;
 
 import "./role_creator.sol";
-import "./role_auth.sol";
 import "../common/address.sol";
 import "../common/check.sol";
-
+import "../interfaces/role_auth.sol";
+import "../interfaces/role_management.sol";
 
 /// @title Role management contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020007
 ///         The interface the can be called: All
-contract RoleManagement is Check {
+contract RoleManagement is IRoleManagement, Check {
 
     RoleCreator roleCreator = RoleCreator(roleCreatorAddr);
-    RoleAuth roleAuth = RoleAuth(roleAuthAddr);
+    IRoleAuth roleAuth = IRoleAuth(roleAuthAddr);
 
     mapping(address => address[]) internal accounts;
     mapping(address => address[]) internal roles;

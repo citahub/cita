@@ -3,7 +3,6 @@ pragma solidity ^0.4.24;
 import "../lib/address_array.sol";
 import "../common/address.sol";
 
-
 /// @title Group contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: Created by permissionCreator

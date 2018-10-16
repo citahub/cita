@@ -2,12 +2,13 @@ pragma solidity ^0.4.24;
 
 import "../lib/address_array.sol";
 import "../common/address.sol";
+import "../interfaces/all_groups.sol";
 
 /// @title User management using group struct
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xfFFffFFFfffFfFFFfFfFFfffffffFfFfFf020012
 ///         The interface the can be called: All
-contract AllGroups is ReservedAddress {
+contract AllGroups is IAllGroups, ReservedAddress {
 
     address[] groups;
 

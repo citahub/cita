@@ -2,8 +2,9 @@ pragma solidity ^0.4.24;
 
 import "../common/admin.sol";
 import "../common/address.sol";
+import "../interfaces/emergency_brake.sol";
 
-contract EmergencyBrake is ReservedAddress {
+contract EmergencyBrake is IEmergencyBrake, ReservedAddress {
     bool public state;
 
     Admin admin = Admin(adminAddr);

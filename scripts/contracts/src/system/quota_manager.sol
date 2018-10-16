@@ -5,45 +5,12 @@ import "../lib/address_array.sol";
 import "../common/admin.sol";
 import "../common/address.sol";
 import "../common/check.sol";
-
-/// @title The interface of quota_manager
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
-interface QuotaInterface {
-
-    event DefaultAqlSetted(uint indexed _value, address indexed _sender);
-    event BqlSetted(uint indexed _value, address indexed _sender);
-    event AqlSetted(address indexed _account, uint _value, address indexed _sender);
-
-    /// @notice Set the block quota limit
-    function setBQL(uint _value) external returns (bool);
-
-    /// @notice Set the default block quota limit
-    function setDefaultAQL(uint _value) external returns (bool);
-
-    /// @notice Set the account quota limit
-    function setAQL(address _account, uint _value) external returns (bool);
-
-    /// @notice Get all accounts that have account quota limit
-    function getAccounts() external view returns (address[]);
-
-    /// @notice Get all accounts' quotas
-    function getQuotas() external view returns (uint[]);
-
-    /// @notice Get block quota limit
-    function getBQL() external view returns (uint);
-
-    /// @notice Get default account quota limit
-    function getDefaultAQL() external view returns (uint);
-
-    /// @notice Get account quota limit
-    function getAQL(address _account) external view returns (uint);
-}
-
+import "../interfaces/quota_manager.sol";
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020003
-contract QuotaManager is QuotaInterface, Error, Check {
+contract QuotaManager is IQuotaManager, Error, Check {
 
     mapping(address => uint) quota;
     // Block quota limit
@@ -55,7 +22,6 @@ contract QuotaManager is QuotaInterface, Error, Check {
     uint maxLimit = 2 ** 63 - 1;
     uint baseLimit = 2 ** 22 - 1;
     Admin admin = Admin(adminAddr);
-    Authorization auth = Authorization(authorizationAddr);
 
     modifier checkBaseLimit(uint _v) {
         if (_v <= maxLimit && _v >= baseLimit)

@@ -2,8 +2,9 @@ pragma solidity ^0.4.24;
 
 import "../common/admin.sol";
 import "../common/address.sol";
+import "../interfaces/version_manager.sol";
 
-contract VersionManager is ReservedAddress {
+contract VersionManager is IVersionManager, ReservedAddress {
     uint32 public version;
 
     Admin admin = Admin(adminAddr);
@@ -15,7 +16,7 @@ contract VersionManager is ReservedAddress {
     }
 
     /// @notice Setup
-    constructor(uint32 _version) 
+    constructor(uint32 _version)
         public
     {
         version = _version;

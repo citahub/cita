@@ -2,7 +2,6 @@ pragma solidity ^0.4.24;
 
 import "../common/error.sol";
 
-
 /// @title Chain Manager
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 contract ChainManager is Error {
