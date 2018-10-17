@@ -1230,7 +1230,8 @@ impl Chain {
         block_tx_hashes.set_height(block_height);
         {
             block_tx_hashes.set_check_quota(self.check_quota.load(Ordering::Relaxed));
-            block_tx_hashes.set_block_quota_limit(self.block_quota_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes
+                .set_block_quota_limit(self.block_quota_limit.load(Ordering::SeqCst) as u64);
             block_tx_hashes.set_account_quota_limit(self.account_quota_limit.read().clone());
             block_tx_hashes.set_admin_address(
                 self.admin_address

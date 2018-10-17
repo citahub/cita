@@ -328,7 +328,10 @@ impl MsgHandler {
 
     pub fn verify_block_quota(&self, blkreq: &VerifyBlockReq) -> bool {
         let reqs = blkreq.get_reqs();
-        let quota_limit = self.config_info.account_quota_limit.get_common_quota_limit();
+        let quota_limit = self
+            .config_info
+            .account_quota_limit
+            .get_common_quota_limit();
         let mut specific_quota_limit = self
             .config_info
             .account_quota_limit
@@ -369,7 +372,10 @@ impl MsgHandler {
         }
         if self.config_info.check_quota {
             let addr = pubkey_to_address(&PubKey::from(signer));
-            let mut quota_limit = self.config_info.account_quota_limit.get_common_quota_limit();
+            let mut quota_limit = self
+                .config_info
+                .account_quota_limit
+                .get_common_quota_limit();
             if let Some(value) = self
                 .config_info
                 .account_quota_limit
