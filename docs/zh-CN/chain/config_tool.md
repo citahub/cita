@@ -4,7 +4,7 @@
 
 ## 配置项
 
-按照快速搭裢的教程编译成功后，`test-chain/template` 目录下的 `init_data.yml` 中记录了链的配置项内容如下， 下面我们一一解释：
+按照快速搭链的教程编译成功后，`test-chain/template` 目录下的 `init_data.yml` 中记录了链的配置项内容如下， 下面我们一一解释：
 
 ```
 -Contracts:

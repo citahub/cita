@@ -43,7 +43,7 @@ prof_duration = 0
 
 ## Consensus
 
-Executor.toml is the configuration file for the Consensus microservice，as follows:
+Consensus.toml is the configuration file for the Consensus microservice，as follows:
 
 ```bash
 

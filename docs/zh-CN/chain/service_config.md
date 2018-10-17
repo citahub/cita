@@ -41,7 +41,7 @@ prof_duration = 0
 
 ## Consensus
 
-executor.toml 是 Consensus 微服务的配置文件，如下：
+consensus.toml 是 Consensus 微服务的配置文件，如下：
 
 ```bash
 

@@ -389,7 +389,7 @@ Function signatures:
 
 #### 部署合约
 
-由于设置了权限的检查开关，所有用户默认是没有发交易及创建合约的权限的。首先需要通过superAdmin对其授sendTx发送交易及createContract创建合约权限。
+由于设置了权限的检查开关，所有用户默认是没有发交易及创建合约的权限的。首先需要通过 superAdmin 对其授 sendTx 发送交易及 createContract 创建合约权限。
 
 * 授予发送交易和创建合约权限
 
