@@ -319,7 +319,7 @@ impl Header {
         bh.set_receipts_root(self.receipts_root.to_vec());
         bh.set_transactions_root(self.transactions_root.to_vec());
         bh.set_quota_used(u64::from(self.quota_used));
-        bh.set_gas_limit(self.gas_limit.low_u64());
+        bh.set_quota_limit(self.gas_limit.low_u64());
         bh.set_proof(self.proof.clone());
         bh.set_proposer(self.proposer.to_vec());
         bh
@@ -335,7 +335,7 @@ impl Header {
         executed_header.set_receipts_root(self.receipts_root.to_vec());
         executed_header.set_log_bloom(self.log_bloom.to_vec());
         executed_header.set_quota_used(u64::from(self.quota_used));
-        executed_header.set_gas_limit(self.gas_limit.low_u64());
+        executed_header.set_quota_limit(self.gas_limit.low_u64());
         executed_header.set_proposer(self.proposer.to_vec());
         executed_header
     }

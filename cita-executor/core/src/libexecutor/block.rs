@@ -236,7 +236,7 @@ impl ClosedBlock {
             .set_quota_used(u64::from(*self.quota_used()));
         executed_info
             .mut_header()
-            .set_gas_limit(self.gas_limit().low_u64());
+            .set_quota_limit(self.gas_limit().low_u64());
 
         executed_info.receipts = self
             .receipts

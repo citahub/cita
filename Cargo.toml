@@ -2,6 +2,7 @@
 members = [
 "cita-chain"
 ,"cita-auth"
+,"cita-executor"
 ]
 
 [profile.bench]
