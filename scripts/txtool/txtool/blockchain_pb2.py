@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x10\x62lockchain.proto\"2\n\x05Proof\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\x0c\x12\x18\n\x04type\x18\x02 \x01(\x0e\x32\n.ProofType\"\xd6\x01\n\x0b\x42lockHeader\x12\x10\n\x08prevhash\x18\x01 \x01(\x0c\x12\x11\n\ttimestamp\x18\x02 \x01(\x04\x12\x0e\n\x06height\x18\x03 \x01(\x04\x12\x12\n\nstate_root\x18\x04 \x01(\x0c\x12\x19\n\x11transactions_root\x18\x05 \x01(\x0c\x12\x15\n\rreceipts_root\x18\x06 \x01(\x0c\x12\x10\n\x08gas_used\x18\x07 \x01(\x04\x12\x11\n\tgas_limit\x18\x08 \x01(\x04\x12\x15\n\x05proof\x18\t \x01(\x0b\x32\x06.Proof\x12\x10\n\x08proposer\x18\n \x01(\x0c\"&\n\x06Status\x12\x0c\n\x04hash\x18\x01 \x01(\x0c\x12\x0e\n\x06height\x18\x02 \x01(\x04\"\xa8\x01\n\x0f\x41\x63\x63ountGasLimit\x12\x18\n\x10\x63ommon_gas_limit\x18\x01 \x01(\x04\x12\x42\n\x12specific_gas_limit\x18\x02 \x03(\x0b\x32&.AccountGasLimit.SpecificGasLimitEntry\x1a\x37\n\x15SpecificGasLimitEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x04:\x02\x38\x01\"\\\n\nRichStatus\x12\x0c\n\x04hash\x18\x01 \x01(\x0c\x12\x0e\n\x06height\x18\x02 \x01(\x04\x12\r\n\x05nodes\x18\x03 \x03(\x0c\x12\x10\n\x08interval\x18\x04 \x01(\x04\x12\x0f\n\x07version\x18\x05 \x01(\r\"\xb6\x01\n\x0bTransaction\x12\n\n\x02to\x18\x01 \x01(\t\x12\r\n\x05nonce\x18\x02 \x01(\t\x12\r\n\x05quota\x18\x03 \x01(\x04\x12\x19\n\x11valid_until_block\x18\x04 \x01(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x01(\x0c\x12\r\n\x05value\x18\x06 \x01(\x0c\x12\x10\n\x08\x63hain_id\x18\x07 \x01(\r\x12\x0f\n\x07version\x18\x08 \x01(\r\x12\r\n\x05to_v1\x18\t \x01(\x0c\x12\x13\n\x0b\x63hain_id_v1\x18\n \x01(\x0c\"f\n\x15UnverifiedTransaction\x12!\n\x0btransaction\x18\x01 \x01(\x0b\x32\x0c.Transaction\x12\x11\n\tsignature\x18\x02 \x01(\x0c\x12\x17\n\x06\x63rypto\x18\x03 \x01(\x0e\x32\x07.Crypto\"j\n\x11SignedTransaction\x12\x34\n\x14transaction_with_sig\x18\x01 \x01(\x0b\x32\x16.UnverifiedTransaction\x12\x0f\n\x07tx_hash\x18\x02 \x01(\x0c\x12\x0e\n\x06signer\x18\x03 \x01(\x0c\"5\n\tBlockBody\x12(\n\x0ctransactions\x18\x01 \x03(\x0b\x32\x12.SignedTransaction\"P\n\x05\x42lock\x12\x0f\n\x07version\x18\x01 \x01(\r\x12\x1c\n\x06header\x18\x02 \x01(\x0b\x32\x0c.BlockHeader\x12\x18\n\x04\x62ody\x18\x03 \x01(\x0b\x32\n.BlockBody\"<\n\x0e\x42lockWithProof\x12\x13\n\x03\x62lk\x18\x01 \x01(\x0b\x32\x06.Block\x12\x15\n\x05proof\x18\x02 \x01(\x0b\x32\x06.Proof\"4\n\x08\x42lockTxs\x12\x0e\n\x06height\x18\x01 \x01(\x04\x12\x18\n\x04\x62ody\x18\x03 \x01(\x0b\x32\n.BlockBody\"3\n\tBlackList\x12\x12\n\nblack_list\x18\x01 \x03(\x0c\x12\x12\n\nclear_list\x18\x02 \x03(\x0c\"\x1d\n\x0bStateSignal\x12\x0e\n\x06height\x18\x01 \x01(\x04*2\n\tProofType\x12\x12\n\x0e\x41uthorityRound\x10\x00\x12\x08\n\x04Raft\x10\x01\x12\x07\n\x03\x42\x66t\x10\x02*\x1b\n\x06\x43rypto\x12\x08\n\x04SECP\x10\x00\x12\x07\n\x03SM2\x10\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x10\x62lockchain.proto\"2\n\x05Proof\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\x0c\x12\x18\n\x04type\x18\x02 \x01(\x0e\x32\n.ProofType\"\xd6\x01\n\x0b\x42lockHeader\x12\x10\n\x08prevhash\x18\x01 \x01(\x0c\x12\x11\n\ttimestamp\x18\x02 \x01(\x04\x12\x0e\n\x06height\x18\x03 \x01(\x04\x12\x12\n\nstate_root\x18\x04 \x01(\x0c\x12\x19\n\x11transactions_root\x18\x05 \x01(\x0c\x12\x15\n\rreceipts_root\x18\x06 \x01(\x0c\x12\x10\n\x08quota_used\x18\x07 \x01(\x04\x12\x11\n\tquota_limit\x18\x08 \x01(\x04\x12\x15\n\x05proof\x18\t \x01(\x0b\x32\x06.Proof\x12\x10\n\x08proposer\x18\n \x01(\x0c\"&\n\x06Status\x12\x0c\n\x04hash\x18\x01 \x01(\x0c\x12\x0e\n\x06height\x18\x02 \x01(\x04\"\xa8\x01\n\x0f\x41\x63\x63ountGasLimit\x12\x18\n\x10\x63ommon_quota_limit\x18\x01 \x01(\x04\x12\x42\n\x12specific_quota_limit\x18\x02 \x03(\x0b\x32&.AccountGasLimit.SpecificGasLimitEntry\x1a\x37\n\x15SpecificGasLimitEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x04:\x02\x38\x01\"\\\n\nRichStatus\x12\x0c\n\x04hash\x18\x01 \x01(\x0c\x12\x0e\n\x06height\x18\x02 \x01(\x04\x12\r\n\x05nodes\x18\x03 \x03(\x0c\x12\x10\n\x08interval\x18\x04 \x01(\x04\x12\x0f\n\x07version\x18\x05 \x01(\r\"\xb6\x01\n\x0bTransaction\x12\n\n\x02to\x18\x01 \x01(\t\x12\r\n\x05nonce\x18\x02 \x01(\t\x12\r\n\x05quota\x18\x03 \x01(\x04\x12\x19\n\x11valid_until_block\x18\x04 \x01(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x01(\x0c\x12\r\n\x05value\x18\x06 \x01(\x0c\x12\x10\n\x08\x63hain_id\x18\x07 \x01(\r\x12\x0f\n\x07version\x18\x08 \x01(\r\x12\r\n\x05to_v1\x18\t \x01(\x0c\x12\x13\n\x0b\x63hain_id_v1\x18\n \x01(\x0c\"f\n\x15UnverifiedTransaction\x12!\n\x0btransaction\x18\x01 \x01(\x0b\x32\x0c.Transaction\x12\x11\n\tsignature\x18\x02 \x01(\x0c\x12\x17\n\x06\x63rypto\x18\x03 \x01(\x0e\x32\x07.Crypto\"j\n\x11SignedTransaction\x12\x34\n\x14transaction_with_sig\x18\x01 \x01(\x0b\x32\x16.UnverifiedTransaction\x12\x0f\n\x07tx_hash\x18\x02 \x01(\x0c\x12\x0e\n\x06signer\x18\x03 \x01(\x0c\"5\n\tBlockBody\x12(\n\x0ctransactions\x18\x01 \x03(\x0b\x32\x12.SignedTransaction\"P\n\x05\x42lock\x12\x0f\n\x07version\x18\x01 \x01(\r\x12\x1c\n\x06header\x18\x02 \x01(\x0b\x32\x0c.BlockHeader\x12\x18\n\x04\x62ody\x18\x03 \x01(\x0b\x32\n.BlockBody\"<\n\x0e\x42lockWithProof\x12\x13\n\x03\x62lk\x18\x01 \x01(\x0b\x32\x06.Block\x12\x15\n\x05proof\x18\x02 \x01(\x0b\x32\x06.Proof\"4\n\x08\x42lockTxs\x12\x0e\n\x06height\x18\x01 \x01(\x04\x12\x18\n\x04\x62ody\x18\x03 \x01(\x0b\x32\n.BlockBody\"3\n\tBlackList\x12\x12\n\nblack_list\x18\x01 \x03(\x0c\x12\x12\n\nclear_list\x18\x02 \x03(\x0c\"\x1d\n\x0bStateSignal\x12\x0e\n\x06height\x18\x01 \x01(\x04*2\n\tProofType\x12\x12\n\x0e\x41uthorityRound\x10\x00\x12\x08\n\x04Raft\x10\x01\x12\x07\n\x03\x42\x66t\x10\x02*\x1b\n\x06\x43rypto\x12\x08\n\x04SECP\x10\x00\x12\x07\n\x03SM2\x10\x01\x62\x06proto3')
 )
 
 _PROOFTYPE = _descriptor.EnumDescriptor(
@@ -169,14 +169,14 @@ _BLOCKHEADER = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='gas_used', full_name='BlockHeader.gas_used', index=6,
+      name='quota_used', full_name='BlockHeader.quota_used', index=6,
       number=7, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='gas_limit', full_name='BlockHeader.gas_limit', index=7,
+      name='quota_limit', full_name='BlockHeader.quota_limit', index=7,
       number=8, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -296,14 +296,14 @@ _ACCOUNTGASLIMIT = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='common_gas_limit', full_name='AccountGasLimit.common_gas_limit', index=0,
+      name='common_quota_limit', full_name='AccountGasLimit.common_quota_limit', index=0,
       number=1, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='specific_gas_limit', full_name='AccountGasLimit.specific_gas_limit', index=1,
+      name='specific_quota_limit', full_name='AccountGasLimit.specific_quota_limit', index=1,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -792,7 +792,7 @@ _STATESIGNAL = _descriptor.Descriptor(
 _PROOF.fields_by_name['type'].enum_type = _PROOFTYPE
 _BLOCKHEADER.fields_by_name['proof'].message_type = _PROOF
 _ACCOUNTGASLIMIT_SPECIFICGASLIMITENTRY.containing_type = _ACCOUNTGASLIMIT
-_ACCOUNTGASLIMIT.fields_by_name['specific_gas_limit'].message_type = _ACCOUNTGASLIMIT_SPECIFICGASLIMITENTRY
+_ACCOUNTGASLIMIT.fields_by_name['specific_quota_limit'].message_type = _ACCOUNTGASLIMIT_SPECIFICGASLIMITENTRY
 _UNVERIFIEDTRANSACTION.fields_by_name['transaction'].message_type = _TRANSACTION
 _UNVERIFIEDTRANSACTION.fields_by_name['crypto'].enum_type = _CRYPTO
 _SIGNEDTRANSACTION.fields_by_name['transaction_with_sig'].message_type = _UNVERIFIEDTRANSACTION
