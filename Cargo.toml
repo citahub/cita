@@ -1,19 +1,6 @@
 [workspace]
 members = [
 "cita-chain"
-,"cita-executor"
-,"cita-jsonrpc"
-,"cita-bft"
-,"cita-network"
-,"cita-auth"
-,"cita-forever"
-,"tools/create_key_addr"
-,"tools/snapshot_tool"
-,"tools/relayer-parser"
-,"tests/chain-executor-mock"
-,"tests/consensus-mock"
-,"tests/chain_performance_by_mq"
-,"tests/box_executor"
 ]
 
 [profile.bench]

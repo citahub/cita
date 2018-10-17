@@ -67,7 +67,7 @@ pub struct Header {
     /// Gas used for contracts execution.
     quota_used: U256,
     /// Block gas limit.
-    gas_limit: U256,
+    quota_limit: U256,
     /// the proof of the block
     proof: ProtoProof,
     /// The hash of the header.
@@ -88,7 +88,7 @@ impl PartialEq for Header {
             && self.receipts_root == c.receipts_root
             && self.log_bloom == c.log_bloom
             && self.quota_used == c.quota_used
-            && self.gas_limit == c.gas_limit
+            && self.quota_limit == c.quota_limit
             && self.proof == c.proof
             && self.proposer == c.proposer
     }
@@ -105,7 +105,7 @@ impl Default for Header {
             receipts_root: HASH_NULL_RLP,
             log_bloom: *ZERO_LOGBLOOM,
             quota_used: U256::default(),
-            gas_limit: U256::from(u64::max_value()),
+            quota_limit: U256::from(u64::max_value()),
             proof: ProtoProof::new(),
             hash: HashWrap(Cell::new(None)),
             version: 0,
@@ -125,7 +125,7 @@ impl From<ProtoBlockHeader> for Header {
             receipts_root: H256::default(),
             log_bloom: *ZERO_LOGBLOOM,
             quota_used: U256::zero(),
-            gas_limit: U256::from(u64::max_value()),
+            quota_limit: U256::from(u64::max_value()),
             proof: bh.get_proof().clone(),
             version: 0,
             hash: HashWrap(Cell::new(None)),
@@ -173,8 +173,8 @@ impl Header {
         &self.quota_used
     }
     /// Get the gas limit field of the header.
-    pub fn gas_limit(&self) -> &U256 {
-        &self.gas_limit
+    pub fn quota_limit(&self) -> &U256 {
+        &self.quota_limit
     }
     /// Get the proof field of the header.
     pub fn proof(&self) -> &ProtoProof {
@@ -243,8 +243,8 @@ impl Header {
         self.note_dirty();
     }
     /// Set the gas limit field of the header.
-    pub fn set_gas_limit(&mut self, a: U256) {
-        self.gas_limit = a;
+    pub fn set_quota_limit(&mut self, a: U256) {
+        self.quota_limit = a;
         self.note_dirty();
     }
     /// Set the version of the header.
@@ -292,7 +292,7 @@ impl Header {
         s.append(&self.receipts_root);
         s.append(&self.log_bloom);
         s.append(&self.number);
-        s.append(&self.gas_limit);
+        s.append(&self.quota_limit);
         s.append(&self.quota_used);
         s.append(&self.timestamp);
         s.append(&self.version);
@@ -322,7 +322,7 @@ impl Header {
         bh.set_receipts_root(self.receipts_root.to_vec());
         bh.set_transactions_root(self.transactions_root.to_vec());
         bh.set_quota_used(u64::from(self.quota_used));
-        bh.set_gas_limit(self.gas_limit.low_u64());
+        bh.set_quota_limit(self.quota_limit.low_u64());
         bh.set_proof(self.proof.clone());
         bh.set_proposer(self.proposer.to_vec());
         bh
@@ -396,7 +396,7 @@ impl Decodable for Header {
             receipts_root: r.val_at(3)?,
             log_bloom: r.val_at(4)?,
             number: r.val_at(5)?,
-            gas_limit: r.val_at(6)?,
+            quota_limit: r.val_at(6)?,
             quota_used: r.val_at(7)?,
             timestamp: cmp::min(r.val_at::<U256>(8)?, u64::max_value().into()).as_u64(),
             version: r.val_at(9)?,
