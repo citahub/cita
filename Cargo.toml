@@ -1,6 +1,7 @@
 [workspace]
 members = [
 "cita-chain"
+,"cita-auth"
 ]
 
 [profile.bench]
