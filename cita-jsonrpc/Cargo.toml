@@ -14,12 +14,12 @@ serde_json = "1.0"
 cpuprofiler = "0.0.3"
 dotenv = "0.10.0"
 clap = "2"
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
+error = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
 http = "0.1"
 httparse = "1.0"
 bytes = "0.4"
@@ -33,7 +33,7 @@ unicase = "2.1.0"
 libc = "0.2"
 
 [build-dependencies]
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
