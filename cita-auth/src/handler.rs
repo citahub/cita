@@ -692,6 +692,11 @@ impl MsgHandler {
             warn!("Too frequent to send request!");
             return;
         }
+        trace!(
+            "send block tx hashes request {} to {}",
+            self.history_heights.min_height(),
+            self.history_heights.max_height()
+        );
         for i in self.history_heights.min_height()..self.history_heights.max_height() {
             if !self.history_hashes.contains_key(&i) {
                 self.send_single_block_tx_hashes_req(i);
@@ -704,7 +709,9 @@ impl MsgHandler {
     pub fn handle_remote_msg(&mut self) {
         loop {
             // send request to get chain id if we have not got it
-            if self.chain_id.is_none() {
+            // chain id need version
+            // so get chain id after get version
+            if self.chain_id.is_none() && self.config_info.version.is_some() {
                 trace!("chain id is not ready");
                 let msg: Message = MiscellaneousReq::new().into();
                 self.tx_pub
@@ -750,6 +757,7 @@ impl MsgHandler {
             if let Ok((key, payload)) = self.rx_sub.recv_timeout(Duration::new(3, 0)) {
                 let mut msg = Message::try_from(&payload).unwrap();
                 let rounting_key = RoutingKey::from(&key);
+                trace!("process message key = {}", key);
                 match rounting_key {
                     // we got this message when chain reach new height or response the BlockTxHashesReq
                     routing_key!(Chain >> BlockTxHashes) => {
