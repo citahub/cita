@@ -15,14 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use connection::Connection;
+use connection::Task;
 use libproto::blockchain::{Block, Status};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{Message, OperateType, SyncRequest, SyncResponse};
 use rand::{thread_rng, Rng, ThreadRng};
 use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::convert::{Into, TryFrom, TryInto};
-use std::sync::{mpsc, Arc};
+use std::sync::mpsc;
 use std::time::{Duration, Instant};
 use std::u8;
 use Source;
@@ -33,7 +33,7 @@ const SYNC_TIME_OUT: u64 = 9;
 /// Get messages and determine if need to synchronize or broadcast the current node status
 pub struct Synchronizer {
     tx_pub: mpsc::Sender<(String, Vec<u8>)>,
-    con: Arc<Connection>,
+    task_sender: mpsc::Sender<Task>,
     current_status: Status,
     global_status: Status,
     sync_end_height: u64, //current_status <= sync_end_status
@@ -51,10 +51,10 @@ unsafe impl Sync for Synchronizer {}
 unsafe impl Send for Synchronizer {}
 
 impl Synchronizer {
-    pub fn new(tx_pub: mpsc::Sender<(String, Vec<u8>)>, con: Arc<Connection>) -> Self {
+    pub fn new(tx_pub: mpsc::Sender<(String, Vec<u8>)>, task_sender: mpsc::Sender<Task>) -> Self {
         Synchronizer {
             tx_pub,
-            con,
+            task_sender,
             current_status: Status::new(),
             global_status: Status::new(),
             latest_status_lists: BTreeMap::new(),
@@ -334,8 +334,12 @@ impl Synchronizer {
             let mut sync_req = SyncRequest::new();
             sync_req.set_heights(heights);
             let msg = Message::init(OperateType::Single, origin, sync_req.into());
-            self.con
-                .broadcast(routing_key!(Synchronizer >> SyncRequest).into(), msg);
+            self.task_sender
+                .send(Task::Broadcast((
+                    routing_key!(Synchronizer >> SyncRequest).into(),
+                    msg,
+                )))
+                .unwrap();
         }
     }
 
@@ -346,8 +350,12 @@ impl Synchronizer {
             self.current_status.get_hash()
         );
         let msg: Message = self.current_status.clone().into();
-        self.con
-            .broadcast(routing_key!(Synchronizer >> Status).into(), msg);
+        self.task_sender
+            .send(Task::Broadcast((
+                routing_key!(Synchronizer >> Status).into(),
+                msg,
+            )))
+            .unwrap();
     }
 
     // Submit synchronization information

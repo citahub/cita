@@ -21,48 +21,122 @@ use config;
 use config::NetConfig;
 use libproto::{Message, OperateType};
 use notify::DebouncedEvent;
-use std::convert::{TryFrom, TryInto};
+use std::collections::HashMap;
+use std::convert::TryInto;
 use std::io::Write;
+use std::net::SocketAddr;
 use std::net::{Shutdown, TcpStream};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::Receiver;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use util::RwLock;
 
 const TIMEOUT: u64 = 15;
-// list of peer: id, addr, tcp_connect
-type PeerPairs = Arc<RwLock<Vec<(u32, String, Option<TcpStream>)>>>;
 
-/// Manage p2p networks
-pub struct Connection {
-    pub id_card: u32,
-    /// list of peer: id, addr, tcp_connect
-    pub peers_pair: PeerPairs,
-    pub is_disconnect: Arc<AtomicBool>,
+pub enum Task {
+    Broadcast((String, Message)),
+    Update(NetConfig),
+    NewTCP((u32, SocketAddr, TcpStream)),
 }
 
-impl Connection {
-    pub fn new(config: &config::NetConfig) -> Self {
-        let id_card = config.id_card.unwrap();
-        let mut peers_pair = Vec::default();
-        if let Some(peers) = config.peers.as_ref() {
-            for peer in peers.iter() {
-                let id_card: u32 = peer.id_card.unwrap();
-                let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap());
-                peers_pair.push((id_card, addr, None));
-            }
-        }
+/// Manager unconnected address
+struct Manager {
+    need_connect: Vec<(u32, SocketAddr)>,
+    connect_receiver: Receiver<(u32, SocketAddr)>,
+    task_sender: Sender<Task>,
+}
 
-        Connection {
-            id_card,
-            peers_pair: Arc::new(RwLock::new(peers_pair)),
-            is_disconnect: Arc::new(AtomicBool::new(false)),
+impl Manager {
+    fn new(task_sender: Sender<Task>, connect_receiver: Receiver<(u32, SocketAddr)>) -> Self {
+        Manager {
+            need_connect: Vec::new(),
+            connect_receiver,
+            task_sender,
         }
     }
 
-    pub fn is_send(id_card: u32, origin: u32, operate: OperateType) -> bool {
+    fn run(&mut self) {
+        loop {
+            while let Ok(message) = self.connect_receiver.try_recv() {
+                self.need_connect.push(message);
+            }
+            let mut new_need_connect = Vec::new();
+            for (id, addr) in self.need_connect.iter() {
+                match TcpStream::connect_timeout(addr, Duration::from_secs(TIMEOUT)) {
+                    Ok(tcp) => {
+                        self.task_sender
+                            .send(Task::NewTCP((*id, *addr, tcp)))
+                            .unwrap();
+                    }
+                    Err(e) => {
+                        warn!(
+                            "Node{}, {} unable to establish connection, error: {}",
+                            id, addr, e
+                        );
+                        new_need_connect.push((*id, *addr));
+                    }
+                }
+            }
+            self.need_connect = new_need_connect;
+
+            if !self.need_connect.is_empty() {
+                trace!(
+                    "Complete a round of attempts to connect, \
+                     left {} address for the next round of processing",
+                    self.need_connect.len()
+                );
+            }
+
+            thread::sleep(Duration::from_secs(TIMEOUT));
+        }
+    }
+}
+
+/// Manage p2p networks
+pub struct Connections {
+    id_card: u32,
+    /// list of peer: id, addr, tcp_connect
+    peers: HashMap<(u32, SocketAddr), TcpStream>,
+    pub is_pause: Arc<AtomicBool>,
+    pub connect_number: Arc<AtomicUsize>,
+    task_receiver: Receiver<Task>,
+    connect_sender: Sender<(u32, SocketAddr)>,
+}
+
+impl Connections {
+    pub fn new(config: &config::NetConfig) -> (Self, Sender<Task>) {
+        let id_card = config.id_card.unwrap();
+        let (task_sender, task_receiver) = channel();
+        let (connect_sender, connect_receiver) = channel();
+
+        let connect_task_sender = task_sender.clone();
+        thread::spawn(move || Manager::new(connect_task_sender, connect_receiver).run());
+
+        if let Some(peers) = config.peers.as_ref() {
+            for peer in peers.iter() {
+                let id_card: u32 = peer.id_card.unwrap();
+                let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap())
+                    .parse()
+                    .unwrap();
+                connect_sender.send((id_card, addr)).unwrap();
+            }
+        }
+
+        (
+            Connections {
+                id_card,
+                peers: HashMap::new(),
+                is_pause: Arc::new(AtomicBool::new(false)),
+                connect_number: Arc::new(AtomicUsize::new(0)),
+                task_receiver,
+                connect_sender,
+            },
+            task_sender,
+        )
+    }
+
+    fn is_send(id_card: u32, origin: u32, operate: OperateType) -> bool {
         match operate {
             OperateType::Broadcast => true,
             OperateType::Single => id_card == origin,
@@ -70,78 +144,106 @@ impl Connection {
         }
     }
 
-    pub fn update(&self, config: &config::NetConfig) {
-        //添加更新的配置到self
-        match config.peers.as_ref() {
-            Some(peers) => {
-                let mut peers_addr = Vec::new();
-                for peer in self.peers_pair.read().iter() {
-                    peers_addr.push(peer.1.clone());
-                }
-                info!("peers before update {:?}", peers_addr);
-                let mut config_addr = Vec::new();
-                for peer in peers.iter() {
-                    let id_card: u32 = peer.id_card.unwrap();
-                    let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap());
-                    config_addr.push(addr.clone());
-                    if peers_addr.contains(&addr) {
-                        continue;
+    pub fn run(&mut self) {
+        loop {
+            match self
+                .task_receiver
+                .recv_timeout(Duration::from_secs(TIMEOUT))
+            {
+                Ok(task) => match task {
+                    Task::Broadcast((key, message)) => {
+                        if !self.is_pause.load(Ordering::SeqCst) {
+                            self.broadcast(key, message)
+                        }
                     }
-                    peers_addr.push(addr.clone());
-                    self.peers_pair.write().push((id_card, addr, None));
-                }
-                loop {
-                    let index_opt = peers_addr
-                        .iter()
-                        .position(|addr| !config_addr.contains(addr));
-                    if let Some(index) = index_opt {
-                        peers_addr.remove(index);
-                        let (id_card, addr, conn_opt) = self.peers_pair.write().remove(index);
-                        conn_opt.map(|ref mut stream| {
-                            stream.shutdown(Shutdown::Both).map_err(|err| {
-                                warn!("shutdown {} - {} failed: {}", id_card, addr, err);
-                            })
-                        });
-                    } else {
-                        break;
+                    Task::NewTCP(tcp) => {
+                        self.peers.insert((tcp.0, tcp.1), tcp.2);
+                        self.connect_number.fetch_add(1, Ordering::Relaxed);
                     }
-                }
-                info!("peers after update {:?}", peers_addr);
-            }
-            None => {
-                info!("clear all peers after update!");
-                while let Some((id_card, addr, conn_opt)) = self.peers_pair.write().pop() {
-                    conn_opt.map(|ref mut stream| {
-                        stream.shutdown(Shutdown::Both).map_err(|err| {
-                            warn!("shutdown {} - {} failed: {}", id_card, addr, err);
-                        })
-                    });
+                    Task::Update(config) => self.update(config),
+                },
+                Err(_) => {
+                    self.heart_beat();
                 }
             }
         }
     }
 
-    pub fn broadcast(&self, key: String, mut msg: Message) {
+    fn update(&mut self, config: config::NetConfig) {
+        // Update configuration
+        match config.peers {
+            Some(peers) => {
+                let config_peers = peers
+                    .into_iter()
+                    .map(|peer| {
+                        let id_card: u32 = peer.id_card.unwrap();
+                        let addr = format!("{}:{}", peer.ip.unwrap(), peer.port.unwrap())
+                            .parse()
+                            .unwrap();
+                        (id_card, addr)
+                    })
+                    .collect::<Vec<(u32, SocketAddr)>>();
+
+                let remove_peers = self
+                    .peers
+                    .keys()
+                    .filter(|peer| !config_peers.contains(&peer))
+                    .map(|&peer| {
+                        info!("Remove peer {}, {}", peer.0, peer.1);
+                        peer
+                    })
+                    .collect::<Vec<(u32, SocketAddr)>>();
+
+                config_peers
+                    .into_iter()
+                    .filter(|peer| {
+                        self.peers
+                            .keys()
+                            .find(|&current_peer| current_peer == peer)
+                            .is_none()
+                    })
+                    .for_each(|peer| {
+                        info!("Add peer {}, {}", peer.0, peer.1);
+                        let _ = self.connect_sender.send(peer);
+                    });
+
+                self.close(Some(remove_peers), false);
+            }
+            None => {
+                info!("clear all peers after update!");
+                self.close::<Vec<(u32, SocketAddr)>>(None, false);
+            }
+        }
+    }
+
+    fn broadcast(&mut self, key: String, mut msg: Message) {
         let origin = msg.get_origin();
         let operate = msg.get_operate();
         msg.set_origin(self.id_card);
 
-        trace!("broadcast msg {:?} from key {}", msg, key);
+        trace!("Broadcast msg {:?} from key {}", msg, key);
         let msg_bytes: Vec<u8> = msg.try_into().unwrap();
 
         let mut buf = BytesMut::with_capacity(4 + 4 + 1 + key.len() + msg_bytes.len());
         pubsub_message_to_network_message(&mut buf, Some((key, msg_bytes)));
 
-        let mut peers = vec![];
-        for peer in self.peers_pair.write().iter_mut() {
-            if Connection::is_send(peer.0, origin, operate) {
-                if let Some(ref mut stream) = peer.2 {
-                    peers.push(peer.0);
-                    let _ = stream.write(&buf);
-                }
+        let mut peers = Vec::new();
+        let mut remove_peers = Vec::new();
+        for (peer, stream) in self.peers.iter_mut() {
+            if Connections::is_send(peer.0, origin, operate) {
+                match stream.write(&buf) {
+                    Ok(_) => {
+                        let _ = stream.flush();
+                        peers.push(peer.0);
+                    }
+                    Err(e) => {
+                        warn!("Node{} {} is shutdown, err: {}", peer.0, peer.1, e);
+                        remove_peers.push(*peer);
+                    }
+                };
             }
         }
-
+        self.close(Some(remove_peers), true);
         trace!(
             "{:?} broadcast msg to nodes {:?} {:?}",
             self.id_card,
@@ -150,51 +252,62 @@ impl Connection {
         );
     }
 
-    pub fn broadcast_rawbytes(&self, key: String, data: &[u8]) {
-        let msg = Message::try_from(data).unwrap();
-        self.broadcast(key, msg);
+    fn close<T: ::std::iter::IntoIterator<Item = (u32, SocketAddr)>>(
+        &mut self,
+        peers: Option<T>,
+        need_reconnect: bool,
+    ) {
+        match peers {
+            Some(peers) => peers.into_iter().for_each(|peer| {
+                if let Some(stream) = self.peers.remove(&peer) {
+                    let _ = stream.shutdown(Shutdown::Both).map_err(|err| {
+                        warn!("Shutdown {} - {} failed: {}", peer.0, peer.1, err);
+                    });
+                    if need_reconnect {
+                        self.connect_sender.send(peer).unwrap();
+                    }
+                    self.connect_number.fetch_sub(1, Ordering::Relaxed);
+                }
+            }),
+            None => {
+                self.peers.iter_mut().for_each(|(peer, stream)| {
+                    let _ = stream.shutdown(Shutdown::Both).map_err(|err| {
+                        warn!("Shutdown {} - {} failed: {}", peer.0, peer.1, err);
+                    });
+                });
+                if need_reconnect {
+                    self.peers.iter().for_each(|(&peer, _)| {
+                        self.connect_sender.send(peer).unwrap();
+                    })
+                }
+                self.peers.clear();
+                self.connect_number.store(0, Ordering::Relaxed);
+            }
+        }
+    }
+
+    fn heart_beat(&mut self) {
+        let mut buf = BytesMut::with_capacity(4 + 4);
+        pubsub_message_to_network_message(&mut buf, None);
+        let mut remove_peers = Vec::new();
+        for (peer, stream) in self.peers.iter_mut() {
+            match stream.write(&buf) {
+                Ok(_) => {
+                    let _ = stream.flush();
+                }
+                Err(e) => {
+                    warn!("Node{} {} is shutdown, err: {}", peer.0, peer.1, e);
+                    remove_peers.push((peer.0, peer.1));
+                }
+            };
+        }
+        self.close(Some(remove_peers), true);
     }
 }
 
-fn connect(con: Arc<Connection>) {
-    thread::spawn(move || loop {
-        for peer in con.peers_pair.write().iter_mut() {
-            if con.is_disconnect.load(Ordering::SeqCst) {
-                if let Some(ref mut stream) = peer.2.as_ref() {
-                    let _ = stream.shutdown(Shutdown::Both).map_err(|err| {
-                        warn!("shutdown {} - {} failed: {}", peer.0, peer.1, err);
-                    });
-                }
-                peer.2 = None;
-                thread::sleep(Duration::from_millis(TIMEOUT * 1000));
-                continue;
-            }
-
-            let mut need_reconnect = true;
-            let mut buf = BytesMut::with_capacity(4 + 4);
-            pubsub_message_to_network_message(&mut buf, None);
-            if let Some(ref mut stream) = peer.2 {
-                let res = stream.write(&buf);
-                if res.is_ok() {
-                    need_reconnect = false;
-                }
-            }
-            if need_reconnect {
-                info!("connect {:?}!", peer.1);
-                peer.2 = TcpStream::connect(peer.1.clone()).ok();
-            }
-        }
-
-        thread::sleep(Duration::from_millis(TIMEOUT * 1000));
-        trace!("after sleep retry connect!");
-    });
-}
-
-pub fn manage_connect(con: &Arc<Connection>, config_path: &str, rx: Receiver<DebouncedEvent>) {
-    connect(Arc::clone(con));
+pub fn manage_connect(config_path: &str, rx: Receiver<DebouncedEvent>, task_send: Sender<Task>) {
     let config = String::from(config_path);
 
-    let con = Arc::clone(con);
     thread::spawn(move || loop {
         match rx.recv() {
             Ok(event) => match event {
@@ -204,7 +317,7 @@ pub fn manage_connect(con: &Arc<Connection>, config_path: &str, rx: Receiver<Deb
                         if file_name == config.as_str() {
                             info!("file {} changed, will auto reload!", file_name);
                             let config = NetConfig::new(config.as_str());
-                            con.update(&config);
+                            let _ = task_send.send(Task::Update(config));
                         }
                     }
                 }
@@ -217,17 +330,17 @@ pub fn manage_connect(con: &Arc<Connection>, config_path: &str, rx: Receiver<Deb
 
 #[cfg(test)]
 mod test {
-    use super::Connection;
+    use super::Connections;
     use libproto::OperateType;
     #[test]
     fn is_send_msg() {
-        assert!(Connection::is_send(0, 0, OperateType::Broadcast));
-        assert!(Connection::is_send(0, 1, OperateType::Broadcast));
+        assert!(Connections::is_send(0, 0, OperateType::Broadcast));
+        assert!(Connections::is_send(0, 1, OperateType::Broadcast));
 
-        assert!(Connection::is_send(0, 0, OperateType::Single));
-        assert!(!Connection::is_send(0, 1, OperateType::Single));
+        assert!(Connections::is_send(0, 0, OperateType::Single));
+        assert!(!Connections::is_send(0, 1, OperateType::Single));
 
-        assert!(!Connection::is_send(0, 0, OperateType::Subtract));
-        assert!(Connection::is_send(0, 1, OperateType::Subtract));
+        assert!(!Connections::is_send(0, 0, OperateType::Subtract));
+        assert!(Connections::is_send(0, 1, OperateType::Subtract));
     }
 }
