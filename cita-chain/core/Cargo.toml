@@ -17,24 +17,24 @@ num_cpus = "1.2"
 time = "0.1"
 crossbeam = "0.2"
 transient-hashmap = "0.4.0"
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
-cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
-cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
-rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
-rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../types" }
 
 [dev-dependencies]
 rand = "0.3"
 cpuprofiler = "0.0.3"
 mktemp = "0.3.1"
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "gasUsed2quotaUsed" }
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [features]
 default = ["secp256k1", "sha3hash"]
