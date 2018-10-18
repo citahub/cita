@@ -49,7 +49,7 @@
 ```
 
 * `SysConfig` : 初始化一些系统信息
-    - `delayBlockNumber` : 表示系统合约在几个块之后生效，默认为 1 个块
+    - `delayBlockNumber` : 表示系统合约在几个块之后生效，默认为 1 个块。当前此功能已废弃。
     - `checkPermission` : 合约调用权限检查开关
     - `checkSendTxPermission` : 发送交易权限检查开关
     - `checkCreateContractPermission` : 创建合约权限检查开关
