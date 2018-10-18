@@ -161,7 +161,7 @@ def main():
     # Wait the transaction receipt then check the balance
     get_receipt(tx_hash)
     bob_balance = get_balance(bob_address)
-    # Because base_gas_required=21000 (30000 - 21000 = 9000)
+    # Because base_quota_required=21000 (30000 - 21000 = 9000)
     assert bob_balance == 9000, \
         'Bob({}) should have 9000 now (got: {})'.format(bob_address, bob_balance)
 

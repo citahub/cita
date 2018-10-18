@@ -66,8 +66,8 @@ def main():
     operator_balance_new = get_balance(operator_address)
     print('[operator.address]:{}'.format(operator_address))
     print('[operator.balance]:{}'.format(operator_balance_new))
-    print('[gasUsed]:{}'.format(receipt['gasUsed']))
-    assert operator_balance_new - operator_balance_old == int(receipt['gasUsed'], 16)
+    print('[quotaUsed]:{}'.format(receipt['quotaUsed']))
+    assert operator_balance_new - operator_balance_old == int(receipt['quotaUsed'], 16)
 
     print('>>> Test fee back successfully!')
 
