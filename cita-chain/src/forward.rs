@@ -610,8 +610,8 @@ impl Forward {
             }
             block_tx_hashes.set_tx_hashes(tx_hashes_in_u8.into());
             block_tx_hashes
-                .set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
-            block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone());
+                .set_block_quota_limit(self.chain.block_quota_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes.set_account_quota_limit(self.chain.account_quota_limit.read().clone());
             let msg: Message = block_tx_hashes.into();
             self.ctx_pub
                 .send((

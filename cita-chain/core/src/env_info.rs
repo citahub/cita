@@ -37,12 +37,12 @@ pub struct EnvInfo {
     /// The block difficulty.
     pub difficulty: U256,
     /// The block gas limit.
-    pub gas_limit: U256,
+    pub quota_limit: U256,
     /// The last 256 block hashes.
     pub last_hashes: Arc<LastHashes>,
-    /// The gas used.
-    pub gas_used: U256,
-    pub account_gas_limit: U256,
+    /// The quota used.
+    pub quota_used: U256,
+    pub account_quota_limit: U256,
 }
 
 impl Default for EnvInfo {
@@ -52,10 +52,10 @@ impl Default for EnvInfo {
             author: Address::default(),
             timestamp: 0,
             difficulty: 0.into(),
-            gas_limit: U256::from(u64::max_value()),
+            quota_limit: U256::from(u64::max_value()),
             last_hashes: Arc::new(vec![]),
-            gas_used: 0.into(),
-            account_gas_limit: 0.into(),
+            quota_used: 0.into(),
+            account_quota_limit: 0.into(),
         }
     }
 }
@@ -67,10 +67,10 @@ impl Default for EnvInfo {
 //             number: number,
 //             author: e.author.into(),
 //             difficulty: e.difficulty.into(),
-//             gas_limit: e.gas_limit.into(),
+//             quota_limit: e.quota_limit.into(),
 //             timestamp: e.timestamp.into(),
 //             last_hashes: Arc::new((1..cmp::min(number + 1, 257)).map(|i| format!("{}", number - i).as_bytes().crypt_hash()).collect()),
-//             gas_used: U256::default(),
+//             quota_used: U256::default(),
 //         }
 //     }
 // }
@@ -85,15 +85,15 @@ mod tests {
     //         author: ethjson::hash::Address(Address::from_str("000000f00000000f000000000000f00000000f00").unwrap()),
     //         number: ethjson::uint::Uint(U256::from(1_112_339)),
     //         difficulty: ethjson::uint::Uint(U256::from(50_000)),
-    //         gas_limit: ethjson::uint::Uint(U256::from(40_000)),
+    //         quota_limit: ethjson::uint::Uint(U256::from(40_000)),
     //         timestamp: ethjson::uint::Uint(U256::from(1_100))
     //     });
 
     //     assert_eq!(env_info.number, 1112339);
     //     assert_eq!(env_info.author, Address::from_str("000000f00000000f000000000000f00000000f00").unwrap());
-    //     assert_eq!(env_info.gas_limit, 40000.into());
+    //     assert_eq!(env_info.quota_limit, 40000.into());
     //     assert_eq!(env_info.difficulty, 50000.into());
-    //     assert_eq!(env_info.gas_used, 0.into());
+    //     assert_eq!(env_info.quota_used, 0.into());
     // }
 
     #[test]

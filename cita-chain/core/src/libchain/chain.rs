@@ -301,8 +301,8 @@ pub struct Chain {
     pub nodes: RwLock<Vec<Address>>,
     pub block_interval: RwLock<u64>,
 
-    pub block_gas_limit: AtomicUsize,
-    pub account_gas_limit: RwLock<ProtoAccountGasLimit>,
+    pub block_quota_limit: AtomicUsize,
+    pub account_quota_limit: RwLock<ProtoAccountGasLimit>,
     pub check_quota: AtomicBool,
 
     pub cache_man: Mutex<CacheManager<CacheId>>,
@@ -403,8 +403,8 @@ impl Chain {
             // need to be cautious here
             // because it's not read from the config file
             block_interval: RwLock::new(3000),
-            block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
-            account_gas_limit: RwLock::new(ProtoAccountGasLimit::new()),
+            block_quota_limit: AtomicUsize::new(18_446_744_073_709_551_615),
+            account_quota_limit: RwLock::new(ProtoAccountGasLimit::new()),
             check_quota: AtomicBool::new(false),
             prooftype: chain_config.prooftype,
             proof_map: RwLock::new(BTreeMap::new()),
@@ -475,9 +475,9 @@ impl Chain {
 
         self.check_quota
             .store(conf.get_check_quota(), Ordering::Relaxed);
-        self.block_gas_limit
-            .store(conf.get_block_gas_limit() as usize, Ordering::SeqCst);
-        *self.account_gas_limit.write() = conf.get_account_gas_limit().clone();
+        self.block_quota_limit
+            .store(conf.get_block_quota_limit() as usize, Ordering::SeqCst);
+        *self.account_quota_limit.write() = conf.get_account_quota_limit().clone();
         *self.nodes.write() = nodes.clone();
         *self.block_interval.write() = block_interval;
         *self.admin_address.write() = if conf.get_admin_address().is_empty() {
@@ -494,8 +494,8 @@ impl Chain {
         let version = block.version();
         let mut hdr = Header::new();
         let log_bloom = LogBloom::from(info.get_header().get_log_bloom());
-        hdr.set_gas_limit(U256::from(info.get_header().get_gas_limit()));
-        hdr.set_gas_used(U256::from(info.get_header().get_gas_used()));
+        hdr.set_quota_limit(U256::from(info.get_header().get_quota_limit()));
+        hdr.set_quota_used(U256::from(info.get_header().get_quota_used()));
         hdr.set_number(number);
         // hdr.set_parent_hash(*block.parent_hash());
         hdr.set_parent_hash(H256::from_slice(info.get_header().get_prevhash()));
@@ -983,8 +983,8 @@ impl Chain {
         receipts.truncate(index + 1);
         let last_receipt = receipts.pop().expect("Current receipt is provided; qed");
 
-        let prior_gas_used = match receipts.last() {
-            Some(ref r) => r.gas_used,
+        let prior_quota_used = match receipts.last() {
+            Some(ref r) => r.quota_used,
             _ => 0.into(),
         };
 
@@ -1007,8 +1007,8 @@ impl Chain {
                 transaction_index: index,
                 block_hash: hash,
                 block_number: number,
-                cumulative_gas_used: last_receipt.gas_used,
-                gas_used: last_receipt.gas_used - prior_gas_used,
+                cumulative_quota_used: last_receipt.quota_used,
+                quota_used: last_receipt.quota_used - prior_quota_used,
                 contract_address,
                 logs: last_receipt
                     .logs
@@ -1230,8 +1230,9 @@ impl Chain {
         block_tx_hashes.set_height(block_height);
         {
             block_tx_hashes.set_check_quota(self.check_quota.load(Ordering::Relaxed));
-            block_tx_hashes.set_block_gas_limit(self.block_gas_limit.load(Ordering::SeqCst) as u64);
-            block_tx_hashes.set_account_gas_limit(self.account_gas_limit.read().clone());
+            block_tx_hashes
+                .set_block_quota_limit(self.block_quota_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes.set_account_quota_limit(self.account_quota_limit.read().clone());
             block_tx_hashes.set_admin_address(
                 self.admin_address
                     .read()

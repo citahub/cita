@@ -75,13 +75,13 @@ impl AccountGasLimit {
 impl Into<ProtoAccountGasLimit> for AccountGasLimit {
     fn into(self) -> ProtoAccountGasLimit {
         let mut r = ProtoAccountGasLimit::new();
-        r.common_gas_limit = self.common_gas_limit;
+        r.common_quota_limit = self.common_gas_limit;
         let specific_gas_limit: HashMap<String, u64> = self
             .get_specific_gas_limit()
             .iter()
             .map(|(k, v)| (k.lower_hex(), *v))
             .collect();
-        r.set_specific_gas_limit(specific_gas_limit);
+        r.set_specific_quota_limit(specific_gas_limit);
         r
     }
 }

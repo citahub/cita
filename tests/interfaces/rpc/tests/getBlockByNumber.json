@@ -27,7 +27,7 @@
             "proposer": "0x0000000000000000000000000000000000000000",
             "proof": null,
             "prevHash": "0x1cb3a47e4c8f8523e9769b9bfdd8f627acdf8441633931befb639e21e27fd9a7",
-            "gasUsed": "0x0"
+            "quotaUsed": "0x0"
           },
           "version": 0,
           "hash": "0x19d6117ac0a8e2bff5798b64a3ab6e0f723103a62f6ef1f4cadcee90563b783a"
@@ -76,7 +76,7 @@
             "stateRoot": "0x64e21eb904b8862f81249287e716031786a22078d570327bab8413632a39b39a",
             "transactionsRoot": "0xd7363c838d68065c7a8b02b2f5e27efe15c512f421a4a6ede23ef0a389ca7ef6",
             "receiptsRoot": "0x70c729037e4abdb23544bd676a6217dcddf767aae53b7168df11a8082c1d2a6e",
-            "gasUsed": "0xc8c7",
+            "quotaUsed": "0xc8c7",
             "proof": {
               "Bft": {
                 "proposal": "0x0000000000000000000000000000000000000000000000000000000000000000",

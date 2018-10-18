@@ -79,8 +79,8 @@ impl Dispatcher {
 
         let out_txs = self.get_txs_from_pool(
             height as u64,
-            config_info.block_gas_limit,
-            config_info.account_gas_limit.clone(),
+            config_info.block_quota_limit,
+            config_info.account_quota_limit.clone(),
             config_info.check_quota,
             &config_info.admin_address,
             config_info.version.unwrap(),
@@ -143,8 +143,8 @@ impl Dispatcher {
     pub fn get_txs_from_pool(
         &self,
         height: u64,
-        block_gas_limit: u64,
-        account_gas_limit: AccountGasLimit,
+        block_quota_limit: u64,
+        account_quota_limit: AccountGasLimit,
         check_quota: bool,
         admin_address: &Option<Address>,
         version: u32,
@@ -152,8 +152,8 @@ impl Dispatcher {
         let txs_pool = &mut self.txs_pool.borrow_mut();
         txs_pool.package(
             height,
-            block_gas_limit,
-            account_gas_limit,
+            block_quota_limit,
+            account_quota_limit,
             check_quota,
             *admin_address,
             version,

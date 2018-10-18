@@ -233,10 +233,10 @@ impl ClosedBlock {
             .set_log_bloom(self.log_bloom().to_vec());
         executed_info
             .mut_header()
-            .set_gas_used(u64::from(*self.gas_used()));
+            .set_quota_used(u64::from(*self.quota_used()));
         executed_info
             .mut_header()
-            .set_gas_limit(self.gas_limit().low_u64());
+            .set_quota_limit(self.gas_limit().low_u64());
 
         executed_info.receipts = self
             .receipts
@@ -281,7 +281,7 @@ pub struct ExecutedBlock {
     pub block: Block,
     pub receipts: Vec<Receipt>,
     pub state: State<StateDB>,
-    pub current_gas_used: U256,
+    pub current_quota_used: U256,
     traces: Option<Vec<Vec<FlatTrace>>>,
 }
 
@@ -311,7 +311,7 @@ impl ExecutedBlock {
             block,
             receipts: Default::default(),
             state,
-            current_gas_used: U256::zero(),
+            current_quota_used: U256::zero(),
             traces: if tracing { Some(Vec::new()) } else { None },
         }
     }
@@ -388,7 +388,7 @@ impl OpenBlock {
             timestamp: self.timestamp(),
             difficulty: U256::default(),
             last_hashes: Arc::clone(&self.last_hashes),
-            gas_used: self.current_gas_used,
+            gas_used: self.current_quota_used,
             gas_limit: *self.gas_limit(),
             account_gas_limit: 0.into(),
         }
@@ -431,8 +431,8 @@ impl OpenBlock {
         let new_now = Instant::now();
         debug!("state root use {:?}", new_now.duration_since(now));
 
-        let gas_used = self.current_gas_used;
-        self.set_gas_used(gas_used);
+        let quota_used = self.current_quota_used;
+        self.set_quota_used(quota_used);
         true
     }
 
@@ -469,11 +469,11 @@ impl OpenBlock {
                 if let Some(ref mut traces) = self.traces {
                     traces.push(outcome.trace);
                 }
-                let transaction_gas_used = outcome.receipt.gas_used - self.current_gas_used;
-                self.current_gas_used = outcome.receipt.gas_used;
+                let transaction_quota_used = outcome.receipt.quota_used - self.current_quota_used;
+                self.current_quota_used = outcome.receipt.quota_used;
                 if check_options.quota {
                     if let Some(value) = self.account_gas.get_mut(t.sender()) {
-                        *value = *value - transaction_gas_used;
+                        *value = *value - transaction_quota_used;
                     }
                 }
                 self.receipts.push(outcome.receipt);

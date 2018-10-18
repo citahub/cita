@@ -207,8 +207,8 @@ pub fn verify_tx_sig(req: &VerifyTxReq) -> Result<Vec<u8>, ()> {
 }
 
 pub struct SysConfigInfo {
-    pub block_gas_limit: u64,
-    pub account_gas_limit: AccountGasLimit,
+    pub block_quota_limit: u64,
+    pub account_quota_limit: AccountGasLimit,
     pub check_quota: bool,
     pub admin_address: Option<Address>,
     pub version: Option<u32>,
@@ -267,8 +267,8 @@ impl MsgHandler {
             black_list_cache: HashMap::new(),
             is_need_proposal_new_block: false,
             config_info: SysConfigInfo {
-                block_gas_limit: 0,
-                account_gas_limit: AccountGasLimit::new(),
+                block_quota_limit: 0,
+                account_quota_limit: AccountGasLimit::new(),
                 check_quota: false,
                 admin_address: None,
                 version: None,
@@ -328,14 +328,17 @@ impl MsgHandler {
 
     pub fn verify_block_quota(&self, blkreq: &VerifyBlockReq) -> bool {
         let reqs = blkreq.get_reqs();
-        let gas_limit = self.config_info.account_gas_limit.get_common_gas_limit();
-        let mut specific_gas_limit = self
+        let quota_limit = self
             .config_info
-            .account_gas_limit
-            .get_specific_gas_limit()
+            .account_quota_limit
+            .get_common_quota_limit();
+        let mut specific_quota_limit = self
+            .config_info
+            .account_quota_limit
+            .get_specific_quota_limit()
             .clone();
         let mut account_gas_used: HashMap<Address, u64> = HashMap::new();
-        let mut n = self.config_info.block_gas_limit;
+        let mut n = self.config_info.block_quota_limit;
         for req in reqs {
             let quota = req.get_quota();
             let signer = pubkey_to_address(&PubKey::from(req.get_signer()));
@@ -346,10 +349,10 @@ impl MsgHandler {
 
             if self.config_info.check_quota {
                 let value = account_gas_used.entry(signer).or_insert_with(|| {
-                    if let Some(value) = specific_gas_limit.remove(&signer.lower_hex()) {
+                    if let Some(value) = specific_quota_limit.remove(&signer.lower_hex()) {
                         value
                     } else {
-                        gas_limit
+                        quota_limit
                     }
                 });
                 if *value < quota {
@@ -364,21 +367,24 @@ impl MsgHandler {
     }
 
     pub fn verify_tx_quota(&self, quota: u64, signer: &[u8]) -> bool {
-        if quota > self.config_info.block_gas_limit {
+        if quota > self.config_info.block_quota_limit {
             return false;
         }
         if self.config_info.check_quota {
             let addr = pubkey_to_address(&PubKey::from(signer));
-            let mut gas_limit = self.config_info.account_gas_limit.get_common_gas_limit();
+            let mut quota_limit = self
+                .config_info
+                .account_quota_limit
+                .get_common_quota_limit();
             if let Some(value) = self
                 .config_info
-                .account_gas_limit
-                .get_specific_gas_limit()
+                .account_quota_limit
+                .get_specific_quota_limit()
                 .get(&addr.lower_hex())
             {
-                gas_limit = *value;
+                quota_limit = *value;
             }
-            if quota > gas_limit {
+            if quota > quota_limit {
                 return false;
             }
         }
@@ -796,12 +802,12 @@ impl MsgHandler {
             || (self.history_heights.next_height() == 1 && height == 0)
         {
             // get latest quota info from chain
-            let block_gas_limit = block_tx_hashes.get_block_gas_limit();
-            let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
+            let block_quota_limit = block_tx_hashes.get_block_quota_limit();
+            let account_quota_limit = block_tx_hashes.get_account_quota_limit().clone();
             let check_quota = block_tx_hashes.get_check_quota();
             self.config_info.check_quota = check_quota;
-            self.config_info.block_gas_limit = block_gas_limit;
-            self.config_info.account_gas_limit = account_gas_limit.clone();
+            self.config_info.block_quota_limit = block_quota_limit;
+            self.config_info.account_quota_limit = account_quota_limit.clone();
             self.config_info.admin_address = if block_tx_hashes.get_admin_address().is_empty() {
                 None
             } else {

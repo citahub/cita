@@ -629,7 +629,7 @@ impl Executor {
             timestamp: header.timestamp(),
             difficulty: U256::default(),
             last_hashes,
-            gas_used: *header.gas_used(),
+            gas_used: *header.quota_used(),
             gas_limit: *header.gas_limit(),
             account_gas_limit: u64::max_value().into(),
         };
@@ -673,8 +673,8 @@ impl Executor {
             .into_iter()
             .map(|address| address.to_vec())
             .collect();
-        send_config.set_block_gas_limit(conf.block_gas_limit as u64);
-        send_config.set_account_gas_limit(conf.account_gas_limit.into());
+        send_config.set_block_quota_limit(conf.block_gas_limit as u64);
+        send_config.set_account_quota_limit(conf.account_gas_limit.into());
         send_config.set_check_quota(conf.check_quota);
 
         trace!("node_list : {:?}", node_list);
