@@ -22,9 +22,37 @@ const loadTags = () => {
   }
   if (fetch) {
     fetch('https://api.github.com/repos/cryptape/cita/tags').then(res => res.json()).then(tags => tags.slice(0, -5).filter(tag => !tag.name.endsWith('rc')).map(tag => tag.name)).then(tagNames => {
+      window.tags = tagNames
       appendTags(tagNames)
     })
   } else {
     appendTags(['v0.17', 'v0.18rc', 'v0.18'])
   }
+}
+
+
+const handleSSRRouter = () => {
+  const lngs = {
+    en: 'en-US',
+    zh: 'zh-CN'
+  }
+  const params = window.location.hash.replace('#/', '').split('/')
+  if (Object.keys(lngs).indexOf(params[0]) > -1) {
+    const lng = lngs[params[0]] || window.location.getItem('lng')
+    const ver = params[1] || window.location.getItem('version')
+    // ssr path
+    const newPath = '/#/' + params.slice(2).join('/') + `?version=${ver}&language=${lng}`
+    window.location.replace(newPath)
+  }
+}
+
+const formatURLtoSSRRouter = (lng, ver) => {
+  const lngs = {
+    'en-US': 'en',
+    'zh-CN': 'zh'
+  }
+  const path = window.location.hash.slice(2).split('?')[0] || ''
+  const newPath = `/#/${lngs[lng]}/${ver}/${path}`
+  console.log(newPath)
+  window.history.replaceState("", "", newPath)
 }
