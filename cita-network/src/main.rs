@@ -108,7 +108,7 @@ pub mod network;
 
 use clap::App;
 use config::NetConfig;
-use connection::{manage_connect, Connection};
+use connection::{manage_connect, Connections, Task};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
 use netserver::NetServer;
@@ -118,7 +118,6 @@ use pubsub::start_pubsub;
 use std::convert::TryFrom;
 use std::net::SocketAddr;
 use std::sync::mpsc::channel;
-use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use synchronizer::Synchronizer;
@@ -192,19 +191,23 @@ fn main() {
 
     //connections manage to loop
     let (tx, rx) = channel();
+    let (mut con, task_sender) = Connections::new(&config);
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1)).unwrap();
     let _ = watcher.watch(".", RecursiveMode::NonRecursive);
 
     let (sync_tx, sync_rx) = channel();
-    let con = Arc::new(Connection::new(&config));
     let net_work = NetWork::new(
-        Arc::clone(&con),
+        task_sender.clone(),
         ctx_pub.clone(),
         sync_tx,
         ctx_pub_tx,
         ctx_pub_consensus,
+        con.is_pause.clone(),
+        con.connect_number.clone(),
     );
-    manage_connect(&Arc::clone(&con), config_path, rx);
+    manage_connect(config_path, rx, task_sender.clone());
+
+    thread::spawn(move || con.run());
 
     // loop deal data
     thread::spawn(move || loop {
@@ -214,7 +217,7 @@ fn main() {
     });
 
     // Sync loop
-    let mut synchronizer = Synchronizer::new(ctx_pub, Arc::clone(&con));
+    let mut synchronizer = Synchronizer::new(ctx_pub, task_sender.clone());
     thread::spawn(move || loop {
         if let Ok((source, payload)) = sync_rx.recv() {
             synchronizer.receive(source, payload);
@@ -222,12 +225,12 @@ fn main() {
     });
 
     // Subscribe Auth Tx
-    let con_tx = Arc::clone(&con);
+    let tx_task_sender = task_sender.clone();
     thread::spawn(move || loop {
         let (key, body) = crx_sub_tx.recv().unwrap();
         let msg = Message::try_from(&body).unwrap();
         trace!("Auth Tx from Local");
-        con_tx.broadcast(key, msg);
+        tx_task_sender.send(Task::Broadcast((key, msg))).unwrap();
     });
 
     // Subscribe Consensus Msg
@@ -235,7 +238,7 @@ fn main() {
         let (key, body) = crx_sub_consensus.recv().unwrap();
         let msg = Message::try_from(&body).unwrap();
         trace!("Consensus Msg from Local");
-        con.broadcast(key, msg);
+        task_sender.send(Task::Broadcast((key, msg))).unwrap();
     });
 
     loop {
