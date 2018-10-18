@@ -216,7 +216,7 @@ impl<'a> SysConfig<'a> {
     }
 
     pub fn default_chain_id_v1() -> U256 {
-        error!("Use default chain id.");
+        error!("Use default chain id v1.");
         U256::from(1)
     }
 
