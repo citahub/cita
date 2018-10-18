@@ -9,6 +9,7 @@ var initDocsify = function () {
         _.assign(docsify, conf)
     })
     loadTags()
+    handleSSRRouter()
 
     let ver, lng
 
@@ -30,7 +31,11 @@ var initDocsify = function () {
     } else {
         docsify.basePath = baseUrlGen(ver, lng)
     }
+    setTimeout(() => {
+        formatURLtoSSRRouter(lng, ver)
+    }, 10)
     window.$docsify = docsify
+
 }
 
 var main = function () {

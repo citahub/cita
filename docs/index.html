@@ -29,10 +29,10 @@
                 <p id="tag_language" class="app-nav-1">Language</p>
                 <ul>
                     <li>
-                        <a href="" onclick="setLang('en-US');">English</a>
+                        <a href="javascript:setLang('en-US');">English</a>
                     </li>
                     <li>
-                        <a href="" onclick="setLang('zh-CN');">中文</a>
+                        <a href="javascript:setLang('zh-CN');">中文</a>
                     </li>
                 </ul>
             </li>
@@ -42,7 +42,7 @@
                 <p id="tag_version" class="app-nav-1">Version</p>
                 <ul id="tag-list">
                     <li>
-                        <a href="" onclick="toVersion('develop');">Latest</a>
+                        <a href="javascript:setVersion('develop');">Latest</a>
                     </li>
                 </ul>
             </li>
@@ -52,15 +52,15 @@
     <script>
         function setLang(language) {
             localStorage.setItem("lng", language);
+            const path = `/#/${window.location.hash.split('/').slice(3).join('/')}?language=${language}`
+            window.location.replace(path)
             window.location.reload()
         }
 
-        function setVersion(version) {
-            sessionStorage.setItem("version", version);
-        }
-
-        function toVersion(ver) {
+        function setVersion(ver) {
             localStorage.setItem('version', ver)
+            const path = `/#/${window.location.hash.split('/').slice(3).join('/')}?version=${ver}`
+            window.location.replace(path)
             window.location.reload()
         }
     </script>
