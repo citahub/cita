@@ -2,9 +2,10 @@ const chai = require('chai');
 const util = require('../helpers/util');
 const groupManagement = require('../helpers/group_management');
 const config = require('../config');
+const group = require('../helpers/group');
 
 const { expect } = chai;
-const { abi } = config.contract.group;
+const { abi } = group;
 
 
 // util

@@ -1,18 +1,20 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
 const { genContract, genTxParams } = util;
 
-const sender = config.superAdmin;
-const { abi, addr } = config.contract.chain_manager;
+const { superAdmin } = config;
+const { chainManager } = config.contract;
 
-const contract = genContract(abi, addr);
+const abi = JSON.parse(fs.readFileSync('abi/ChainManager.abi'));
+const contract = genContract(abi, chainManager);
 
 // tmp
 let param;
 
 // newSideChain
-const newSideChain = async (id, address, _sender = sender) => {
+const newSideChain = async (id, address, _sender = superAdmin) => {
   param = await genTxParams(_sender);
   return contract.methods.newSideChain(
     id,
@@ -21,13 +23,13 @@ const newSideChain = async (id, address, _sender = sender) => {
 };
 
 // enableSideChain
-const enableSideChain = async (id, _sender = sender) => {
+const enableSideChain = async (id, _sender = superAdmin) => {
   param = await genTxParams(_sender);
   return contract.methods.enableSideChain(id).send(param);
 };
 
 // disableSideChain
-const disableSideChain = async (id, _sender = sender) => {
+const disableSideChain = async (id, _sender = superAdmin) => {
   param = await genTxParams(_sender);
   return contract.methods.disableSideChain(id).send(param);
 };

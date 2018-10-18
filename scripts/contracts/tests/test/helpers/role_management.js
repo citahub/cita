@@ -1,18 +1,20 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
 const { genContract, genTxParams } = util;
 
-const sender = config.superAdmin;
-const { abi, addr } = config.contract.role_management;
+const { superAdmin } = config;
+const { roleManagement } = config.contract;
+const abi = JSON.parse(fs.readFileSync('abi/RoleManagement.abi'));
 
-const contract = genContract(abi, addr);
+const contract = genContract(abi, roleManagement);
 
 // tmp
 let param;
 
 // newRole
-const newRole = async (name, permissions, _sender = sender) => {
+const newRole = async (name, permissions, _sender = superAdmin) => {
   param = await genTxParams(_sender);
   return contract.methods.newRole(
     name,
@@ -21,7 +23,7 @@ const newRole = async (name, permissions, _sender = sender) => {
 };
 
 // updateRoleName
-const updateRoleName = async (role, name, _sender = sender) => {
+const updateRoleName = async (role, name, _sender = superAdmin) => {
   param = await genTxParams(_sender);
   return contract.methods.updateRoleName(
     role,
@@ -30,7 +32,7 @@ const updateRoleName = async (role, name, _sender = sender) => {
 };
 
 // addPermissions
-const addPermissions = async (role, permissions, _sender = sender) => {
+const addPermissions = async (role, permissions, _sender = superAdmin) => {
   param = await genTxParams(_sender);
   return contract.methods.addPermissions(
     role,
@@ -39,7 +41,7 @@ const addPermissions = async (role, permissions, _sender = sender) => {
 };
 
 // deletePermissions
-const deletePermissions = async (role, permissions, _sender = sender) => {
+const deletePermissions = async (role, permissions, _sender = superAdmin) => {
   param = await genTxParams(_sender);
   return contract.methods.deletePermissions(
     role,
@@ -48,7 +50,7 @@ const deletePermissions = async (role, permissions, _sender = sender) => {
 };
 
 // setRole
-const setRole = async (account, role, _sender = sender) => {
+const setRole = async (account, role, _sender = superAdmin) => {
   param = await genTxParams(_sender);
   return contract.methods.setRole(
     account,
@@ -57,7 +59,7 @@ const setRole = async (account, role, _sender = sender) => {
 };
 
 // cancelRole
-const cancelRole = async (account, role, _sender = sender) => {
+const cancelRole = async (account, role, _sender = superAdmin) => {
   param = await genTxParams(_sender);
   return contract.methods.cancelRole(
     account,
@@ -66,13 +68,13 @@ const cancelRole = async (account, role, _sender = sender) => {
 };
 
 // clearRole
-const clearRole = async (account, role, _sender = sender) => {
+const clearRole = async (account, role, _sender = superAdmin) => {
   param = await genTxParams(_sender);
   return contract.methods.clearRole(account).send(param);
 };
 
 // deleteRole
-const deleteRole = async (account, role, _sender = sender) => {
+const deleteRole = async (account, role, _sender = superAdmin) => {
   param = await genTxParams(_sender);
   return contract.methods.deleteRole(account).send(param);
 };
