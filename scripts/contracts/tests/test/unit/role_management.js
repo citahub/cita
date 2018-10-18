@@ -1,3 +1,4 @@
+const fs = require('fs');
 const util = require('../helpers/util');
 const roleManagement = require('../helpers/role_management');
 const roleAuth = require('../helpers/role_auth');
@@ -13,7 +14,7 @@ const {
   web3, getTxReceipt, logger, genContract,
 } = util;
 
-const roleAbi = config.contract.role.abi;
+const roleAbi = JSON.parse(fs.readFileSync('abi/Role.abi'));
 const {
   deleteRole, clearRole,
   cancelRole, setRole, deletePermissions, addPermissions, updateRoleName, newRole,

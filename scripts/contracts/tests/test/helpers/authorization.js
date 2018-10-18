@@ -1,13 +1,12 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
 const { genContract } = util;
 
-const {
-  abi, addr,
-} = config.contract.authorization;
-
-const contract = genContract(abi, addr);
+const { authorization } = config.contract;
+const abi = JSON.parse(fs.readFileSync('abi/Authorization.abi'));
+const contract = genContract(abi, authorization);
 
 // queryPermissions
 const queryPermissions = account => contract.methods.queryPermissions(account).call('pending');

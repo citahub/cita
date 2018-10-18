@@ -1,11 +1,13 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
 const { genContract } = util;
 
-const { abi, addr } = config.contract.group;
+const { group } = config.contract;
+const abi = JSON.parse(fs.readFileSync('abi/Group.abi'));
 
-const contract = genContract(abi, addr);
+const contract = genContract(abi, group);
 
 // queryInfo
 const queryInfo = () => contract.methods.queryInfo().call('pending');
@@ -24,4 +26,5 @@ module.exports = {
   queryAccounts,
   queryParent,
   inGroup,
+  abi,
 };

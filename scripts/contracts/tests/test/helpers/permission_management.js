@@ -1,12 +1,14 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
 const { genContract, genTxParams } = util;
 
 const sender = config.superAdmin;
-const { abi, addr } = config.contract.permission_management;
+const { permissionManagement } = config.contract;
+const abi = JSON.parse(fs.readFileSync('abi/PermissionManagement.abi'));
 
-const contract = genContract(abi, addr);
+const contract = genContract(abi, permissionManagement);
 
 // tmp
 let param;
