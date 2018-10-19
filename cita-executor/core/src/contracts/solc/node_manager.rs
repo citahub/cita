@@ -132,7 +132,6 @@ impl<'a> NodeManager<'a> {
 #[cfg(test)]
 mod tests {
     extern crate logger;
-    extern crate mktemp;
 
     use super::{party_seats, shuffle, NodeManager};
     use cita_types::H160;

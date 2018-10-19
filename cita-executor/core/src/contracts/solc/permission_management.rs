@@ -182,7 +182,6 @@ pub fn contains_resource(
 mod tests {
 
     extern crate logger;
-    extern crate mktemp;
 
     use super::contains_resource;
     use super::{PermissionManagement, Resource};

@@ -5,7 +5,7 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 
 [dependencies]
 clap = "2"
-dotenv = "0.10.0"
+dotenv = "0.13.0"
 cpuprofiler = "0.0.3"
 serde = "1.0"
 serde_derive = "1.0"
@@ -20,7 +20,7 @@ cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "d
 tx_pool = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 core = { path = "../cita-chain/core" }
-uuid = { version = "0.4", features = ["v4"] }
+uuid = { version = "0.7", features = ["v4"] }
 lru = "0.1"
 rayon = "1.0"
 

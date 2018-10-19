@@ -33,7 +33,7 @@ common-types = { path = "../types" }
 [dev-dependencies]
 rand = "0.3"
 cpuprofiler = "0.0.3"
-mktemp = "0.3.1"
+tempdir = "0.3.7"
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [features]

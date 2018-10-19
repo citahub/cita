@@ -172,7 +172,7 @@ impl<'a> QuotaManager<'a> {
 #[cfg(test)]
 mod tests {
     extern crate logger;
-    extern crate mktemp;
+
     use super::QuotaManager;
     use cita_types::H160;
     use std::str::FromStr;
