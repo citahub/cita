@@ -11,4 +11,4 @@
 	url = https://github.com/cryptape/cita-proto.git
 [submodule "scripts/contracts/tests/abi"]
 	path = scripts/contracts/tests/abi
-	url = git@github.com:cryptape/cita-sys-abi.git
+	url = https://github.com/cryptape/cita-sys-abi.git
