@@ -1228,7 +1228,6 @@ where
 #[cfg(test)]
 mod tests {
     extern crate logger;
-    extern crate mktemp;
 
     use super::*;
     use cita_types::Address;

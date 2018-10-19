@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
 
 [dependencies]
-dotenv = "0.10.0"
+dotenv = "0.13.0"
 clap = "2"
 serde_json = "1.0"
 grpc = "0.5.0"

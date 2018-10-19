@@ -97,7 +97,6 @@ impl<'a> UserManagement<'a> {
 #[cfg(test)]
 mod tests {
     extern crate logger;
-    extern crate mktemp;
 
     use super::UserManagement;
     use cita_types::{Address, H160};

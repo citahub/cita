@@ -332,7 +332,6 @@ impl<'a> SysConfig<'a> {
 #[cfg(test)]
 mod tests {
     extern crate logger;
-    extern crate mktemp;
 
     use super::{EconomicalModel, SysConfig, TokenInfo};
     use cita_types::Address;
