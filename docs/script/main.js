@@ -33,7 +33,7 @@ var initDocsify = function () {
     }
     setTimeout(() => {
         formatURLtoSSRRouter(lng, ver)
-    }, 10)
+    }, 50)
     window.$docsify = docsify
 
 }
