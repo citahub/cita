@@ -1,8 +1,8 @@
 - [Welcome](index.md)
 - Getting Started
     - [Build your own Appchain](chain/getting_started.md)
-    - [Appchain Configuration](chain/config_tool.md)
-    - [Micro serives Configuration](chain/service_config.md)
+    - [Blockchain Configuration](chain/config_tool.md)
+    - [Node Configuration](chain/service_config.md)
 - System Management
     - [System Contracts](system_management/contracts.md)
     - [Node Management](system_management/node.md)
@@ -18,7 +18,7 @@
     - [Fee back](system_management/fee_back.md)
     - [Protocol Version Management](system_management/version.md)
 - JSON-RPC Guide
-    - [JSON-RPC Parameters and Returns](rpc_guide/rpc_types.md)
+    - [JSON-RPC Parameters and Returns](rpc_guide/rpc-types.md)
     - [JSON-RPC List](rpc_guide/rpc.md)
     - [JSON-RPC Error Code](rpc_guide/rpc_error_code.md)
 - System Contracts Guide
