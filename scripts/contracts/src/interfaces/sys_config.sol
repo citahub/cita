@@ -51,6 +51,6 @@ interface ISysConfig {
     /// @notice The token information
     function getTokenInfo() external view returns (string, string, string);
 
-    function getEconomicalModel() external view returns (uint);
+    function getEconomicalModel() external view returns (uint8);
 
 }
