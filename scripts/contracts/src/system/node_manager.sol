@@ -63,7 +63,7 @@ contract NodeManager is INodeManager, Error, Check, EconomicalType {
     }
 
     modifier OnlyChargeModel() {
-        if(sysConfig.getEconomicalModel() == uint(EconomicalModel.Charge))
+        if(sysConfig.getEconomicalModel() == uint8(EconomicalModel.Charge))
             _;
         else {
             return;
