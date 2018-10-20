@@ -52,14 +52,14 @@
     <script>
         function setLang(language) {
             localStorage.setItem("lng", language);
-            const path = `/#/${window.location.hash.split('/').slice(3).join('/')}?language=${language}`
+            const path = `/cita/#/${window.location.hash.split('/').slice(3).join('/')}?language=${language}`
             window.location.replace(path)
             window.location.reload()
         }
 
         function setVersion(ver) {
             localStorage.setItem('version', ver)
-            const path = `/#/${window.location.hash.split('/').slice(3).join('/')}?version=${ver}`
+            const path = `/cita/#/${window.location.hash.split('/').slice(3).join('/')}?version=${ver}`
             window.location.replace(path)
             window.location.reload()
         }

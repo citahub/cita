@@ -14,7 +14,7 @@ const loadTags = () => {
   const appendTags = (tagNames) => {
     tagNames.forEach(tagName => {
       const item = document.createElement('li')
-      item.innerHTML = `<a href="javascript:toVersion('${tagName}')">${tagName}</a>`
+      item.innerHTML = `<a href="javascript:setVersion('${tagName}')">${tagName}</a>`
       fragment.appendChild(item)
     })
     tagList.appendChild(fragment)
@@ -41,7 +41,7 @@ const handleSSRRouter = () => {
     const lng = lngs[params[0]] || window.location.getItem('lng')
     const ver = params[1] || window.location.getItem('version')
     // ssr path
-    const newPath = '/#/' + params.slice(2).join('/') + `?version=${ver}&language=${lng}`
+    const newPath = `${window.location.hostname === 'localhost' ? '' : '/cita'}/#/` + params.slice(2).join('/') + `?version=${ver}&language=${lng}`
     window.location.replace(newPath)
   }
 }
@@ -52,7 +52,7 @@ const formatURLtoSSRRouter = (lng, ver) => {
     'zh-CN': 'zh'
   }
   const path = window.location.hash.slice(2).split('?')[0] || ''
-  const newPath = `/#/${lngs[lng]}/${ver}/${path}`
+  const newPath = `${window.location.hostname === 'localhost' ? '' : '/cita'}/#/${lngs[lng]}/${ver}/${path}`
   console.log(newPath)
   window.history.replaceState("", "", newPath)
 }
