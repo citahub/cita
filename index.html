@@ -1,0 +1,105 @@
+<!-- this file is necessary for generating docsify document site -->
+<!-- The only part you need to change is the title -->
+<!-- if you need more features on your document site, contact haichao@cryptape.com -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>CITA document</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="description" content="Description">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <link rel="stylesheet" href="//unpkg.com/docsify/lib/themes/vue.css">
+</head>
+
+<body>
+
+    <!-- configuration of navigation bar -->
+    <nav class="app-nav no-badge">
+        <ul>
+            <!-- links to other docs -->
+            <li>
+                <a href="https://cryptape.github.io/" target="_blank" class="app-nav-1">Nervos</a>
+                <ul id="project-list"></ul>
+            </li>
+            <!-- language selection -->
+            <li>
+                <p id="tag_language" class="app-nav-1">Language</p>
+                <ul>
+                    <li>
+                        <a href="javascript:setLang('en-US');">English</a>
+                    </li>
+                    <li>
+                        <a href="javascript:setLang('zh-CN');">中文</a>
+                    </li>
+                </ul>
+            </li>
+            <!-- version selection -->
+            <!-- you can add a new version by adding another <li></li> tag -->
+            <li>
+                <p id="tag_version" class="app-nav-1">Version</p>
+                <ul id="tag-list">
+                    <li>
+                        <a href="javascript:setVersion('develop');">Latest</a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+
+    <script>
+        function setLang(language) {
+            localStorage.setItem("lng", language);
+            const path = `/cita/#/${window.location.hash.split('/').slice(3).join('/')}?language=${language}`
+            window.location.replace(path)
+            window.location.reload()
+        }
+
+        function setVersion(ver) {
+            localStorage.setItem('version', ver)
+            const path = `/cita/#/${window.location.hash.split('/').slice(3).join('/')}?version=${ver}`
+            window.location.replace(path)
+            window.location.reload()
+        }
+    </script>
+
+    <div id="app">Loading</div>
+
+    <script src="//unpkg.com/lodash/lodash.min.js"></script>
+    <script src="script/customization-value.js"></script>
+    <script src="script/utils.js"></script>
+    <script src="script/common-setting.js"></script>
+    <script src="script/customization-setting.js"></script>
+    <script src="script/main.js"></script>
+    <script src="//unpkg.com/docsify/lib/docsify.min.js"></script>
+    <script src="//unpkg.com/docsify-pagination/dist/docsify-pagination.min.js"></script>
+    <script src="//unpkg.com/docsify/lib/plugins/search.js"></script>
+    <script src="//unpkg.com/docsify-edit-on-github@1.0.1/index.js"></script>
+    <script src="https://unpkg.com/docsify-copy-code@2"></script>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-122001869-6"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-122001869-6');
+        // external script
+        const external = document.createElement("script")
+        const timeStamp = new Date().getTime()
+        external.src = "https://cdn.cryptape.com/scripts/external.js?" + timeStamp
+        document.body.appendChild(external)
+        // custom style
+        const docStyle = document.createElement('link')
+        docStyle.rel = 'stylesheet'
+        docStyle.href = "https://cdn.cryptape.com/styles/docs.css?" + timeStamp
+        document.head.appendChild(docStyle)
+    </script>
+</body>
+
+</html>
