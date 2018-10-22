@@ -21,6 +21,5 @@
 * Use the `docsify serve` command to view the site on localhost `http://localhost:3000`, and real-time reload whenever the you save changes.
 
   ```shell
-  $ cd docs
   $ docsify serve
   ```
