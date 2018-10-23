@@ -1,6 +1,7 @@
 const util = require('../helpers/util');
 const permissionManagement = require('../helpers/permission_management');
 const authorization = require('../helpers/authorization');
+const permission = require('../helpers/permission');
 const config = require('../config');
 const chai = require('chai');
 
@@ -11,7 +12,7 @@ const {
   logger, web3, getTxReceipt, genContract,
 } = util;
 
-const { abi } = config.contract.permission;
+const { abi } = permission;
 
 // permission management
 const {
