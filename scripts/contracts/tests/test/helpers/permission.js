@@ -21,4 +21,5 @@ const inPermission = (cont, func) => contract.methods.inPermission(
 module.exports = {
   queryInfo,
   inPermission,
+  abi,
 };
