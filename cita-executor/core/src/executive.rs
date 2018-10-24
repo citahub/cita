@@ -1485,6 +1485,7 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
+            chain_id_v1: 0.into(),
         }
         .fake_sign(keypair.address().clone());
         let sender = t.sender();
@@ -1549,6 +1550,7 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
+            chain_id_v1: 0.into(),
         }
         .fake_sign(keypair.address().clone());
         let sender = t.sender();
@@ -1617,6 +1619,7 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
+            chain_id_v1: 0.into(),
         }
         .fake_sign(keypair.address().clone());
 
@@ -1674,6 +1677,7 @@ mod tests {
             block_limit: 100u64,
             chain_id: 1,
             version: 1,
+            chain_id_v1: 0.into(),
         }
         .fake_sign(keypair.address().clone());
 

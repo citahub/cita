@@ -4,25 +4,25 @@ pragma solidity ^0.4.24;
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @dev TODO chain manager's assembly
 interface IChainManager {
-    function getChainId() external returns (uint32);
+    function getChainId() external returns (uint);
 
-    function newSideChain(uint32 sideChainId, address[] addrs) external;
+    function newSideChain(uint sideChainId, address[] addrs) external;
 
-    function enableSideChain(uint32 id) external;
+    function enableSideChain(uint id) external;
 
-    function disableSideChain(uint32 id) external;
+    function disableSideChain(uint id) external;
 
-    function verifyBlockHeader(uint32 chainId, bytes blockHeader) external;
+    function verifyBlockHeader(uint chainId, bytes blockHeader) external;
 
-    function getExpectedBlockNumber(uint32 chainId) external returns (uint64);
+    function getExpectedBlockNumber(uint chainId) external returns (uint64);
 
     function verifyState(
-        uint32 chainId,
+        uint chainId,
         uint64 blockNumber,
         bytes stateProof
     ) external returns (address, uint, uint);
 
-    function getParentChainId() external returns (uint32);
+    function getParentChainId() external returns (uint);
 
-    function getAuthorities(uint32 id) external returns (address[]);
+    function getAuthorities(uint id) external returns (address[]);
 }

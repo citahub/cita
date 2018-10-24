@@ -43,6 +43,7 @@ ${BINARY_DIR}/scripts/create_cita_config.py create \
              --chain_name ${CHAIN_NAME} \
              --contract_arguments "SysConfig.economicalModel=${ECONOMICAL_MODEL}" \
              --contract_arguments "SysConfig.chainId=123" \
+             --contract_arguments "VersionManager.version=1" \
              --timestamp 1524000000 \
              --authorities ${AUTHORITIES}
 echo -n "DONE"

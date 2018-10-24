@@ -18,18 +18,26 @@
 use clap;
 use std::str::FromStr;
 
-use cita_types::H256;
+use cita_types::{H256, U256};
 
 pub struct AppArgs {
     pub cfg_file: String,
-    pub chain_id: u32,
+    pub chain_id: U256,
     pub tx_hash: H256,
 }
 
 impl<'a> From<&'a clap::ArgMatches<'a>> for AppArgs {
     fn from(matches: &'a clap::ArgMatches) -> Self {
         let cfg_file = matches.value_of("ConfigFile").unwrap();
-        let chain_id = value_t!(matches, "ChainId", u32).unwrap();
+        let chain_id_str = matches.value_of("ChainId").unwrap();
+        let chain_id_str = if chain_id_str.starts_with("0x") {
+            &chain_id_str[2..]
+        } else {
+            chain_id_str
+        };
+
+        let chain_id = U256::from_str(chain_id_str).unwrap();
+
         let tx_hash_str = matches.value_of("TxHash").unwrap();
         let tx_hash_str = if tx_hash_str.starts_with("0x") {
             &tx_hash_str[2..]

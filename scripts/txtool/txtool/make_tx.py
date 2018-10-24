@@ -92,8 +92,7 @@ def get_chainid_v1():
         chainid = "0"
 
     # padding to 32 bytes
-    chainid = hex2bytes(chainid.ljust(64, '0'))
-    chainid = chainid.ljust(32, b'\0')
+    chainid = int(chainid)
     logger.debug("final chainId is {}".format(chainid))
     return chainid
 
@@ -105,7 +104,7 @@ def generate_deploy_data(current_height,
                          privatekey,
                          receiver=None,
                          newcrypto=False,
-                         version=0):
+                         version=1):
     if newcrypto:
         data = _blake2b_ed25519_deploy_data(current_height, bytecode, value, quota,
                                             privatekey, version, receiver)
@@ -121,7 +120,7 @@ def _blake2b_ed25519_deploy_data(current_height,
                                  value,
                                  quota,
                                  privatekey,
-                                 version=0,
+                                 version,
                                  receiver=None):
     sender = get_sender(private_key, True)
     logger.debug(sender)
@@ -139,7 +138,7 @@ def _blake2b_ed25519_deploy_data(current_height,
     elif version == 1:
         chainid = get_chainid_v1()
         logger.debug("chainid_v1 is {}".format(chainid))
-        tx.chain_id_v1 = chainid
+        tx.chain_id_v1 = chainid.to_bytes(32, byteorder='big')
     else:
         logger.error("unexpected version {}".format(version))
     if receiver is not None:
@@ -178,7 +177,7 @@ def _sha3_secp256k1_deploy_data(current_height,
                                 value,
                                 quota,
                                 privatekey,
-                                version=0,
+                                version,
                                 receiver=None):
     sender = get_sender(privatekey, False)
     if privatekey is None:
@@ -202,7 +201,7 @@ def _sha3_secp256k1_deploy_data(current_height,
     elif version == 1:
         chainid = get_chainid_v1()
         logger.debug("chainid_v1 is {}".format(chainid))
-        tx.chain_id_v1 = chainid
+        tx.chain_id_v1 = chainid.to_bytes(32, byteorder='big')
     else:
         logger.error("unexpected version {}".format(version))
     if receiver is not None:
@@ -254,7 +253,7 @@ def parse_arguments():
         action='store_false',
         help="Use ecdsa and sha3.")
     parser.add_argument(
-        "--version", help="Tansaction version.", default=0, type=int)
+        "--version", help="Tansaction version.", default=1, type=int)
     parser.add_argument("--chain_id", default=0, type=int)
     parser.set_defaults(newcrypto=False)
 

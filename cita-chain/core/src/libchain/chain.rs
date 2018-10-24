@@ -70,8 +70,8 @@ const LOG_BLOOMS_ELEMENTS_PER_INDEX: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct RelayInfo {
-    pub from_chain_id: u32,
-    pub to_chain_id: u32,
+    pub from_chain_id: U256,
+    pub to_chain_id: U256,
     pub dest_contract: Address,
     pub dest_hasher: [u8; 4],
     pub cross_chain_nonce: u64,
@@ -94,7 +94,8 @@ impl TxProof {
 
     pub fn verify(&self, authorities: &[Address]) -> bool {
         // Calculate transaction hash, and it should be same as the transaction hash in receipt.
-        if self.receipt.transaction_hash == self.tx.calc_transaction_hash() {
+        let tx_hash = self.tx.calc_transaction_hash();
+        if self.receipt.transaction_hash == tx_hash {
         } else {
             warn!("txproof verify transaction_hash failed");
             return false;
@@ -147,8 +148,8 @@ impl TxProof {
             None
         } else {
             let mut iter = data.chunks(32);
-            let from_chain_id = U256::from(iter.next().unwrap()).low_u32();
-            let to_chain_id = U256::from(iter.next().unwrap()).low_u32();
+            let from_chain_id = U256::from(iter.next().unwrap());
+            let to_chain_id = U256::from(iter.next().unwrap());
             let dest_contract = Address::from(H256::from(iter.next().unwrap()));
             let dest_hasher = iter.next().unwrap()[..4]
                 .into_iter()
@@ -177,7 +178,7 @@ impl TxProof {
         my_contrac_addr: Address,
         my_hasher: [u8; 4],
         my_cross_chain_nonce: u64,
-        my_chain_id: u32,
+        my_chain_id: U256,
         authorities: &[Address],
     ) -> Option<(Address, Vec<u8>)> {
         if self.verify(authorities) {
@@ -201,7 +202,7 @@ impl TxProof {
                         && dest_hasher == my_hasher
                         && cross_chain_nonce == my_cross_chain_nonce
                     {
-                        // sendToSideChain(uint32 toChainId, address destContract, bytes txData)
+                        // sendToSideChain(uint256 toChainId, address destContract, bytes txData)
                         // skip func hasher, uint32, address, bytes position and length
                         let (_, origin_tx_data) = self.tx.data.split_at(4 + 32 * 4);
                         Some((*self.tx.sender(), origin_tx_data.to_owned()))
