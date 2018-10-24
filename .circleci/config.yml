@@ -109,7 +109,7 @@ alias:
     docker:
       - image: cita/cita-build:ubuntu-18.04-20181009
     working_directory: ~/cita-build
-    resource_class: large
+    resource_class: xlarge
 
   - &job-unit-test
     <<: *job-default
