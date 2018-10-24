@@ -50,7 +50,7 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddress {
         bool _checkFeeBackPlatform,
         address _chainOwner,
         string _chainName,
-        uint32 _chainId,
+        uint _chainId,
         string _operator,
         string _website,
         uint64 _blockInterval,
@@ -70,7 +70,8 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddress {
         checkFeeBackPlatform = _checkFeeBackPlatform;
         chainOwner = _chainOwner;
         chainName = _chainName;
-        chainId = _chainId;
+        chainId = uint32(_chainId);
+        chainIdV1 = _chainId;
         operator = _operator;
         website = _website;
         blockInterval = _blockInterval;

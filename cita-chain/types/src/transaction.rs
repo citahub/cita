@@ -168,6 +168,7 @@ pub struct Transaction {
     pub chain_id: u32,
     /// transaction version
     pub version: u32,
+    pub chain_id_v1: U256,
 }
 
 impl HeapSizeOf for Transaction {
@@ -181,6 +182,8 @@ impl Decodable for Transaction {
         if d.item_count()? != 9 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
+        let version = d.val_at(8)?;
+
         Ok(Transaction {
             nonce: d.val_at(0)?,
             gas_price: d.val_at(1)?,
@@ -189,8 +192,9 @@ impl Decodable for Transaction {
             value: d.val_at(4)?,
             data: d.val_at(5)?,
             block_limit: d.val_at(6)?,
-            chain_id: d.val_at(7)?,
-            version: d.val_at(8)?,
+            chain_id: if version == 0 { d.val_at(7)? } else { 0 },
+            version,
+            chain_id_v1: if version != 0 { d.val_at(7)? } else { 0.into() },
         })
     }
 }
@@ -202,16 +206,18 @@ impl Encodable for Transaction {
 }
 
 impl Transaction {
+    // Should never return Error
     pub fn new(plain_transaction: &ProtoTransaction) -> Result<Self, Error> {
         if plain_transaction.get_value().len() > 32 {
             return Err(Error::ParseError);
         }
+
+        let version = plain_transaction.get_version();
         Ok(Transaction {
             nonce: plain_transaction.get_nonce().to_owned(),
             gas_price: U256::default(),
             gas: U256::from(plain_transaction.get_quota()),
             action: {
-                let version = plain_transaction.get_version();
                 if version == 0 {
                     let to = clean_0x(plain_transaction.get_to());
                     match to {
@@ -222,34 +228,28 @@ impl Transaction {
                         AMEND_ADDRESS => Action::AmendData,
                         _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
                     }
-                } else if version == 1 {
+                } else {
                     let to = plain_transaction.get_to_v1();
                     if to.is_empty() {
                         Action::Create
                     } else {
                         let to_addr = Address::from(to);
-                        if to_addr == STORE_ADDRESS.into() {
-                            Action::Store
-                        } else if to_addr == ABI_ADDRESS.into() {
-                            Action::AbiStore
-                        } else if to_addr == GO_CONTRACT.into() {
-                            Action::GoCreate
-                        } else if to_addr == AMEND_ADDRESS.into() {
-                            Action::AmendData
-                        } else {
-                            Action::Call(to_addr)
+                        match to_addr.lower_hex().as_str() {
+                            STORE_ADDRESS => Action::Store,
+                            ABI_ADDRESS => Action::AbiStore,
+                            GO_CONTRACT => Action::GoCreate,
+                            AMEND_ADDRESS => Action::AmendData,
+                            _ => Action::Call(to_addr),
                         }
                     }
-                } else {
-                    // error!("unexpected version {}!", version);
-                    return Err(Error::ParseError);
                 }
             },
             value: U256::from(plain_transaction.get_value()),
             data: Bytes::from(plain_transaction.get_data()),
             block_limit: plain_transaction.get_valid_until_block(),
             chain_id: plain_transaction.get_chain_id(),
-            version: plain_transaction.get_version(),
+            version,
+            chain_id_v1: plain_transaction.get_chain_id_v1().into(),
         })
     }
 
@@ -290,7 +290,11 @@ impl Transaction {
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
-        s.append(&self.chain_id);
+        if self.version == 0 as u32 {
+            s.append(&self.chain_id);
+        } else {
+            s.append(&self.chain_id_v1);
+        }
         s.append(&self.version);
     }
 
@@ -303,14 +307,31 @@ impl Transaction {
         pt.set_quota(self.gas.as_u64());
         pt.set_value(<[u8; 32]>::from(self.value).to_vec());
         pt.set_chain_id(self.chain_id);
+        if self.version > 0 {
+            pt.set_chain_id_v1(<[u8; 32]>::from(self.chain_id_v1).to_vec());
+        }
         pt.set_version(self.version);
-        match self.action {
-            Action::Create => pt.clear_to(),
-            Action::Call(ref to) => pt.set_to(to.lower_hex()),
-            Action::Store => pt.set_to(STORE_ADDRESS.into()),
-            Action::AbiStore => pt.set_to(ABI_ADDRESS.into()),
-            Action::GoCreate => pt.set_to(GO_CONTRACT.into()),
-            Action::AmendData => pt.set_to(AMEND_ADDRESS.into()),
+
+        if self.version == 0 {
+            match self.action {
+                Action::Create => pt.clear_to(),
+                Action::Call(ref to) => pt.set_to(to.lower_hex()),
+                Action::Store => pt.set_to(STORE_ADDRESS.into()),
+                Action::AbiStore => pt.set_to(ABI_ADDRESS.into()),
+                Action::GoCreate => pt.set_to(GO_CONTRACT.into()),
+                Action::AmendData => pt.set_to(AMEND_ADDRESS.into()),
+            }
+        } else {
+            match self.action {
+                Action::Create => pt.clear_to(),
+                Action::Call(ref to) => pt.set_to_v1(to.to_vec()),
+                Action::Store => pt.set_to_v1(Address::from_str(STORE_ADDRESS).unwrap().to_vec()),
+                Action::AbiStore => pt.set_to_v1(Address::from_str(ABI_ADDRESS).unwrap().to_vec()),
+                Action::GoCreate => pt.set_to_v1(Address::from_str(GO_CONTRACT).unwrap().to_vec()),
+                Action::AmendData => {
+                    pt.set_to_v1(Address::from_str(AMEND_ADDRESS).unwrap().to_vec())
+                }
+            }
         }
         pt
     }
@@ -427,6 +448,7 @@ impl Decodable for SignedTransaction {
         }
 
         let public: PubKey = d.val_at(12)?;
+        let version = d.val_at(8)?;
 
         Ok(SignedTransaction {
             transaction: UnverifiedTransaction {
@@ -438,8 +460,17 @@ impl Decodable for SignedTransaction {
                     value: d.val_at(4)?,
                     data: d.val_at(5)?,
                     block_limit: d.val_at(6)?,
-                    chain_id: d.val_at(7)?,
-                    version: d.val_at(8)?,
+                    chain_id: if version == (0 as u32) {
+                        d.val_at(7)?
+                    } else {
+                        0
+                    },
+                    version,
+                    chain_id_v1: if version != (0 as u32) {
+                        d.val_at(7)?
+                    } else {
+                        0.into()
+                    },
                 },
                 signature: d.val_at(9)?,
                 crypto_type: d.val_at(10)?,
@@ -463,7 +494,11 @@ impl Encodable for SignedTransaction {
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
-        s.append(&self.chain_id);
+        if self.version == 0 as u32 {
+            s.append(&self.chain_id);
+        } else {
+            s.append(&self.chain_id_v1);
+        }
         s.append(&self.version);
 
         s.append(&self.signature);

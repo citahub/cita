@@ -85,6 +85,7 @@ impl BuildBlock {
         tx.set_valid_until_block(valid_until_block);
         tx.set_value(vec![0u8; 32]);
         tx.set_chain_id(123);
+        tx.set_chain_id_v1(vec![]);
         tx.sign(*privkey)
     }
 

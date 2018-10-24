@@ -9,7 +9,7 @@ pragma solidity ^0.4.24;
 // Ref: https://github.com/ethereum/solidity/issues/2708#issuecomment-320957367
 contract CrossChain {
 
-    event SendCrossChain(uint32 fromChainId, uint32 toChainId, address destContract, bytes4 destFuncSig, uint64 sendNonce);
+    event SendCrossChain(uint fromChainId, uint toChainId, address destContract, bytes4 destFuncSig, uint64 sendNonce);
     event RecvCrossChain(address indexed sender, bytes txData);
 
     address crossChainVerifyAddr = 0xffFfffFfFFFfFFfffFFFffffFfFfffFfFF030002;
@@ -26,7 +26,7 @@ contract CrossChain {
         return crossChainRecvNonce;
     }
 
-    function getFromChainId() public view returns (uint32) {
+    function getFromChainId() public view returns (uint) {
         address contractAddr = chainManagerAddr;
         bytes4 funcSig = bytes4(keccak256("getChainId()"));
         uint256 chainId;
@@ -38,15 +38,15 @@ contract CrossChain {
             if eq(result, 0) { revert(ptr, 0) }
             chainId := mload(ptr)
         }
-        return uint32(chainId);
+        return uint(chainId);
     }
 
     function sendTransaction(
-        uint32 toChainId,
+        uint toChainId,
         address destContract,
         bytes4 destFuncSig
     ) internal {
-        uint32 fromChainId = getFromChainId();
+        uint fromChainId = getFromChainId();
         emit SendCrossChain(fromChainId, toChainId, destContract, destFuncSig, crossChainSendNonce);
         crossChainSendNonce += 1;
     }

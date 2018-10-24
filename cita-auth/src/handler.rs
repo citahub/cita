@@ -549,28 +549,38 @@ impl MsgHandler {
 
     fn verify_tx_req_chain_id(&self, req: &VerifyTxReq) -> Ret {
         let version = self.config_info.version.unwrap();
-        let chain_id = if version == 0 {
-            // new chain id must be empty
-            if !req.get_chain_id_v1().is_empty() {
-                None
-            } else {
-                let chain_id = req.get_chain_id();
-                Some(ChainId::V0(chain_id))
+
+        let chain_id = match version {
+            0 => {
+                // new chain id must be empty
+                if !req.get_chain_id_v1().is_empty() {
+                    None
+                } else {
+                    let chain_id = req.get_chain_id();
+                    Some(ChainId::V0(chain_id))
+                }
             }
-        } else if version == 1 {
-            // old chain id must be empty
-            if req.get_chain_id() != 0 || req.get_chain_id_v1().len() != 32 {
-                None
-            } else {
-                let chain_id = U256::from(req.get_chain_id_v1());
-                Some(ChainId::V1(chain_id))
+            1 => {
+                // old chain id must be empty
+                if req.get_chain_id() != 0 || req.get_chain_id_v1().len() != 32 {
+                    None
+                } else {
+                    let chain_id = U256::from(req.get_chain_id_v1());
+                    Some(ChainId::V1(chain_id))
+                }
             }
-        } else {
-            error!("unexpected version {}!", version);
-            None
+            _ => {
+                error!("unexpected version {}!", version);
+                None
+            }
         };
 
         if chain_id != self.chain_id {
+            trace!(
+                "tx chain_id {:?}, self.chain_id {:?}",
+                chain_id.unwrap(),
+                self.chain_id
+            );
             return Ret::BadChainId;
         }
 
@@ -1182,9 +1192,7 @@ impl MsgHandler {
                         miscellaneous.chain_id_v1.as_slice(),
                     )))
                 } else {
-                    // TODO
-                    // mock chain id v1 for test
-                    Some(ChainId::V1(U256::from(0)))
+                    None
                 }
             } else {
                 error!("unexpected version {}!", version);

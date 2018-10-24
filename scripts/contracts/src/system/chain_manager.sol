@@ -10,13 +10,13 @@ contract ChainManager is Error {
     address crossChainVerifyAddr = 0xffFfffFfFFFfFFfffFFFffffFfFfffFfFF030002;
 
     // Id of the parent chain. 0 means no parent chain.
-    uint32 parentChainId;
+    uint parentChainId;
 
     // Nodes of the parent chain.
     address[] parentChainNodes;
 
     // Stores `ChainInfo` struct for each chain.
-    mapping(uint32 => ChainInfo) public sideChains;
+    mapping(uint => ChainInfo) public sideChains;
 
     // Default: Unknown
     enum ChainStatus { Unknown, Disable, Enable }
@@ -35,7 +35,7 @@ contract ChainManager is Error {
         }
     }
 
-    modifier hasSideChain(uint32 _id) {
+    modifier hasSideChain(uint _id) {
         if (sideChains[_id].status != ChainStatus.Unknown)
             _;
         else {
@@ -45,7 +45,7 @@ contract ChainManager is Error {
     }
 
     // Constructor.
-    constructor(uint32 _pid, address[] _addrs)
+    constructor(uint _pid, address[] _addrs)
         public
     {
         if (_pid == 0) {
@@ -59,10 +59,10 @@ contract ChainManager is Error {
 
     function getChainId()
         public
-        returns (uint32)
+        returns (uint)
     {
         address contractAddr = sysConfigAddr;
-        bytes4 getChainIdHash = bytes4(keccak256("getChainId()"));
+        bytes4 getChainIdHash = bytes4(keccak256("getChainIdV1()"));
 
         uint256 result;
         uint256 cid;
@@ -75,15 +75,15 @@ contract ChainManager is Error {
             if eq(result, 0) { revert(ptr, 0) }
             cid := mload(ptr)
         }
-        return uint32(cid);
+        return uint(cid);
     }
 
     // @notice Register a new side chain.
-    function newSideChain(uint32 sideChainId, address[] addrs)
+    function newSideChain(uint sideChainId, address[] addrs)
         public
     {
         require(addrs.length > 0, "The length should larger than zero.");
-        uint32 myChainId = getChainId();
+        uint myChainId = getChainId();
         require(myChainId != sideChainId, "ChainId should not equal to sideChainId.");
         require(sideChains[sideChainId].status == ChainStatus.Unknown, "ChainStatus not the same witch sideChainStatus.");
         sideChains[sideChainId] = ChainInfo(ChainStatus.Disable, addrs);
@@ -91,14 +91,14 @@ contract ChainManager is Error {
         //      And we can remove duplicated data, simply.
     }
 
-    function enableSideChain(uint32 id)
+    function enableSideChain(uint id)
         public
         hasSideChain(id)
     {
         sideChains[id].status = ChainStatus.Enable;
     }
 
-    function disableSideChain(uint32 id)
+    function disableSideChain(uint id)
         public
         hasSideChain(id)
     {
@@ -106,14 +106,14 @@ contract ChainManager is Error {
     }
 
     function verifyBlockHeader(
-        uint32 chainId,
+        uint chainId,
         bytes blockHeader
     )
         public
         hasSideChain(chainId)
     {
         address contractAddr = crossChainVerifyAddr;
-        bytes4 funcSig = bytes4(keccak256("verifyBlockHeader(uint32,bytes)"));
+        bytes4 funcSig = bytes4(keccak256("verifyBlockHeader(uint256,bytes)"));
         bool verifyResult;
         uint blockHeaderSize = 0x20 + blockHeader.length / 0x20 * 0x20;
         if (blockHeader.length % 0x20 != 0) {
@@ -149,14 +149,14 @@ contract ChainManager is Error {
     }
 
     function getExpectedBlockNumber(
-        uint32 chainId
+        uint chainId
     )
         public
         hasSideChain(chainId)
         returns (uint64)
     {
         address contractAddr = crossChainVerifyAddr;
-        bytes4 funcSig = bytes4(keccak256("getExpectedBlockNumber(uint32)"));
+        bytes4 funcSig = bytes4(keccak256("getExpectedBlockNumber(uint256)"));
         uint256 blockNumber;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
@@ -167,11 +167,11 @@ contract ChainManager is Error {
             if eq(result, 0) { revert(ptr, 0) }
             blockNumber := mload(ptr)
         }
-        return uint32(blockNumber);
+        return uint64(blockNumber);
     }
 
     function verifyState(
-        uint32 chainId,
+        uint chainId,
         uint64 blockNumber,
         bytes stateProof
     )
@@ -180,7 +180,7 @@ contract ChainManager is Error {
         returns (address, uint, uint)
     {
         address contractAddr = crossChainVerifyAddr;
-        bytes4 funcSig = bytes4(keccak256("verifyState(uint32,uint64,bytes)"));
+        bytes4 funcSig = bytes4(keccak256("verifyState(uint256,uint64,bytes)"));
         uint stateProofSize = 0x20 + stateProof.length / 0x20 * 0x20;
         if (stateProof.length % 0x20 != 0) {
             stateProofSize += 0x20;
@@ -223,12 +223,12 @@ contract ChainManager is Error {
     function getParentChainId()
         public
         view
-        returns (uint32)
+        returns (uint)
     {
         return parentChainId;
     }
 
-    function getAuthorities(uint32 id)
+    function getAuthorities(uint id)
         public
         view
         returns (address[])

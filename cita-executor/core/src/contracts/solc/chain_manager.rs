@@ -25,7 +25,7 @@ use std::str::FromStr;
 use types::reserved_addresses;
 
 const CHAIN_ID: &[u8] = &*b"getChainId()";
-const AUTHORITIES: &[u8] = &*b"getAuthorities(uint32)";
+const AUTHORITIES: &[u8] = &*b"getAuthorities(uint256)";
 
 lazy_static! {
     static ref CHAIN_ID_ENCODED: Vec<u8> = method_tools::encode_to_vec(CHAIN_ID);
@@ -36,7 +36,7 @@ lazy_static! {
 pub struct ChainManagement;
 
 impl ChainManagement {
-    pub fn ext_chain_id(ext: &mut Ext, gas: &U256, sender: &Address) -> Option<(U256, u32)> {
+    pub fn ext_chain_id(ext: &mut Ext, gas: &U256, sender: &Address) -> Option<(U256, U256)> {
         trace!("call system contract ChainManagement.ext_chain_id()");
         let contract = &*CONTRACT_ADDRESS;
         let tx_data = CHAIN_ID_ENCODED.to_vec();
@@ -53,7 +53,7 @@ impl ChainManagement {
             CallType::Call,
         ) {
             MessageCallResult::Success(gas_left, return_data) => {
-                decode_tools::to_u32(&*return_data).map(|x| (gas_left, x))
+                decode_tools::to_u256(&*return_data).map(|x| (gas_left, x))
             }
             MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
         }
@@ -63,7 +63,7 @@ impl ChainManagement {
         ext: &mut Ext,
         gas: &U256,
         sender: &Address,
-        chain_id: u32,
+        chain_id: U256,
     ) -> Option<(U256, Vec<Address>)> {
         trace!(
             "call system contract ChainManagement.ext_authorities({})",
@@ -71,7 +71,7 @@ impl ChainManagement {
         );
         let contract = &*CONTRACT_ADDRESS;
         let mut tx_data = AUTHORITIES_ENCODED.to_vec();
-        let param = H256::from(u64::from(chain_id));
+        let param = H256::from(chain_id);
         tx_data.extend(param.to_vec());
         let data = &tx_data.as_slice();
         let mut output = Vec::<u8>::new();

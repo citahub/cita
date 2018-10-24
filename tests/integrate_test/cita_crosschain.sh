@@ -284,8 +284,10 @@ function assert_equal () {
 function test_demo_contract () {
     local data=
     local code="$(func_encode 'getChainId()')"
-    local main_chain_id=$(hex2dec $(call_contract main "${CMC_ADDR}" "${code}"))
-    local side_chain_id=$(hex2dec $(call_contract side "${CMC_ADDR}" "${code}"))
+    local main_chain_id_hex=$(call_contract main "${CMC_ADDR}" "${code}")
+    local main_chain_id=$(hex2dec ${main_chain_id_hex})
+    local side_chain_id_hex=$(call_contract side "${CMC_ADDR}" "${code}")
+    local side_chain_id=$(hex2dec ${side_chain_id_hex})
     local main_tokens=50000
     local side_tokens=30000
     local crosschain_tokens=1234
@@ -297,7 +299,7 @@ function test_demo_contract () {
 
     title "Check all authorities."
     local data=$(printf "%064x" "${side_chain_id}")
-    local code="$(func_encode 'getAuthorities(uint32)')${data}"
+    local code="$(func_encode 'getAuthorities(uint256)')${data}"
     assert_equal \
         "$(parse_addresses \
             $(call_contract main "${CMC_ADDR}" "${code}") \
@@ -306,7 +308,7 @@ function test_demo_contract () {
             | sort | xargs -I {} printf {})" \
         "The authorities is not right for side chain."
     local data=$(printf "%064x" "${main_chain_id}")
-    local code="$(func_encode 'getAuthorities(uint32)')${data}"
+    local code="$(func_encode 'getAuthorities(uint256)')${data}"
     assert_equal \
         "$(parse_addresses \
             $(call_contract side "${CMC_ADDR}" "${code}") \
@@ -364,7 +366,7 @@ function test_demo_contract () {
     "private_key": "0x1111111111111111111111111111111111111111111111111111111111111111",
     "chains": [
         {
-            "id": ${main_chain_id},
+            "id": "${main_chain_id_hex}",
             "servers": [
                 { "url": "http://127.0.0.1:11337", "timeout": { "secs": 30, "nanos": 0 } },
                 { "url": "http://127.0.0.1:11338", "timeout": { "secs": 30, "nanos": 0 } },
@@ -373,7 +375,7 @@ function test_demo_contract () {
             ]
         },
         {
-            "id": ${side_chain_id},
+            "id": "${side_chain_id_hex}",
             "servers": [
                 { "url": "http://127.0.0.1:21337", "timeout": { "secs": 30, "nanos": 0 } },
                 { "url": "http://127.0.0.1:21338", "timeout": { "secs": 30, "nanos": 0 } },
@@ -385,7 +387,7 @@ function test_demo_contract () {
 }
 EOF
     local sidetx=$(./bin/cita-relayer-parser \
-        -c ${main_chain_id} -t ${maintx} \
+        -c ${main_chain_id_hex} -t ${maintx} \
         -f relayer-parser.json)
     rm relayer-parser.json
 
@@ -410,7 +412,7 @@ EOF
 
     title "Check sync block header number."
     local data=$(printf "%064x" "${side_chain_id}")
-    code="$(func_encode 'getExpectedBlockNumber(uint32)')${data}"
+    code="$(func_encode 'getExpectedBlockNumber(uint256)')${data}"
     assert_equal 0 \
         "$(hex2dec $(call_contract main "${CMC_ADDR}" "${code}"))" \
         "The block number of side chain in main chain is wrong."
@@ -436,7 +438,7 @@ EOF
 
     title "Check sync block header number after sync."
     local data=$(printf "%064x" "${side_chain_id}")
-    code="$(func_encode 'getExpectedBlockNumber(uint32)')${data}"
+    code="$(func_encode 'getExpectedBlockNumber(uint256)')${data}"
     assert_equal 3 \
         "$(hex2dec $(call_contract main "${CMC_ADDR}" "${code}"))" \
         "The block number of side chain in main chain is wrong."
@@ -453,7 +455,7 @@ EOF
     title "verify state proof"
     # 96 is offset of state proof in call args
     data=$(printf "%064x%064x%064x%064x" "${side_chain_id}" "${tx_block_number}" "96" "$[${#state_proof}/2]")
-    code="$(func_encode 'verifyState(uint32,uint64,bytes)')${data}${state_proof}"
+    code="$(func_encode 'verifyState(uint256,uint64,bytes)')${data}${state_proof}"
     local result=$(call_contract main "${CMC_ADDR}" "${code}")
     title "verify result ${result}"
     # result has 0x prefix
@@ -469,6 +471,7 @@ function main () {
     local code=
     local main_chain_id=3
     local side_chain_id=4
+    local version=1
 
     cd target/install
 
@@ -485,7 +488,8 @@ function main () {
     ./scripts/create_cita_config.py create --chain_name mainchain \
         --nodes "127.0.0.1:14000,127.0.0.1:14001,127.0.0.1:14002,127.0.0.1:14003" \
         --jsonrpc_port 11337 --ws_port 14337 --grpc_port 15000 \
-        --contract_arguments "SysConfig.chainId=${main_chain_id}"
+        --contract_arguments "SysConfig.chainId=${main_chain_id}" \
+            "VersionManager.version=${version}"
 
     start_chain main 4
 
@@ -503,7 +507,8 @@ function main () {
         --jsonrpc_port 21337 --ws_port 24337 --grpc_port 25000 \
         --contract_arguments "SysConfig.chainId=${side_chain_id}" \
             "ChainManager.parentChainId=${main_chain_id}" \
-            "ChainManager.parentChainAuthorities=${main_auths}"
+            "ChainManager.parentChainAuthorities=${main_auths}" \
+            "VersionManager.version=${version}"
 
     wait_chain_for_height main 3
 

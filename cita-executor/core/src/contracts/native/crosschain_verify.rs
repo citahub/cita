@@ -29,11 +29,11 @@ lazy_static! {
     static ref VERIFY_TRANSACTION_FUNC: u32 =
         method_tools::encode_to_u32(b"verifyTransaction(address,bytes4,uint64,bytes)");
     static ref VERIFY_STATE_FUNC: u32 =
-        method_tools::encode_to_u32(b"verifyState(uint32,uint64,bytes)");
+        method_tools::encode_to_u32(b"verifyState(uint256,uint64,bytes)");
     static ref VERIFY_BLOCK_HEADER_FUNC: u32 =
-        method_tools::encode_to_u32(b"verifyBlockHeader(uint32,bytes)");
+        method_tools::encode_to_u32(b"verifyBlockHeader(uint256,bytes)");
     static ref GET_EXPECTED_BLOCK_NUMBER_FUNC: u32 =
-        method_tools::encode_to_u32(b"getExpectedBlockNumber(uint32)");
+        method_tools::encode_to_u32(b"getExpectedBlockNumber(uint256)");
 }
 
 #[derive(Clone)]
@@ -217,8 +217,7 @@ impl CrossChainVerify {
         if result.is_none() {
             return Err(Error::Internal("decode 1th param failed".to_string()));
         }
-        let chain_id_u256 = U256::from_big_endian(&result.unwrap());
-        let chain_id = chain_id_u256.low_u32();
+        let chain_id = U256::from_big_endian(&result.unwrap());
         trace!("chain_id = {}", chain_id);
 
         let result = decoded.remove(0).to_uint();
@@ -230,7 +229,7 @@ impl CrossChainVerify {
 
         let result = self
             .state_roots
-            .get_array(&chain_id_u256)
+            .get_array(&chain_id)
             .unwrap()
             .get(ext, block_number);
         if result.is_err() {
@@ -238,7 +237,7 @@ impl CrossChainVerify {
         }
         let result1 = self
             .state_roots
-            .get_array(&chain_id_u256)
+            .get_array(&chain_id)
             .unwrap()
             .get(ext, block_number + 1);
         if result1.is_err() {
@@ -315,8 +314,7 @@ impl CrossChainVerify {
         if result.is_none() {
             return Err(Error::Internal("decode 1th param failed".to_string()));
         }
-        let chain_id_u256 = U256::from_big_endian(&result.unwrap());
-        let chain_id = chain_id_u256.low_u32();
+        let chain_id = U256::from_big_endian(&result.unwrap());
         trace!("chain_id = {}", chain_id);
         let result = decoded.remove(0).to_bytes();
         if result.is_none() {
@@ -326,7 +324,7 @@ impl CrossChainVerify {
         trace!("data = {:?}", block_header_curr_bytes);
         let block_header_curr = Header::from_bytes(&block_header_curr_bytes);
 
-        let block_header_prev_bytes: Vec<u8> = self.block_headers.get_bytes(ext, &chain_id_u256)?;
+        let block_header_prev_bytes: Vec<u8> = self.block_headers.get_bytes(ext, &chain_id)?;
 
         let verify_result = if block_header_prev_bytes.is_empty() {
             trace!("sync first block header");
@@ -347,13 +345,13 @@ impl CrossChainVerify {
         if verify_result {
             trace!("store the {} block header", block_header_curr.number());
             self.block_headers
-                .set_bytes(ext, &chain_id_u256, &block_header_curr_bytes)?;
+                .set_bytes(ext, &chain_id, &block_header_curr_bytes)?;
             trace!(
                 "store the {} block state root {}",
                 block_header_curr.number(),
                 block_header_curr.state_root()
             );
-            self.state_roots.get_array(&chain_id_u256).unwrap().set(
+            self.state_roots.get_array(&chain_id).unwrap().set(
                 ext,
                 block_header_curr.number(),
                 &U256::from(block_header_curr.state_root()),
@@ -403,11 +401,10 @@ impl CrossChainVerify {
         if result.is_none() {
             return Err(Error::Internal("decode 1th param failed".to_string()));
         }
-        let chain_id_u256 = U256::from_big_endian(&result.unwrap());
-        let chain_id = chain_id_u256.low_u32();
+        let chain_id = U256::from_big_endian(&result.unwrap());
         trace!("chain_id = {}", chain_id);
 
-        let block_header_bytes: Vec<u8> = self.block_headers.get_bytes(ext, &chain_id_u256)?;
+        let block_header_bytes: Vec<u8> = self.block_headers.get_bytes(ext, &chain_id)?;
 
         let block_number = if block_header_bytes.is_empty() {
             0

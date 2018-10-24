@@ -18,8 +18,7 @@
 use ethabi;
 
 use cita_crypto::PrivKey;
-use cita_types::traits::LowerHex;
-use cita_types::{H160, U256};
+use cita_types::{H160, H256, U256};
 use libproto::blockchain::{Transaction, UnverifiedTransaction};
 
 pub fn construct_transaction(
@@ -27,7 +26,7 @@ pub fn construct_transaction(
     tx_proof_rlp: &[u8],
     dest_hasher: [u8; 4],
     dest_contract: H160,
-    chain_id: u32,
+    chain_id: U256,
     height: U256,
 ) -> UnverifiedTransaction {
     let code = encode(dest_hasher, tx_proof_rlp);
@@ -53,15 +52,16 @@ fn sign(
     pkey: &PrivKey,
     addr: H160,
     code: Vec<u8>,
-    chain_id: u32,
+    chain_id: U256,
     height: U256,
 ) -> UnverifiedTransaction {
     let mut tx = Transaction::new();
     tx.set_data(code);
-    tx.set_to(addr.lower_hex());
+    tx.set_to_v1(addr.to_vec());
     tx.set_valid_until_block(height.low_u64() + 100);
     tx.set_quota(1_000_000);
-    tx.set_chain_id(chain_id);
+    tx.set_chain_id_v1(H256::from(chain_id).to_vec());
+    tx.set_version(1);
     tx.set_value(vec![0u8; 32]);
     tx.sign(*pkey).take_transaction_with_sig()
 }

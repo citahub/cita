@@ -611,6 +611,8 @@ impl Executor {
             // TODO: Should Fixed?
             chain_id: u32::min_value(),
             version: 0u32,
+            // TODO: Should Fixed?
+            chain_id_v1: 0.into(),
         }
         .fake_sign(from)
     }
