@@ -661,6 +661,11 @@ impl Chain {
 
         // Duplicated block
         if number <= self.get_current_height() {
+            let tx_hashes = self
+                .block_body_by_height(self.get_current_height())
+                .unwrap()
+                .transaction_hashes();
+            self.delivery_block_tx_hashes(self.get_current_height(), &tx_hashes, &ctx_pub);
             self.broadcast_current_status(&ctx_pub);
             return;
         }
