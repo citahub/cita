@@ -15,18 +15,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct NetConfig {
     pub id_card: Option<u32>,
     pub port: Option<u64>,
     pub peers: Option<Vec<PeerConfig>>,
+    pub enable_tls: Option<bool>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct PeerConfig {
     pub id_card: Option<u32>,
     pub ip: Option<String>,
     pub port: Option<u64>,
+    pub common_name: Option<String>,
 }
 
 impl NetConfig {
@@ -44,12 +46,15 @@ mod tests {
     fn basics() {
         let toml_str = r#"
         port = 40000
+        enable_tls = true
         [[peers]]
         ip = "127.0.0.1"
         port = 40001
+        common_name = "test1.cita"
         [[peers]]
         ip = "127.0.0.1"
         port = 40002
+        common_name = "test2.cita"
         "#;
 
         let mut tmpfile: NamedTempFile = NamedTempFile::new().unwrap();
@@ -58,5 +63,6 @@ mod tests {
         let value = parse_config!(NetConfig, path);
 
         assert_eq!(value.port, Some(40000));
+        assert_eq!(value.enable_tls, Some(true));
     }
 }

@@ -82,6 +82,8 @@ extern crate bytes;
 extern crate clap;
 extern crate dotenv;
 extern crate futures;
+extern crate native_tls;
+extern crate tokio_tls;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
@@ -184,7 +186,7 @@ fn main() {
     // all server recv msg directly publish to mq
     let address_str = format!("0.0.0.0:{}", config.port.unwrap());
     let address = address_str.parse::<SocketAddr>().unwrap();
-    let net_server = NetServer::new(net_work_tx.clone());
+    let net_server = NetServer::new(net_work_tx.clone(), config.clone());
 
     //network server listener
     thread::spawn(move || net_server.server(address));
