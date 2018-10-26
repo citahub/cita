@@ -95,7 +95,7 @@ def kill_process(always, occasionally):
 
 def prepare():
     p = run_subprocess(
-        "python3 ./scripts/create_cita_config.py create --nodes '127.0.0.1:4000,127.0.0.2:4001,127.0.0.3:4002,127.0.0.4:4003' --chain_name node > /dev/null")
+        "python3 ./scripts/create_cita_config.py create --super_admin '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523' --nodes '127.0.0.1:4000,127.0.0.2:4001,127.0.0.3:4002,127.0.0.4:4003' --chain_name node > /dev/null")
     p.wait()
     modify_forever(3)
     start(3)

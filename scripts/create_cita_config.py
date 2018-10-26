@@ -407,6 +407,11 @@ def parse_arguments():
 
     # Check arguments
     if args.subcmd == SUBCMD_CREATE:
+        if not args.super_admin:
+            logging.critical('--super_admin is empty, it\'s required'
+                             ' to continue.'
+                            )
+            sys.exit(1)
         if not args.authorities:
             if not args.nodes:
                 logging.critical('Both --authorities and --nodes is empty.')

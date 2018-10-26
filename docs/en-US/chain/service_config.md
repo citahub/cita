@@ -5,7 +5,7 @@ The most notable feature of CITA is the microservice architecture, that is, in C
 Let's take a look at the configuration files which are .toml files under the `test-chain/*/` path. (`test-chain` is the default name of the chain).
 
 ```bash
-$ ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
+$ ./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
 $ ls test—chain/
   0 1 2 3 template
 $ ls 0

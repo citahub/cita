@@ -24,6 +24,7 @@ echo "DONE"
 echo -n "2) generate config  ...  "
 ./scripts/create_cita_config.py create \
     --chain_name "node" \
+    --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" \
     --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
     > /dev/null 2>&1
 echo "DONE"

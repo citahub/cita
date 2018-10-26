@@ -146,7 +146,7 @@ Notice:
 The following is the most basic command to start a chain, which generates a new chain with four nodes. The default port is 4000, 4001, 4002, 4003. The super administrator uses the default setting. The economic model is `Quota`, and all permission controls are closed.
 
 ```shell
-$ ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
+$ ./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
 ```
 
 The next step is to generate a chain with advanced configurations by the following commands:
