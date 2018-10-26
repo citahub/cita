@@ -43,8 +43,6 @@ pub mod instructions;
 pub mod schedule;
 #[macro_use]
 extern crate lazy_static;
-#[cfg(feature = "jit")]
-mod jit;
 
 #[cfg(all(feature = "benches", test))]
 mod benches;
