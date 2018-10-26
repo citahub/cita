@@ -104,6 +104,13 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddress {
         chainName = _chainName;
     }
 
+    function updateToChainIdV1()
+        external
+        onlyAdmin
+    {
+        chainIdV1 = uint(chainId);
+    }
+
     function getDelayBlockNumber()
         public
         view
