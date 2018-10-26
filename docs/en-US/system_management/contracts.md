@@ -61,7 +61,7 @@ CITA 支持批量调用合约。
 
 在极端情况下，管理员可以通过发送交易到紧急制动系统合约，开启紧急制动模式，只接受管理员发送的交易，屏蔽掉其他所有交易。
 
-批量转发合约存放在 `/scripts/contracts/src/system/emergency_brake.sol`， 地址是 `0xffffffffffffffffffffffffffffffffff02000f`
+紧急制动合约存放在 `/scripts/contracts/src/system/emergency_brake.sol`， 地址是 `0xffffffffffffffffffffffffffffffffff02000f`
 
 紧急制动相关描述及方法介绍见 [emergency_brake](./emergency_brake)
 紧急制动相关描述及方法介绍见 [emergency_brake](./system_management/emergency_brake)
