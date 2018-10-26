@@ -259,7 +259,8 @@ class ChainInfo(object):
             f'-out {node_dir}/{self.server_ca_name}.pfx -password pass:server.tls.cita' 
         os.system(cmd)
 
-        [os.remove(f'{node_dir}/{self.node_ca_name}.{suffix}') for suffix in ('crt','csr','key')]
+        for suffix in ('crt','csr','key') :
+            os.remove(f'{node_dir}/{self.node_ca_name}.{suffix}')
         shutil.copyfile(f'{self.template_dir}/{self.root_ca_name}.crt',f'{node_dir}/{self.root_ca_name}.crt')
 
     def create_peer_data(self, node_id, node):
