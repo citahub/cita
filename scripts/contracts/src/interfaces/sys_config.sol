@@ -12,6 +12,9 @@ interface ISysConfig {
     /// @notice Update current operator's website URL
     function setWebsite(string) external;
 
+    /// @notice Update to chainIdV1
+    function updateToChainIdV1() external;
+
     /// @notice Get delay block number before validate
     function getDelayBlockNumber() external view returns (uint);
 
