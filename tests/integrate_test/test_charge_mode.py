@@ -14,8 +14,9 @@ import sha3
 from ecdsa import SigningKey, SECP256k1
 from jsonrpcclient.http_client import HTTPClient
 
+LATEST_VERSION = 1
 
-def send_tx(privkey, to_addr, value=0, quota=30000, code=""):
+def send_tx(privkey, to_addr, value=0, quota=30000, code="", version=LATEST_VERSION):
     """
     Send a transfer transaction to a node
 
@@ -36,6 +37,7 @@ def send_tx(privkey, to_addr, value=0, quota=30000, code=""):
         '--code': code,
         '--value': str(value),
         '--quota': str(quota),
+        '--version': str(version),
     }
     args = functools.reduce(
         lambda lst, kv: lst + list(kv),
@@ -69,7 +71,7 @@ def get_receipt(tx_hash, retry=8):
         retry -= 1
 
 def test_transfer(
-        sender_privkey, receiver_addr, value,
+        sender_privkey, receiver_addr, value, version,
         sender_is_miner=False):
     """ Transfer and check balances """
     sender_addr = key_address(sender_privkey)
@@ -78,7 +80,7 @@ def test_transfer(
     assert sender_balance_old > 0, \
         'Sender balance not enough: address={}'.format(sender_addr)
 
-    tx_hash = send_tx(sender_privkey, receiver_addr, value)
+    tx_hash = send_tx(sender_privkey, receiver_addr, value, version=version)
     receipt = get_receipt(tx_hash)
     assert receipt and receipt['errorMessage'] is None, \
         'Send transaction failed: receipt={}'.format(receipt)
@@ -134,9 +136,12 @@ def main():
         nargs='+',
         help='Private key list of all miners(authorities/nodes)'
     )
+    parser.add_argument(
+        "--version", help="Tansaction version.", default=1, type=int)
     args = parser.parse_args()
 
     miner_privkey = get_miner_with_balance(args.miner_privkeys)
+    version = args.version
 
     alice_privkey = '0xb5d6f7a1bf4493af95afc96f5bf116a3236038fae25e0287ac847623d4e183e6'
     alice_address = key_address(alice_privkey)
@@ -146,24 +151,29 @@ def main():
     bob_address = key_address(bob_privkey)
     print('[Bob.address]: {}'.format(bob_address))
 
+    alice_old_balance = get_balance(alice_address)
+
     # Send 10 * 10000 from miner to alice
-    test_transfer(miner_privkey, alice_address, 10 * 10000,
+    test_transfer(miner_privkey, alice_address, 10 * 10000, version,
                   sender_is_miner=True)
-    assert get_balance(alice_address) == 10 * 10000, \
-        'Alice({}) should have 10 * 10000 now'.format(alice_address)
+    assert get_balance(alice_address) - alice_old_balance == 10 * 10000, \
+        'Alice({}) should receive 10 * 10000 now'.format(alice_address)
     # Send 50000 from alice to bob
-    test_transfer(alice_privkey, bob_address, 30000)
-    assert get_balance(bob_address) == 30000, \
-        'Bob({}) should have 30000 now'.format(bob_address)
+
+    bob_old_balance = get_balance(bob_address)
+    test_transfer(alice_privkey, bob_address, 30000, version)
+    bob_new_balance = get_balance(bob_address)
+    assert bob_new_balance - bob_old_balance == 30000, \
+        'Bob({}) should receive 30000 now'.format(bob_address)
 
     # Bob send an invalid transaction to chain (Error=NotEnoughCash)
-    tx_hash = send_tx(bob_privkey, "", quota=29000, code="")
+    tx_hash = send_tx(bob_privkey, "", quota=29000, code="", version=version)
     # Wait the transaction receipt then check the balance
     get_receipt(tx_hash)
-    bob_balance = get_balance(bob_address)
+    bob_new_balance2 = get_balance(bob_address)
     # Because base_quota_required=21000 (30000 - 21000 = 9000)
-    assert bob_balance == 9000, \
-        'Bob({}) should have 9000 now (got: {})'.format(bob_address, bob_balance)
+    assert bob_new_balance - bob_new_balance2 == 21000, \
+        'Bob({}) should spend 21000'.format(bob_address)
 
     print('>>> Charge Mode test successfully!')
 

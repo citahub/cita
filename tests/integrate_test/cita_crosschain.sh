@@ -471,7 +471,6 @@ function main () {
     local code=
     local main_chain_id=3
     local side_chain_id=4
-    local version=1
 
     cd target/install
 
@@ -489,8 +488,7 @@ function main () {
         --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" \
         --nodes "127.0.0.1:14000,127.0.0.1:14001,127.0.0.1:14002,127.0.0.1:14003" \
         --jsonrpc_port 11337 --ws_port 14337 --grpc_port 15000 \
-        --contract_arguments "SysConfig.chainId=${main_chain_id}" \
-            "VersionManager.version=${version}"
+        --contract_arguments "SysConfig.chainId=${main_chain_id}"
 
     start_chain main 4
 
@@ -509,8 +507,7 @@ function main () {
         --jsonrpc_port 21337 --ws_port 24337 --grpc_port 25000 \
         --contract_arguments "SysConfig.chainId=${side_chain_id}" \
             "ChainManager.parentChainId=${main_chain_id}" \
-            "ChainManager.parentChainAuthorities=${main_auths}" \
-            "VersionManager.version=${version}"
+            "ChainManager.parentChainAuthorities=${main_auths}"
 
     wait_chain_for_height main 3
 

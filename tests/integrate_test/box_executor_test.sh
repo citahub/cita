@@ -44,7 +44,6 @@ ${BINARY_DIR}/scripts/create_cita_config.py create \
              --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" \
              --contract_arguments "SysConfig.economicalModel=${ECONOMICAL_MODEL}" \
              --contract_arguments "SysConfig.chainId=123" \
-             --contract_arguments "VersionManager.version=1" \
              --timestamp 1524000000 \
              --authorities ${AUTHORITIES}
 echo -n "DONE"

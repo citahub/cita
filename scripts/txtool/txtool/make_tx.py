@@ -18,7 +18,7 @@ from url_util import endpoint
 from log import logger
 from jsonrpcclient.http_client import HTTPClient
 
-
+LATEST_VERSION = 1
 
 accounts_path = Path("../output/transaction")
 if not accounts_path.is_dir():
@@ -104,7 +104,7 @@ def generate_deploy_data(current_height,
                          privatekey,
                          receiver=None,
                          newcrypto=False,
-                         version=1):
+                         version=LATEST_VERSION):
     if newcrypto:
         data = _blake2b_ed25519_deploy_data(current_height, bytecode, value, quota,
                                             privatekey, version, receiver)
