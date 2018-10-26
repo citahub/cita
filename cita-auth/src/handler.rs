@@ -831,6 +831,16 @@ impl MsgHandler {
             } else {
                 Some(Address::from(block_tx_hashes.get_admin_address()))
             };
+            if block_tx_hashes.get_version() == 1 && self.config_info.version == Some(0) {
+                trace!("Fetch new chain id");
+                let msg: Message = MiscellaneousReq::new().into();
+                self.tx_pub
+                    .send((
+                        routing_key!(Auth >> MiscellaneousReq).into(),
+                        msg.try_into().unwrap(),
+                    ))
+                    .unwrap();
+            }
             self.config_info.version = Some(block_tx_hashes.get_version());
 
             // need to proposal new block
