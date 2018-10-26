@@ -53,6 +53,5 @@ const formatURLtoSSRRouter = (lng, ver) => {
   }
   const path = window.location.hash.slice(2).split('?')[0] || ''
   const newPath = `${window.location.hostname === 'localhost' ? '' : '/cita'}/#/${lngs[lng]}/${ver}/${path}`
-  console.log(newPath)
   window.history.replaceState("", "", newPath)
 }
