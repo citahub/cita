@@ -131,8 +131,8 @@ impl Decodable for CryptoType {
 impl Encodable for CryptoType {
     fn rlp_append(&self, s: &mut RlpStream) {
         match *self {
-            CryptoType::SECP => s.append_internal(&(0 as u8)),
-            CryptoType::SM2 => s.append_internal(&(1 as u8)),
+            CryptoType::SECP => s.append_internal(&(0u8)),
+            CryptoType::SM2 => s.append_internal(&(1u8)),
         };
     }
 }
@@ -165,10 +165,10 @@ pub struct Transaction {
     /// valid before this block number
     pub block_limit: BlockNumber,
     /// Unique chain_id
-    pub chain_id: u32,
+    // Before it's u32
+    pub chain_id: U256,
     /// transaction version
     pub version: u32,
-    pub chain_id_v1: U256,
 }
 
 impl HeapSizeOf for Transaction {
@@ -192,9 +192,12 @@ impl Decodable for Transaction {
             value: d.val_at(4)?,
             data: d.val_at(5)?,
             block_limit: d.val_at(6)?,
-            chain_id: if version == 0 { d.val_at(7)? } else { 0 },
+            chain_id: if version == 0 {
+                d.val_at::<u32>(7)?.into()
+            } else {
+                d.val_at::<U256>(7)?
+            },
             version,
-            chain_id_v1: if version != 0 { d.val_at(7)? } else { 0.into() },
         })
     }
 }
@@ -247,9 +250,12 @@ impl Transaction {
             value: U256::from(plain_transaction.get_value()),
             data: Bytes::from(plain_transaction.get_data()),
             block_limit: plain_transaction.get_valid_until_block(),
-            chain_id: plain_transaction.get_chain_id(),
+            chain_id: if version == 0 {
+                plain_transaction.get_chain_id().into()
+            } else {
+                plain_transaction.get_chain_id_v1().into()
+            },
             version,
-            chain_id_v1: plain_transaction.get_chain_id_v1().into(),
         })
     }
 
@@ -290,10 +296,10 @@ impl Transaction {
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
-        if self.version == 0 as u32 {
-            s.append(&self.chain_id);
+        if self.version == 0u32 {
+            s.append::<u32>(&self.chain_id.low_u32());
         } else {
-            s.append(&self.chain_id_v1);
+            s.append::<U256>(&self.chain_id);
         }
         s.append(&self.version);
     }
@@ -306,9 +312,10 @@ impl Transaction {
         pt.set_data(self.data.clone());
         pt.set_quota(self.gas.as_u64());
         pt.set_value(<[u8; 32]>::from(self.value).to_vec());
-        pt.set_chain_id(self.chain_id);
-        if self.version > 0 {
-            pt.set_chain_id_v1(<[u8; 32]>::from(self.chain_id_v1).to_vec());
+        if self.version == 0 {
+            pt.set_chain_id(self.chain_id.low_u32());
+        } else {
+            pt.set_chain_id_v1(<[u8; 32]>::from(self.chain_id).to_vec());
         }
         pt.set_version(self.version);
 
@@ -460,17 +467,12 @@ impl Decodable for SignedTransaction {
                     value: d.val_at(4)?,
                     data: d.val_at(5)?,
                     block_limit: d.val_at(6)?,
-                    chain_id: if version == (0 as u32) {
-                        d.val_at(7)?
+                    chain_id: if version == 0u32 {
+                        d.val_at::<u32>(7)?.into()
                     } else {
-                        0
+                        d.val_at(7)?
                     },
                     version,
-                    chain_id_v1: if version != (0 as u32) {
-                        d.val_at(7)?
-                    } else {
-                        0.into()
-                    },
                 },
                 signature: d.val_at(9)?,
                 crypto_type: d.val_at(10)?,
@@ -494,10 +496,10 @@ impl Encodable for SignedTransaction {
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
-        if self.version == 0 as u32 {
-            s.append(&self.chain_id);
+        if self.version == 0u32 {
+            s.append::<u32>(&self.chain_id.low_u32());
         } else {
-            s.append(&self.chain_id_v1);
+            s.append::<U256>(&self.chain_id);
         }
         s.append(&self.version);
 

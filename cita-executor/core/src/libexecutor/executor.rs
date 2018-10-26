@@ -609,10 +609,8 @@ impl Executor {
             data: request.data.map_or_else(Vec::new, |d| d.to_vec()),
             block_limit: u64::max_value(),
             // TODO: Should Fixed?
-            chain_id: u32::min_value(),
+            chain_id: U256::default(),
             version: 0u32,
-            // TODO: Should Fixed?
-            chain_id_v1: 0.into(),
         }
         .fake_sign(from)
     }

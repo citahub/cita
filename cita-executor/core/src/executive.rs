@@ -1483,9 +1483,8 @@ mod tests {
             gas_price: U256::one(),
             nonce: U256::zero().to_string(),
             block_limit: 100u64,
-            chain_id: 1,
+            chain_id: 1.into(),
             version: 1,
-            chain_id_v1: 0.into(),
         }
         .fake_sign(keypair.address().clone());
         let sender = t.sender();
@@ -1548,9 +1547,8 @@ mod tests {
             gas_price: U256::one(),
             nonce: U256::zero().to_string(),
             block_limit: 100u64,
-            chain_id: 1,
+            chain_id: 1.into(),
             version: 1,
-            chain_id_v1: 0.into(),
         }
         .fake_sign(keypair.address().clone());
         let sender = t.sender();
@@ -1617,9 +1615,8 @@ mod tests {
             gas_price: U256::one(),
             nonce: U256::zero().to_string(),
             block_limit: 100u64,
-            chain_id: 1,
+            chain_id: 1.into(),
             version: 1,
-            chain_id_v1: 0.into(),
         }
         .fake_sign(keypair.address().clone());
 
@@ -1675,9 +1672,8 @@ mod tests {
             gas_price: U256::one(),
             nonce: U256::zero().to_string(),
             block_limit: 100u64,
-            chain_id: 1,
+            chain_id: 1.into(),
             version: 1,
-            chain_id_v1: 0.into(),
         }
         .fake_sign(keypair.address().clone());
 
