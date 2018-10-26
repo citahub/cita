@@ -76,10 +76,7 @@ extern crate pubsub;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-#[cfg(not(test))]
-extern crate serde_json;
-#[cfg(test)]
-#[macro_use]
+#[cfg_attr(test, macro_use)]
 extern crate serde_json;
 extern crate threadpool;
 extern crate time;
