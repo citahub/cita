@@ -20,10 +20,13 @@ use citaprotocol::pubsub_message_to_network_message;
 use config;
 use config::NetConfig;
 use libproto::{Message, OperateType};
+use native_tls::{TlsConnector, TlsStream};
 use notify::DebouncedEvent;
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::io::Write;
+use std::fs::File;
+use std::io;
+use std::io::{Read, Write};
 use std::net::SocketAddr;
 use std::net::{Shutdown, TcpStream};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -33,48 +36,132 @@ use std::thread;
 use std::time::Duration;
 
 const TIMEOUT: u64 = 15;
+const ROOT_CERT_FILE: &str = "rootCA.crt";
+
+pub enum RealStream {
+    CryptStream(TlsStream<TcpStream>),
+    NormalStream(TcpStream),
+}
+
+impl RealStream {
+    pub fn shutdown(&mut self) -> io::Result<()> {
+        match self {
+            RealStream::CryptStream(ref mut tls) => tls.shutdown(),
+            RealStream::NormalStream(ref mut tcp) => tcp.shutdown(Shutdown::Both),
+        }
+    }
+}
+
+impl io::Write for RealStream {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        match self {
+            RealStream::CryptStream(ref mut tls) => tls.write(buf),
+            RealStream::NormalStream(ref mut tcp) => tcp.write(buf),
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        match self {
+            RealStream::CryptStream(ref mut tls) => tls.flush(),
+            RealStream::NormalStream(ref mut tcp) => tcp.flush(),
+        }
+    }
+}
 
 pub enum Task {
     Broadcast((String, Message)),
     Update(NetConfig),
-    NewTCP((u32, SocketAddr, TcpStream)),
+    NewTCP((u32, SocketAddr, RealStream, String)),
 }
 
 /// Manager unconnected address
 struct Manager {
-    need_connect: Vec<(u32, SocketAddr)>,
-    connect_receiver: Receiver<(u32, SocketAddr)>,
+    need_connect: Vec<(u32, SocketAddr, String)>,
+    connect_receiver: Receiver<(u32, SocketAddr, String)>,
     task_sender: Sender<Task>,
+    config: NetConfig,
+}
+
+fn gennerate_tls_connector(path: &str) -> Option<TlsConnector> {
+    let mut file = File::open(path).expect("Not has cert file");
+    let mut pem = vec![];
+    file.read_to_end(&mut pem).expect("Cert File read error");
+    let root_ca =
+        native_tls::Certificate::from_pem(&pem).expect("Cert file content not right, pem ?");
+
+    native_tls::TlsConnector::builder()
+        .min_protocol_version(Some(native_tls::Protocol::Tlsv11))
+        .max_protocol_version(Some(native_tls::Protocol::Tlsv12))
+        .add_root_certificate(root_ca)
+        .build()
+        .ok()
 }
 
 impl Manager {
-    fn new(task_sender: Sender<Task>, connect_receiver: Receiver<(u32, SocketAddr)>) -> Self {
+    fn new(
+        task_sender: Sender<Task>,
+        connect_receiver: Receiver<(u32, SocketAddr, String)>,
+        config: NetConfig,
+    ) -> Self {
         Manager {
             need_connect: Vec::new(),
             connect_receiver,
             task_sender,
+            config,
         }
     }
 
     fn run(&mut self) {
+        let tls_connector = self.config.enable_tls.and_then(|enable| {
+            if enable {
+                let connector =
+                    gennerate_tls_connector(ROOT_CERT_FILE).expect("TLS connector not gennerated");
+                Some(connector)
+            } else {
+                None
+            }
+        });
+
         loop {
             while let Ok(message) = self.connect_receiver.try_recv() {
                 self.need_connect.push(message);
             }
             let mut new_need_connect = Vec::new();
-            for (id, addr) in self.need_connect.iter() {
+            for (id, addr, commom_name) in self.need_connect.iter() {
                 match TcpStream::connect_timeout(addr, Duration::from_secs(TIMEOUT)) {
                     Ok(tcp) => {
-                        self.task_sender
-                            .send(Task::NewTCP((*id, *addr, tcp)))
-                            .unwrap();
+                        if self.config.enable_tls.unwrap_or(false) {
+                            if let Ok(tls) =
+                                tls_connector.clone().unwrap().connect(&*commom_name, tcp)
+                            {
+                                self.task_sender
+                                    .send(Task::NewTCP((
+                                        *id,
+                                        *addr,
+                                        RealStream::CryptStream(tls),
+                                        commom_name.clone(),
+                                    )))
+                                    .unwrap();
+                            } else {
+                                warn!("TLS connect {:?} not ok", addr);
+                            }
+                        } else {
+                            self.task_sender
+                                .send(Task::NewTCP((
+                                    *id,
+                                    *addr,
+                                    RealStream::NormalStream(tcp),
+                                    commom_name.clone(),
+                                )))
+                                .unwrap();
+                        }
                     }
                     Err(e) => {
                         warn!(
                             "Node{}, {} unable to establish connection, error: {}",
                             id, addr, e
                         );
-                        new_need_connect.push((*id, *addr));
+                        new_need_connect.push((*id, *addr, commom_name.clone()));
                     }
                 }
             }
@@ -97,11 +184,11 @@ impl Manager {
 pub struct Connections {
     id_card: u32,
     /// list of peer: id, addr, tcp_connect
-    peers: HashMap<(u32, SocketAddr), TcpStream>,
+    peers: HashMap<(u32, SocketAddr, String), RealStream>,
     pub is_pause: Arc<AtomicBool>,
     pub connect_number: Arc<AtomicUsize>,
     task_receiver: Receiver<Task>,
-    connect_sender: Sender<(u32, SocketAddr)>,
+    connect_sender: Sender<(u32, SocketAddr, String)>,
 }
 
 impl Connections {
@@ -111,7 +198,10 @@ impl Connections {
         let (connect_sender, connect_receiver) = channel();
 
         let connect_task_sender = task_sender.clone();
-        thread::spawn(move || Manager::new(connect_task_sender, connect_receiver).run());
+        let to_manager_config = config.clone();
+        thread::spawn(move || {
+            Manager::new(connect_task_sender, connect_receiver, to_manager_config).run()
+        });
 
         if let Some(peers) = config.peers.as_ref() {
             for peer in peers.iter() {
@@ -119,7 +209,9 @@ impl Connections {
                 let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap())
                     .parse()
                     .unwrap();
-                connect_sender.send((id_card, addr)).unwrap();
+                connect_sender
+                    .send((id_card, addr, peer.common_name.clone().unwrap_or_default()))
+                    .unwrap();
             }
         }
 
@@ -157,7 +249,7 @@ impl Connections {
                         }
                     }
                     Task::NewTCP(tcp) => {
-                        self.peers.insert((tcp.0, tcp.1), tcp.2);
+                        self.peers.insert((tcp.0, tcp.1, tcp.3), tcp.2);
                         self.connect_number.fetch_add(1, Ordering::Relaxed);
                     }
                     Task::Update(config) => self.update(config),
@@ -180,19 +272,19 @@ impl Connections {
                         let addr = format!("{}:{}", peer.ip.unwrap(), peer.port.unwrap())
                             .parse()
                             .unwrap();
-                        (id_card, addr)
+                        (id_card, addr, peer.common_name.unwrap_or_default())
                     })
-                    .collect::<Vec<(u32, SocketAddr)>>();
+                    .collect::<Vec<(u32, SocketAddr, String)>>();
 
                 let remove_peers = self
                     .peers
                     .keys()
                     .filter(|peer| !config_peers.contains(&peer))
-                    .map(|&peer| {
-                        info!("Remove peer {}, {}", peer.0, peer.1);
-                        peer
+                    .map(|ref peer| {
+                        info!("Remove peer {}, {},{}", peer.0, peer.1, peer.2);
+                        (peer.0, peer.1, peer.2.clone())
                     })
-                    .collect::<Vec<(u32, SocketAddr)>>();
+                    .collect::<Vec<(u32, SocketAddr, String)>>();
 
                 config_peers
                     .into_iter()
@@ -211,7 +303,7 @@ impl Connections {
             }
             None => {
                 info!("clear all peers after update!");
-                self.close::<Vec<(u32, SocketAddr)>>(None, false);
+                self.close::<Vec<(u32, SocketAddr, String)>>(None, false);
             }
         }
     }
@@ -238,7 +330,7 @@ impl Connections {
                     }
                     Err(e) => {
                         warn!("Node{} {} is shutdown, err: {}", peer.0, peer.1, e);
-                        remove_peers.push(*peer);
+                        remove_peers.push(peer.clone());
                     }
                 };
             }
@@ -252,16 +344,16 @@ impl Connections {
         );
     }
 
-    fn close<T: ::std::iter::IntoIterator<Item = (u32, SocketAddr)>>(
+    fn close<T: ::std::iter::IntoIterator<Item = (u32, SocketAddr, String)>>(
         &mut self,
         peers: Option<T>,
         need_reconnect: bool,
     ) {
         match peers {
             Some(peers) => peers.into_iter().for_each(|peer| {
-                if let Some(stream) = self.peers.remove(&peer) {
-                    let _ = stream.shutdown(Shutdown::Both).map_err(|err| {
-                        warn!("Shutdown {} - {} failed: {}", peer.0, peer.1, err);
+                if let Some(mut stream) = self.peers.remove(&peer) {
+                    let _ = stream.shutdown().map_err(|err| {
+                        warn!(" Shutdown {} - {} failed: {}", peer.0, peer.1, err);
                     });
                     if need_reconnect {
                         self.connect_sender.send(peer).unwrap();
@@ -271,13 +363,15 @@ impl Connections {
             }),
             None => {
                 self.peers.iter_mut().for_each(|(peer, stream)| {
-                    let _ = stream.shutdown(Shutdown::Both).map_err(|err| {
+                    let _ = stream.shutdown().map_err(|err| {
                         warn!("Shutdown {} - {} failed: {}", peer.0, peer.1, err);
                     });
                 });
                 if need_reconnect {
-                    self.peers.iter().for_each(|(&peer, _)| {
-                        self.connect_sender.send(peer).unwrap();
+                    self.peers.iter().for_each(|(ref peer, _)| {
+                        self.connect_sender
+                            .send((peer.0, peer.1, peer.2.clone()))
+                            .unwrap();
                     })
                 }
                 self.peers.clear();
@@ -296,8 +390,11 @@ impl Connections {
                     let _ = stream.flush();
                 }
                 Err(e) => {
-                    warn!("Node{} {} is shutdown, err: {}", peer.0, peer.1, e);
-                    remove_peers.push((peer.0, peer.1));
+                    warn!(
+                        "Node{} {} {} is shutdown, err: {}",
+                        peer.0, peer.1, peer.2, e
+                    );
+                    remove_peers.push((peer.0, peer.1, peer.2.clone()));
                 }
             };
         }

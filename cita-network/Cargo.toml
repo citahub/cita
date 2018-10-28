@@ -17,7 +17,9 @@ util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop"
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 rand = "0.3.*"
-tokio = "0.1.8"
+tokio = "0.1.11"
+native-tls = "0.2.1"
+tokio-tls = "0.2"
 
 [dev-dependencies]
 tempfile = "2"
