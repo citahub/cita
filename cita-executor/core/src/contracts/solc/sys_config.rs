@@ -60,9 +60,9 @@ pub struct TokenInfo {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct ChainId {
-    pub id_v0: u32,
-    pub id_v1: U256,
+pub enum ChainId {
+    V0(u32),
+    V1(U256),
 }
 
 /// Configuration items from system contract
@@ -313,15 +313,13 @@ impl<'a> SysConfig<'a> {
                 .chain_id(BlockId::Pending)
                 .unwrap_or_else(SysConfig::default_chain_id);
 
-            let id_v1 = SysConfig::default_chain_id_v1();
-            Some(ChainId { id_v0, id_v1 })
+            Some(ChainId::V0(id_v0))
         } else if version == 1 {
             let id_v1 = self
                 .chain_id_v1(BlockId::Pending)
                 .unwrap_or_else(SysConfig::default_chain_id_v1);
 
-            let id_v0 = SysConfig::default_chain_id();
-            Some(ChainId { id_v0, id_v1 })
+            Some(ChainId::V1(id_v1))
         } else {
             error!("unexpected version {}!", version);
             None

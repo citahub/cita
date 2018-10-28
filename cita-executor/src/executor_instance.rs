@@ -17,7 +17,7 @@
 
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
-use core::contracts::solc::sys_config::SysConfig;
+use core::contracts::solc::sys_config::{ChainId, SysConfig};
 use core::contracts::solc::VersionManager;
 use core::db;
 use core::libexecutor::block::{Block, ClosedBlock};
@@ -326,13 +326,12 @@ impl ExecutorInstance {
         let mut miscellaneous = Miscellaneous::new();
 
         if let Some(chain_id) = sys_config.deal_chain_id_version(&version_manager) {
-            miscellaneous.set_chain_id(chain_id.id_v0);
-            miscellaneous.set_chain_id_v1(<[u8; 32]>::from(chain_id.id_v1).to_vec());
-            trace!(
-                "miscellaneous msg, chain_id: id_v0 = {}, id_v1 = {}",
-                chain_id.id_v0,
-                chain_id.id_v1
-            );
+            match chain_id {
+                ChainId::V0(v0) => miscellaneous.set_chain_id(v0),
+                ChainId::V1(v1) => miscellaneous.set_chain_id_v1(<[u8; 32]>::from(v1).to_vec()),
+            }
+
+            trace!("miscellaneous msg, chain_id: {:?}", chain_id);
         }
 
         let msg: Message = miscellaneous.into();
@@ -526,9 +525,9 @@ impl ExecutorInstance {
 
                         sys_config
                             .deal_chain_id_version(&version_manager)
-                            .map(|chain_id| {
-                                metadata.chain_id = chain_id.id_v0;
-                                metadata.chain_id_v1 = chain_id.id_v1.lower_hex()
+                            .map(|chain_id| match chain_id {
+                                ChainId::V0(v0) => metadata.chain_id = v0,
+                                ChainId::V1(v1) => metadata.chain_id_v1 = v1.lower_hex(),
                             })
                             .ok_or_else(|| "Query chain id failed".to_owned())?;
                         Ok(())
