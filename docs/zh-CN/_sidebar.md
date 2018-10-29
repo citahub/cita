@@ -47,7 +47,7 @@
     - [跨链合约编写及操作示例](crosschain/crosschain_contract_example.md)
 - 协议升级
     - [概述](protocol_upgrade/overview.md)
-    - [升级操作](protocol_upgrade/operation.md)
+    - [v0](protocol_upgrade/v0.md)
     - [v1](protocol_upgrade/v1.md)
 - 参考
     - [保留地址](reference/addresses.md)
