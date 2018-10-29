@@ -119,6 +119,7 @@ usage: create_cita_config.py create [-h]
                                     [--grpc_port GRPC_PORT]
                                     [--jsonrpc_port JSONRPC_PORT]
                                     [--ws_port WS_PORT]
+                                    [--enable_tls]
 ```
 
 必要参数解释：
@@ -127,6 +128,7 @@ usage: create_cita_config.py create [-h]
 * `nodes` : 指定节点的 ip 地址和端口
 * `super_admin` : 指定超级管理员地址
 * `contract_arguments` : 设定系统合约的默认值，这个参数具体的信息请详细查看系统合约文档
+* `enable_tls` : 指定节点间数据是否使用tls(Transport Layer Security)加密传输，不加此选项默认为不加密传输
 
 注意事项：
 
@@ -140,6 +142,7 @@ usage: create_cita_config.py create [-h]
     * 默认的 `jsonrpc` 端口：1337 到 1337 + N
     * 默认的 `websocket` 端口：4337 到 4337+N
     * 默认的 `rabbitmq` 端口：4369(epmd)/25672(Erlang distribution)/5671，5672(AMQP)/15672(management plugin)
+4. `--enable_tls`为可选选项，创建链时加上此选项，会在network.toml配置文件中增加`enable = true`和每个peer中`common_name = ${chain_name}.cita`的配置项，否则network.toml中不会生成前面两个配置项。
 
 ### 操作示例
 
