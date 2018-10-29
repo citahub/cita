@@ -119,6 +119,7 @@ Usage: create_cita_config.py create [-h]
                                     [--grpc_port GRPC_PORT]
                                     [--jsonrpc_port JSONRPC_PORT]
                                     [--ws_port WS_PORT]
+                                    [--enable_tls]
 ```
 
 Explanation of necessary parameters:
@@ -127,6 +128,7 @@ Explanation of necessary parameters:
 * `nodes`: specify the IP address and port of the node
 * `super_admin` : specify super administrator address
 * `contract_arguments` : set the default value of the system contract. For details of this parameter, please check the system contract document.
+* `enable_tls` : Specifies whether the data between nodes is encrypted using tls (Transport Layer Security). Without this option, the default is unencrypted transmission.
 
 Notice:
 
@@ -140,6 +142,7 @@ Notice:
     * Default `jsonrpc` port: 1337 to 1337 + N
     * Default `websocket` port: 4337 to 4337+N
     * Default `rabbitmq` port: 4369(epmd)/25672(Erlang distribution)/5671,5672(AMQP)/15672(management plugin)
+4. `--enable_tls` is an optional option. Adding this option when creating a chain will add `enable = true` to the network.toml and `common_name = ${chain_name}.cita` in each peer. Otherwise the configuration items are not generated in network.toml
 
 ### Operation example
 
