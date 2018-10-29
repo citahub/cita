@@ -228,7 +228,7 @@ class ChainInfo(object):
             return
 
         subj = self.prefix_subj + 'cita'
-        cmd = f'sudo openssl req -newkey rsa:1024 -nodes -keyout {self.template_dir}/{self.root_ca_name}.key '\
+        cmd = f'openssl req -newkey rsa:1024 -nodes -keyout {self.template_dir}/{self.root_ca_name}.key '\
             f'-days {self.ca_days} -x509 -out {self.template_dir}/{self.root_ca_name}.crt -subj "{subj}"'
         os.system(cmd)
 
@@ -244,17 +244,17 @@ class ChainInfo(object):
         need_directory(node_dir)
 
         subj = self.prefix_subj + f'{self.node_ca_name}{node_id}.cita'
-        cmd = f'sudo openssl req -newkey rsa:1024 -nodes -keyout {node_dir}/{self.node_ca_name}.key ' \
+        cmd = f'openssl req -newkey rsa:1024 -nodes -keyout {node_dir}/{self.node_ca_name}.key ' \
             f'-days {self.ca_days} -out {node_dir}/{self.node_ca_name}.csr -subj "{subj}"'
         os.system(cmd)
 
-        cmd = f'sudo openssl x509 -CAcreateserial -req -in {node_dir}/{self.node_ca_name}.csr ' \
+        cmd = f'openssl x509 -CAcreateserial -req -in {node_dir}/{self.node_ca_name}.csr ' \
             f'-CA {self.template_dir}/{self.root_ca_name}.crt ' \
             f'-CAkey {self.template_dir}/{self.root_ca_name}.key ' \
             f'-out {node_dir}/{self.node_ca_name}.crt -days {self.ca_days}'
         os.system(cmd)
 
-        cmd = f'sudo openssl pkcs12 -export -in {node_dir}/{self.node_ca_name}.crt ' \
+        cmd = f'openssl pkcs12 -export -in {node_dir}/{self.node_ca_name}.crt ' \
             f'-inkey {node_dir}/{self.node_ca_name}.key ' \
             f'-out {node_dir}/{self.server_ca_name}.pfx -password pass:server.tls.cita' 
         os.system(cmd)
