@@ -87,7 +87,7 @@ contract NodeManager is INodeManager, Error, Check, EconomicalType {
     function setStake(address _node, uint64 stake)
         public
         onlyAdmin
-        checkPermission(builtInPermissions[17])
+        hasPermission(builtInPermissions[17])
         returns (bool)
     {
         require(AddressArray.exist(_node, nodes), "node not exist.");
@@ -105,7 +105,7 @@ contract NodeManager is INodeManager, Error, Check, EconomicalType {
         onlyAdmin
         oneOperate
         onlyClose(_node)
-        checkPermission(builtInPermissions[15])
+        hasPermission(builtInPermissions[15])
         returns (bool)
     {
         status[_node] = NodeStatus.Start;
@@ -124,7 +124,7 @@ contract NodeManager is INodeManager, Error, Check, EconomicalType {
         onlyAdmin
         oneOperate
         onlyStart(_node)
-        checkPermission(builtInPermissions[16])
+        hasPermission(builtInPermissions[16])
         returns (bool)
     {
         require(AddressArray.remove(_node, nodes), "remove node failed.");

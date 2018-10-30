@@ -3,6 +3,7 @@ pragma solidity ^0.4.24;
 import "./permission_creator.sol";
 import "../common/check.sol";
 import "../interfaces/permission_management.sol";
+import "../interfaces/authorization.sol";
 
 /// @title Permission management contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -13,6 +14,7 @@ import "../interfaces/permission_management.sol";
 contract PermissionManagement is IPermissionManagement, Check {
 
     PermissionCreator permissionCreator = PermissionCreator(permissionCreatorAddr);
+    IAuthorization auth = IAuthorization(authorizationAddr);
 
     event PermissionDeleted(address _permission);
 
@@ -36,7 +38,7 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @return New permission's address
     function newPermission(bytes32 _name, address[] _conts, bytes4[] _funcs)
         external
-        checkPermission(builtInPermissions[0])
+        hasPermission(builtInPermissions[0])
         sameLength(_conts, _funcs)
         returns (address id)
     {
@@ -48,7 +50,7 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @return true if successed, otherwise false
     function deletePermission(address _permission)
         external
-        checkPermission(builtInPermissions[1])
+        hasPermission(builtInPermissions[1])
         notBuiltInPermission(_permission)
         returns (bool)
     {
@@ -66,7 +68,7 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @return true if successed, otherwise false
     function updatePermissionName(address _permission, bytes32 _name)
         external
-        checkPermission(builtInPermissions[2])
+        hasPermission(builtInPermissions[2])
         returns (bool)
     {
         Permission perm = Permission(_permission);
@@ -81,7 +83,7 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @return true if successed, otherwise false
     function addResources(address _permission, address[] _conts, bytes4[] _funcs)
         external
-        checkPermission(builtInPermissions[2])
+        hasPermission(builtInPermissions[2])
         returns (bool)
     {
         Permission perm = Permission(_permission);
@@ -96,7 +98,7 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @return true if successed, otherwise false
     function deleteResources(address _permission, address[] _conts, bytes4[] _funcs)
         external
-        checkPermission(builtInPermissions[2])
+        hasPermission(builtInPermissions[2])
         returns (bool)
     {
         Permission perm = Permission(_permission);
@@ -110,7 +112,7 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @return true if successed, otherwise false
     function setAuthorizations(address _account, address[] _permissions)
         external
-        checkPermission(builtInPermissions[3])
+        hasPermission(builtInPermissions[3])
         returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++)
@@ -125,7 +127,7 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @return true if successed, otherwise false
     function setAuthorization(address _account, address _permission)
         external
-        checkPermission(builtInPermissions[3])
+        hasPermission(builtInPermissions[3])
         returns (bool)
     {
         require(auth.setAuth(_account, _permission), "setAuthorization failed.");
@@ -138,7 +140,7 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @return true if successed, otherwise false
     function cancelAuthorizations(address _account, address[] _permissions)
         external
-        checkPermission(builtInPermissions[4])
+        hasPermission(builtInPermissions[4])
         returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++)
@@ -153,7 +155,7 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @return true if successed, otherwise false
     function cancelAuthorization(address _account, address _permission)
         external
-        checkPermission(builtInPermissions[4])
+        hasPermission(builtInPermissions[4])
         returns (bool)
     {
         require(auth.cancelAuth(_account, _permission), "cancelAuthorization failed.");
@@ -165,7 +167,7 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @return true if successed, otherwise false
     function clearAuthorization(address _account)
         external
-        checkPermission(builtInPermissions[4])
+        hasPermission(builtInPermissions[4])
         returns (bool)
     {
         require(auth.clearAuth(_account), "clearAuthorization failed.");

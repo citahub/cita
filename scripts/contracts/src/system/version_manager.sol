@@ -9,7 +9,6 @@ contract VersionManager is IVersionManager, ReservedAddress {
     uint32 public version;
 
     Admin admin = Admin(adminAddr);
-    ISysConfig config = ISysConfig(sysConfigAddr);
 
     modifier onlyAdmin {
         if (admin.isAdmin(msg.sender))
@@ -32,6 +31,7 @@ contract VersionManager is IVersionManager, ReservedAddress {
             revert("New version must be greater by 1 than the older one.");
         }
         if (version == 0 && _version == 1) {
+            ISysConfig config = ISysConfig(sysConfigAddr);
             config.updateToChainIdV1();
         }
         version = _version;

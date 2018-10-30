@@ -6,6 +6,7 @@ import "../common/admin.sol";
 import "../common/address.sol";
 import "../common/check.sol";
 import "../interfaces/quota_manager.sol";
+import "../interfaces/authorization.sol";
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -22,6 +23,8 @@ contract QuotaManager is IQuotaManager, Error, Check {
     uint maxLimit = 2 ** 63 - 1;
     uint baseLimit = 2 ** 22 - 1;
     Admin admin = Admin(adminAddr);
+    /// Just for compatible
+    IAuthorization private _auth = IAuthorization(authorizationAddr);
 
     modifier checkBaseLimit(uint _v) {
         if (_v <= maxLimit && _v >= baseLimit)
@@ -64,7 +67,7 @@ contract QuotaManager is IQuotaManager, Error, Check {
         public
         onlyAdmin
         checkBaseLimit(_value)
-        checkPermission(builtInPermissions[18])
+        hasPermission(builtInPermissions[18])
         returns (bool)
     {
         defaultAQL = _value;
@@ -80,7 +83,7 @@ contract QuotaManager is IQuotaManager, Error, Check {
         public
         onlyAdmin
         checkBaseLimit(_value)
-        checkPermission(builtInPermissions[18])
+        hasPermission(builtInPermissions[18])
         returns (bool)
     {
         uint i = AddressArray.index(_account, accounts);
@@ -108,7 +111,7 @@ contract QuotaManager is IQuotaManager, Error, Check {
         onlyAdmin
         checkBaseLimit(_value)
         checkBlockLimit(_value)
-        checkPermission(builtInPermissions[19])
+        hasPermission(builtInPermissions[19])
         returns (bool)
     {
         BQL = _value;
