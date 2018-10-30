@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use citaprotocol::{CitaCodec, CitaRequest};
-use config::NetConfig;
 use futures::Future;
 use native_tls;
 use std::fs::File;
@@ -37,10 +36,10 @@ const SERVER_CERT_PASSWORD: &str = "server.tls.cita";
 #[derive(Clone)]
 pub struct NetServer {
     net_sender: Sender<(Source, CitaRequest)>,
-    config: NetConfig,
+    enable_tls: bool,
 }
 
-fn gennerate_tls_acceptor(path: &str, password: &str) -> Option<TlsAcceptor> {
+fn generate_tls_acceptor(path: &str, password: &str) -> Option<TlsAcceptor> {
     let mut file = File::open(path).unwrap();
     let mut pkcs12 = vec![];
     file.read_to_end(&mut pkcs12).unwrap();
@@ -57,14 +56,17 @@ fn gennerate_tls_acceptor(path: &str, password: &str) -> Option<TlsAcceptor> {
 }
 
 impl NetServer {
-    pub fn new(net_sender: Sender<(Source, CitaRequest)>, config: NetConfig) -> NetServer {
-        NetServer { net_sender, config }
+    pub fn new(net_sender: Sender<(Source, CitaRequest)>, enable_tls: bool) -> NetServer {
+        NetServer {
+            net_sender,
+            enable_tls,
+        }
     }
 
     pub fn server(self, addr: SocketAddr) {
         let mut tls_acceptor = None;
-        if self.config.enable_tls.unwrap_or(false) {
-            tls_acceptor = gennerate_tls_acceptor(SERVER_CERT_NAME, SERVER_CERT_PASSWORD);
+        if self.enable_tls {
+            tls_acceptor = generate_tls_acceptor(SERVER_CERT_NAME, SERVER_CERT_PASSWORD);
             if tls_acceptor.is_none() {
                 panic!("TLS Server Cert for acceptor is not ok");
             }
@@ -123,4 +125,3 @@ fn process(
 }
 
 unsafe impl Send for NetServer {}
-unsafe impl Sync for NetServer {}
