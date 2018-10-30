@@ -21,7 +21,7 @@ contract ReservedAddress {
     address public rootGroupAddr = 0xfFFfFFFFFffFFfffFFFFfffffFffffFFfF020009;
     address public userManagementAddr = 0xFFFffFFfffffFFfffFFffffFFFffFfFffF02000a;
     address public groupCreatorAddr = 0xfFFffFfFFFFfFFFfFfffffFFfffffffffF02000B;
-    address public allGroupsAddr = 0xfFFffFFFfffFfFFFfFfFFfffffffFfFfFf020012;
+    address constant allGroupsAddr = 0xfFFffFFFfffFfFFFfFfFFfffffffFfFfFf020012;
 
 
     address[24] public builtInPermissions = [

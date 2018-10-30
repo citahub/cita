@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "../lib/address_array.sol";
-import "../common/address.sol";
+import "../common/reserved_address.sol";
 import "../interfaces/all_groups.sol";
 
 /// @title User management using group struct

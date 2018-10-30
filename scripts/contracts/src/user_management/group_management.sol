@@ -16,8 +16,10 @@ import "../interfaces/all_groups.sol";
 contract GroupManagement is IGroupManagement, ReservedAddress {
 
     GroupCreator groupCreator = GroupCreator(groupCreatorAddr);
+    /// Just for compatible
+    address[] private _groups;
     IAuthorization auth = IAuthorization(authorizationAddr);
-    IAllGroups groups = IAllGroups(allGroupsAddr);
+    IAllGroups constant groups = IAllGroups(allGroupsAddr);
 
     event GroupDeleted(address _group);
 
@@ -36,6 +38,13 @@ contract GroupManagement is IGroupManagement, ReservedAddress {
     modifier checkPermission(address _permission, address _origin) {
         require(auth.checkPermission(msg.sender, _permission) || auth.checkPermission(_origin, _permission), "Permission denied.");
         _;
+    }
+
+    /// @notice Constructor
+    /// Just for compatible
+    constructor() public {
+        // Root
+        _groups.push(rootGroupAddr);
     }
 
     /// @notice Create a new group

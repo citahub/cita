@@ -24,7 +24,7 @@ contract RoleManagement is IRoleManagement, Check {
     /// @return New role's address
     function newRole(bytes32 _name, address[] _permissions)
         external
-        checkPermission(builtInPermissions[5])
+        hasPermission(builtInPermissions[5])
         returns (address roleid)
     {
         return roleCreator.createRole(_name, _permissions);
@@ -35,7 +35,7 @@ contract RoleManagement is IRoleManagement, Check {
     /// @return true if successed, otherwise false
     function deleteRole(address _role)
         external
-        checkPermission(builtInPermissions[6])
+        hasPermission(builtInPermissions[6])
         returns (bool)
     {
         // Cancel the role of the account's which has the role
@@ -53,7 +53,7 @@ contract RoleManagement is IRoleManagement, Check {
     /// @return true if successed, otherwise false
     function updateRoleName(address _role, bytes32 _name)
         external
-        checkPermission(builtInPermissions[7])
+        hasPermission(builtInPermissions[7])
         returns (bool)
     {
         Role roleContract = Role(_role);
@@ -66,7 +66,7 @@ contract RoleManagement is IRoleManagement, Check {
     /// @return true if successed, otherwise false
     function addPermissions(address _role, address[] _permissions)
         external
-        checkPermission(builtInPermissions[7])
+        hasPermission(builtInPermissions[7])
         returns (bool)
     {
         // Set the authorization of all the account's which has the role
@@ -83,7 +83,7 @@ contract RoleManagement is IRoleManagement, Check {
     /// @return true if successed, otherwise false
     function deletePermissions(address _role, address[] _permissions)
         external
-        checkPermission(builtInPermissions[7])
+        hasPermission(builtInPermissions[7])
         returns (bool)
     {
         Role roleContract = Role(_role);
@@ -100,7 +100,7 @@ contract RoleManagement is IRoleManagement, Check {
     /// @return true if successed, otherwise false
     function setRole(address _account, address _role)
         external
-        checkPermission(builtInPermissions[8])
+        hasPermission(builtInPermissions[8])
         returns (bool)
     {
         require(roleAuth.setRole(_account, _role), "setRole failed.");
@@ -113,7 +113,7 @@ contract RoleManagement is IRoleManagement, Check {
     /// @return true if successed, otherwise false
     function cancelRole(address _account, address _role)
         external
-        checkPermission(builtInPermissions[9])
+        hasPermission(builtInPermissions[9])
         returns (bool)
     {
         require(roleAuth.cancelRole(_account, _role), "cancelRole failed.");
@@ -125,7 +125,7 @@ contract RoleManagement is IRoleManagement, Check {
     /// @return true if successed, otherwise false
     function clearRole(address _account)
         external
-        checkPermission(builtInPermissions[9])
+        hasPermission(builtInPermissions[9])
         returns (bool)
     {
         require(roleAuth.clearRole(_account), "clearRole failed.");
