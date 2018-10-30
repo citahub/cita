@@ -150,16 +150,16 @@ jobs:
 
   "Check Contracts":
     docker:
-      - image: circleci/node:8.9.1  
+      - image: circleci/node:8.9.1
     steps:
       - checkout
-      - run: 
+      - run:
           name: Test system contracts
           command: |
             sudo npm install -g solium
             cd scripts/contracts/
             solium -d src/
-            
+
   "Check Clippy":
     <<: *job-default
     steps:
@@ -227,6 +227,9 @@ jobs:
       - run:
           name: Basic Integrate Test
           command: ./tests/integrate_test/cita_basic.sh
+      - run:
+          name: Basic Tls Integrate Test
+          command: ./tests/integrate_test/cita_tls_basic.sh
       - run:
           name: JSON-RPC Mock Test in Quota Mode
           command: ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota

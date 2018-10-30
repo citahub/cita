@@ -96,6 +96,8 @@ jobs:
       script: ./env.sh ./tests/integrate_test/cita_byzantinetest.sh charge
 
     - <<: *stage-integrate-test-sha3-secp256k1
+      name: Basic Integrate Test with TLS support
+      script: ./env.sh ./tests/integrate_test/cita_tls_basic.sh
       name: JSONRPC Schema Mock Test (Quota)
       script: ./env.sh ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota
     - <<: *stage-integrate-test-sha3-secp256k1
