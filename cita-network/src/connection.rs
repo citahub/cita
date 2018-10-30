@@ -20,7 +20,7 @@ use citaprotocol::pubsub_message_to_network_message;
 use config;
 use config::NetConfig;
 use libproto::{Message, OperateType};
-use native_tls::{TlsConnector, TlsStream};
+use native_tls::{self, TlsConnector};
 use notify::DebouncedEvent;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -34,19 +34,23 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+use tokio;
+use tokio::prelude::*;
+use tokio::util::FutureExt;
+use tokio_tls;
 
 const TIMEOUT: u64 = 15;
 const ROOT_CERT_FILE: &str = "rootCA.crt";
 
 pub enum RealStream {
-    CryptStream(TlsStream<TcpStream>),
+    CryptStream(tokio_tls::TlsStream<tokio::net::TcpStream>),
     NormalStream(TcpStream),
 }
 
 impl RealStream {
     pub fn shutdown(&mut self) -> io::Result<()> {
         match self {
-            RealStream::CryptStream(ref mut tls) => tls.shutdown(),
+            RealStream::CryptStream(ref mut tls) => tls.shutdown().map(|_| ()),
             RealStream::NormalStream(ref mut tcp) => tcp.shutdown(Shutdown::Both),
         }
     }
@@ -79,10 +83,10 @@ struct Manager {
     need_connect: Vec<(u32, SocketAddr, String)>,
     connect_receiver: Receiver<(u32, SocketAddr, String)>,
     task_sender: Sender<Task>,
-    config: NetConfig,
+    enable_tls: bool,
 }
 
-fn gennerate_tls_connector(path: &str) -> Option<TlsConnector> {
+fn generate_tls_connector(path: &str) -> Option<TlsConnector> {
     let mut file = File::open(path).expect("Not has cert file");
     let mut pem = vec![];
     file.read_to_end(&mut pem).expect("Cert File read error");
@@ -101,74 +105,86 @@ impl Manager {
     fn new(
         task_sender: Sender<Task>,
         connect_receiver: Receiver<(u32, SocketAddr, String)>,
-        config: NetConfig,
+        enable_tls: bool,
     ) -> Self {
         Manager {
             need_connect: Vec::new(),
             connect_receiver,
             task_sender,
-            config,
+            enable_tls,
         }
     }
 
     fn run(&mut self) {
-        let tls_connector = self.config.enable_tls.and_then(|enable| {
-            if enable {
-                let connector =
-                    gennerate_tls_connector(ROOT_CERT_FILE).expect("TLS connector not gennerated");
-                Some(connector)
-            } else {
-                None
+        let (tls_connector, mut rt) = if self.enable_tls {
+            let tls_connector = generate_tls_connector(ROOT_CERT_FILE);
+            let rt = tokio::runtime::current_thread::Runtime::new().ok();
+            if tls_connector.is_none() || rt.is_none() {
+                panic!("TLS connector not generated");
             }
-        });
+            (tls_connector, rt)
+        } else {
+            (None, None)
+        };
 
         loop {
             while let Ok(message) = self.connect_receiver.try_recv() {
                 self.need_connect.push(message);
             }
             let mut new_need_connect = Vec::new();
-            for (id, addr, commom_name) in self.need_connect.iter() {
-                match TcpStream::connect_timeout(addr, Duration::from_secs(TIMEOUT)) {
-                    Ok(tcp) => {
-                        if self.config.enable_tls.unwrap_or(false) {
-                            if let Ok(tls) =
-                                tls_connector.clone().unwrap().connect(&*commom_name, tcp)
-                            {
+            while let Some((id, addr, common_name)) = self.need_connect.pop() {
+                match tls_connector.clone() {
+                    Some(tls_connect) => {
+                        let common_name_clone = common_name.clone();
+                        let task = tokio::net::TcpStream::connect(&addr)
+                            .and_then(move |socket| {
+                                tokio_tls::TlsConnector::from(tls_connect)
+                                    .connect(&common_name_clone, socket)
+                                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
+                            })
+                            .timeout(Duration::from_secs(TIMEOUT));
+                        match rt.as_mut().unwrap().block_on(task) {
+                            Ok(tls) => {
                                 self.task_sender
                                     .send(Task::NewTCP((
-                                        *id,
-                                        *addr,
+                                        id,
+                                        addr,
                                         RealStream::CryptStream(tls),
-                                        commom_name.clone(),
+                                        common_name.clone(),
                                     )))
                                     .unwrap();
-                            } else {
-                                warn!("TLS connect {:?} not ok", addr);
                             }
-                        } else {
+                            Err(e) => {
+                                warn!("TLS connect {} failed, error: {}", addr, e);
+                                new_need_connect.push((id, addr, common_name));
+                            }
+                        };
+                    }
+                    None => match TcpStream::connect_timeout(&addr, Duration::from_secs(TIMEOUT)) {
+                        Ok(tcp) => {
                             self.task_sender
                                 .send(Task::NewTCP((
-                                    *id,
-                                    *addr,
+                                    id,
+                                    addr,
                                     RealStream::NormalStream(tcp),
-                                    commom_name.clone(),
+                                    common_name.clone(),
                                 )))
                                 .unwrap();
                         }
-                    }
-                    Err(e) => {
-                        warn!(
-                            "Node{}, {} unable to establish connection, error: {}",
-                            id, addr, e
-                        );
-                        new_need_connect.push((*id, *addr, commom_name.clone()));
-                    }
+                        Err(e) => {
+                            warn!(
+                                "Node{}, {} unable to establish connection, error: {}",
+                                id, addr, e
+                            );
+                            new_need_connect.push((id, addr, common_name));
+                        }
+                    },
                 }
             }
             self.need_connect = new_need_connect;
 
             if !self.need_connect.is_empty() {
-                trace!(
+                debug!(
                     "Complete a round of attempts to connect, \
                      left {} address for the next round of processing",
                     self.need_connect.len()
@@ -198,9 +214,9 @@ impl Connections {
         let (connect_sender, connect_receiver) = channel();
 
         let connect_task_sender = task_sender.clone();
-        let to_manager_config = config.clone();
+        let enable_tls = config.enable_tls.unwrap_or(false);
         thread::spawn(move || {
-            Manager::new(connect_task_sender, connect_receiver, to_manager_config).run()
+            Manager::new(connect_task_sender, connect_receiver, enable_tls).run()
         });
 
         if let Some(peers) = config.peers.as_ref() {
@@ -353,7 +369,7 @@ impl Connections {
             Some(peers) => peers.into_iter().for_each(|peer| {
                 if let Some(mut stream) = self.peers.remove(&peer) {
                     let _ = stream.shutdown().map_err(|err| {
-                        warn!(" Shutdown {} - {} failed: {}", peer.0, peer.1, err);
+                        warn!("Shutdown {} - {} failed: {}", peer.0, peer.1, err);
                     });
                     if need_reconnect {
                         self.connect_sender.send(peer).unwrap();
