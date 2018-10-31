@@ -18,8 +18,8 @@ contract Check is ReservedAddress {
         private
         returns (bool)
     {
+        IAuthorization auth = IAuthorization(authorizationAddr);
         if (!auth.checkPermission(msg.sender, _permission)) {
-            IAuthorization auth = IAuthorization(authorizationAddr);
             IAllGroups groups = IAllGroups(allGroupsAddr);
             address[] memory allGroups = groups.queryGroups();
             IGroup group;
