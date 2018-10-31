@@ -15,12 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod block;
 pub mod cache;
 pub mod chain;
-pub mod extras;
 pub mod rich_status;
 pub mod status;
-pub mod transaction;
-pub use libproto::*;
+pub use types::block::*;
 pub use util::journaldb;

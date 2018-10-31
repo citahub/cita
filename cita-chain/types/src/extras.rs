@@ -17,11 +17,11 @@
 //! Blockchain DB extras.
 
 use basic_types::LogBloomGroup;
+use block::BlockBody;
 use bloomchain::group::GroupPosition;
 use cita_types::{H256, H264};
 use db::Key;
 use header::{BlockNumber, Header};
-use libchain::block::BlockBody;
 use libproto::blockchain::Proof;
 use receipt::Receipt;
 use rlp::*;

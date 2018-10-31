@@ -55,9 +55,9 @@ use db::{CacheUpdatePolicy, Writable, COL_BODIES, COL_EXTRA, COL_HEADERS};
 
 use types::ids::BlockId;
 
-use libchain::block::{Block, BlockBody};
 use libchain::chain::Chain;
-use libchain::extras::{BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupPosition};
+use types::block::{Block, BlockBody};
+use types::extras::{BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupPosition};
 
 use libproto::Proof;
 

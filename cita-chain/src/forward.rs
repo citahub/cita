@@ -15,12 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(unused_must_use)]
-
 use cita_types::H256;
 use core::filters::eth_filter::EthFilter;
-use core::libchain::block::Block;
 use core::libchain::chain::{BlockInQueue, Chain};
+use core::libchain::Block;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{
     BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
@@ -156,7 +154,7 @@ impl Forward {
                                     include_txs,
                                     block.protobuf().try_into().unwrap(),
                                 );
-                                serde_json::to_string(&rpc_block)
+                                let _ = serde_json::to_string(&rpc_block)
                                     .map(|data| response.set_block(data))
                                     .map_err(|err| {
                                         response.set_code(ErrorCode::query_error());
@@ -184,7 +182,7 @@ impl Forward {
                             include_txs,
                             block.protobuf().try_into().unwrap(),
                         );
-                        serde_json::to_string(&rpc_block)
+                        let _ = serde_json::to_string(&rpc_block)
                             .map(|data| response.set_block(data))
                             .map_err(|err| {
                                 response.set_code(ErrorCode::query_error());
@@ -635,7 +633,7 @@ impl Forward {
                 let ctx_pub = self.ctx_pub.clone();
                 let snapshot_req = snapshot_req.clone();
                 let snapshot_builder = thread::Builder::new().name("snapshot_chain".into());
-                snapshot_builder.spawn(move || {
+                let _ = snapshot_builder.spawn(move || {
                     take_snapshot(&chain, &snapshot_req);
 
                     info!("Taking snapshot finished!!!");

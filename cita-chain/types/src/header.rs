@@ -21,17 +21,16 @@ use basic_types::{LogBloom, ZERO_LOGBLOOM};
 use cita_types::{Address, H256, U256};
 use libproto::blockchain::{BlockHeader, Proof, ProofType};
 use libproto::executor::ExecutedHeader;
-use rlp::*;
+use proof::BftProof;
+use rlp::{self, Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
 use std::cell::Cell;
 use std::cmp;
 use std::ops::Deref;
 use time::get_time;
 
-pub use types::BlockNumber;
-use util::*;
+use util::{Bytes, Hashable, HeapSizeOf, HASH_NULL_RLP};
+pub use BlockNumber;
 
-/// A block header.
-///
 #[derive(Debug, PartialEq, Clone, Eq)]
 struct HashWrap(Cell<Option<H256>>);
 
@@ -62,10 +61,10 @@ pub struct Header {
     receipts_root: H256,
     /// Block bloom.
     log_bloom: LogBloom,
-    /// Gas used for contracts execution.
+    /// Quota used for contracts execution.
     quota_used: U256,
-    /// Block gas limit.
-    gas_limit: U256,
+    /// Block quota limit.
+    quota_limit: U256,
     /// the proof of the block
     proof: Proof,
     /// The hash of the header.
@@ -86,8 +85,9 @@ impl PartialEq for Header {
             && self.receipts_root == c.receipts_root
             && self.log_bloom == c.log_bloom
             && self.quota_used == c.quota_used
-            && self.gas_limit == c.gas_limit
+            && self.quota_limit == c.quota_limit
             && self.proof == c.proof
+            && self.version == c.version
             && self.proposer == c.proposer
     }
 }
@@ -103,7 +103,7 @@ impl Default for Header {
             receipts_root: HASH_NULL_RLP,
             log_bloom: *ZERO_LOGBLOOM,
             quota_used: U256::default(),
-            gas_limit: U256::from(u64::max_value()),
+            quota_limit: U256::from(u64::max_value()),
             proof: Proof::new(),
             hash: HashWrap(Cell::new(None)),
             version: 0,
@@ -123,7 +123,7 @@ impl From<BlockHeader> for Header {
             receipts_root: H256::default(),
             log_bloom: *ZERO_LOGBLOOM,
             quota_used: U256::zero(),
-            gas_limit: U256::from(u64::max_value()),
+            quota_limit: U256::from(u64::max_value()),
             proof: bh.get_proof().clone(),
             version: 0,
             hash: HashWrap(Cell::new(None)),
@@ -166,13 +166,13 @@ impl Header {
     pub fn transactions_root(&self) -> &H256 {
         &self.transactions_root
     }
-    /// Get the gas used field of the header.
+    /// Get the quota used field of the header.
     pub fn quota_used(&self) -> &U256 {
         &self.quota_used
     }
-    /// Get the gas limit field of the header.
-    pub fn gas_limit(&self) -> &U256 {
-        &self.gas_limit
+    /// Get the quota limit field of the header.
+    pub fn quota_limit(&self) -> &U256 {
+        &self.quota_limit
     }
     /// Get the proof field of the header.
     pub fn proof(&self) -> &Proof {
@@ -208,17 +208,17 @@ impl Header {
     /// Set the transactions root field of the header.
     pub fn set_transactions_root(&mut self, a: H256) {
         self.transactions_root = a;
-        self.note_dirty()
+        self.note_dirty();
     }
     /// Set the receipts root field of the header.
     pub fn set_receipts_root(&mut self, a: H256) {
         self.receipts_root = a;
-        self.note_dirty()
+        self.note_dirty();
     }
     /// Set the log bloom field of the header.
     pub fn set_log_bloom(&mut self, a: LogBloom) {
         self.log_bloom = a;
-        self.note_dirty()
+        self.note_dirty();
     }
     /// Set the timestamp field of the header.
     pub fn set_timestamp(&mut self, a: u64) {
@@ -235,14 +235,14 @@ impl Header {
         self.number = a;
         self.note_dirty();
     }
-    /// Set the gas used field of the header.
+    /// Set the quota used field of the header.
     pub fn set_quota_used(&mut self, a: U256) {
         self.quota_used = a;
         self.note_dirty();
     }
-    /// Set the gas limit field of the header.
-    pub fn set_gas_limit(&mut self, a: U256) {
-        self.gas_limit = a;
+    /// Set the quota limit field of the header.
+    pub fn set_quota_limit(&mut self, a: U256) {
+        self.quota_limit = a;
         self.note_dirty();
     }
     /// Set the version of the header.
@@ -275,8 +275,9 @@ impl Header {
     }
 
     /// Note that some fields have changed. Resets the memoised hash.
-    pub fn note_dirty(&self) {
+    pub fn note_dirty(&self) -> &Self {
         self.hash.set(None);
+        self
     }
 
     // TODO: make these functions traity
@@ -289,7 +290,7 @@ impl Header {
         s.append(&self.receipts_root);
         s.append(&self.log_bloom);
         s.append(&self.number);
-        s.append(&self.gas_limit);
+        s.append(&self.quota_limit);
         s.append(&self.quota_used);
         s.append(&self.timestamp);
         s.append(&self.version);
@@ -319,7 +320,31 @@ impl Header {
         bh.set_receipts_root(self.receipts_root.to_vec());
         bh.set_transactions_root(self.transactions_root.to_vec());
         bh.set_quota_used(u64::from(self.quota_used));
-        bh.set_quota_limit(self.gas_limit.low_u64());
+        bh.set_quota_limit(self.quota_limit.low_u64());
+        bh.set_proof(self.proof.clone());
+        bh.set_proposer(self.proposer.to_vec());
+        bh
+    }
+
+    /// Generate a header, only set the fields which has been set in new proposal.
+    pub fn proposal(&self) -> Header {
+        let mut h = Header::new();
+        h.set_parent_hash(self.parent_hash);
+        h.set_timestamp(self.timestamp);
+        h.set_number(self.number);
+        h.set_transactions_root(self.transactions_root);
+        h.set_proof(self.proof.clone());
+        h.set_proposer(self.proposer);
+        h
+    }
+
+    /// Generate the protobuf header, only set the fields which has been set in new proposal.
+    pub fn proposal_protobuf(&self) -> BlockHeader {
+        let mut bh = BlockHeader::new();
+        bh.set_prevhash(self.parent_hash.to_vec());
+        bh.set_timestamp(self.timestamp);
+        bh.set_height(self.number);
+        bh.set_transactions_root(self.transactions_root.to_vec());
         bh.set_proof(self.proof.clone());
         bh.set_proposer(self.proposer.to_vec());
         bh
@@ -335,9 +360,42 @@ impl Header {
         executed_header.set_receipts_root(self.receipts_root.to_vec());
         executed_header.set_log_bloom(self.log_bloom.to_vec());
         executed_header.set_quota_used(u64::from(self.quota_used));
-        executed_header.set_quota_limit(self.gas_limit.low_u64());
+        executed_header.set_quota_limit(self.quota_limit.low_u64());
         executed_header.set_proposer(self.proposer.to_vec());
         executed_header
+    }
+
+    /// Recover a header from rlp bytes.
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        rlp::decode(bytes)
+    }
+    /// Verify if a header is the next header.
+    pub fn verify_next(&self, next: &Header, authorities: &[Address]) -> bool {
+        // Calculate block header hash, and is should be same as the parent_hash in next header
+        if self.number() + 1 == next.number() {
+        } else {
+            warn!("verify next block header block number failed");
+            return false;
+        }
+        if self.note_dirty().hash() == *next.parent_hash() {
+        } else {
+            warn!("verify next block header parent hash failed");
+            return false;
+        };
+        let next_proof = BftProof::from(next.proof().clone());
+        // Verify block header, use proof.proposal
+        if self.number() == 0 || self.proposal_protobuf().crypt_hash() == next_proof.proposal {
+        } else {
+            warn!("verify next block header proposal failed");
+            return false;
+        };
+        // Verify signatures in proposal proof.
+        if next_proof.check(self.number() as usize, authorities) {
+        } else {
+            warn!("verify signatures for next block header failed");
+            return false;
+        };
+        true
     }
 }
 
@@ -350,7 +408,7 @@ impl Decodable for Header {
             receipts_root: r.val_at(3)?,
             log_bloom: r.val_at(4)?,
             number: r.val_at(5)?,
-            gas_limit: r.val_at(6)?,
+            quota_limit: r.val_at(6)?,
             quota_used: r.val_at(7)?,
             timestamp: cmp::min(r.val_at::<U256>(8)?, u64::max_value().into()).as_u64(),
             version: r.val_at(9)?,

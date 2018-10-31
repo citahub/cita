@@ -38,9 +38,7 @@ use header::*;
 use libexecutor::blacklist::BlackList;
 pub use libexecutor::block::*;
 use libexecutor::call_request::CallRequest;
-use libexecutor::extras::*;
 use libexecutor::genesis::Genesis;
-pub use libexecutor::transaction::*;
 
 use libproto::blockchain::{Proof as ProtoProof, ProofType, RichStatus};
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -59,6 +57,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::time::Instant;
+use types::extras::*;
 use types::ids::BlockId;
 use types::receipt::ReceiptError;
 use types::transaction::{Action, SignedTransaction, Transaction};
@@ -632,7 +631,7 @@ impl Executor {
             difficulty: U256::default(),
             last_hashes,
             gas_used: *header.quota_used(),
-            gas_limit: *header.gas_limit(),
+            gas_limit: *header.quota_limit(),
             account_gas_limit: u64::max_value().into(),
         };
         // that's just a copy of the state.
@@ -1244,7 +1243,7 @@ mod tests {
 
     use super::*;
     use cita_types::Address;
-    use core::libchain::block::Block as ChainBlock;
+    use core::libchain::Block as ChainBlock;
     use core::receipt::ReceiptError;
     use libproto::router::{MsgType, RoutingKey, SubModules};
     use libproto::Message;

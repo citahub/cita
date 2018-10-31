@@ -56,7 +56,7 @@ use super::state_db::StateDB;
 use ethcore_bloom_journal::Bloom;
 use header::Header;
 
-use libexecutor::extras::CurrentHash;
+use types::extras::CurrentHash;
 
 /// A sink for produced chunks.
 pub type ChunkSink<'a> = FnMut(&[u8]) -> Result<(), Error> + 'a;
