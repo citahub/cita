@@ -118,6 +118,7 @@ jobs:
         - ./env.sh ./scripts/create_cita_config.py create
             --nodes "127.0.0.1:4100"
             --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"
+            --contract_arguments "VersionManager.version=0"
         - ./env.sh ./bin/cita setup test-chain/0
         - ./daemon.sh ./bin/cita start test-chain/0
       before_script:
@@ -168,6 +169,7 @@ jobs:
         - ./env.sh ./scripts/create_cita_config.py create
             --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002"
             --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"
+            --contract_arguments "VersionManager.version=0"
         - for i in {0..2} ; do
              ./env.sh bin/cita setup test-chain/$i
              && ./daemon.sh bin/cita start test-chain/$i ;
@@ -182,6 +184,7 @@ jobs:
         - ./env.sh ./scripts/create_cita_config.py create
             --nodes "127.0.0.1:4100"
             --contract_arguments "SysConfig.checkQuota=true"
+            --contract_arguments "VersionManager.version=0"
             --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"
         - ./env.sh ./bin/cita setup test-chain/0
         - ./daemon.sh ./bin/cita start test-chain/0
@@ -195,6 +198,7 @@ jobs:
         - ./env.sh ./scripts/create_cita_config.py create
             --nodes "127.0.0.1:4100"
             --contract_arguments "SysConfig.checkPermission=true"
+            --contract_arguments "VersionManager.version=0"
             --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"
         - ./env.sh ./bin/cita setup test-chain/0
         - ./daemon.sh ./bin/cita start test-chain/0
