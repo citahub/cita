@@ -96,7 +96,7 @@ There are two economic models designed in CITA, Quota (default) and Charge.
 
 ## Configuration Tool
 
-In the `docker` environment, we use `./script/create_cita_config.py` to configure a chain. There are two modes for this tool:
+In the `docker` environment, we use `./scripts/create_cita_config.py` to configure a chain. There are two modes for this tool:
 
 * create: configure the new chain before starting it
 * append: add a node to the chain that has been run
@@ -106,7 +106,7 @@ You can learn more by running the command `./env.sh scripts/create_cita_config.p
 ### `Create` Model
 
 ```shell
-$ ./env.sh ./script/create_cita_config.py create --help
+$ ./env.sh ./scripts/create_cita_config.py create --help
 
 Usage: create_cita_config.py create [-h]
                                     [--authorities AUTHORITY[,AUTHORITY[,AUTHORITY[,AUTHORITY[, ...]]]]]
