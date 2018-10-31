@@ -96,7 +96,7 @@ CITA 中存在两种经济模型，Quota(默认) 和 Charge。
 
 ## 配置工具
 
-在 `docker` 环境下，我们使用 `./script/create_cita_config.py` 来构建一条链， 有两种模式：
+在 `docker` 环境下，我们使用 `./scripts/create_cita_config.py` 来构建一条链， 有两种模式：
 
 * create: 创建全新的一条链
 * append: 为已运行链新增一个节点
@@ -106,7 +106,7 @@ CITA 中存在两种经济模型，Quota(默认) 和 Charge。
 ### Create 配置
 
 ```shell
-$ ./env.sh ./script/create_cita_config.py create --help
+$ ./env.sh ./scripts/create_cita_config.py create --help
 
 usage: create_cita_config.py create [-h]
                                     [--authorities AUTHORITY[,AUTHORITY[,AUTHORITY[,AUTHORITY[, ...]]]]]
