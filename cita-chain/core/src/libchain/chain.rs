@@ -300,6 +300,7 @@ pub struct Chain {
     pub blocks_blooms: RwLock<HashMap<LogGroupPosition, LogBloomGroup>>,
     pub block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
     pub nodes: RwLock<Vec<Address>>,
+    pub validators: RwLock<Vec<Address>>,
     pub block_interval: RwLock<u64>,
 
     pub block_quota_limit: AtomicUsize,
@@ -401,6 +402,7 @@ impl Chain {
             state_db: RwLock::new(state_db),
             polls_filter: Arc::new(Mutex::new(PollManager::default())),
             nodes: RwLock::new(Vec::new()),
+            validators: RwLock::new(Vec::new()),
             // need to be cautious here
             // because it's not read from the config file
             block_interval: RwLock::new(3000),
@@ -467,6 +469,11 @@ impl Chain {
             .into_iter()
             .map(|vecaddr| Address::from_slice(&vecaddr[..]))
             .collect();
+        let validators = conf.get_validators();
+        let validators: Vec<Address> = validators
+            .into_iter()
+            .map(|vecaddr| Address::from_slice(&vecaddr[..]))
+            .collect();
         let block_interval = conf.get_block_interval();
         let version = conf.get_version();
         debug!(
@@ -479,7 +486,8 @@ impl Chain {
         self.block_quota_limit
             .store(conf.get_block_quota_limit() as usize, Ordering::SeqCst);
         *self.account_quota_limit.write() = conf.get_account_quota_limit().clone();
-        *self.nodes.write() = nodes.clone();
+        *self.nodes.write() = nodes;
+        *self.validators.write() = validators;
         *self.block_interval.write() = block_interval;
         *self.admin_address.write() = if conf.get_admin_address().is_empty() {
             None
@@ -1277,12 +1285,14 @@ impl Chain {
         let current_hash = header.hash();
         let current_height = header.number();
         let nodes: Vec<Address> = self.nodes.read().clone();
+        let validators: Vec<Address> = self.validators.read().clone();
         let block_interval = self.block_interval.read();
 
         let mut rich_status = ProtoRichStatus::new();
         rich_status.set_hash(current_hash.0.to_vec());
         rich_status.set_height(current_height);
         rich_status.set_nodes(nodes.into_iter().map(|address| address.to_vec()).collect());
+        rich_status.set_validators(validators.into_iter().map(|a| a.to_vec()).collect());
         rich_status.set_interval(*block_interval);
         rich_status.set_version(version_opt.unwrap());
 

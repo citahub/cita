@@ -170,6 +170,7 @@ impl Into<EconomicalModel> for RpcEconomicalModel {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct GlobalSysConfig {
     pub nodes: Vec<Address>,
+    pub validators: Vec<Address>,
     pub block_gas_limit: usize,
     pub account_gas_limit: AccountGasLimit,
     pub delay_active_interval: usize,
@@ -193,6 +194,7 @@ impl GlobalSysConfig {
     fn new() -> GlobalSysConfig {
         GlobalSysConfig {
             nodes: Vec::new(),
+            validators: Vec::new(),
             block_gas_limit: 18_446_744_073_709_551_615,
             account_gas_limit: AccountGasLimit::new(),
             delay_active_interval: 1,
@@ -673,12 +675,18 @@ impl Executor {
             .into_iter()
             .map(|address| address.to_vec())
             .collect();
+        let validators = conf
+            .validators
+            .into_iter()
+            .map(|address| address.to_vec())
+            .collect();
         send_config.set_block_quota_limit(conf.block_gas_limit as u64);
         send_config.set_account_quota_limit(conf.account_gas_limit.into());
         send_config.set_check_quota(conf.check_quota);
 
         trace!("node_list : {:?}", node_list);
         send_config.set_nodes(node_list);
+        send_config.set_validators(validators);
         send_config.set_block_interval(conf.block_interval);
         send_config.set_version(conf.chain_version);
 
@@ -836,6 +844,11 @@ impl Executor {
         conf.nodes = self
             .node_manager()
             .shuffled_stake_nodes(block_id)
+            .unwrap_or_else(NodeManager::default_shuffled_stake_nodes);
+
+        conf.validators = self
+            .node_manager()
+            .nodes(block_id)
             .unwrap_or_else(NodeManager::default_shuffled_stake_nodes);
 
         let quota_manager = QuotaManager::new(self);
