@@ -1,31 +1,33 @@
-# 配额管理
+# Quota Management
 
-## 简述
+## Overview
 
-cita 中的配额数量存在两个限制：
-* `BQL(BlockQuotaLimit)` : 表示块配额的最大值， 默认 1073741824
-* `AQL(AccountQuotaLimit)` : 表示账户配额的最大值， 默认 268435456
+There are two limitations to the quota value in CITA:
+* `BQL(BlockQuotaLimit)` : Indicates the maximum value of the block quota. The default value is 1073741824
+* `AQL(AccountQuotaLimit)` : Indicates the maximum value of the account quota. The default value is 268435456
 
-我们可以通过配额管理合约实现对区块以及账户配额消耗上限的管理:
+We can manage the block and account quota consumption caps through quota management contracts:
 
-* 设置区块配额上限(BQL)
-* 设置账号配额上限(AQL):
+* Set block quota limit (BQL)
+* Set the account quota limit (AQL):
 
-    - 默认的账号配额上限
-    - 设置指定账号配额上限
+    - Default account quota limit
+    - Set the specified account quota limit
 
-## 操作示例
+## Operation example
 
-> 接下来的测试，用 [cita-cli](https://github.com/cryptape/cita-cli) 交互模式进行演示。
+> we use [cita-cli](https://github.com/cryptape/cita-cli) in the following operations.
 
-### 块配额操作
+### Block quota management operation
 
-确保你的链正常运行，查询默认块配额，进入 cita-cli 交互式模式，输入命令：
+Make sure that your chain is running normally, and then query the default block quota:
+
 ```shell
 $ scm QuotaManager getBQL
 ```
 
-输出：
+Output:
+
 ```json
 {
   "id": 1,
@@ -34,13 +36,14 @@ $ scm QuotaManager getBQL
 }
 ```
 
-管理员修改块配额， 输入命令：
+Admin can modify the block quota limitation value by the following command:
 
 ```shell
 scm QuotaManager setBQL --quota-limit 0x0000000000000000000000000000000000000000000000000000000020000000 --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
-查询修改后的块配额：
+Query the modified block quota limitation value:
+
 ```shell
 $ scm QuotaManager getBQL
 ```
@@ -54,16 +57,18 @@ $ scm QuotaManager getBQL
   "
 }
 ```
-默认块配额已更新。
+The default block quota limitation value has been updated.
 
-### 账户配额操作
+### Account Quota Management Operation
 
-确保你的链正常运行，查询默认账户配额，进入 cita-cli 交互式模式，输入命令：
+Make sure that your chain is running normally, and then query the default account quota limitation:
+
 ```shell
 $ scm QuotaManager getDefaultAQL
 ```
 
-输出：
+Output:
+
 ```json
 {
   "id": 1,
@@ -72,18 +77,20 @@ $ scm QuotaManager getDefaultAQL
 }
 ```
 
-管理员修改账户配额， 输入命令：
+Admin can modify the account quota limitation value by the following command:
 
 ```shell
 $ scm QuotaManager setDefaultAQL --quota-limit 0x0000000000000000000000000000000000000000000000000000000020000000 --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
-查询修改后的账户配额：
+Query the account quota limitation:
+
 ```shell
 $ scm QuotaManager getDefaultAQL
 ```
 
-输出：
+Output:
+
 ```json
 {
   "id": 1,
@@ -91,4 +98,5 @@ $ scm QuotaManager getDefaultAQL
   "result": "0x0000000000000000000000000000000000000000000000000000000020000000"
 }
 ```
-默认账户配额已更新。
+
+The default account quota limitation value has been updated.
