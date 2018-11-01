@@ -15,21 +15,36 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#![feature(tool_lints)]
 extern crate cita_crypto as crypto;
 extern crate cita_types;
 extern crate jsonrpc_types;
 extern crate libproto;
 extern crate rlp;
 #[macro_use]
+extern crate rlp_derive;
+#[macro_use]
 extern crate serde_derive;
 extern crate util;
+#[macro_use]
+extern crate lazy_static;
+extern crate time;
+#[macro_use]
+extern crate logger;
+extern crate proof;
 
 pub extern crate bloomchain;
 
 pub mod account_diff;
 pub mod basic_account;
+pub mod basic_types;
+pub mod block;
+pub mod cache_manager;
 pub mod call_analytics;
+pub mod db;
+pub mod extras;
 pub mod filter;
+pub mod header;
 pub mod ids;
 pub mod log_blooms;
 pub mod log_entry;

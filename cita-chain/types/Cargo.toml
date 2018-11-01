@@ -6,6 +6,7 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 
 [dependencies]
 rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -14,6 +15,10 @@ libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "deve
 serde = "1.0"
 serde_derive = "1.0"
 bloomchain = "0.2"
+lazy_static = "0.2"
+time = "0.1"
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [features]
 default = ["secp256k1", "sha3hash"]

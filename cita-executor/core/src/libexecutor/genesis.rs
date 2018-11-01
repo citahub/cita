@@ -22,7 +22,6 @@ use crypto::md5::Md5;
 use db::{self as db, Writable};
 use factory::Factories;
 use libexecutor::block::Block;
-use libexecutor::extras::*;
 use rustc_hex::FromHex;
 use serde_json;
 use state::State;
@@ -33,6 +32,7 @@ use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
+use types::extras::*;
 use util::kvdb::KeyValueDB;
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;

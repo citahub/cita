@@ -21,22 +21,19 @@ use bloomchain::group::{
 };
 use bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
 pub use byteorder::{BigEndian, ByteOrder};
-use cache_manager::CacheManager;
 use db;
 use db::*;
 
 use filters::{PollFilter, PollManager};
 use header::*;
-pub use libchain::block::*;
 use libchain::cache::CacheSize;
-use libchain::extras::*;
 use libchain::status::Status;
-pub use libchain::transaction::*;
-
 use libproto::blockchain::{
     AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
     RichStatus as ProtoRichStatus, StateSignal,
 };
+pub use types::block::*;
+use types::extras::*;
 
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
@@ -53,6 +50,7 @@ use std::convert::{Into, TryInto};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
+use types::cache_manager::CacheManager;
 use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};

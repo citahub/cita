@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,34 +15,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-//use basic_types::LogBloom;
-
-//use env_info::EnvInfo;
-//use env_info::LastHashes;
 use header::*;
 
 use cita_types::H256;
-use libchain::extras::TransactionAddress;
+use extras::TransactionAddress;
 use std::collections::HashMap;
 
 use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
 use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
-//use receipt::{Receipt, ReceiptError};
 use rlp::*;
-//use state::State;
-use state_db::StateDB;
-//use std::collections::{HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
-//use std::sync::Arc;
 
-use types::transaction::SignedTransaction;
+use transaction::SignedTransaction;
 use util::HeapSizeOf;
-
-/// Trait for a object that has a state database.
-pub trait Drain {
-    /// Drop this object and return the underlieing database.
-    fn drain(self) -> StateDB;
-}
 
 /// A block, encoded as it is on the block chain.
 #[derive(Default, Debug, Clone, PartialEq)]
@@ -144,6 +129,14 @@ impl Block {
 
         trace!("closed block transactions {:?}", transactions);
         transactions
+    }
+
+    /// Check whether the block should re-execute
+    // TODO: check version and others
+    pub fn is_equivalent(&self, block: &Block) -> bool {
+        self.transactions_root() == block.transactions_root()
+            && self.timestamp() == block.timestamp()
+            && self.proposer() == block.proposer()
     }
 }
 
