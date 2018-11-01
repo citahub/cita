@@ -3,32 +3,7 @@
 CITA use protocol version number to activate hard fork for upgrading. This
 contract implement setter and getter for protocol version number.
 
-## Interface
-
 ### Operations
-
-<table style = "text-align: center;">
-  <tr>
-    <th>Function Name</th>
-    <th>Permission Required</th>
-    <th>Input Parameters</th>
-    <th>Returned Values</th>
-    <th>Discription</th>
-  </tr>
-  <tr>
-    <td>
-      setVersion(version) <br/>
-      <strong>Set an version</strong>
-    </td>
-    <td>Admin</td>
-    <td>
-      new version number (uint32)
-    <td>None</td>
-    <td>Set an new version number</td>
-  </tr>
-</table>
-
-### 操作示例
 
 > 接下来的测试，用 [cita-cli](https://github.com/cryptape/cita-cli) 交互模式进行演示。
 
@@ -43,38 +18,14 @@ scm VersionManager setVersion --version 1 --admin-private 0x5f0258a4778057a8a7d9
 
 #### Query
 
-Query don't require permission at all.
+输入命令：
 
-<table style = "text-align: center;">
-  <tr>
-    <th>Function Name</th>
-    <th>Input Parameters</th>
-    <th>Returned Values</th>
-    <th>Discription</th>
-  </tr>
-  <tr>
-    <td>
-      getVersion() <br/>
-      <strong>Get current version</strong>
-    </td>
-    <td>
-        None
-    </td>
-    <td>Current version (uint32)</td>
-    <td>Get current version</td>
-  </tr>
-</table>
-
-### 操作示例
-
-> 接下来的测试，用 [cita-cli](https://github.com/cryptape/cita-cli) 交互模式进行演示。
-
-确保你的链正常运行，进入 cita-cli 交互式模式，输入命令：
 ```shell
 scm VersionManager getVersion
 ```
 
-输出：
+output:
+
 ```json
 {
   "id": 1,
@@ -82,4 +33,5 @@ scm VersionManager getVersion
   "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
 }
 ```
+
 可以看到，协议版本号成功修改为 `1`。

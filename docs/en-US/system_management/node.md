@@ -64,52 +64,6 @@ The management of consensus nodes includes adding, deleting, and getting consens
 * Deleting operation can only be performed by administrator;
 * Get consensus nodes list by calling interface
 
-### Consensus nodes management interface
-
-<table>
-  <tr>
-    <th>Interface Name</th>
-    <th>Permission Needed</th>
-    <th>Incoming Parameters</th>
-    <th>Return Value</th>
-    <th>Detailed Discription</th>
-  </tr>
-  <tr>
-    <td>approveNode(address)</td>
-    <td>Administrator</td>
-    <td>New consensus node address</td>
-    <td>Bool (indicating whether this operaiton is sucessful )</td>
-    <td>After the newNode(address) operation is successful, you can call this interface to make a approvement that the node are allowed a consensus node, The node status shows start in here.</td>
-  </tr>
-  <tr>
-    <td>deleteNode(address)</td>
-    <td>Administrator</td>
-    <td>Node address</td>
-    <td>Bool (indicating whether this operaiton is sucessful )</td>
-    <td>If this operation is sucessful, the node would be deleted in the consensus nodes list. The node status shows close in here.</td>
-  </tr>
-  <tr>
-    <td>listNode()</td>
-    <td>Ordinary (read only)</td>
-    <td>Null</td>
-    <td>Address list(address[])</td>
-    <td>Acquire consensus nodes list in which all nodes are in start status</td>
-  </tr>
-  <tr>
-    <td>getStatus(address)</td>
-    <td>Ordinary (read only)</td>
-    <td>Node address</td>
-    <td>
-      node status (uint8):
-      <ul>
-        <li>0: close</li>
-        <li>1: start</li>
-      </ul>
-    </td>
-    <td>Get the status of nodes</td>
-  </tr>
-</table>
-
 ### Add consensus nodes
 
 Only after a node is added as ordianry nodes, it can make the request to become a consensus node. Then, it is necessary to approve the request by administrator. After all of these operations, a consensus node can be added sucessfully. If a ordinary node want to be updated to a consensus node, detailed steps are as follows:
@@ -231,9 +185,7 @@ We can get some related information form the `log` field.
 ```
 $ cita-cli scm NodeManager listNode --url http://127.0.0.1:1337
 ```
-
 output:
-
 ```json
 {
   "id": 1,

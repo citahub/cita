@@ -2,55 +2,6 @@
 
 使用 CITA 搭建一条链， 会把链的一些基本配置(例如链名称， 链的运营方机构，权限配置等等)写入创世块中，创世块一旦生成，除 chainName, operator, website 三项可以在运行时通过系统合约更改，其他信息无法修改。
 
-## 接口
-
-我们提供了设置上述三项信息的接口，以及查询其他基本信息接口如下：
-
-### 操作类接口
-
-<table style = "text-align: center;">
-  <tr>
-    <th>名称</th>
-    <th>需要权限</th>
-    <th>传入参数</th>
-    <th>返回值</th>
-    <th>详细描述</th>
-  </tr>
-  <tr>
-    <td>
-      setOperator(operator)<br/>
-      <strong>设置区块链运营方名称</strong>
-      </td>
-      <td>管理员</td>
-    <td>
-      运营方名称 (string)
-    <td>无</td>
-    <td>设置运营方名称</td>
-  </tr>
-  <tr>
-    <td>
-      setWebsite(website)<br/>
-      <strong>设置运营方网站</strong>
-    </td>
-    <td>管理员</td>
-    <td>
-      网址 (string)
-    <td>无</td>
-    <td>设置运营方网站</td>
-  </tr>
-  <tr>
-    <td>
-      setChainName(chainName)<br/>
-      <strong>设置区块链名称</strong>
-    </td>
-    <td>管理员</td>
-    <td>
-      链名称 (string)
-    <td>无</td>
-    <td>设置区块链名称</td>
-  </tr>
-</table>
-
 ### 操作示例：
 
 > 接下来的测试，用 [cita-cli](https://github.com/cryptape/cita-cli) 交互模式进行演示。
