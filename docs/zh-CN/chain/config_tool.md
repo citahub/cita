@@ -155,7 +155,7 @@ $ ./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d
 接下来演示来生成一条高级配置的链, 命令如下：
 
 ```shell
-$ ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" --contract_arguments SysConfig.checkSendTxPermission=true SysConfig.checkPermission=true SysConfig.economicalModel=1 SysConfig.checkFeeBackPlatform=true  SysConfig.chainOwner=0x9a6bd7272edb238f13002911d8c93dd6bb646d15 SysConfig.super_admin=0xab159a4817542585c93f01cfce9cfe6cd4cbd26a
+$ ./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523 --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" --contract_arguments SysConfig.checkSendTxPermission=true SysConfig.checkPermission=true SysConfig.economicalModel=1 SysConfig.checkFeeBackPlatform=true SysConfig.chainOwner=0x9a6bd7272edb238f13002911d8c93dd6bb646d15
 ```
 
 上述命令，生成一条包含四个节点，端口默认 4000 , 4001 , 4002 , 4003， 超级管理员地址 `0xab159a4817542585c93f01cfce9cfe6cd4cbd26a`， 运营方地址
@@ -164,19 +164,21 @@ $ ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.
 ### 配置超级管理员帐户地址
 
 ```shell
-$ ./env.sh ./scripts/create_cita_config.py create --super_admin=0xab159a4817542585c93f01cfce9cfe6cd4cbd26a ...
+$ ./env.sh ./scripts/create_cita_config.py create --super_admin=0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523 ...
 ```
 
-上述命令行参数中的 `--super_admin` 参数，用于设置超级管理员账户地址，该账户拥有最高权限，用来管理整条链的运行状态。在使用的时候，为安全起见，用户**应该/必须**自行设置超级管理员地址。
+上述命令行参数中的 `--super_admin` 参数，用于设置超级管理员账户地址，该账户拥有最高权限，用来管理整条链的运行状态。用户**必须**设置超级管理员。
 
-对于测试场合，CITA 配置了一个默认管理员账户地址（及其对应的私钥，只针对 secp256k1_sha3 版本）:
+CITA 提供了 `create_key_addr` 命令工具，可以很方便的生成私钥和对应的地址，下面使用 secp256k1_sha3 版本为例：
 
-```json
-{
-  address: 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523
-  private-key: 5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
-}
+```shell
+$ ./env.sh bin/create_key_addr key addr
+$ cat key addr
+0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
+0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523
 ```
+
+上述命令建立两个文件，key 和 addr 。key 文件内的是私钥，addr 文件内的是对应的地址。
 
 ### Append 配置
 
