@@ -155,7 +155,7 @@ $ ./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d
 The next step is to generate a chain with advanced configurations by the following commands:
 
 ```shell
-$ ./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" --contract_arguments SysConfig.checkSendTxPermission=true SysConfig.checkPermission=true SysConfig.economicalModel=1 SysConfig.checkFeeBackPlatform=true SysConfig.chainOwner=0x9a6bd7272edb238f13002911d8c93dd6bb646d15 SysConfig.super_admin=0xab159a4817542585c93f01cfce9cfe6cd4cbd26a
+$ ./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523 --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" --contract_arguments SysConfig.checkSendTxPermission=true SysConfig.checkPermission=true SysConfig.economicalModel=1 SysConfig.checkFeeBackPlatform=true SysConfig.chainOwner=0x9a6bd7272edb238f13002911d8c93dd6bb646d15
 ```
 
 The above command generates a chain with four nodes, port defaults to 4000, 4001, 4002, 4003, super administrator address `0xab159a4817542585c93f01cfce9cfe6cd4cbd26a`, operator address
@@ -164,19 +164,21 @@ The above command generates a chain with four nodes, port defaults to 4000, 4001
 ### Configuring Super Administrator Account Address
 
 ```shell
-$ ./env.sh ./scripts/create_cita_config.py create --super_admin=0xab159a4817542585c93f01cfce9cfe6cd4cbd26a ...
+$ ./env.sh ./scripts/create_cita_config.py create --super_admin=0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523 ...
 ```
 
-The `--super_admin` parameter in the above command line is used to set the super administrator account address. This account has the highest authority and is used to manage the running status of the entire chain. For security, we highly recommend the users ** should / must ** set the super administrator address by themselves.
+The `--super_admin` parameter in the above command line is used to set the super administrator account address. This account has the highest authority and is used to manage the running status of the entire chain. Users ** must ** set the super administrator account.
 
-In test scenarios, CITA configures a default administrator account address (and its corresponding private key, only for the secp256k1_sha3 version):
+CITA provides `create_key_addr` command to easily create a private key and the corresponding address. Here we use secp256k1_sha3 version as an example:
 
-```json
-{
-  Address: 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523
-  Private-key: 5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
-}
+```shell
+$ ./env.sh bin/create_key_addr key addr
+$ cat key addr
+0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
+0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523
 ```
+
+The above command creates two files, key and addr. The string in key file is private key and the string in addr file is corresponding address.
 
 ### `Append` model
 
