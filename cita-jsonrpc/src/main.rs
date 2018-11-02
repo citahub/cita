@@ -139,7 +139,7 @@ fn main() {
     //enable HTTP or WebSocket server!
     if !config.ws_config.enable && !config.http_config.enable {
         error!("Please at least enable one of HTTP and WebSocket server!");
-        std::process::exit(-1);
+        std::process::exit(2);
     }
 
     start_profile(&config.profile_config);
