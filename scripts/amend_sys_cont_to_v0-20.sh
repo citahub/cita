@@ -31,5 +31,5 @@ scripts/create_cita_config.py create \
     --chain_id "$2" \
     --version "$3" \
     --url "$4" \
-&& rm -rf tmp \
-&& rm -f scripts/genesis.json
+&& rm -rf ${SOURCE_DIR}/tmp \
+&& rm -f ${SOURCE_DIR}/scripts/genesis.json
