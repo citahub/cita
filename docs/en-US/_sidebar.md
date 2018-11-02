@@ -45,6 +45,10 @@
     - [View](architecture/view.md)
 - Cross Chain
     - [Cross Chain Contract Examples](crosschain/crosschain_contract_example.md)
+- Protocol Upgrade
+    - [Overview](protocol_upgrade/overview.md)
+    - [v0](protocol_upgrade/v0.md)
+    - [v1](protocol_upgrade/v1.md)
 - Reference
     - [Reserved Addresses](reference/addresses.md)
     - [Glossary](reference/glossary.md)

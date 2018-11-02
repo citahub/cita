@@ -40,11 +40,15 @@
 - 架构设计
     - [整体架构](architecture/architecture.md)
     - [系统组件](architecture/components.md)
-    - [共识](architecture/consensus.md) 
+    - [共识](architecture/consensus.md)
     - [交易处理](architecture/transaction_process.md)
     - [视图](architecture/view.md)
 - 跨链
     - [跨链合约编写及操作示例](crosschain/crosschain_contract_example.md)
+- 协议升级
+    - [概述](protocol_upgrade/overview.md)
+    - [v0](protocol_upgrade/v0.md)
+    - [v1](protocol_upgrade/v1.md)
 - 参考
     - [保留地址](reference/addresses.md)
     - [词汇表](reference/glossary.md)
