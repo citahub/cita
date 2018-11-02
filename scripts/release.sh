@@ -56,3 +56,7 @@ cp -rf scripts/txtool                      target/install/scripts/
 # 6) docker env
 cp -f scripts/env.sh                       target/install/
 cp -f scripts/daemon.sh                    target/install/
+
+# 7) amend info of system contract
+cp -f scripts/amend_sys_cont_to_v0-20.py              target/install/scripts/
+cp -f scripts/amend_sys_cont_to_v0-20.sh              target/install/scripts/
