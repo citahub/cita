@@ -1,23 +1,23 @@
-# 用户管理
+# User Management
 
-CITA 实现了基于组的用户管理，组之间为树形的关系，可对应企业的组织结构。
+CITA support group-based user management, with a tree-like relationship between groups, which can correspond to the organizational structure of the enterprise.
 
-可使用权限管理系统对组进行授权，组内用户除了本身自己的权限之外还拥有所在组的权限。
+The group can be authorized using the permission management contract. Users in the group have both the group permission and their own permission.
 
-对于组的管理，用户在拥有系统内置的权限的前提下，还对权限作用的范围做了约束：
+For the group management, the scope constraint of permissions is :
 
-* 一个组内的用户可作用于本组及本组所有子组
+* Users in a group can perform group management on this group and all subgroups of this group
 
-相对应的鉴权流程增加对组的权限的鉴定，过程如下：
+Add the Group authentication in authentication process, so the whole authentication process include:
 
-* 对用户的权限进行鉴定
-* 对用户所在组的权限进行鉴定
+* Authenticate user permissions
+* Authenticate group permissions
 
-## 操作示例
+## Operation
 
-> 接下来的测试，用 [cita-cli](https://github.com/cryptape/cita-cli) 命令行模式进行演示，操作类接口调用需要有相应的权限。
+> We use [cita-cli](https://github.com/cryptape/cita-cli) for the following demonstration. The operation class interface calls need to have the related permissions.
 
-管理员新建用户组，输入命令：
+Admin creates a new user group by the follwing command：
 
 ```shell
 $ scm GroupManagement newGroup \
@@ -27,10 +27,11 @@ $ scm GroupManagement newGroup \
       --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
-默认 `origin` 是 `0xfFFfFFFFFffFFfffFFFFfffffFffffFFfF020009`，我们要生成组名字的十六进制表示 `7770660000000000000000000000000000000000000000000000000000000000`，我们要添加到本用户组内的用户有两个，分别是 `e1c4021742730ded647590a1686d5c4bfcbae0b0`， `45a50f45cb81c8aedeab917ea0cd3c9178ebdcae`
+ The default `origin` is `0xfFFfFFFFFffFFfffFFFFfffffFffffFFfF020009`.
+ The hexadecimal representation of the group name `7770660000000000000000000000000000000000000000000000000000000000`.
+ We will add these two users to this group: `e1c4021742730ded647590a1686d5c4bfcbae0b0`， `45a50f45cb81c8aedeab917ea0cd3c9178ebdcae`
 
-
-回执输出:
+Get the receipt:
 
 ```json
 {
@@ -97,15 +98,15 @@ $ scm GroupManagement newGroup \
   }
 }
 ```
-到这里，我们已经成功新建了一个用户组。从 `log` 中可知，新用户组的地址是: `0xce6cd8f8562e31d44b1101986204cec34b1df025`。
+By now, we already create a new group. As you can see from `log`, the address of the new group is: `0xce6cd8f8562e31d44b1101986204cec34b1df025`。
 
-让我们查询一下所有组信息，看看是否添加成功，命令输入：
+Let's query all the group information to check if it is added successfully:
 
 ```shell
 $ scm GroupManagement queryGroups
 ```
 
-回执输出：
+Get the receipt：
 
 ```json
 {
@@ -115,14 +116,16 @@ $ scm GroupManagement queryGroups
 }
 ```
 
-可以看到 `0xce6cd8f8562e31d44b1101986204cec34b1df025` 已添加。
+You can see that `0xce6cd8f8562e31d44b1101986204cec34b1df025` has been added.
 
-接着我们根据组地址，来查询组名字，输入命令：
+Then we query the group name by the group address:
+
 ```shell
 $ scm Group queryName --address 0xce6cd8f8562e31d44b1101986204cec34b1df025
 ```
 
-回执输出：
+Get the receipt:
+
 ```json
 {
   "id": 1,
@@ -131,14 +134,16 @@ $ scm Group queryName --address 0xce6cd8f8562e31d44b1101986204cec34b1df025
 }
 ```
 
-可以看到，结果和我们新建组的输入信息一致，厉害了。看看组内都有那些用户吧，输入命令：
+As you can see, the results are totally same with our input information of the new group. Now, let's look at the users's information in the group.
 
-查询组用户
+Query group users:
+
 ```shell
 $ scm Group queryAccounts --address 0xce6cd8f8562e31d44b1101986204cec34b1df025
 ```
 
-回执输出：
+Get the receipt:
+
 ```json
 {
   "id": 1,
@@ -146,16 +151,19 @@ $ scm Group queryAccounts --address 0xce6cd8f8562e31d44b1101986204cec34b1df025
   "result": "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000e1c4021742730ded647590a1686d5c4bfcbae0b000000000000000000000000045a50f45cb81c8aedeab917ea0cd3c9178ebdcae"
 }
 ```
-我们在新建组时添加的两个用户已经添加进来了。
 
-因为组之间是树型关系，所以我们也可以根据父组地址，查询子用户组的信息，命令如下：
+These two users have been added sucessfully!
 
-查询子用户组的地址：
+Because the groups are tree-type, we can also query the sub-user group information according to the parent group address. 
+
+Query the address of the sub-user group:
+
 ```shell
 $ scm Group queryChild --address 0xfFFfFFFFFffFFfffFFFFfffffFffffFFfF020009
 ```
 
-回执输出：
+Get the receipt:
+
 ```json
 {
   "id": 1,
@@ -164,12 +172,14 @@ $ scm Group queryChild --address 0xfFFfFFFFFffFFfffFFFFfffffFffffFFfF020009
 }
 ```
 
-查询子用户组个数:
+Query the number of sub-user groups:
+
 ```shell
 $ scm Group queryChildLength --address 0xfFFfFFFFFffFFfffFFFFfffffFffffFFfF020009
 ```
 
-回执输出：
+Get the receipt:
+
 ```json
 {
   "id": 1,
@@ -178,11 +188,14 @@ $ scm Group queryChildLength --address 0xfFFfFFFFFffFFfffFFFFfffffFffffFFfF02000
 }
 ```
 
-反过来，我们也可以根据子用户组地址，来向上查询父用户组的信息，命令如下：
+We can also query the information of the parent user group according to sub-user group address. 
+
 ```shell
 $ scm Group queryParent --address 0xce6cd8f8562e31d44b1101986204cec34b1df025
 ```
-回执输出：
+
+Get the receipt:
+
 ```json
 {
   "id": 1,
