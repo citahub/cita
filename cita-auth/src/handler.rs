@@ -936,9 +936,7 @@ impl MsgHandler {
                 if is_local {
                     for tx_req in batch_new_tx.iter() {
                         let request_id = tx_req.get_request_id().to_vec();
-                        if is_local {
-                            self.publish_tx_failed_result(request_id, Ret::Busy);
-                        }
+                        self.publish_tx_failed_result(request_id, Ret::Busy);
                     }
                 }
                 return;
