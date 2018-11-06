@@ -1,16 +1,19 @@
 pragma solidity ^0.4.24;
 
-import "../interfaces/authorization.sol";
-import "../interfaces/all_groups.sol";
-import "../interfaces/group.sol";
-import "./address.sol";
+import "../interfaces/IAuthorization.sol";
+import "../interfaces/IAllGroups.sol";
+import "../interfaces/IGroup.sol";
+import "./ReservedAddrPublic.sol";
 
 /// @title The modifier for checking permission
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-contract Check is ReservedAddress {
+contract Check is ReservedAddrPublic {
 
     modifier hasPermission(address _permission) {
-        require(checkPermissionWithGroup(msg.sender, _permission), "permission denied.");
+        require(
+            checkPermissionWithGroup(msg.sender, _permission),
+            "permission denied."
+        );
         _;
     }
 
@@ -25,8 +28,11 @@ contract Check is ReservedAddress {
             IGroup group;
             for (uint i; i < allGroups.length; i++) {
                 group = IGroup(allGroups[i]);
-                if (group.inGroup(_account) && auth.checkPermission(allGroups[i], _permission))
+                if (group.inGroup(_account) &&
+                    auth.checkPermission(allGroups[i], _permission))
+                {
                     return true;
+                }
             }
             return false;
         }

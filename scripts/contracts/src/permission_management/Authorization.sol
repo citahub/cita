@@ -1,15 +1,15 @@
 pragma solidity ^0.4.24;
 
-import "../lib/address_array.sol";
-import "../common/address.sol";
-import "../interfaces/sys_config.sol";
-import "../interfaces/authorization.sol";
+import "../lib/AddressArray.sol";
+import "../common/ReservedAddrPublic.sol";
+import "../interfaces/ISysConfig.sol";
+import "../interfaces/IAuthorization.sol";
 
 /// @title Authorization about the permission and account
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020006
 ///         The interface can be called: Only query type
-contract Authorization is IAuthorization, ReservedAddress {
+contract Authorization is IAuthorization, ReservedAddrPublic {
 
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;
@@ -22,7 +22,10 @@ contract Authorization is IAuthorization, ReservedAddress {
     event AuthCleared(address indexed _account);
 
     modifier onlyPermissionManagement {
-        require(permissionManagementAddr == msg.sender || roleAuthAddr == msg.sender, "permission denied");
+        require(
+            permissionManagementAddr == msg.sender || roleAuthAddr == msg.sender,
+            "permission denied"
+        );
         _;
     }
 

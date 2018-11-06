@@ -1,10 +1,9 @@
 pragma solidity ^0.4.24;
 
-import "./role_creator.sol";
-import "../common/address.sol";
-import "../common/check.sol";
-import "../interfaces/role_auth.sol";
-import "../interfaces/role_management.sol";
+import "./RoleCreator.sol";
+import "../common/Check.sol";
+import "../interfaces/IRoleAuth.sol";
+import "../interfaces/IRoleManagement.sol";
 
 /// @title Role management contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -70,10 +69,16 @@ contract RoleManagement is IRoleManagement, Check {
         returns (bool)
     {
         // Set the authorization of all the account's which has the role
-        require(roleAuth.setPermissionsOfRole(_role, _permissions), "setPermissionsOfRole failed.");
+        require(
+            roleAuth.setPermissionsOfRole(_role, _permissions),
+            "setPermissionsOfRole failed."
+        );
 
         Role roleContract = Role(_role);
-        require(roleContract.addPermissions(_permissions), "addPermissions failed.");
+        require(
+            roleContract.addPermissions(_permissions),
+            "addPermissions failed."
+        );
         return true;
     }
 
@@ -87,10 +92,16 @@ contract RoleManagement is IRoleManagement, Check {
         returns (bool)
     {
         Role roleContract = Role(_role);
-        require(roleContract.deletePermissions(_permissions), "deletePermissions failed.");
+        require(
+            roleContract.deletePermissions(_permissions),
+            "deletePermissions failed."
+        );
 
         // Cancel the authorization of all the account's which has the role
-        require(roleAuth.cancelPermissionsOfRole(_role, _permissions), "cancelPermissionsOfRole failed.");
+        require(
+            roleAuth.cancelPermissionsOfRole(_role, _permissions),
+            "cancelPermissionsOfRole failed."
+        );
         return true;
     }
 

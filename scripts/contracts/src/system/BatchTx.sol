@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "../interfaces/batch_tx.sol";
+import "../interfaces/IBatchTx.sol";
 
 /// @title Batch tx
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

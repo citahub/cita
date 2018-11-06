@@ -1,14 +1,13 @@
 pragma solidity ^0.4.24;
 
-import "../common/model_type.sol";
-import "../lib/safe_math.sol";
-import "../lib/address_array.sol";
-import "../common/error.sol";
-import "../common/admin.sol";
-import "../common/check.sol";
-import "../common/model_type.sol";
-import "../interfaces/node_manager.sol";
-import "../interfaces/sys_config.sol";
+import "../lib/SafeMath.sol";
+import "../lib/AddressArray.sol";
+import "../common/Error.sol";
+import "../common/Admin.sol";
+import "../common/Check.sol";
+import "../common/EconomicalType.sol";
+import "../interfaces/INodeManager.sol";
+import "../interfaces/ISysConfig.sol";
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -33,7 +32,10 @@ contract NodeManager is INodeManager, Error, Check, EconomicalType {
         if (!block_op[block.number])
             _;
         else {
-            emit ErrorLog(ErrorType.NotOneOperate, "should operate one time in a block");
+            emit ErrorLog(
+                ErrorType.NotOneOperate,
+                "should operate one time in a block"
+            );
             return;
         }
     }
@@ -75,7 +77,10 @@ contract NodeManager is INodeManager, Error, Check, EconomicalType {
         public
     {
         // Initialize the address to Start
-        require(_nodes.length == _stakes.length, "nodes's length not equal to stakes's length.");
+        require(
+            _nodes.length == _stakes.length,
+            "nodes's length not equal to stakes's length."
+        );
         for (uint i = 0; i < _nodes.length; i++) {
             status[_nodes[i]] = NodeStatus.Start;
             nodes.push(_nodes[i]);

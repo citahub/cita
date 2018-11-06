@@ -8,7 +8,7 @@ PADDR="2e988a386a799f506693793c6a5af6b54dfaabfb"
 
 # Chain Manager Contract
 CMC_ADDR="ffffffffffffffffffffffffffffffffff020002"
-CMC="scripts/contracts/src/system/chain_manager.sol"
+CMC="scripts/contracts/src/system/ChainManager.sol"
 CMC_ABI=
 
 # Base dir for import contract files
@@ -20,7 +20,7 @@ JSONRPC_BLOCKHEADER='{"jsonrpc":"2.0","method":"getBlockHeader","params":["0x%x"
 JSONRPC_STATEPROOF='{"jsonrpc":"2.0","method":"getStateProof","params":["0x%s","0x%s","0x%x"],"id":1}'
 
 # Test contract file
-CONTRACT_DEMO="scripts/contracts/tests/contracts/cross_chain_token.sol"
+CONTRACT_DEMO="scripts/contracts/tests/contracts/MyToken.sol"
 DEMO_ABI=
 
 # Global variables which are set in functions

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "../common/error.sol";
+import "../common/Error.sol";
 
 /// @title Chain Manager
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -84,8 +84,14 @@ contract ChainManager is Error {
     {
         require(addrs.length > 0, "The length should larger than zero.");
         uint myChainId = getChainId();
-        require(myChainId != sideChainId, "ChainId should not equal to sideChainId.");
-        require(sideChains[sideChainId].status == ChainStatus.Unknown, "ChainStatus not the same witch sideChainStatus.");
+        require(
+            myChainId != sideChainId,
+            "ChainId should not equal to sideChainId."
+        );
+        require(
+            sideChains[sideChainId].status == ChainStatus.Unknown,
+            "ChainStatus not the same witch sideChainStatus."
+        );
         sideChains[sideChainId] = ChainInfo(ChainStatus.Disable, addrs);
         // TODO A sorted array can search data more fast.
         //      And we can remove duplicated data, simply.
@@ -180,7 +186,9 @@ contract ChainManager is Error {
         returns (address, uint, uint)
     {
         address contractAddr = crossChainVerifyAddr;
-        bytes4 funcSig = bytes4(keccak256("verifyState(uint256,uint64,bytes)"));
+        bytes4 funcSig = bytes4(
+            keccak256("verifyState(uint256,uint64,bytes)")
+        );
         uint stateProofSize = 0x20 + stateProof.length / 0x20 * 0x20;
         if (stateProof.length % 0x20 != 0) {
             stateProofSize += 0x20;

@@ -1,7 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./error.sol";
-
+import "./Error.sol";
 
 /// @title A common contract about admin
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -9,7 +8,11 @@ contract Admin is Error {
 
     address public admin;
 
-    event AdminUpdated(address indexed _account, address indexed _old, address indexed _sender);
+    event AdminUpdated(
+        address indexed _account,
+        address indexed _old,
+        address indexed _sender
+    );
 
     modifier onlyAdmin {
         if (isAdmin(msg.sender))
@@ -43,8 +46,8 @@ contract Admin is Error {
         returns (bool)
     {
         if (_account == admin) {
-            return true; 
-        } 
+            return true;
+        }
         emit ErrorLog(ErrorType.NotAdmin, "Not the admin account");
     }
 }

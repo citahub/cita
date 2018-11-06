@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "../common/admin.sol";
-import "../common/address.sol";
-import "../interfaces/version_manager.sol";
-import "../interfaces/sys_config.sol";
+import "../common/Admin.sol";
+import "../common/ReservedAddrPublic.sol";
+import "../interfaces/IVersionManager.sol";
+import "../interfaces/ISysConfig.sol";
 
-contract VersionManager is IVersionManager, ReservedAddress {
+contract VersionManager is IVersionManager, ReservedAddrPublic {
     uint32 public version;
 
     Admin admin = Admin(adminAddr);

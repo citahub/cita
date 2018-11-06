@@ -1,10 +1,11 @@
 pragma solidity ^0.4.24;
 
+/* solium-disable */
 
 /// @title The address of system contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-/// @dev TODO all the address
-contract ReservedAddress {
+/// @notice Should not add new address
+contract ReservedAddrPublic {
     address public sysConfigAddr = 0xFFfffFFfFfFffFFfFFfffFffFfFFFffFFf020000;
     address public adminAddr = 0xFFFfFFfFfFFFfFfFfFFfFFFffFFFffFFFf02000c;
 
@@ -22,7 +23,6 @@ contract ReservedAddress {
     address public userManagementAddr = 0xFFFffFFfffffFFfffFFffffFFFffFfFffF02000a;
     address public groupCreatorAddr = 0xfFFffFfFFFFfFFFfFfffffFFfffffffffF02000B;
     address constant allGroupsAddr = 0xfFFffFFFfffFfFFFfFfFFfffffffFfFfFf020012;
-
 
     address[24] public builtInPermissions = [
         0xfFfFffFffffFFfffFfFfFffFFFfFFfFFFf021010,       // 0 - newPermission

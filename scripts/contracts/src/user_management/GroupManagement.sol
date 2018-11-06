@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "./group_creator.sol";
-import "../lib/address_array.sol";
-import "../common/address.sol";
-import "../interfaces/authorization.sol";
-import "../interfaces/group_management.sol";
-import "../interfaces/all_groups.sol";
+import "./GroupCreator.sol";
+import "../lib/AddressArray.sol";
+import "../common/ReservedAddrPublic.sol";
+import "../interfaces/IAuthorization.sol";
+import "../interfaces/IGroupManagement.sol";
+import "../interfaces/IAllGroups.sol";
 
 /// @title User management using group struct
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -13,7 +13,7 @@ import "../interfaces/all_groups.sol";
 ///         The interface the can be called: All
 ///         Origin: One group choosed by sender from all his groups
 ///         Target: The target group to be operated
-contract GroupManagement is IGroupManagement, ReservedAddress {
+contract GroupManagement is IGroupManagement, ReservedAddrPublic {
 
     GroupCreator groupCreator = GroupCreator(groupCreatorAddr);
     /// Just for compatible
@@ -36,7 +36,10 @@ contract GroupManagement is IGroupManagement, ReservedAddress {
     }
 
     modifier checkPermission(address _permission, address _origin) {
-        require(auth.checkPermission(msg.sender, _permission) || auth.checkPermission(_origin, _permission), "Permission denied.");
+        require(
+            auth.checkPermission(msg.sender, _permission) ||
+                auth.checkPermission(_origin, _permission),
+            "Permission denied.");
         _;
     }
 
@@ -75,10 +78,16 @@ contract GroupManagement is IGroupManagement, ReservedAddress {
         checkPermission(builtInPermissions[11], _origin)
         returns (bool)
     {
-        require(checkScope(_origin, _target), "The target group not in origin group.");
+        require(
+            checkScope(_origin, _target),
+            "The target group not in origin group."
+        );
         Group group = Group(_target);
         // Delete it from the parent group
-        require(deleteChild(group.queryParent(), _target), "deleteChild failed.");
+        require(
+            deleteChild(group.queryParent(), _target),
+            "deleteChild failed."
+        );
         // Selfdestruct
         group.close();
         emit GroupDeleted(_target);
@@ -98,7 +107,10 @@ contract GroupManagement is IGroupManagement, ReservedAddress {
         checkPermission(builtInPermissions[12], _origin)
         returns (bool)
     {
-        require(checkScope(_origin, _target), "The target not in origin group.");
+        require(
+            checkScope(_origin, _target),
+            "The target not in origin group."
+        );
         Group group = Group(_target);
         require(group.updateName(_name), "updateName failed.");
         return true;
@@ -115,7 +127,10 @@ contract GroupManagement is IGroupManagement, ReservedAddress {
         checkPermission(builtInPermissions[12], _origin)
         returns (bool)
     {
-        require(checkScope(_origin, _target), "The target not in origin group.");
+        require(
+            checkScope(_origin, _target),
+            "The target not in origin group."
+        );
         Group group = Group(_target);
         require(group.addAccounts(_accounts), "addAccounts failed.");
         return true;
@@ -126,13 +141,20 @@ contract GroupManagement is IGroupManagement, ReservedAddress {
     /// @param _target The target group to be deleted
     /// @param _accounts The accounts to be deleted
     /// @return True if successed, otherwise false
-    function deleteAccounts(address _origin, address _target, address[] _accounts)
+    function deleteAccounts(
+        address _origin,
+        address _target,
+        address[] _accounts
+    )
         external
         inGroup(_origin)
         checkPermission(builtInPermissions[12], _origin)
         returns (bool)
     {
-        require(checkScope(_origin, _target), "The target not in origin group.");
+        require(
+            checkScope(_origin, _target),
+            "The target not in origin group."
+        );
         Group group = Group(_target);
         require(group.deleteAccounts(_accounts), "deleteAccounts failed.");
         return true;

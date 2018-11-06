@@ -1,12 +1,12 @@
 pragma solidity ^0.4.24;
 
-import "../common/admin.sol";
-import "../common/address.sol";
-import "../interfaces/price_manager.sol";
+import "../common/Admin.sol";
+import "../common/ReservedAddrPublic.sol";
+import "../interfaces/IPriceManager.sol";
 
 /// @title Quota Price Manager
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-contract PriceManager is IPriceManager, ReservedAddress{
+contract PriceManager is IPriceManager, ReservedAddrPublic {
     uint quotaPrice = 1;
 
     Admin admin = Admin(adminAddr);

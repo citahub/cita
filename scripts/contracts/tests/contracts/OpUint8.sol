@@ -1,6 +1,5 @@
 pragma solidity ^0.4.24;
 
-
 contract OpUint8 {
 
     uint8 public u8;

@@ -1,12 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "../common/error.sol";
-import "../lib/address_array.sol";
-import "../common/admin.sol";
-import "../common/address.sol";
-import "../common/check.sol";
-import "../interfaces/quota_manager.sol";
-import "../interfaces/authorization.sol";
+import "../common/Error.sol";
+import "../lib/AddressArray.sol";
+import "../common/Admin.sol";
+import "../common/Check.sol";
+import "../interfaces/IQuotaManager.sol";
+import "../interfaces/IAuthorization.sol";
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

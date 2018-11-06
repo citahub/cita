@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
-import "./permission_creator.sol";
-import "../common/check.sol";
-import "../interfaces/permission_management.sol";
-import "../interfaces/authorization.sol";
+import "./PermissionCreator.sol";
+import "../common/Check.sol";
+import "../interfaces/IPermissionManagement.sol";
+import "../interfaces/IAuthorization.sol";
 
 /// @title Permission management contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
@@ -13,20 +13,28 @@ import "../interfaces/authorization.sol";
 // contract PermissionManagement is ReservedAddress {
 contract PermissionManagement is IPermissionManagement, Check {
 
-    PermissionCreator permissionCreator = PermissionCreator(permissionCreatorAddr);
+    PermissionCreator permissionCreator = PermissionCreator(
+        permissionCreatorAddr
+    );
     IAuthorization auth = IAuthorization(authorizationAddr);
 
     event PermissionDeleted(address _permission);
 
     modifier sameLength(address[] _one, bytes4[] _other) {
         require(_one.length > 0, "The length must large than zero.");
-        require(_one.length == _other.length, "Two arrays'length not the same.");
+        require(
+            _one.length == _other.length,
+            "Two arrays'length not the same."
+        );
         _;
     }
 
     modifier notBuiltInPermission(address _permission) {
         for (uint i = 0; i < builtInPermissions.length; i++)
-            require(_permission != builtInPermissions[i], "not buildInPermission.");
+            require(
+                _permission != builtInPermissions[i],
+                "not buildInPermission."
+            );
         _;
     }
 
@@ -57,7 +65,10 @@ contract PermissionManagement is IPermissionManagement, Check {
         Permission perm = Permission(_permission);
         perm.close();
         // Cancel the auth of the accounts who have the permission
-        require(auth.clearAuthOfPermission(_permission), "deletePermission failed.");
+        require(
+            auth.clearAuthOfPermission(_permission),
+            "deletePermission failed."
+        );
         emit PermissionDeleted(_permission);
         return true;
     }
@@ -81,7 +92,11 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @param _conts The contracts of resource
     /// @param _funcs The function signature of resource
     /// @return true if successed, otherwise false
-    function addResources(address _permission, address[] _conts, bytes4[] _funcs)
+    function addResources(
+        address _permission,
+        address[] _conts,
+        bytes4[] _funcs
+    )
         external
         hasPermission(builtInPermissions[2])
         returns (bool)
@@ -96,13 +111,20 @@ contract PermissionManagement is IPermissionManagement, Check {
     /// @param _conts The contracts of resource
     /// @param _funcs The function signature of resource
     /// @return true if successed, otherwise false
-    function deleteResources(address _permission, address[] _conts, bytes4[] _funcs)
+    function deleteResources(
+        address _permission,
+        address[] _conts,
+        bytes4[] _funcs
+    )
         external
         hasPermission(builtInPermissions[2])
         returns (bool)
     {
         Permission perm = Permission(_permission);
-        require(perm.deleteResources(_conts, _funcs), "deleteResources failed.");
+        require(
+            perm.deleteResources(_conts, _funcs),
+            "deleteResources failed."
+        );
         return true;
     }
 
@@ -116,7 +138,10 @@ contract PermissionManagement is IPermissionManagement, Check {
         returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++)
-            require(auth.setAuth(_account, _permissions[i]), "setAuthorizations failed.");
+            require(
+                auth.setAuth(_account, _permissions[i]),
+                "setAuthorizations failed."
+            );
 
         return true;
     }
@@ -130,7 +155,10 @@ contract PermissionManagement is IPermissionManagement, Check {
         hasPermission(builtInPermissions[3])
         returns (bool)
     {
-        require(auth.setAuth(_account, _permission), "setAuthorization failed.");
+        require(
+            auth.setAuth(_account, _permission),
+            "setAuthorization failed."
+        );
         return true;
     }
 
@@ -144,7 +172,10 @@ contract PermissionManagement is IPermissionManagement, Check {
         returns (bool)
     {
         for (uint i = 0; i < _permissions.length; i++)
-            require(auth.cancelAuth(_account, _permissions[i]), "cancelAuthorizations failed.");
+            require(
+                auth.cancelAuth(_account, _permissions[i]),
+                "cancelAuthorizations failed."
+            );
 
         return true;
     }
@@ -158,7 +189,10 @@ contract PermissionManagement is IPermissionManagement, Check {
         hasPermission(builtInPermissions[4])
         returns (bool)
     {
-        require(auth.cancelAuth(_account, _permission), "cancelAuthorization failed.");
+        require(
+            auth.cancelAuth(_account, _permission),
+            "cancelAuthorization failed."
+        );
         return true;
     }
 

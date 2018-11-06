@@ -1,13 +1,13 @@
 pragma solidity ^0.4.24;
 
-import "../common/model_type.sol";
-import "../common/admin.sol";
-import "../common/address.sol";
-import "../interfaces/sys_config.sol";
+import "../common/EconomicalType.sol";
+import "../common/Admin.sol";
+import "../common/ReservedAddrPublic.sol";
+import "../interfaces/ISysConfig.sol";
 
 /// @title System config contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-contract SysConfig is ISysConfig, EconomicalType, ReservedAddress {
+contract SysConfig is ISysConfig, EconomicalType, ReservedAddrPublic {
 
     /// @notice only chain_name, operator, website can be updated
     uint delayBlockNumber;

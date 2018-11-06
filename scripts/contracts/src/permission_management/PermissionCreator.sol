@@ -1,16 +1,20 @@
 pragma solidity ^0.4.24;
 
-import "./permission.sol";
-import "../common/address.sol";
-
+import "./Permission.sol";
+import "../common/ReservedAddrPublic.sol";
 
 /// @title Permission factory contract to create permission contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address:0xffFFFffFfFFffffFffffFFfFffffFfFFFF020005
 ///         The interface: None
-contract PermissionCreator is ReservedAddress {
+contract PermissionCreator is ReservedAddrPublic {
 
-    event PermissionCreated(address indexed _id, bytes32 indexed _name, address[] _conts, bytes4[] _funcs);
+    event PermissionCreated(
+        address indexed _id,
+        bytes32 indexed _name,
+        address[] _conts,
+        bytes4[] _funcs
+    );
 
     /// @notice Create a new permission contract
     /// @param _name  The name of permission

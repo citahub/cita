@@ -1,6 +1,5 @@
 pragma solidity ^0.4.24;
 
-
 /// @title The enum data of error
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 contract Error {

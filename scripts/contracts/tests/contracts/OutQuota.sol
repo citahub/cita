@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-contract SimpleStorage {
+contract OutQuota {
     uint storedData;
 
     event Set(uint);
@@ -12,7 +12,7 @@ contract SimpleStorage {
             storedData = i;
         }
 
-        Set(x);
+        emit Set(x);
     }
 
     function get() view public returns (uint) {

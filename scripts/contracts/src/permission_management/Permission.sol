@@ -1,13 +1,13 @@
 pragma solidity ^0.4.24;
 
-import "../common/address.sol";
-import "../interfaces/permission.sol";
+import "../common/ReservedAddrPublic.sol";
+import "../interfaces/IPermission.sol";
 
 /// @title Permission contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: Created by permissionCreator
 ///         The interface can be called: Only query type
-contract Permission is IPermission, ReservedAddress {
+contract Permission is IPermission, ReservedAddrPublic {
 
     struct Resource {
         // Contract address
@@ -59,7 +59,10 @@ contract Permission is IPermission, ReservedAddress {
         returns (bool)
     {
         for (uint i = 0; i < _conts.length; i++)
-            require(resourceDelete(_conts[i], _funcs[i]), "deleteResources failed.");
+            require(
+                resourceDelete(_conts[i], _funcs[i]),
+                "deleteResources failed."
+            );
 
         emit ResourcesDeleted(_conts, _funcs);
         return true;

@@ -1,20 +1,24 @@
 pragma solidity ^0.4.24;
 
-import "../lib/address_array.sol";
-import "../common/address.sol";
+import "../lib/AddressArray.sol";
+import "../common/ReservedAddrPublic.sol";
 
 /// @title Group contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: Created by permissionCreator
 ///         The interface can be called: Only query type
-contract Group is ReservedAddress {
+contract Group is ReservedAddrPublic {
 
     bytes32 name;
     address parent;
     address[] accounts;
     address[] children;
 
-    event GroupNewed(address indexed _parent, bytes32 indexed _name, address[] _accounts);
+    event GroupNewed(
+        address indexed _parent,
+        bytes32 indexed _name,
+        address[] _accounts
+    );
     event AccountsAdded(address[] _accounts);
     event AccountsDeleted(address[] _accounts);
     event NameUpdated(bytes32 indexed _oldName, bytes32 indexed _newName);
