@@ -56,6 +56,9 @@ NormalContracts:
 - AllGroups:
     address: '0xffffffffffffffffffffffffffffffffff020012'
     file: user_management/AllGroups.sol
+- AutoExec:
+    address: '0xffffffffffffffffffffffffffffffffff020013'
+    file: system/AutoExec.sol
 
 
 PermissionContracts:
