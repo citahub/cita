@@ -41,13 +41,14 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddrPublic {
     }
 
     /// @notice Setup
+    /// @param flags :
+    ///    0: _checkPermission
+    ///    1: _checkSendTxPermission
+    ///    2: _checkCreateContractPermission
+    ///    3: _checkQuota
+    ///    4: _checkFeeBackPlatform
     constructor(
         uint _delayBlockNumber,
-        bool _checkPermission,
-        bool _checkSendTxPermission,
-        bool _checkCreateContractPermission,
-        bool _checkQuota,
-        bool _checkFeeBackPlatform,
         address _chainOwner,
         string _chainName,
         uint _chainId,
@@ -57,17 +58,18 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddrPublic {
         EconomicalModel _economicalModel,
         string _name,
         string _symbol,
-        string _avatar
+        string _avatar,
+        bool[] flags
     )
         public
     {
         require(_chainId > 0, "The chainId should larger than zero.");
         delayBlockNumber = _delayBlockNumber;
-        checkPermission = _checkPermission;
-        checkSendTxPermission = _checkSendTxPermission;
-        checkCreateContractPermission = _checkCreateContractPermission;
-        checkQuota = _checkQuota;
-        checkFeeBackPlatform = _checkFeeBackPlatform;
+        checkPermission = flags[0];
+        checkSendTxPermission = flags[1];
+        checkCreateContractPermission = flags[2];
+        checkQuota = flags[3];
+        checkFeeBackPlatform = flags[4];
         chainOwner = _chainOwner;
         chainName = _chainName;
         chainId = uint32(_chainId);
