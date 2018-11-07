@@ -21,8 +21,8 @@ use call_analytics::CallAnalytics;
 use contracts::{
     native::factory::Factory as NativeFactory,
     solc::{
-        AccountGasLimit, EmergencyBrake, NodeManager, PermissionManagement, QuotaManager, Resource,
-        SysConfig, UserManagement, VersionManager,
+        AccountQuotaLimit, EmergencyBrake, NodeManager, PermissionManagement, QuotaManager,
+        Resource, SysConfig, UserManagement, VersionManager,
     },
 };
 use db;
@@ -137,7 +137,7 @@ enum_from_primitive! {
     pub enum EconomicalModel {
         /// Default model. Sending Transaction is free, should work with authority together.
         Quota,
-        /// Transaction charges for gas * gasPrice. BlockProposer get the block reward.
+        /// Transaction charges for quota * quotaPrice. BlockProposer get the block reward.
         Charge,
     }
 }
@@ -170,8 +170,8 @@ impl Into<EconomicalModel> for RpcEconomicalModel {
 pub struct GlobalSysConfig {
     pub nodes: Vec<Address>,
     pub validators: Vec<Address>,
-    pub block_gas_limit: usize,
-    pub account_gas_limit: AccountGasLimit,
+    pub block_quota_limit: usize,
+    pub account_quota_limit: AccountQuotaLimit,
     pub delay_active_interval: usize,
     pub changed_height: usize,
     pub check_quota: bool,
@@ -194,8 +194,8 @@ impl GlobalSysConfig {
         GlobalSysConfig {
             nodes: Vec::new(),
             validators: Vec::new(),
-            block_gas_limit: 18_446_744_073_709_551_615,
-            account_gas_limit: AccountGasLimit::new(),
+            block_quota_limit: 18_446_744_073_709_551_615,
+            account_quota_limit: AccountQuotaLimit::new(),
             delay_active_interval: 1,
             changed_height: 0,
             check_quota: false,
@@ -333,7 +333,7 @@ impl Executor {
         }
 
         {
-            executor.set_gas_and_nodes(header.number());
+            executor.set_quota_and_nodes(header.number());
         }
 
         executor
@@ -662,7 +662,7 @@ impl Executor {
         .map_err(Into::into)
     }
 
-    pub fn set_gas_and_nodes(&self, height: u64) {
+    pub fn set_quota_and_nodes(&self, height: u64) {
         let mut executed_map = self.executed_result.write();
 
         // send the next height's config to chain,and transfer to auth
@@ -679,8 +679,8 @@ impl Executor {
             .into_iter()
             .map(|address| address.to_vec())
             .collect();
-        send_config.set_block_quota_limit(conf.block_gas_limit as u64);
-        send_config.set_account_quota_limit(conf.account_gas_limit.into());
+        send_config.set_block_quota_limit(conf.block_quota_limit as u64);
+        send_config.set_account_quota_limit(conf.account_quota_limit.into());
         send_config.set_check_quota(conf.check_quota);
 
         trace!("node_list : {:?}", node_list);
@@ -700,7 +700,7 @@ impl Executor {
     }
 
     fn set_executed_result(&self, block: &ClosedBlock) {
-        self.set_gas_and_nodes(block.number());
+        self.set_quota_and_nodes(block.number());
         let mut executed_map = self.executed_result.write();
 
         executed_map
@@ -817,7 +817,7 @@ impl Executor {
 
     /// Reorg system config from system contract
     /// 1. Consensus nodes
-    /// 2. BlockGasLimit and AccountGasLimit
+    /// 2. BlockQuotaLimit and AccountQuotaLimit
     /// 3. Account permissions
     pub fn reorg_config(&self, close_block: &ClosedBlock) {
         let cache = close_block.state.cache();
@@ -851,9 +851,9 @@ impl Executor {
             .unwrap_or_else(NodeManager::default_shuffled_stake_nodes);
 
         let quota_manager = QuotaManager::new(self);
-        conf.block_gas_limit = quota_manager
-            .block_gas_limit(block_id)
-            .unwrap_or_else(QuotaManager::default_block_gas_limit)
+        conf.block_quota_limit = quota_manager
+            .block_quota_limit(block_id)
+            .unwrap_or_else(QuotaManager::default_block_quota_limit)
             as usize;
         let sys_config = SysConfig::new(self);
         conf.delay_active_interval = sys_config
@@ -894,14 +894,14 @@ impl Executor {
                 .unwrap_or_else(SysConfig::default_economical_model);
         }
 
-        let common_gas_limit = quota_manager
-            .account_gas_limit(block_id)
-            .unwrap_or_else(QuotaManager::default_account_gas_limit);
+        let common_quota_limit = quota_manager
+            .account_quota_limit(block_id)
+            .unwrap_or_else(QuotaManager::default_account_quota_limit);
         let specific = quota_manager.specific(block_id);
 
-        conf.account_gas_limit
-            .set_common_gas_limit(common_gas_limit);
-        conf.account_gas_limit.set_specific_gas_limit(specific);
+        conf.account_quota_limit
+            .set_common_quota_limit(common_quota_limit);
+        conf.account_quota_limit.set_specific_quota_limit(specific);
         conf.changed_height = self.get_current_height() as usize;
 
         let emergency_manager = EmergencyBrake::new(self);
@@ -1009,7 +1009,7 @@ impl Executor {
     fn pub_black_list(&self, close_block: &ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
         match *self.economical_model.read() {
             EconomicalModel::Charge => {
-                // Get all transaction hash that is reported as not enough gas
+                // Get all transaction hash that is reported as not enough quota
                 let blacklist_transaction_hash: Vec<H256> = close_block
                     .receipts
                     .iter()

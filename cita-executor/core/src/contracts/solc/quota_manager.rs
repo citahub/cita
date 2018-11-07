@@ -22,7 +22,7 @@ use cita_types::traits::LowerHex;
 use cita_types::{Address, H160};
 use contracts::tools::{decode as decode_tools, method as method_tools};
 use libexecutor::executor::Executor;
-use libproto::blockchain::AccountGasLimit as ProtoAccountGasLimit;
+use libproto::blockchain::AccountGasLimit as ProtoAccountQuotaLimit;
 use std::collections::HashMap;
 use std::str::FromStr;
 use types::ids::BlockId;
@@ -32,6 +32,10 @@ const QUOTAS: &[u8] = &*b"getQuotas()";
 const ACCOUNTS: &[u8] = &*b"getAccounts()";
 const BQL: &[u8] = &*b"getBQL()";
 const DEFAULT_AQL: &[u8] = &*b"getDefaultAQL()";
+#[cfg(test)]
+const BQL_VALUE: u64 = 1073741824;
+#[cfg(test)]
+const AQL_VALUE: u64 = 268435456;
 
 lazy_static! {
     static ref QUOTAS_HASH: Vec<u8> = method_tools::encode_to_vec(QUOTAS);
@@ -42,46 +46,46 @@ lazy_static! {
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
-pub struct AccountGasLimit {
-    pub common_gas_limit: u64,
-    pub specific_gas_limit: HashMap<Address, u64>,
+pub struct AccountQuotaLimit {
+    pub common_quota_limit: u64,
+    pub specific_quota_limit: HashMap<Address, u64>,
 }
 
-impl AccountGasLimit {
+impl AccountQuotaLimit {
     pub fn new() -> Self {
-        AccountGasLimit {
-            common_gas_limit: 4_294_967_296,
-            specific_gas_limit: HashMap::new(),
+        AccountQuotaLimit {
+            common_quota_limit: 4_294_967_296,
+            specific_quota_limit: HashMap::new(),
         }
     }
 
-    pub fn set_common_gas_limit(&mut self, v: u64) {
-        self.common_gas_limit = v;
+    pub fn set_common_quota_limit(&mut self, v: u64) {
+        self.common_quota_limit = v;
     }
 
-    pub fn get_common_gas_limit(&self) -> u64 {
-        self.common_gas_limit
+    pub fn get_common_quota_limit(&self) -> u64 {
+        self.common_quota_limit
     }
 
-    pub fn set_specific_gas_limit(&mut self, v: HashMap<Address, u64>) {
-        self.specific_gas_limit = v;
+    pub fn set_specific_quota_limit(&mut self, v: HashMap<Address, u64>) {
+        self.specific_quota_limit = v;
     }
 
-    pub fn get_specific_gas_limit(&self) -> &HashMap<Address, u64> {
-        &self.specific_gas_limit
+    pub fn get_specific_quota_limit(&self) -> &HashMap<Address, u64> {
+        &self.specific_quota_limit
     }
 }
 
-impl Into<ProtoAccountGasLimit> for AccountGasLimit {
-    fn into(self) -> ProtoAccountGasLimit {
-        let mut r = ProtoAccountGasLimit::new();
-        r.common_quota_limit = self.common_gas_limit;
-        let specific_gas_limit: HashMap<String, u64> = self
-            .get_specific_gas_limit()
+impl Into<ProtoAccountQuotaLimit> for AccountQuotaLimit {
+    fn into(self) -> ProtoAccountQuotaLimit {
+        let mut r = ProtoAccountQuotaLimit::new();
+        r.common_quota_limit = self.common_quota_limit;
+        let specific_quota_limit: HashMap<String, u64> = self
+            .get_specific_quota_limit()
             .iter()
             .map(|(k, v)| (k.lower_hex(), *v))
             .collect();
-        r.set_specific_quota_limit(specific_gas_limit);
+        r.set_specific_quota_limit(specific_quota_limit);
         r
     }
 }
@@ -95,7 +99,7 @@ impl<'a> QuotaManager<'a> {
         QuotaManager { executor }
     }
 
-    /// Special account gas limit
+    /// Special account quota limit
     pub fn specific(&self, block_id: BlockId) -> HashMap<Address, u64> {
         let users = self.users(block_id).unwrap_or_else(Self::default_users);
         let quota = self.quota(block_id).unwrap_or_else(Self::default_quota);
@@ -137,21 +141,21 @@ impl<'a> QuotaManager<'a> {
         Vec::new()
     }
 
-    /// Global gas limit
-    pub fn block_gas_limit(&self, block_id: BlockId) -> Option<u64> {
+    /// Global quota limit
+    pub fn block_quota_limit(&self, block_id: BlockId) -> Option<u64> {
         self.executor
             .call_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice(), None, block_id)
             .ok()
             .and_then(|output| decode_tools::to_u64(&output))
     }
 
-    pub fn default_block_gas_limit() -> u64 {
-        error!("Use default block gas limit.");
+    pub fn default_block_quota_limit() -> u64 {
+        error!("Use default block quota limit.");
         1_073_741_824
     }
 
-    /// Global account gas limit
-    pub fn account_gas_limit(&self, block_id: BlockId) -> Option<u64> {
+    /// Global account quota limit
+    pub fn account_quota_limit(&self, block_id: BlockId) -> Option<u64> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
@@ -163,8 +167,8 @@ impl<'a> QuotaManager<'a> {
             .and_then(|output| decode_tools::to_u64(&output))
     }
 
-    pub fn default_account_gas_limit() -> u64 {
-        error!("Use default account gas limit.");
+    pub fn default_account_quota_limit() -> u64 {
+        error!("Use default account quota limit.");
         268_435_456
     }
 }
@@ -173,7 +177,7 @@ impl<'a> QuotaManager<'a> {
 mod tests {
     extern crate logger;
 
-    use super::QuotaManager;
+    use super::{QuotaManager, AQL_VALUE, BQL_VALUE};
     use cita_types::H160;
     use std::str::FromStr;
     use tests::helpers::init_executor;
@@ -203,29 +207,21 @@ mod tests {
         println!("init executor finish");
 
         let quota_management = QuotaManager::new(&executor);
+
+        // Test quota
         let quota = quota_management.quota(BlockId::Pending).unwrap();
-        assert_eq!(quota, vec![1073741824]);
-    }
+        assert_eq!(quota, vec![BQL_VALUE]);
 
-    #[test]
-    fn test_block_gas_limit() {
-        let executor = init_executor(vec![]);
-        println!("init executor finish");
-
-        let quota_management = QuotaManager::new(&executor);
-        let block_gas_limit = quota_management.block_gas_limit(BlockId::Pending).unwrap();
-        assert_eq!(block_gas_limit, 1073741824);
-    }
-
-    #[test]
-    fn test_account_gas_limit() {
-        let executor = init_executor(vec![]);
-        println!("init executor finish");
-
-        let quota_management = QuotaManager::new(&executor);
-        let account_gas_limit = quota_management
-            .account_gas_limit(BlockId::Pending)
+        // Test block quota limit
+        let block_quota_limit = quota_management
+            .block_quota_limit(BlockId::Pending)
             .unwrap();
-        assert_eq!(account_gas_limit, 268435456);
+        assert_eq!(block_quota_limit, BQL_VALUE);
+
+        // Test account quota limit
+        let account_quota_limit = quota_management
+            .account_quota_limit(BlockId::Pending)
+            .unwrap();
+        assert_eq!(account_quota_limit, AQL_VALUE);
     }
 }
