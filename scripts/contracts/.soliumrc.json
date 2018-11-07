@@ -11,6 +11,10 @@
     "indentation": [
       "error",
       4
+    ],
+    "max-len": [
+      "error",
+      79
     ]
   }
 }
