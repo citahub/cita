@@ -15,19 +15,70 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use header::*;
+use header::{Header, OpenHeader};
 
 use cita_types::H256;
 use extras::TransactionAddress;
 use std::collections::HashMap;
 
-use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
-use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
+use libproto::blockchain::{
+    Block as ProtoBlock, BlockBody as ProtoBlockBody, SignedTransaction as ProtoSignedTransaction,
+};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 
 use transaction::SignedTransaction;
 use util::HeapSizeOf;
+
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct OpenBlock {
+    /// The header of this block.
+    pub header: OpenHeader,
+    /// The body of this block.
+    pub body: BlockBody,
+}
+
+impl From<ProtoBlock> for OpenBlock {
+    fn from(b: ProtoBlock) -> Self {
+        let header = OpenHeader::from_protobuf(&b);
+        Self {
+            header,
+            body: BlockBody::from(b.get_body().clone()),
+        }
+    }
+}
+
+impl Deref for OpenBlock {
+    type Target = OpenHeader;
+
+    fn deref(&self) -> &Self::Target {
+        &self.header
+    }
+}
+
+impl DerefMut for OpenBlock {
+    fn deref_mut(&mut self) -> &mut OpenHeader {
+        &mut self.header
+    }
+}
+
+impl OpenBlock {
+    pub fn body(&self) -> &BlockBody {
+        &self.body
+    }
+
+    pub fn header(&self) -> &OpenHeader {
+        &self.header
+    }
+
+    pub fn set_header(&mut self, h: OpenHeader) {
+        self.header = h;
+    }
+
+    pub fn set_body(&mut self, b: BlockBody) {
+        self.body = b;
+    }
+}
 
 /// A block, encoded as it is on the block chain.
 #[derive(Default, Debug, Clone, PartialEq)]
@@ -58,17 +109,6 @@ impl Encodable for Block {
     }
 }
 
-impl From<ProtoBlock> for Block {
-    fn from(b: ProtoBlock) -> Self {
-        let mut header = Header::from(b.get_header().clone());
-        header.set_version(b.get_version());
-        Block {
-            header,
-            body: BlockBody::from(b.get_body().clone()),
-        }
-    }
-}
-
 impl Deref for Block {
     type Target = Header;
 
@@ -84,13 +124,6 @@ impl DerefMut for Block {
 }
 
 impl Block {
-    pub fn new() -> Self {
-        Block {
-            header: Header::new(),
-            body: BlockBody::new(),
-        }
-    }
-
     pub fn body(&self) -> &BlockBody {
         &self.body
     }
@@ -115,28 +148,12 @@ impl Block {
         block
     }
 
-    pub fn transaction_addresses(&self, hash: H256) -> HashMap<H256, TransactionAddress> {
-        let tx_hashs = self.body().transaction_hashes();
-        // Create TransactionAddress
-        let mut transactions = HashMap::new();
-        for (i, tx_hash) in tx_hashs.into_iter().enumerate() {
-            let address = TransactionAddress {
-                block_hash: hash,
-                index: i,
-            };
-            transactions.insert(tx_hash, address);
+    pub fn new(block: OpenBlock) -> Self {
+        let header = Header::new(block.header);
+        Self {
+            header,
+            body: block.body,
         }
-
-        trace!("closed block transactions {:?}", transactions);
-        transactions
-    }
-
-    /// Check whether the block should re-execute
-    // TODO: check version and others
-    pub fn is_equivalent(&self, block: &Block) -> bool {
-        self.transactions_root() == block.transactions_root()
-            && self.timestamp() == block.timestamp()
-            && self.proposer() == block.proposer()
     }
 }
 
@@ -166,12 +183,6 @@ impl From<ProtoBlockBody> for BlockBody {
 }
 
 impl BlockBody {
-    pub fn new() -> Self {
-        BlockBody {
-            transactions: Vec::new(),
-        }
-    }
-
     pub fn transactions(&self) -> &[SignedTransaction] {
         &self.transactions
     }
@@ -190,5 +201,21 @@ impl BlockBody {
 
     pub fn transaction_hashes(&self) -> Vec<H256> {
         self.transactions().iter().map(|ts| ts.hash()).collect()
+    }
+
+    pub fn transaction_addresses(&self, hash: H256) -> HashMap<H256, TransactionAddress> {
+        let tx_hashs = self.transaction_hashes();
+        // Create TransactionAddress
+        let mut transactions = HashMap::new();
+        for (i, tx_hash) in tx_hashs.into_iter().enumerate() {
+            let address = TransactionAddress {
+                block_hash: hash,
+                index: i,
+            };
+            transactions.insert(tx_hash, address);
+        }
+
+        trace!("closed block transactions {:?}", transactions);
+        transactions
     }
 }

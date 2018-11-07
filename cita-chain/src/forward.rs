@@ -18,7 +18,7 @@
 use cita_types::H256;
 use core::filters::eth_filter::EthFilter;
 use core::libchain::chain::{BlockInQueue, Chain};
-use core::libchain::Block;
+use core::libchain::OpenBlock;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{
     BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
@@ -178,7 +178,7 @@ impl Forward {
                 match self.chain.block(block_height.block_id.into()) {
                     Some(block) => {
                         let rpc_block = RpcBlock::new(
-                            block.hash().to_vec(),
+                            block.hash().unwrap().to_vec(),
                             include_txs,
                             block.protobuf().try_into().unwrap(),
                         );
@@ -385,14 +385,13 @@ impl Forward {
             current_height
         );
 
-        let block = Block::from(proto_block);
+        let block = OpenBlock::from(proto_block);
         debug!(
-            "consensus block {} {:?} tx hash  {:?} len {} version {}",
+            "consensus block {} tx hash {:?} len {} version {}",
             block.number(),
-            block.hash(),
             block.transactions_root(),
             block.body().transactions().len(),
-            block.header.version()
+            block.version()
         );
         if blk_height == (current_height + 1) {
             {
@@ -503,12 +502,12 @@ impl Forward {
                 break;
             }
 
-            self.add_sync_block(Block::from(block));
+            self.add_sync_block(OpenBlock::from(block));
         }
     }
 
     // Check block group from remote and enqueue
-    fn add_sync_block(&self, block: Block) {
+    fn add_sync_block(&self, block: OpenBlock) {
         let block_proof_type = block.proof_type();
         let chain_proof_type = self.chain.get_chain_prooftype();
         let blk_height = block.number() as usize;

@@ -34,7 +34,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
 use trace::FlatTrace;
-pub use types::block::{Block, BlockBody};
+pub use types::block::{Block, BlockBody, OpenBlock};
 use types::ids::BlockId;
 use types::transaction::SignedTransaction;
 use util::merklehash;
@@ -54,66 +54,19 @@ pub trait Drain {
     fn drain(self) -> StateDB;
 }
 
-/// Block that prepared to commit to db.
 #[derive(Clone, Debug)]
-pub struct ClosedBlock {
-    /// Protobuf Block
+pub struct ExecutedBlock {
     pub block: OpenBlock,
+    pub receipts: Vec<Receipt>,
+    pub state: State<StateDB>,
+    pub current_quota_used: U256,
+    traces: Option<Vec<Vec<FlatTrace>>>,
+    last_hashes: Arc<LastHashes>,
+    account_gas_limit: U256,
+    account_gas: HashMap<Address, U256>,
 }
 
-impl ClosedBlock {
-    pub fn protobuf(&self) -> ExecutedInfo {
-        let mut executed_info = ExecutedInfo::new();
-
-        executed_info
-            .mut_header()
-            .set_prevhash(self.parent_hash().to_vec());
-        executed_info.mut_header().set_timestamp(self.timestamp());
-        executed_info.mut_header().set_height(self.number());
-        executed_info
-            .mut_header()
-            .set_state_root(self.state_root().to_vec());
-        executed_info
-            .mut_header()
-            .set_transactions_root(self.transactions_root().to_vec());
-        executed_info
-            .mut_header()
-            .set_receipts_root(self.receipts_root().to_vec());
-        executed_info
-            .mut_header()
-            .set_log_bloom(self.log_bloom().to_vec());
-        executed_info
-            .mut_header()
-            .set_quota_used(u64::from(*self.quota_used()));
-        executed_info
-            .mut_header()
-            .set_quota_limit(self.quota_limit().low_u64());
-
-        executed_info.receipts = self
-            .receipts
-            .clone()
-            .into_iter()
-            .map(|receipt| {
-                let mut receipt_proto_option = ReceiptWithOption::new();
-                receipt_proto_option.set_receipt(receipt.protobuf());
-                receipt_proto_option
-            })
-            .collect();
-        executed_info
-            .mut_header()
-            .set_proposer(self.proposer().to_vec());
-        executed_info
-    }
-}
-
-impl Drain for ClosedBlock {
-    /// Drop this object and return the underlieing database.
-    fn drain(self) -> StateDB {
-        self.block.drain()
-    }
-}
-
-impl Deref for ClosedBlock {
+impl Deref for ExecutedBlock {
     type Target = OpenBlock;
 
     fn deref(&self) -> &OpenBlock {
@@ -121,91 +74,18 @@ impl Deref for ClosedBlock {
     }
 }
 
-impl DerefMut for ClosedBlock {
+impl DerefMut for ExecutedBlock {
     fn deref_mut(&mut self) -> &mut OpenBlock {
         &mut self.block
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct ExecutedBlock {
-    pub block: Block,
-    pub receipts: Vec<Receipt>,
-    pub state: State<StateDB>,
-    pub current_quota_used: U256,
-    traces: Option<Vec<Vec<FlatTrace>>>,
-}
-
-impl Drain for ExecutedBlock {
-    fn drain(self) -> StateDB {
-        self.state.drop().1
-    }
-}
-
-impl Deref for ExecutedBlock {
-    type Target = Block;
-
-    fn deref(&self) -> &Block {
-        &self.block
-    }
-}
-
-impl DerefMut for ExecutedBlock {
-    fn deref_mut(&mut self) -> &mut Block {
-        &mut self.block
-    }
-}
-
 impl ExecutedBlock {
-    fn new(block: Block, state: State<StateDB>, tracing: bool) -> ExecutedBlock {
-        ExecutedBlock {
-            block,
-            receipts: Default::default(),
-            state,
-            current_quota_used: U256::zero(),
-            traces: if tracing { Some(Vec::new()) } else { None },
-        }
-    }
-
-    pub fn transactions(&self) -> &[SignedTransaction] {
-        self.body().transactions()
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct OpenBlock {
-    exec_block: ExecutedBlock,
-    last_hashes: Arc<LastHashes>,
-    account_gas_limit: U256,
-    account_gas: HashMap<Address, U256>,
-}
-
-impl Drain for OpenBlock {
-    fn drain(self) -> StateDB {
-        self.exec_block.drain()
-    }
-}
-
-impl Deref for OpenBlock {
-    type Target = ExecutedBlock;
-
-    fn deref(&self) -> &ExecutedBlock {
-        &self.exec_block
-    }
-}
-
-impl DerefMut for OpenBlock {
-    fn deref_mut(&mut self) -> &mut ExecutedBlock {
-        &mut self.exec_block
-    }
-}
-
-impl OpenBlock {
     pub fn new(
         factories: Factories,
         conf: GlobalSysConfig,
         tracing: bool,
-        block: Block,
+        block: OpenBlock,
         db: StateDB,
         state_root: H256,
         last_hashes: Arc<LastHashes>,
@@ -215,8 +95,10 @@ impl OpenBlock {
         state.group_accounts = conf.group_accounts;
         state.super_admin_account = conf.super_admin_account;
 
-        let r = OpenBlock {
-            exec_block: ExecutedBlock::new(block, state, tracing),
+        let r = ExecutedBlock {
+            block,
+            state,
+            traces: if tracing { Some(Vec::new()) } else { None },
             last_hashes,
             account_gas_limit: conf.account_quota_limit.common_quota_limit.into(),
             account_gas: conf.account_quota_limit.specific_quota_limit.iter().fold(
@@ -226,16 +108,22 @@ impl OpenBlock {
                     acc
                 },
             ),
+            current_quota_used: Default::default(),
+            receipts: Default::default(),
         };
 
         Ok(r)
+    }
+
+    pub fn transactions(&self) -> &[SignedTransaction] {
+        self.body.transactions()
     }
 
     /// Transaction execution env info.
     pub fn env_info(&self) -> EnvInfo {
         EnvInfo {
             number: self.number(),
-            author: *self.header.proposer(),
+            author: *self.proposer(),
             timestamp: self.timestamp(),
             difficulty: U256::default(),
             last_hashes: Arc::clone(&self.last_hashes),
@@ -282,8 +170,6 @@ impl OpenBlock {
         let new_now = Instant::now();
         debug!("state root use {:?}", new_now.duration_since(now));
 
-        let quota_used = self.current_quota_used;
-        self.set_quota_used(quota_used);
         true
     }
 
@@ -334,15 +220,18 @@ impl OpenBlock {
     }
 
     /// Turn this into a `ClosedBlock`.
-    pub fn close(mut self) -> ClosedBlock {
+    pub fn close(self) -> ClosedBlock {
         // Rebuild block
+        let mut block = Block::new(self.block);
         let state_root = *self.state.root();
-        self.set_state_root(state_root);
+        block.set_state_root(state_root);
         let receipts_root = merklehash::MerkleTree::from_bytes(
             self.receipts.iter().map(|r| r.rlp_bytes().to_vec()),
         )
         .get_root_hash();
-        self.set_receipts_root(receipts_root);
+
+        block.set_receipts_root(receipts_root);
+        block.set_quota_used(self.current_quota_used);
 
         // blocks blooms
         let log_bloom = self
@@ -354,9 +243,89 @@ impl OpenBlock {
                 b
             });
 
-        self.set_log_bloom(log_bloom);
+        block.set_log_bloom(log_bloom);
+        block.rehash();
 
-        ClosedBlock { block: self }
+        ClosedBlock {
+            block,
+            receipts: self.receipts,
+            state: self.state,
+        }
+    }
+}
+
+// Block that prepared to commit to db.
+#[derive(Clone, Debug)]
+pub struct ClosedBlock {
+    /// Protobuf Block
+    pub block: Block,
+    pub receipts: Vec<Receipt>,
+    pub state: State<StateDB>,
+}
+
+impl Drain for ClosedBlock {
+    /// Drop this object and return the underlieing database.
+    fn drain(self) -> StateDB {
+        self.state.drop().1
+    }
+}
+
+impl ClosedBlock {
+    pub fn protobuf(&self) -> ExecutedInfo {
+        let mut executed_info = ExecutedInfo::new();
+
+        executed_info
+            .mut_header()
+            .set_prevhash(self.parent_hash().to_vec());
+        executed_info.mut_header().set_timestamp(self.timestamp());
+        executed_info.mut_header().set_height(self.number());
+        executed_info
+            .mut_header()
+            .set_state_root(self.state_root().to_vec());
+        executed_info
+            .mut_header()
+            .set_transactions_root(self.transactions_root().to_vec());
+        executed_info
+            .mut_header()
+            .set_receipts_root(self.receipts_root().to_vec());
+        executed_info
+            .mut_header()
+            .set_log_bloom(self.log_bloom().to_vec());
+        executed_info
+            .mut_header()
+            .set_quota_used(u64::from(*self.quota_used()));
+        executed_info
+            .mut_header()
+            .set_quota_limit(self.quota_limit().low_u64());
+
+        executed_info.receipts = self
+            .receipts
+            .clone()
+            .into_iter()
+            .map(|receipt| {
+                let mut receipt_proto_option = ReceiptWithOption::new();
+                receipt_proto_option.set_receipt(receipt.protobuf());
+                receipt_proto_option
+            })
+            .collect();
+        executed_info
+            .mut_header()
+            .set_proposer(self.proposer().to_vec());
+        executed_info
+    }
+}
+
+impl Deref for ClosedBlock {
+    type Target = Block;
+
+    fn deref(&self) -> &Block {
+        &self.block
+    }
+}
+
+impl DerefMut for ClosedBlock {
+    fn deref_mut(&mut self) -> &mut Block {
+        &mut self.block
     }
 }
 

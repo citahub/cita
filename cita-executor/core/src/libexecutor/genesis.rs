@@ -170,13 +170,14 @@ impl Genesis {
         let root = *state.root();
         trace!("root {:?}", root);
         self.block.set_state_root(root);
+        self.block.rehash();
 
         self.save(state, state_db.journal_db().backing())
     }
 
     fn save(&mut self, state: State<StateDB>, db: &Arc<KeyValueDB>) -> Result<(), String> {
         let mut batch = db.transaction();
-        let hash = self.block.hash();
+        let hash = self.block.hash().unwrap();
         let height = self.block.number();
         //初始化的时候需要获取头部信息
         batch.write(db::COL_HEADERS, &hash, self.block.header());

@@ -74,7 +74,7 @@ impl DatabaseRestore for Chain {
 
         // replace chain
         //*chain = Arc::new(BlockChain::new(self.config.blockchain.clone(), &[], db.clone()));
-        let header = get_chain(&*db.clone()).unwrap_or_default();
+        let header = get_chain(&*db.clone()).expect("Get chain failed");
 
         let current_height = header.number();
 

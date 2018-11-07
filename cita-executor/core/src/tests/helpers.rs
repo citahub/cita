@@ -26,7 +26,7 @@ use cita_types::{Address, U256};
 use core::libchain::chain;
 use db;
 use journaldb;
-use libexecutor::block::{Block, BlockBody};
+use libexecutor::block::{Block, BlockBody, OpenBlock};
 use libexecutor::executor::{Config, Executor};
 use libexecutor::genesis::Genesis;
 use libexecutor::genesis::Spec;
@@ -191,15 +191,20 @@ pub fn init_chain() -> Arc<chain::Chain> {
     Arc::new(chain::Chain::init_chain(Arc::new(db), &chain_config))
 }
 
-pub fn create_block(executor: &Executor, to: Address, data: &Vec<u8>, nonce: (u32, u32)) -> Block {
-    let mut block = Block::new();
+pub fn create_block(
+    executor: &Executor,
+    to: Address,
+    data: &Vec<u8>,
+    nonce: (u32, u32),
+) -> OpenBlock {
+    let mut block = OpenBlock::default();
 
     block.set_parent_hash(executor.get_current_hash());
     block.set_timestamp(AsMillis::as_millis(&UNIX_EPOCH.elapsed().unwrap()));
     block.set_number(executor.get_current_height() + 1);
     // header.proof= ?;
 
-    let mut body = BlockBody::new();
+    let mut body = BlockBody::default();
     let mut txs = Vec::new();
     let keypair = KeyPair::gen_keypair();
     let privkey = keypair.privkey();
