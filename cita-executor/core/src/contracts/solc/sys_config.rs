@@ -339,135 +339,89 @@ mod tests {
 
     #[test]
     fn test_delay_block_number() {
-        let executor = init_executor(vec![("SysConfig.delayBlockNumber", "2")]);
-        let number = SysConfig::new(&executor)
-            .delay_block_number(BlockId::Pending)
-            .unwrap();
-        assert_eq!(number, 2);
-    }
-
-    #[test]
-    fn test_permission_check() {
-        let executor = init_executor(vec![("SysConfig.checkPermission", "false")]);
-        let check_permission = SysConfig::new(&executor)
-            .permission_check(BlockId::Pending)
-            .unwrap();
-        assert_eq!(check_permission, false);
-    }
-
-    #[test]
-    fn test_permission_send_tx_check() {
-        let executor = init_executor(vec![("SysConfig.checkSendTxPermission", "false")]);
-        let check_send_tx_permission = SysConfig::new(&executor)
-            .send_tx_permission_check(BlockId::Pending)
-            .unwrap();
-        assert_eq!(check_send_tx_permission, false);
-    }
-
-    #[test]
-    fn test_permission_create_contract_check() {
-        let executor = init_executor(vec![("SysConfig.checkCreateContractPermission", "false")]);
-        let check_create_contract_permission = SysConfig::new(&executor)
-            .create_contract_permission_check(BlockId::Pending)
-            .unwrap();
-        assert_eq!(check_create_contract_permission, false);
-    }
-
-    #[test]
-    fn test_quota_check() {
-        let executor = init_executor(vec![("SysConfig.checkQuota", "true")]);
-        let check_quota = SysConfig::new(&executor)
-            .quota_check(BlockId::Pending)
-            .unwrap();
-        assert_eq!(check_quota, true);
-    }
-
-    #[test]
-    fn test_fee_back_platform_check() {
-        let executor = init_executor(vec![("SysConfig.checkFeeBackPlatform", "true")]);
-        let check_fee_back_platform = SysConfig::new(&executor)
-            .fee_back_platform_check(BlockId::Pending)
-            .unwrap();
-        assert_eq!(check_fee_back_platform, true);
-    }
-
-    #[test]
-    fn test_chain_owner() {
-        let executor = init_executor(vec![(
-            "SysConfig.chainOwner",
-            "0x0000000000000000000000000000000000000000",
-        )]);
-        let value = SysConfig::new(&executor)
-            .chain_owner(BlockId::Pending)
-            .unwrap();
-        assert_eq!(
-            value,
-            Address::from_str("0000000000000000000000000000000000000000").unwrap()
-        );
-    }
-
-    #[test]
-    fn test_chain_name() {
-        let executor = init_executor(vec![("SysConfig.chainName", "test-chain")]);
-        let value = SysConfig::new(&executor)
-            .chain_name(BlockId::Pending)
-            .unwrap();
-        assert_eq!(value, "test-chain");
-    }
-
-    #[test]
-    fn test_chain_id() {
-        let executor = init_executor(vec![("SysConfig.chainId", "123")]);
-        let value = SysConfig::new(&executor)
-            .chain_id(BlockId::Pending)
-            .unwrap();
-        assert_eq!(value, 123);
-    }
-
-    #[test]
-    fn test_operator() {
-        let executor = init_executor(vec![("SysConfig.operator", "test-operator")]);
-        let value = SysConfig::new(&executor)
-            .operator(BlockId::Pending)
-            .unwrap();
-        assert_eq!(value, "test-operator");
-    }
-
-    #[test]
-    fn test_website() {
-        let executor = init_executor(vec![("SysConfig.website", "https://www.cryptape.com")]);
-        let value = SysConfig::new(&executor).website(BlockId::Pending).unwrap();
-        assert_eq!(value, "https://www.cryptape.com");
-    }
-
-    #[test]
-    fn test_block_interval() {
-        let executor = init_executor(vec![("SysConfig.blockInterval", "3006")]);
-        let value = SysConfig::new(&executor)
-            .block_interval(BlockId::Pending)
-            .unwrap();
-        assert_eq!(value, 3006);
-    }
-
-    #[test]
-    fn test_economical_model() {
-        let executor = init_executor(vec![("SysConfig.economicalModel", "1")]);
-        let value = SysConfig::new(&executor)
-            .economical_model(BlockId::Pending)
-            .unwrap();
-        assert_eq!(value, EconomicalModel::Charge);
-    }
-
-    #[test]
-    fn test_token_info() {
         let executor = init_executor(vec![
+            ("SysConfig.delayBlockNumber", "2"),
+            ("SysConfig.checkPermission", "false"),
+            ("SysConfig.checkSendTxPermission", "false"),
+            ("SysConfig.checkCreateContractPermission", "false"),
+            ("SysConfig.checkQuota", "true"),
+            ("SysConfig.checkFeeBackPlatform", "true"),
+            (
+                "SysConfig.chainOwner",
+                "0x0000000000000000000000000000000000000000",
+            ),
+            ("SysConfig.chainName", "test-chain"),
+            ("SysConfig.chainId", "123"),
+            ("SysConfig.operator", "test-operator"),
+            ("SysConfig.website", "https://www.cryptape.com"),
+            ("SysConfig.blockInterval", "3006"),
+            ("SysConfig.economicalModel", "1"),
             ("SysConfig.name", "name"),
             ("SysConfig.symbol", "symbol"),
             ("SysConfig.avatar", "avatar"),
         ]);
-        let value = SysConfig::new(&executor)
-            .token_info(BlockId::Pending)
+
+        let config = SysConfig::new(&executor);
+
+        // Test delay block number
+        let number = config.delay_block_number(BlockId::Pending).unwrap();
+        assert_eq!(number, 2);
+
+        // Test permission_check
+        let check_permission = config.permission_check(BlockId::Pending).unwrap();
+        assert_eq!(check_permission, false);
+
+        // Test send_tx_permission_check
+        let check_send_tx_permission = config.send_tx_permission_check(BlockId::Pending).unwrap();
+        assert_eq!(check_send_tx_permission, false);
+
+        // Test create_contract_permission_check
+        let check_create_contract_permission = config
+            .create_contract_permission_check(BlockId::Pending)
             .unwrap();
+        assert_eq!(check_create_contract_permission, false);
+
+        // Test quota_check
+        let check_quota = config.quota_check(BlockId::Pending).unwrap();
+        assert_eq!(check_quota, false);
+
+        // Test fee_back_platform_check
+        let check_fee_back_platform = config.fee_back_platform_check(BlockId::Pending).unwrap();
+        assert_eq!(check_fee_back_platform, true);
+
+        // Test chain_owner
+        let value = config.chain_owner(BlockId::Pending).unwrap();
+        assert_eq!(
+            value,
+            Address::from_str("0000000000000000000000000000000000000000").unwrap()
+        );
+
+        // Test chain_name
+        let value = config.chain_name(BlockId::Pending).unwrap();
+        assert_eq!(value, "test-chain");
+
+        // Test chain_id
+        let value = config.chain_id(BlockId::Pending).unwrap();
+        assert_eq!(value, 123);
+
+        // Test operator
+        let value = config.operator(BlockId::Pending).unwrap();
+        assert_eq!(value, "test-operator");
+
+        // Test website
+        let value = config.website(BlockId::Pending).unwrap();
+        assert_eq!(value, "https://www.cryptape.com");
+
+        // Test block_interval
+        let value = config.block_interval(BlockId::Pending).unwrap();
+        assert_eq!(value, 3006);
+
+        // Test economical_model
+        let value = config.economical_model(BlockId::Pending).unwrap();
+        assert_eq!(value, EconomicalModel::Charge);
+
+        // Test token info
+        let value = config.token_info(BlockId::Pending).unwrap();
         assert_eq!(
             value,
             TokenInfo {

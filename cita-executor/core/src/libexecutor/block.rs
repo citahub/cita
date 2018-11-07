@@ -218,8 +218,8 @@ impl OpenBlock {
         let r = OpenBlock {
             exec_block: ExecutedBlock::new(block, state, tracing),
             last_hashes,
-            account_gas_limit: conf.account_gas_limit.common_gas_limit.into(),
-            account_gas: conf.account_gas_limit.specific_gas_limit.iter().fold(
+            account_gas_limit: conf.account_quota_limit.common_quota_limit.into(),
+            account_gas: conf.account_quota_limit.specific_quota_limit.iter().fold(
                 HashMap::new(),
                 |mut acc, (key, value)| {
                     acc.insert(*key, (*value).into());
