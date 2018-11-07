@@ -30,7 +30,7 @@
 //!     | network_consensus | Consensus | SignedProposal |
 //!     | network_consensus | Consensus | RawBytes       |
 //!     | network           | Chain     | Status         |
-//!     | network           | Chain     | syncResponse   |
+//!     | network           | Chain     | SyncResponse   |
 //!     | network           | Jonsonrpc | RequestNet     |
 //!
 //! 2. Publish channel
