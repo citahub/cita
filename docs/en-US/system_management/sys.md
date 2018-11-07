@@ -33,7 +33,7 @@ $ rpc getMetaData
     "economicalModel": 1,
     "genesisTimestamp": 1538101178583,
     "operator": "test-operator",
-    "tokenAvatar": "https://avatars1.githubusercontent.com/u/35361817",
+    "tokenAvatar": "https://cdn.cryptape.com/icon_appchain.png",
     "tokenName": "Nervos AppChain Test Token",
     "tokenSymbol": "NATT",
     "validators": [
