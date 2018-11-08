@@ -20,7 +20,7 @@ use cita_types::{Address, H256, U256};
 use core::contracts::solc::sys_config::{ChainId, SysConfig};
 use core::contracts::solc::VersionManager;
 use core::db;
-use core::libexecutor::block::{Block, ClosedBlock};
+use core::libexecutor::block::{ClosedBlock, OpenBlock};
 use core::libexecutor::call_request::CallRequest;
 use core::libexecutor::executor::{BlockInQueue, Config, Executor, Stage};
 use core::libexecutor::Genesis;
@@ -201,7 +201,7 @@ impl ExecutorInstance {
                                     *self.ext.stage.write() = Stage::ExecutingBlock;
                                 }
                                 match self.closed_block.replace(None).and_then(|closed_block| {
-                                    if closed_block.is_equivalent(&block) {
+                                    if closed_block.open_header().is_equivalent(block.header()) {
                                         Some(closed_block)
                                     } else {
                                         None
@@ -277,7 +277,7 @@ impl ExecutorInstance {
                     };
                     match in_queue {
                         Some(BlockInQueue::ConsensusBlock(coming, _)) => {
-                            if coming.is_equivalent(&closed_block) {
+                            if coming.header().is_equivalent(&closed_block.open_header()) {
                                 self.ext
                                     .finalize_proposal(closed_block, &coming, &self.ctx_pub);
                                 info!("execute proposal block [height {}] finish !", number);
@@ -612,12 +612,11 @@ impl ExecutorInstance {
         let proto_block = proof_blk.take_blk();
         let proof = proof_blk.take_proof();
         let blk_height = proto_block.get_header().get_height();
-        let block = Block::from(proto_block);
+        let block = OpenBlock::from(proto_block);
 
         debug!(
-            "consensus block {} {:?} tx hash  {:?} len {} version {}",
+            "consensus block {} tx hash  {:?} len {} version {}",
             block.number(),
-            block.hash(),
             block.transactions_root(),
             block.body().transactions().len(),
             block.header.version()
@@ -641,7 +640,7 @@ impl ExecutorInstance {
             match stage {
                 Stage::ExecutingProposal => {
                     if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
-                        if !value.is_equivalent(&block)
+                        if !value.header().is_equivalent(&block.header())
                             && !self.ext.is_interrupted.load(Ordering::SeqCst)
                         {
                             self.ext.is_interrupted.store(true, Ordering::SeqCst);
@@ -652,7 +651,7 @@ impl ExecutorInstance {
                 Stage::WaitFinalized => {
                     if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
                         // Not interrupt but to notify chain to execute the block
-                        if !value.is_equivalent(&block)
+                        if !value.header().is_equivalent(&block.header())
                             && !self.ext.is_interrupted.load(Ordering::SeqCst)
                         {
                             self.ext.is_interrupted.store(true, Ordering::SeqCst);
@@ -691,12 +690,11 @@ impl ExecutorInstance {
                 break;
             }
 
-            let rblock = Block::from(block);
+            let rblock = OpenBlock::from(block);
 
             trace!(
-                "sync: Received block {} {:?}  tx hash {:?} len {}",
+                "sync: Received block {} tx root hash {:?} len {}",
                 rblock.number(),
-                rblock.hash(),
                 rblock.transactions_root(),
                 rblock.body().transactions().len()
             );
@@ -716,7 +714,7 @@ impl ExecutorInstance {
     }
 
     // Check block group from remote and enqueue
-    fn add_sync_block(&self, block: Block) {
+    fn add_sync_block(&self, block: OpenBlock) {
         let block_proof_type = block.proof_type();
         let ext_proof_type = self.ext.get_prooftype();
         //check sync_block's proof type, it must be consistent with chain
@@ -784,7 +782,7 @@ impl ExecutorInstance {
 
         let current_height = self.ext.get_current_height();
         let blk_height = proposal.get_header().get_height();
-        let block = Block::from(proposal);
+        let block = OpenBlock::from(proposal);
 
         let block_in_queue = {
             let block_map = self.ext.block_map.read();
@@ -801,7 +799,7 @@ impl ExecutorInstance {
             match stage {
                 Stage::ExecutingProposal => {
                     if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
-                        if !value.is_equivalent(&block) {
+                        if !value.header().is_equivalent(&block.header()) {
                             if !self.ext.is_interrupted.load(Ordering::SeqCst) {
                                 self.ext.is_interrupted.store(true, Ordering::SeqCst);
                             }
@@ -811,7 +809,7 @@ impl ExecutorInstance {
                 }
                 Stage::WaitFinalized => {
                     if let Some(BlockInQueue::Proposal(value)) = block_in_queue {
-                        if !value.is_equivalent(&block) {
+                        if !value.header().is_equivalent(&block.header()) {
                             self.send_proposal(blk_height, block);
                         }
                     }
@@ -828,7 +826,7 @@ impl ExecutorInstance {
         }
     }
 
-    fn set_sync_block(&self, block: Block, proto_proof: Proof) -> bool {
+    fn set_sync_block(&self, block: OpenBlock, proto_proof: Proof) -> bool {
         let number = block.number();
         trace!("set sync block-{}", number);
         let proof = BftProof::from(proto_proof);
@@ -901,7 +899,7 @@ impl ExecutorInstance {
         self.ext.is_sync.store(false, Ordering::SeqCst);
     }
 
-    fn send_block(&self, blk_height: u64, block: Block, proof: Proof) {
+    fn send_block(&self, blk_height: u64, block: OpenBlock, proof: Proof) {
         {
             self.ext
                 .block_map
@@ -912,7 +910,7 @@ impl ExecutorInstance {
         let _ = self.write_sender.send(blk_height);
     }
 
-    fn send_proposal(&self, blk_height: u64, block: Block) {
+    fn send_proposal(&self, blk_height: u64, block: OpenBlock) {
         {
             self.ext
                 .block_map

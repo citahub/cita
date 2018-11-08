@@ -473,7 +473,7 @@ impl BlockRebuilder {
                 return Err(Error::RestorationAborted.into());
             }
 
-            let mut block = Block::new();
+            let mut block = Block::default();
             let pair = rlp.at(idx)?;
             //let block_rlp = pair.at(0)?.as_raw().to_owned();
             //let block: Block = ::rlp::decode(block_rlp.as_slice());
@@ -504,10 +504,13 @@ impl BlockRebuilder {
             let is_best = cur_number == self.best_number;
 
             if is_best {
-                if header.hash() != self.best_hash {
-                    return Err(
-                        Error::WrongBlockHash(cur_number, self.best_hash, header.hash()).into(),
-                    );
+                if header.hash().unwrap() != self.best_hash {
+                    return Err(Error::WrongBlockHash(
+                        cur_number,
+                        self.best_hash,
+                        header.hash().unwrap(),
+                    )
+                    .into());
                 }
 
                 if header.state_root() != &self.best_root {
@@ -545,7 +548,7 @@ impl BlockRebuilder {
         is_best: bool,
     ) {
         let header = block.header();
-        let hash = header.hash();
+        let hash = header.hash().unwrap();
         let height = header.number();
 
         // store block in db
@@ -760,7 +763,10 @@ impl BlockRebuilder {
             block_hash: genesis_hash,
             proof: vec![],
         });*/
-        let genesis_block = self.chain.block_by_height(0).unwrap_or_default();
+        let genesis_block = self
+            .chain
+            .block_by_height(0)
+            .expect("Get genesis block failed");
         batch.write(COL_HEADERS, &0, &genesis_block.header.clone());
 
         batch.write(COL_BODIES, &0, &genesis_block.body.clone());

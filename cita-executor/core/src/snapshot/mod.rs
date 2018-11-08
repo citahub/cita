@@ -355,8 +355,11 @@ impl<'a> BlockChunker<'a> {
             start_header.number() / 100
         };
 
-        let genesis_block = self.executor.block_header_by_height(0).unwrap_or_default();
-        let genesis_hash = genesis_block.hash();
+        let genesis_block = self
+            .executor
+            .block_header_by_height(0)
+            .expect("Get genesis block failed");
+        let genesis_hash = genesis_block.hash().unwrap();
         info!("genesis_hash: {:?}", genesis_hash);
         let mut blocks_num = 0;
 
@@ -786,10 +789,13 @@ impl BlockRebuilder {
             let is_best = cur_number == self.best_number;
 
             if is_best {
-                if header.hash() != self.best_hash {
-                    return Err(
-                        Error::WrongBlockHash(cur_number, self.best_hash, header.hash()).into(),
-                    );
+                if header.hash().unwrap() != self.best_hash {
+                    return Err(Error::WrongBlockHash(
+                        cur_number,
+                        self.best_hash,
+                        header.hash().unwrap(),
+                    )
+                    .into());
                 }
 
                 if header.state_root() != &self.best_root {
@@ -820,7 +826,7 @@ impl BlockRebuilder {
 
     fn insert_unordered_block(&self, batch: &mut DBTransaction, header: &Header, is_best: bool) {
         let height = header.number();
-        let hash = header.hash();
+        let hash = header.hash().unwrap();
 
         // store block in db
         batch.write(COL_HEADERS, &hash, &header.clone());
@@ -854,8 +860,11 @@ impl BlockRebuilder {
             block_hash: genesis_hash,
             proof: vec![],
         });*/
-        let genesis_header = self.executor.block_header_by_height(0).unwrap_or_default();
-        let hash = genesis_header.hash();
+        let genesis_header = self
+            .executor
+            .block_header_by_height(0)
+            .expect("Get genesis block failed");
+        let hash = genesis_header.hash().unwrap();
         batch.write(COL_HEADERS, &hash, &genesis_header);
         batch.write(COL_EXTRA, &0, &hash);
 

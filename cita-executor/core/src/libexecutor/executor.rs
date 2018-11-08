@@ -100,9 +100,9 @@ impl BloomGroupDatabase for Executor {
 
 #[derive(Debug, Clone)]
 pub enum BlockInQueue {
-    Proposal(Block),
-    ConsensusBlock(Block, ProtoProof),
-    SyncBlock((Block, Option<ProtoProof>)),
+    Proposal(OpenBlock),
+    ConsensusBlock(OpenBlock, ProtoProof),
+    SyncBlock((OpenBlock, Option<ProtoProof>)),
 }
 
 /// Rules
@@ -325,7 +325,7 @@ impl Executor {
         };
 
         // Build executor config
-        executor.build_last_hashes(Some(header.hash()), header.number());
+        executor.build_last_hashes(Some(header.hash().unwrap()), header.number());
 
         let conf = executor.load_config(BlockId::Pending);
         {
@@ -380,7 +380,7 @@ impl Executor {
     pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
         {
             let header = self.current_header.read();
-            if header.hash() == hash {
+            if header.hash().unwrap() == hash {
                 return Some(header.clone());
             }
         }
@@ -423,7 +423,7 @@ impl Executor {
 
     #[inline]
     pub fn get_current_hash(&self) -> H256 {
-        self.current_header.read().hash()
+        self.current_header.read().hash().unwrap()
     }
 
     pub fn get_prooftype(&self) -> Option<ProofType> {
@@ -623,7 +623,7 @@ impl Executor {
         analytics: CallAnalytics,
     ) -> Result<Executed, CallError> {
         let header = self.block_header(block_id).ok_or(CallError::StatePruned)?;
-        let last_hashes = self.build_last_hashes(Some(header.hash()), header.number());
+        let last_hashes = self.build_last_hashes(Some(header.hash().unwrap()), header.number());
         let env_info = EnvInfo {
             number: header.number(),
             author: *header.proposer(),
@@ -751,7 +751,7 @@ impl Executor {
     pub fn write_batch(&self, block: ClosedBlock) {
         let mut batch = self.db.read().transaction();
         let height = block.number();
-        let hash = block.hash();
+        let hash = block.hash().unwrap();
         let version = block.version();
         trace!(
             "commit block in db hash {:?}, height {:?}, version {}",
@@ -803,10 +803,11 @@ impl Executor {
     pub fn finalize_proposal(
         &self,
         mut closed_block: ClosedBlock,
-        coming: &Block,
+        coming: &OpenBlock,
         ctx_pub: &Sender<(String, Vec<u8>)>,
     ) {
-        closed_block.header.set_proof(coming.proof().clone());
+        closed_block.set_proof(coming.proof().clone());
+        closed_block.rehash();
         self.finalize_block(&closed_block, ctx_pub);
     }
 
@@ -919,7 +920,7 @@ impl Executor {
 
     /// Execute Block
     /// And set state_root, receipt_root, log_bloom of header
-    pub fn execute_block(&self, block: Block, ctx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn execute_block(&self, block: OpenBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
@@ -933,7 +934,7 @@ impl Executor {
             create_contract_permission: conf.check_create_contract_permission,
         };
 
-        let mut open_block = OpenBlock::new(
+        let mut executed_block = ExecutedBlock::new(
             self.factories.clone(),
             conf.clone(),
             false,
@@ -943,8 +944,8 @@ impl Executor {
             last_hashes.into(),
         )
         .unwrap();
-        if open_block.apply_transactions(self, conf.chain_owner, &check_options) {
-            let closed_block = open_block.close();
+        if executed_block.apply_transactions(self, conf.chain_owner, &check_options) {
+            let closed_block = executed_block.close();
             let new_now = Instant::now();
             info!(
                 "execute {} block use {:?}",
@@ -957,7 +958,7 @@ impl Executor {
         }
     }
 
-    pub fn execute_proposal(&self, block: Block) -> Option<ClosedBlock> {
+    pub fn execute_proposal(&self, block: OpenBlock) -> Option<ClosedBlock> {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
@@ -971,7 +972,7 @@ impl Executor {
             send_tx_permission: conf.check_send_tx_permission,
             create_contract_permission: conf.check_create_contract_permission,
         };
-        let mut open_block = OpenBlock::new(
+        let mut executed_block = ExecutedBlock::new(
             self.factories.clone(),
             conf,
             false,
@@ -981,8 +982,8 @@ impl Executor {
             last_hashes.into(),
         )
         .unwrap();
-        if open_block.apply_transactions(self, chain_owner, &check_options) {
-            let closed_block = open_block.close();
+        if executed_block.apply_transactions(self, chain_owner, &check_options) {
+            let closed_block = executed_block.close();
             let new_now = Instant::now();
             debug!(
                 "execute {} proposal use {:?}",
@@ -1243,7 +1244,6 @@ mod tests {
 
     use super::*;
     use cita_types::Address;
-    use core::libchain::Block as ChainBlock;
     use core::receipt::ReceiptError;
     use libproto::router::{MsgType, RoutingKey, SubModules};
     use libproto::Message;
@@ -1299,10 +1299,8 @@ mod tests {
             match RoutingKey::from(&key) {
                 routing_key!(Executor >> ExecutedResult) => {
                     let info = msg.take_executed_result().unwrap();
-                    let pro = block.protobuf();
-                    let chain_block = ChainBlock::from(pro);
-                    inchain.set_block_body(h, &chain_block);
-                    inchain.set_db_result(&info, &chain_block);
+                    inchain.set_block_body(h, &block);
+                    inchain.set_db_result(&info, &block);
                 }
                 _ => {}
             }

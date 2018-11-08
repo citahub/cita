@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -19,34 +19,21 @@
 
 use basic_types::{LogBloom, ZERO_LOGBLOOM};
 use cita_types::{Address, H256, U256};
-use libproto::blockchain::{BlockHeader, Proof, ProofType};
-use libproto::executor::ExecutedHeader;
+use libproto::blockchain::{
+    Block as ProtoBlock, BlockHeader as ProtoBlockHeader, Proof as ProtoProof, ProofType,
+};
+use libproto::executor::{ExecutedHeader, ExecutedInfo};
 use proof::BftProof;
 use rlp::{self, Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
-use std::cell::Cell;
 use std::cmp;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use time::get_time;
 
 use util::{Bytes, Hashable, HeapSizeOf, HASH_NULL_RLP};
 pub use BlockNumber;
 
-#[derive(Debug, PartialEq, Clone, Eq)]
-struct HashWrap(Cell<Option<H256>>);
-
-unsafe impl Sync for HashWrap {}
-
-impl Deref for HashWrap {
-    type Target = Cell<Option<H256>>;
-
-    fn deref(&self) -> &Cell<Option<H256>> {
-        &self.0
-    }
-}
-
-/// Doesn't do all that much on its own.
 #[derive(Debug, Clone, Eq)]
-pub struct Header {
+pub struct OpenHeader {
     /// Parent hash.
     parent_hash: H256,
     /// Block timestamp.
@@ -55,36 +42,22 @@ pub struct Header {
     number: BlockNumber,
     /// Transactions root.
     transactions_root: H256,
-    /// State root.
-    state_root: H256,
-    /// Block receipts root.
-    receipts_root: H256,
-    /// Block bloom.
-    log_bloom: LogBloom,
-    /// Quota used for contracts execution.
-    quota_used: U256,
-    /// Block quota limit.
+    /// Block gas limit.
     quota_limit: U256,
     /// the proof of the block
-    proof: Proof,
-    /// The hash of the header.
-    hash: HashWrap,
+    proof: ProtoProof,
     /// The version of the header.
     version: u32,
     /// the selected proposer address
     proposer: Address,
 }
 
-impl PartialEq for Header {
-    fn eq(&self, c: &Header) -> bool {
+impl PartialEq for OpenHeader {
+    fn eq(&self, c: &OpenHeader) -> bool {
         self.parent_hash == c.parent_hash
             && self.timestamp == c.timestamp
             && self.number == c.number
             && self.transactions_root == c.transactions_root
-            && self.state_root == c.state_root
-            && self.receipts_root == c.receipts_root
-            && self.log_bloom == c.log_bloom
-            && self.quota_used == c.quota_used
             && self.quota_limit == c.quota_limit
             && self.proof == c.proof
             && self.version == c.version
@@ -92,50 +65,45 @@ impl PartialEq for Header {
     }
 }
 
-impl Default for Header {
+impl Default for OpenHeader {
     fn default() -> Self {
-        Header {
+        OpenHeader {
             parent_hash: H256::default(),
             timestamp: 0,
             number: 0,
             transactions_root: HASH_NULL_RLP,
-            state_root: HASH_NULL_RLP,
-            receipts_root: HASH_NULL_RLP,
-            log_bloom: *ZERO_LOGBLOOM,
-            quota_used: U256::default(),
             quota_limit: U256::from(u64::max_value()),
-            proof: Proof::new(),
-            hash: HashWrap(Cell::new(None)),
+            proof: ProtoProof::new(),
             version: 0,
             proposer: Address::default(),
         }
     }
 }
 
-impl From<BlockHeader> for Header {
-    fn from(bh: BlockHeader) -> Self {
-        Header {
-            parent_hash: H256::from(bh.get_prevhash()),
-            timestamp: bh.get_timestamp(),
-            number: bh.get_height(),
-            transactions_root: H256::from(bh.get_transactions_root()),
-            state_root: H256::default(),
-            receipts_root: H256::default(),
-            log_bloom: *ZERO_LOGBLOOM,
-            quota_used: U256::zero(),
-            quota_limit: U256::from(u64::max_value()),
-            proof: bh.get_proof().clone(),
-            version: 0,
-            hash: HashWrap(Cell::new(None)),
-            proposer: Address::from(bh.get_proposer()),
+impl OpenHeader {
+    // TODO: trait
+    pub fn from_protobuf(block: &ProtoBlock) -> Self {
+        let header = block.get_header();
+        let version = block.get_version();
+        Self {
+            parent_hash: H256::from(header.get_prevhash()),
+            timestamp: header.get_timestamp(),
+            number: header.get_height(),
+            transactions_root: H256::from(header.get_transactions_root()),
+            quota_limit: U256::from(header.get_quota_limit()),
+            proof: header.get_proof().clone(),
+            version,
+            proposer: Address::from(header.get_proposer()),
         }
     }
-}
 
-impl Header {
-    /// Create a new, default-valued, header.
-    pub fn new() -> Self {
-        Self::default()
+    pub fn is_equivalent(&self, header: &OpenHeader) -> bool {
+        self.transactions_root() == header.transactions_root()
+            && self.timestamp() == header.timestamp()
+            && self.proposer() == header.proposer()
+            && self.parent_hash() == header.parent_hash()
+            && self.number() == header.number()
+            && self.version() == header.version()
     }
 
     /// Get the parent_hash field of the header.
@@ -150,6 +118,141 @@ impl Header {
     pub fn number(&self) -> BlockNumber {
         self.number
     }
+    /// Get the transactions root field of the header.
+    pub fn transactions_root(&self) -> &H256 {
+        &self.transactions_root
+    }
+    /// Get the quota limit field of the header.
+    pub fn quota_limit(&self) -> &U256 {
+        &self.quota_limit
+    }
+    /// Get the proof field of the header.
+    pub fn proof(&self) -> &ProtoProof {
+        &self.proof
+    }
+    /// Get the version of the block
+    pub fn version(&self) -> u32 {
+        self.version
+    }
+    /// Get the proof type field of the header.
+    pub fn proof_type(&self) -> Option<ProofType> {
+        if self.proof == ProtoProof::new() {
+            None
+        } else {
+            Some(self.proof.get_field_type())
+        }
+    }
+    /// Get the selected proposer address of the header
+    pub fn proposer(&self) -> &Address {
+        &self.proposer
+    }
+    /// Set the number field of the header.
+    pub fn set_parent_hash(&mut self, a: H256) {
+        self.parent_hash = a;
+    }
+    /// Set the quota limit field of the header.
+    pub fn set_quota_limit(&mut self, a: U256) {
+        self.quota_limit = a;
+    }
+    /// Set the version of the header.
+    pub fn set_version(&mut self, a: u32) {
+        self.version = a;
+    }
+    /// Set the proof the block.
+    pub fn set_proof(&mut self, a: ProtoProof) {
+        self.proof = a;
+    }
+    /// Set the timestamp field of the header.
+    pub fn set_timestamp(&mut self, a: u64) {
+        self.timestamp = a;
+    }
+    /// Set the timestamp field of the header to the current time.
+    pub fn set_timestamp_now(&mut self, but_later_than: u64) {
+        self.timestamp = cmp::max(get_time().sec as u64, but_later_than + 1);
+    }
+    /// Set the number field of the header.
+    pub fn set_number(&mut self, a: BlockNumber) {
+        self.number = a;
+    }
+}
+
+#[derive(Debug, Clone, Eq)]
+pub struct Header {
+    open_header: OpenHeader,
+    /// State root.
+    state_root: H256,
+    /// Block receipts root.
+    receipts_root: H256,
+    /// Block bloom.
+    log_bloom: LogBloom,
+    /// Quota used for contracts execution.
+    quota_used: U256,
+    /// The hash of the header.
+    hash: Option<H256>,
+}
+
+impl Deref for Header {
+    type Target = OpenHeader;
+
+    fn deref(&self) -> &Self::Target {
+        &self.open_header
+    }
+}
+
+impl DerefMut for Header {
+    fn deref_mut(&mut self) -> &mut OpenHeader {
+        &mut self.open_header
+    }
+}
+
+impl PartialEq for Header {
+    fn eq(&self, c: &Header) -> bool {
+        self.parent_hash() == c.parent_hash()
+            && self.timestamp() == c.timestamp()
+            && self.number() == c.number()
+            && self.transactions_root() == c.transactions_root()
+            && self.state_root() == c.state_root()
+            && self.receipts_root() == c.receipts_root()
+            && self.log_bloom() == c.log_bloom()
+            && self.quota_used() == c.quota_used()
+            && self.quota_limit() == c.quota_limit()
+            && self.proof() == c.proof()
+            && self.version() == c.version()
+            && self.proposer() == c.proposer()
+    }
+}
+
+impl Default for Header {
+    fn default() -> Self {
+        let mut header = Header {
+            open_header: OpenHeader::default(),
+            state_root: HASH_NULL_RLP,
+            receipts_root: HASH_NULL_RLP,
+            log_bloom: *ZERO_LOGBLOOM,
+            quota_used: U256::default(),
+            hash: None,
+        };
+        header.rehash();
+        header
+    }
+}
+
+impl Header {
+    pub fn new(header: OpenHeader) -> Self {
+        Header {
+            open_header: header,
+            state_root: HASH_NULL_RLP,
+            receipts_root: HASH_NULL_RLP,
+            log_bloom: *ZERO_LOGBLOOM,
+            quota_used: U256::default(),
+            hash: None,
+        }
+    }
+
+    pub fn open_header(&self) -> &OpenHeader {
+        &self.open_header
+    }
+
     /// Get the state root field of the header.
     pub fn state_root(&self) -> &H256 {
         &self.state_root
@@ -162,52 +265,13 @@ impl Header {
     pub fn log_bloom(&self) -> &LogBloom {
         &self.log_bloom
     }
-    /// Get the transactions root field of the header.
-    pub fn transactions_root(&self) -> &H256 {
-        &self.transactions_root
-    }
     /// Get the quota used field of the header.
     pub fn quota_used(&self) -> &U256 {
         &self.quota_used
     }
-    /// Get the quota limit field of the header.
-    pub fn quota_limit(&self) -> &U256 {
-        &self.quota_limit
-    }
-    /// Get the proof field of the header.
-    pub fn proof(&self) -> &Proof {
-        &self.proof
-    }
-    /// Get the version of the block
-    pub fn version(&self) -> u32 {
-        self.version
-    }
-    /// Get the proof type field of the header.
-    pub fn proof_type(&self) -> Option<ProofType> {
-        if self.proof == Proof::new() {
-            None
-        } else {
-            Some(self.proof.get_field_type())
-        }
-    }
-    /// Get the selected proposer address of the header
-    pub fn proposer(&self) -> &Address {
-        &self.proposer
-    }
-
-    /// Set the number field of the header.
-    pub fn set_parent_hash(&mut self, a: H256) {
-        self.parent_hash = a;
-        self.note_dirty();
-    }
     /// Set the state root field of the header.
     pub fn set_state_root(&mut self, a: H256) {
         self.state_root = a;
-        self.note_dirty();
-    }
-    /// Set the transactions root field of the header.
-    pub fn set_transactions_root(&mut self, a: H256) {
-        self.transactions_root = a;
         self.note_dirty();
     }
     /// Set the receipts root field of the header.
@@ -218,22 +282,6 @@ impl Header {
     /// Set the log bloom field of the header.
     pub fn set_log_bloom(&mut self, a: LogBloom) {
         self.log_bloom = a;
-        self.note_dirty();
-    }
-    /// Set the timestamp field of the header.
-    pub fn set_timestamp(&mut self, a: u64) {
-        self.timestamp = a;
-        self.note_dirty();
-    }
-    /// Set the timestamp field of the header to the current time.
-    pub fn set_timestamp_now(&mut self, but_later_than: u64) {
-        self.timestamp = cmp::max(get_time().sec as u64, but_later_than + 1);
-        self.note_dirty();
-    }
-    /// Set the number field of the header.
-    pub fn set_number(&mut self, a: BlockNumber) {
-        self.number = a;
-        self.note_dirty();
     }
     /// Set the quota used field of the header.
     pub fn set_quota_used(&mut self, a: U256) {
@@ -251,32 +299,45 @@ impl Header {
         self.note_dirty();
     }
     /// Set the proof the block.
-    pub fn set_proof(&mut self, a: Proof) {
+    pub fn set_proof(&mut self, a: ProtoProof) {
         self.proof = a;
         self.note_dirty();
     }
-
-    pub fn set_proposer(&mut self, a: Address) {
-        self.proposer = a;
+    /// Set the timestamp field of the header.
+    pub fn set_timestamp(&mut self, a: u64) {
+        self.timestamp = a;
         self.note_dirty();
     }
-
+    /// Set the timestamp field of the header to the current time.
+    pub fn set_timestamp_now(&mut self, but_later_than: u64) {
+        self.timestamp = cmp::max(get_time().sec as u64, but_later_than + 1);
+        self.note_dirty();
+    }
+    /// Set the number field of the header.
+    pub fn set_number(&mut self, a: BlockNumber) {
+        self.number = a;
+        self.note_dirty();
+    }
+    /// Set the number field of the header.
+    pub fn set_parent_hash(&mut self, a: H256) {
+        self.parent_hash = a;
+        self.note_dirty();
+    }
     /// Get the hash of this header (sha3 of the RLP).
-    pub fn hash(&self) -> H256 {
-        let hash = self.hash.get();
-        match hash {
-            Some(h) => h,
-            None => {
-                let h = self.rlp_hash();
-                self.hash.set(Some(h));
-                h
-            }
+    pub fn hash(&self) -> Option<H256> {
+        self.hash
+    }
+
+    pub fn rehash(&mut self) {
+        if self.hash().is_none() {
+            let h = self.rlp_hash();
+            self.hash = Some(h);
         }
     }
 
     /// Note that some fields have changed. Resets the memoised hash.
-    pub fn note_dirty(&self) -> &Self {
-        self.hash.set(None);
+    pub fn note_dirty(&mut self) -> &Self {
+        self.hash = None;
         self
     }
 
@@ -311,8 +372,8 @@ impl Header {
     }
 
     /// Generate the protobuf header.
-    pub fn protobuf(&self) -> BlockHeader {
-        let mut bh = BlockHeader::new();
+    pub fn protobuf(&self) -> ProtoBlockHeader {
+        let mut bh = ProtoBlockHeader::new();
         bh.set_prevhash(self.parent_hash.to_vec());
         bh.set_timestamp(self.timestamp);
         bh.set_height(self.number);
@@ -328,19 +389,30 @@ impl Header {
 
     /// Generate a header, only set the fields which has been set in new proposal.
     pub fn proposal(&self) -> Header {
-        let mut h = Header::new();
-        h.set_parent_hash(self.parent_hash);
-        h.set_timestamp(self.timestamp);
-        h.set_number(self.number);
-        h.set_transactions_root(self.transactions_root);
-        h.set_proof(self.proof.clone());
-        h.set_proposer(self.proposer);
-        h
+        let mut header = Header {
+            open_header: OpenHeader {
+                parent_hash: self.open_header.parent_hash,
+                timestamp: self.open_header.timestamp,
+                number: self.open_header.number,
+                transactions_root: self.open_header.transactions_root,
+                quota_limit: self.open_header.quota_limit,
+                proof: self.proof().clone(),
+                version: self.open_header.version,
+                proposer: self.open_header.proposer,
+            },
+            hash: None,
+            log_bloom: *ZERO_LOGBLOOM,
+            state_root: HASH_NULL_RLP,
+            receipts_root: HASH_NULL_RLP,
+            quota_used: U256::zero(),
+        };
+        header.rehash();
+        header
     }
 
     /// Generate the protobuf header, only set the fields which has been set in new proposal.
-    pub fn proposal_protobuf(&self) -> BlockHeader {
-        let mut bh = BlockHeader::new();
+    pub fn proposal_protobuf(&self) -> ProtoBlockHeader {
+        let mut bh = ProtoBlockHeader::new();
         bh.set_prevhash(self.parent_hash.to_vec());
         bh.set_timestamp(self.timestamp);
         bh.set_height(self.number);
@@ -365,6 +437,28 @@ impl Header {
         executed_header
     }
 
+    pub fn from_executed_info(info: &ExecutedInfo, open_header: &OpenHeader) -> Header {
+        let mut header = Header {
+            open_header: OpenHeader {
+                number: info.get_header().get_height(),
+                quota_limit: U256::from(info.get_header().get_quota_limit()),
+                timestamp: info.get_header().get_timestamp(),
+                transactions_root: H256::from(info.get_header().get_transactions_root()),
+                proof: open_header.proof.clone(),
+                proposer: Address::from(info.get_header().get_proposer()),
+                version: open_header.version,
+                parent_hash: H256::from_slice(info.get_header().get_prevhash()),
+            },
+            log_bloom: LogBloom::from(info.get_header().get_log_bloom()),
+            quota_used: U256::from(info.get_header().get_quota_used()),
+            receipts_root: H256::from(info.get_header().get_receipts_root()),
+            state_root: H256::from(info.get_header().get_state_root()),
+            hash: None,
+        };
+        header.rehash();
+        header
+    }
+
     /// Recover a header from rlp bytes.
     pub fn from_bytes(bytes: &[u8]) -> Self {
         rlp::decode(bytes)
@@ -377,7 +471,7 @@ impl Header {
             warn!("verify next block header block number failed");
             return false;
         }
-        if self.note_dirty().hash() == *next.parent_hash() {
+        if self.hash().unwrap() == *next.parent_hash() {
         } else {
             warn!("verify next block header parent hash failed");
             return false;
@@ -402,19 +496,21 @@ impl Header {
 impl Decodable for Header {
     fn decode(r: &UntrustedRlp) -> Result<Self, DecoderError> {
         let blockheader = Header {
-            parent_hash: r.val_at(0)?,
+            open_header: OpenHeader {
+                parent_hash: r.val_at(0)?,
+                transactions_root: r.val_at(2)?,
+                number: r.val_at(5)?,
+                quota_limit: r.val_at(6)?,
+                timestamp: cmp::min(r.val_at::<U256>(8)?, u64::max_value().into()).as_u64(),
+                version: r.val_at(9)?,
+                proof: r.val_at(10)?,
+                proposer: r.val_at(11)?,
+            },
             state_root: r.val_at(1)?,
-            transactions_root: r.val_at(2)?,
             receipts_root: r.val_at(3)?,
             log_bloom: r.val_at(4)?,
-            number: r.val_at(5)?,
-            quota_limit: r.val_at(6)?,
             quota_used: r.val_at(7)?,
-            timestamp: cmp::min(r.val_at::<U256>(8)?, u64::max_value().into()).as_u64(),
-            version: r.val_at(9)?,
-            proof: r.val_at(10)?,
-            proposer: r.val_at(11)?,
-            hash: HashWrap(Cell::new(Some(r.as_raw().crypt_hash()))),
+            hash: Some(r.as_raw().crypt_hash()),
         };
 
         Ok(blockheader)
@@ -435,13 +531,15 @@ impl HeapSizeOf for Header {
 
 #[cfg(test)]
 mod tests {
-    use super::Header;
+    use super::{Header, OpenHeader};
     use rlp;
 
     #[test]
     fn decode_and_encode_header() {
         // that's rlp of block header created with ethash engine.
-        let header = Header::new();
+        let open_header = OpenHeader::default();
+
+        let header = Header::new(open_header);
         let header_rlp = rlp::encode(&header).into_vec();
         let header: Header = rlp::decode(&header_rlp);
         let encoded_header = rlp::encode(&header).into_vec();
