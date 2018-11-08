@@ -339,16 +339,15 @@ impl Connections {
         let mut remove_peers = Vec::new();
         for (peer, stream) in self.peers.iter_mut() {
             if Connections::is_send(peer.0, origin, operate) {
-                match stream.write(&buf) {
+                match stream.write_all(&buf) {
                     Ok(_) => {
-                        let _ = stream.flush();
                         peers.push(peer.0);
                     }
                     Err(e) => {
                         warn!("Node{} {} is shutdown, err: {}", peer.0, peer.1, e);
                         remove_peers.push(peer.clone());
                     }
-                };
+                }
             }
         }
         self.close(Some(remove_peers), true);
