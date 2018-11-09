@@ -103,13 +103,15 @@ impl ZkPrivacy {
         let mut len = 128;
         let addr = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
         index = index + len;
 
         len = 128;
         let balance = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
 
         trace!("set_banlance {} {}", addr, balance);
 
@@ -128,7 +130,8 @@ impl ZkPrivacy {
         let len = 128;
         let addr = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
 
         self.output.clear();
         let balance: String = self.balances.get_bytes(ext, addr.clone())?;
@@ -156,35 +159,40 @@ impl ZkPrivacy {
         let mut len = 128;
         let addr = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
         index = index + len;
 
         // get proof
         len = 770;
         let proof = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
         index = index + len;
 
         // get coin
         len = 64;
         let coin = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
         index = index + len;
 
         // get delt_ba
         len = 128;
         let delt_ba = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
         index = index + len;
 
         // get enc
         len = 192;
         let enc = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
 
         // get block_number
         let block_number = U256::from(ext.env_info().number);
@@ -325,7 +333,8 @@ impl ZkPrivacy {
             vec![
                 H256::from_str(
                     "0xc73b5a8f31a1a078a14123cc93687f4a59389c76caf88d5d2154d3f3ce25ff49",
-                ).unwrap(),
+                )
+                .unwrap(),
             ],
             &data,
         );
@@ -351,35 +360,40 @@ impl ZkPrivacy {
         let mut len = 128;
         let addr = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
         index = index + len;
 
         // get proof
         len = 770;
         let proof = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
         index = index + len;
 
         // get nullifier
         len = 64;
         let nullifier = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
         index = index + len;
 
         // get root
         len = 64;
         let root = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
         index = index + len;
 
         // get delt_ba
         len = 128;
         let delt_ba = String::from_utf8(Vec::from(
             data.get(index..index + len).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
 
         trace!(
             "receive_verify args: {} {} {} {} {}",

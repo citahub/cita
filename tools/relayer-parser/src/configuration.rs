@@ -20,6 +20,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use cita_crypto::PrivKey;
+use cita_types::U256;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct UpStream {
@@ -29,7 +30,7 @@ pub struct UpStream {
 
 #[derive(Debug, Deserialize, Clone)]
 struct Chain {
-    pub id: u32,
+    pub id: U256,
     pub servers: Vec<UpStream>,
 }
 
@@ -42,7 +43,7 @@ struct FileConfig {
 #[derive(Debug, Clone)]
 pub struct Config {
     pkey: PrivKey,
-    servers: HashMap<u32, Vec<UpStream>>,
+    servers: HashMap<U256, Vec<UpStream>>,
 }
 
 impl FileConfig {
@@ -55,7 +56,7 @@ impl FileConfig {
 
 impl Config {
     #[inline]
-    pub fn get_servers(&self, chain_id: u32) -> Option<&Vec<UpStream>> {
+    pub fn get_servers(&self, chain_id: U256) -> Option<&Vec<UpStream>> {
         self.servers.get(&chain_id)
     }
     #[inline]

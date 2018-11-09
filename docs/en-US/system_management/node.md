@@ -28,7 +28,7 @@ The management of ordinary nodes includes adding and deleting. Let's illustrate 
 2. Generate new nodes:
 
     ```bash
-    $ ./scripts/create_cita_config.py append --node "127.0.0.1:4004"
+    $ ./scripts/create_cita_config.py append --chain_name test-chain --node "127.0.0.1:4004"
     $ ls test-chain/
       0  1  2  3  4  template
     ```
@@ -38,7 +38,7 @@ The management of ordinary nodes includes adding and deleting. Let's illustrate 
 
 3. Start new nodes:
 
-    Just start the new node in normal process. It can connect to the network and start to synchronize the block data on the chain automatically. **Note that the new node here is only an ordinary node and does not participate in the consensus process, which means it can only synchronize data and receive Jsonrpc Request**。
+    Just start the new node in normal process. It can connect to the network and start to synchronize the block data on the chain automatically. **Note that the new node here is only an ordinary node and does not participate in the consensus process, which means it can only synchronize data and receive JSON-RPC Request**。
 
     ```bash
     $ ./bin/cita setup test-chain/4
@@ -63,52 +63,6 @@ The management of consensus nodes includes adding, deleting, and getting consens
 * Adding operation can only be performed by administrator;
 * Deleting operation can only be performed by administrator;
 * Get consensus nodes list by calling interface
-
-### Consensus nodes management interface
-
-<table>
-  <tr>
-    <th>Interface Name</th>
-    <th>Permission Needed</th>
-    <th>Incoming Parameters</th>
-    <th>Return Value</th>
-    <th>Detailed Discription</th>
-  </tr>
-  <tr>
-    <td>approveNode(address)</td>
-    <td>Administrator</td>
-    <td>New consensus node address</td>
-    <td>Bool (indicating whether this operaiton is sucessful )</td>
-    <td>After the newNode(address) operation is successful, you can call this interface to make a approvement that the node are allowed a consensus node, The node status shows start in here.</td>
-  </tr>
-  <tr>
-    <td>deleteNode(address)</td>
-    <td>Administrator</td>
-    <td>Node address</td>
-    <td>Bool (indicating whether this operaiton is sucessful )</td>
-    <td>If this operation is sucessful, the node would be deleted in the consensus nodes list. The node status shows close in here.</td>
-  </tr>
-  <tr>
-    <td>listNode()</td>
-    <td>Ordinary (read only)</td>
-    <td>Null</td>
-    <td>Address list(address[])</td>
-    <td>Acquire consensus nodes list in which all nodes are in start status</td>
-  </tr>
-  <tr>
-    <td>getStatus(address)</td>
-    <td>Ordinary (read only)</td>
-    <td>Node address</td>
-    <td>
-      node status (uint8):
-      <ul>
-        <li>0: close</li>
-        <li>1: start</li>
-      </ul>
-    </td>
-    <td>Get the status of nodes</td>
-  </tr>
-</table>
 
 ### Add consensus nodes
 
@@ -231,9 +185,7 @@ We can get some related information form the `log` field.
 ```
 $ cita-cli scm NodeManager listNode --url http://127.0.0.1:1337
 ```
-
 output:
-
 ```json
 {
   "id": 1,

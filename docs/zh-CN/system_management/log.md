@@ -88,7 +88,7 @@ CITA 节点需要长时间持续运行，因此日志文件会越来越大，需
 ./test-chain/0/logs/cita-jsonrpc.log
 ./test-chain/0/logs/cita-jsonrpc_2018-04-02_11-34-51.log
 ./test-chain/0/logs/cita-executor.log
-./test-chain/0/logs/cita-executor_2018-04-02_11-34-51。log
+./test-chain/0/logs/cita-executor_2018-04-02_11-34-51.log
 ./test-chain/0/logs/cita-bft.log
 ./test-chain/0/logs/cita-bft_2018-04-02_11-34-51.log
 ./test-chain/0/logs/cita-network.log

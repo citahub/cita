@@ -15,11 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate mktemp;
 extern crate rustc_serialize;
+extern crate tempdir;
 
-use self::mktemp::Temp;
 use self::rustc_serialize::hex::FromHex;
+use self::tempdir::TempDir;
 use cita_crypto::KeyPair;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, U256};
@@ -67,10 +67,11 @@ pub fn get_temp_state_db() -> StateDB {
 
 pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
     // input and output of solc command
-    let contract_file = Temp::new_file().unwrap().to_path_buf();
-    let output_dir = Temp::new_dir().unwrap().to_path_buf();
-    let deploy_code_file = output_dir.clone().join([name, ".bin"].join(""));
-    let runtime_code_file = output_dir.clone().join([name, ".bin-runtime"].join(""));
+    let output_dir = TempDir::new("solc_output").unwrap().into_path();
+    let contract_file = output_dir.join("contract.sol");
+
+    let deploy_code_file = output_dir.join([name, ".bin"].join(""));
+    let runtime_code_file = output_dir.join([name, ".bin-runtime"].join(""));
 
     // prepare contract file
     let mut file = File::create(contract_file.clone()).unwrap();
@@ -107,7 +108,7 @@ pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
 }
 
 pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Arc<Executor> {
-    let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
+    let tempdir = TempDir::new("init_executor").unwrap().into_path();
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
 
@@ -183,7 +184,7 @@ pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Arc<Executor> {
 }
 
 pub fn init_chain() -> Arc<chain::Chain> {
-    let tempdir = mktemp::Temp::new_dir().unwrap().to_path_buf();
+    let tempdir = TempDir::new("solc_output").unwrap().into_path();
     let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
     let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
     let chain_config = chain::Config::new(CHAIN_CONFIG);
@@ -194,7 +195,7 @@ pub fn create_block(executor: &Executor, to: Address, data: &Vec<u8>, nonce: (u3
     let mut block = Block::new();
 
     block.set_parent_hash(executor.get_current_hash());
-    block.set_timestamp(UNIX_EPOCH.elapsed().unwrap().as_millis());
+    block.set_timestamp(AsMillis::as_millis(&UNIX_EPOCH.elapsed().unwrap()));
     block.set_number(executor.get_current_height() + 1);
     // header.proof= ?;
 

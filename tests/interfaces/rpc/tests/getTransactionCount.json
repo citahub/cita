@@ -5,6 +5,25 @@
   },
   "tests": [
     {
+      "title": "getTransactionCount success (BlockNumber = pending)",
+      "request": {
+        "method": "getTransactionCount",
+        "params": [
+          "0x31d40cd88d6a884d2c95cf261c9f8ca495240af2",
+          "pending"
+        ]
+      },
+      "expectedResponse": {
+        "result": "0xd"
+      },
+      "asserts": [
+        {
+          "description": "getTransactionCount result should be equal",
+          "program": ".receivedResponse.result == .expectedResponse.result"
+        }
+      ]
+    },
+    {
       "title": "getTransactionCount success (BlockNumber = latest)",
       "request": {
         "method": "getTransactionCount",
@@ -14,7 +33,7 @@
         ]
       },
       "expectedResponse": {
-        "result": "0xd"
+        "result": "0xb"
       },
       "asserts": [
         {
@@ -48,7 +67,7 @@
         "method": "getTransactionCount",
         "params": [
           "0x31d40cd88d6a884d2c95cf261c9f8ca495000000",
-          "latest"
+          "pending"
         ]
       },
       "expectedResponse": {

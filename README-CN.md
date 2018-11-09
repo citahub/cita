@@ -66,9 +66,9 @@ CITA 支持 JSON-RPC 和 WebSocket (experimental) API/v1。
 
 对于 CITA 的 API/v1，你可以使用任意的 HTTP 代理，或者下面的 SDK：
 
-* [Java](https://github.com/cryptape/web3j)
+* [Java](https://github.com/cryptape/nervosj)
 * [Rust](https://github.com/cryptape/rust-web3)
-* [Javascript](https://github.com/cryptape/web3)
+* [JavaScript](https://github.com/cryptape/nervos.js)
 
 ## 社区贡献
 

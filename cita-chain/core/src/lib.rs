@@ -16,9 +16,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #![feature(try_from)]
 #![cfg_attr(test, feature(test))]
+#![feature(tool_lints)]
+
 extern crate byteorder;
-#[macro_use]
-extern crate lazy_static;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
@@ -52,14 +52,9 @@ extern crate cita_crypto;
 #[cfg(test)]
 extern crate test;
 
-pub mod db;
+pub mod env_info;
 pub mod state;
 pub mod state_db;
-#[macro_use]
-pub mod basic_types;
-pub mod cache_manager;
-pub mod env_info;
-pub mod header;
 #[macro_use]
 pub mod error;
 

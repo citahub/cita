@@ -35,7 +35,7 @@ pub struct State<B: Backend> {
     /* cache: RefCell<HashMap<Address, AccountEntry>>,
     // The original account is preserved in
     checkpoints: RefCell<Vec<HashMap<Address, Option<AccountEntry>>>>,
-
+    
     account_start_nonce: U256,
     factories: Factories,
     */
@@ -80,11 +80,11 @@ impl<B: Backend> State<B> {
 }
 
 //Need
-   /* impl< B: Backend > fmt::Debug for State< B > {
-    fn fmt( & self, f: & mut fmt::Formatter) -> fmt::Result {
-        write ! (f, "{:?}", self.cache.borrow())
-    }
-    }*/
+/* impl< B: Backend > fmt::Debug for State< B > {
+fn fmt( & self, f: & mut fmt::Formatter) -> fmt::Result {
+    write ! (f, "{:?}", self.cache.borrow())
+}
+}*/
 
 // TODO: cloning for `State` shouldn't be possible in general; Remove this and use
 // checkpoints where possible.

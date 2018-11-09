@@ -80,6 +80,20 @@ alias:
     name: Before Save Build Cache
     command: rm -rf target/install target/release-cache
 
+  - &restore-tarpaulin-cache
+    key: tarpaulin-{{ checksum "/opt/.cargo/cargo-tarpaulin.version" }}
+
+  - &save-tarpaulin-cache
+    <<: *restore-tarpaulin-cache
+    paths:
+    - /opt/.cargo/bin/cargo-tarpaulin
+
+  - &before-restore-tarpaulin-cache
+    name: Before Restore Tarpaulin Cache
+    command: |
+      ver=$(cargo search cargo-tarpaulin | grep "^cargo-tarpaulin = " | awk '{ print $3 }' | tr -d '"')
+      date +"${ver}~%Y-%U" | tee /opt/.cargo/cargo-tarpaulin.version
+
   - &clean-build-cache-if-too-large
     name: Clean Cache If Too Large
     command: |
@@ -93,9 +107,9 @@ alias:
 
   - &job-default
     docker:
-      - image: cita/cita-build:ubuntu-18.04-20180820
+      - image: cita/cita-build:ubuntu-18.04-20181009
     working_directory: ~/cita-build
-    resource_class: large
+    resource_class: xlarge
 
   - &job-unit-test
     <<: *job-default
@@ -136,16 +150,16 @@ jobs:
 
   "Check Contracts":
     docker:
-      - image: circleci/node:8.9.1  
+      - image: circleci/node:8.9.1
     steps:
       - checkout
-      - run: 
+      - run:
           name: Test system contracts
           command: |
             sudo npm install -g solium
             cd scripts/contracts/
             solium -d src/
-            
+
   "Check Clippy":
     <<: *job-default
     steps:
@@ -214,6 +228,9 @@ jobs:
           name: Basic Integrate Test
           command: ./tests/integrate_test/cita_basic.sh
       - run:
+          name: Basic Tls Integrate Test
+          command: ./tests/integrate_test/cita_tls_basic.sh
+      - run:
           name: JSON-RPC Mock Test in Quota Mode
           command: ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota
       - run:
@@ -261,6 +278,23 @@ jobs:
           name: Robustness Test
           command: ./tests/integrate_test/robustness_test.py
 
+  "Test Coverage":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - run: *before-restore-tarpaulin-cache
+      - restore_cache: *restore-tarpaulin-cache
+      - run:
+          name: Test Coverage
+          command: |
+            which cargo-tarpaulin \
+              || RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
+            echo "step 1. Auth Jsonrpc Bft Network Chain Executor"
+            cargo tarpaulin -v -p cita-auth cita-bft cita-network cita-jsonrpc cita-chain cita-executor --ignore-tests | grep -Ev "cita|tools"
+            echo "step 2. EVM Core Common-types Core-executor"
+            cargo tarpaulin -v -p core common-types core-executor evm --ignore-tests | grep -Ev "cita|tools"
+      - save_cache: *save-tarpaulin-cache
+
 workflows:
   version: 2
   "Build & Test":
@@ -269,6 +303,10 @@ workflows:
       - "Check Basic"
 
       - "Check Contracts"
+
+      - "Test Coverage":
+          requires:
+          - "Check Basic"
 
       - "Check Clippy":
           requires:

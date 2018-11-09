@@ -59,8 +59,9 @@ impl Future for SingleFutureResponse {
                         .expect("cannot poll SingleFutureResponse twice"),
                 )
                 .with_body(serde_json::to_vec(&resp_body).unwrap())
-        }).map_err(|_| hyper::Error::Incomplete)
-            .map(Async::Ready)
+        })
+        .map_err(|_| hyper::Error::Incomplete)
+        .map(Async::Ready)
     }
 }
 
@@ -99,7 +100,8 @@ impl Future for BatchFutureResponse {
                         .expect("cannot poll BatchFutureResponse twice"),
                 )
                 .with_body(serde_json::to_vec(&RpcResponse::Batch(resp_body)).unwrap())
-        }).map_err(|_| hyper::Error::Incomplete)
-            .map(Async::Ready)
+        })
+        .map_err(|_| hyper::Error::Incomplete)
+        .map(Async::Ready)
     }
 }

@@ -1,45 +1,47 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
 const { genContract, genTxParams } = util;
 
-const sender = config.superAdmin;
-const { abi, addr } = config.contract.quota;
+const { superAdmin } = config;
+const { quota } = config.contract;
+const abi = JSON.parse(fs.readFileSync('abi/QuotaManager.abi'));
 
-const contract = genContract(abi, addr);
+const contract = genContract(abi, quota);
 
 // setBQL
-const setBQL = async (value, _sender = sender) => {
+const setBQL = async (value, _sender = superAdmin) => {
   const param = await genTxParams(_sender);
   return contract.methods.setBQL(value).send(param);
 };
 
 // setDefaultAQL
-const setDefaultAQL = async (value, _sender = sender) => {
+const setDefaultAQL = async (value, _sender = superAdmin) => {
   const param = await genTxParams(_sender);
   return contract.methods.setDefaultAQL(value).send(param);
 };
 
 // setAQL
-const setAQL = async (account, value, _sender = sender) => {
+const setAQL = async (account, value, _sender = superAdmin) => {
   const param = await genTxParams(_sender);
   return contract.methods.setAQL(account, value).send(param);
 };
 
 // getAccounts
-const getAccounts = () => contract.methods.getAccounts().call();
+const getAccounts = () => contract.methods.getAccounts().call('pending');
 
 // getQuotas
-const getQuotas = () => contract.methods.getQuotas().call();
+const getQuotas = () => contract.methods.getQuotas().call('pending');
 
 // getBQL
-const getBQL = () => contract.methods.getBQL().call();
+const getBQL = () => contract.methods.getBQL().call('pending');
 
 // getDefaultAQL
-const getDefaultAQL = () => contract.methods.getDefaultAQL().call();
+const getDefaultAQL = () => contract.methods.getDefaultAQL().call('pending');
 
 // getAQL
-const getAQL = account => contract.methods.getAQL(account).call();
+const getAQL = account => contract.methods.getAQL(account).call('pending');
 
 module.exports = {
   setBQL,

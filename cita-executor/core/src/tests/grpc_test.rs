@@ -19,7 +19,8 @@ use super::helpers::*;
 use cita_types::{Address, U256};
 use contracts::{
     grpc::{
-        contract::{contract_creation_address, low_contract_address}, service_registry,
+        contract::{contract_creation_address, low_contract_address},
+        service_registry,
     },
     native::factory::Factory as NativeFactory,
 };

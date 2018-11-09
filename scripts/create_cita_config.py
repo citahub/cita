@@ -161,6 +161,12 @@ class ChainInfo(object):
         self.authorities_list = os.path.join(self.template_dir,
                                              'authorities.list')
         self.nodes = AddressList()
+        self.enable_tls = False
+        self.root_ca_name = 'rootCA'
+        self.node_ca_name = chain_name
+        self.server_ca_name = 'server'
+        self.prefix_subj = '/C=CN/ST=ZJ/O=Cryptape, Inc./CN='
+        self.ca_days = 36525
 
     def template_create_from_arguments(self, args, contracts_dir_src,
                                        configs_dir_src):
@@ -216,6 +222,54 @@ class ChainInfo(object):
             nodes_str = ''.join(stream.readlines()).replace('\n', ',')
         self.nodes = AddressList.from_str(nodes_str)
 
+    def encrypted_create_rootca(self, tls):
+        self.enable_tls = tls
+        if not self.enable_tls :
+            return
+
+        subj = self.prefix_subj + 'cita'
+        cmd = f'openssl req -newkey rsa:1024 -nodes -keyout {self.template_dir}/{self.root_ca_name}.key '\
+            f'-days {self.ca_days} -x509 -out {self.template_dir}/{self.root_ca_name}.crt -subj "{subj}"'
+        os.system(cmd)
+
+    def encrypted_load_from_existed(self):
+        root_ca = f'{self.template_dir}/{self.root_ca_name}.key'
+        if os.path.isfile(root_ca):
+            self.enable_tls = True
+
+    def encrypted_create_nodeca(self, node_id):
+        if not self.enable_tls :
+            return
+        node_dir = os.path.join(self.output_root, f'{node_id}')
+        need_directory(node_dir)
+
+        subj = self.prefix_subj + f'{self.node_ca_name}{node_id}.cita'
+        cmd = f'openssl req -newkey rsa:1024 -nodes -keyout {node_dir}/{self.node_ca_name}.key ' \
+            f'-days {self.ca_days} -out {node_dir}/{self.node_ca_name}.csr -subj "{subj}"'
+        os.system(cmd)
+
+        cmd = f'openssl x509 -CAcreateserial -req -in {node_dir}/{self.node_ca_name}.csr ' \
+            f'-CA {self.template_dir}/{self.root_ca_name}.crt ' \
+            f'-CAkey {self.template_dir}/{self.root_ca_name}.key ' \
+            f'-out {node_dir}/{self.node_ca_name}.crt -days {self.ca_days}'
+        os.system(cmd)
+
+        cmd = f'openssl pkcs12 -export -in {node_dir}/{self.node_ca_name}.crt ' \
+            f'-inkey {node_dir}/{self.node_ca_name}.key ' \
+            f'-out {node_dir}/{self.server_ca_name}.pfx -password pass:server.tls.cita' 
+        os.system(cmd)
+
+        for suffix in ('crt','csr','key') :
+            os.remove(f'{node_dir}/{self.node_ca_name}.{suffix}')
+        shutil.copyfile(f'{self.template_dir}/{self.root_ca_name}.crt',f'{node_dir}/{self.root_ca_name}.crt')
+
+    def create_peer_data(self, node_id, node):
+        if not self.enable_tls :
+            return dict(id_card=node_id, ip=node['host'], port=node['port'])
+        else:
+            key = '{}{}.cita'.format(self.node_ca_name, node_id)
+            return dict(id_card=node_id, ip=node['host'], port=node['port'], common_name=key)
+
     def create_init_data(self, super_admin, contract_arguments):
         from create_init_data import core as create_init_data
         create_init_data(self.init_data_file, super_admin, contract_arguments)
@@ -269,10 +323,11 @@ class ChainInfo(object):
             stream.write(node['signer'])
 
         network_config = os.path.join(self.configs_dir, 'network.toml')
+
         with open(network_config, 'rt') as stream:
             network_data = toml.load(stream)
-            network_data['peers'].append(
-                dict(id_card=node_id, ip=node['host'], port=node['port']))
+            self.encrypted_create_nodeca(node_id)
+            network_data['peers'].append(self.create_peer_data(node_id,node))
             config = network_data["peers"]
         with open(network_config, 'wt') as stream:
             toml.dump(network_data, stream)
@@ -282,8 +337,7 @@ class ChainInfo(object):
             network_config = os.path.join(old_dir, 'network.toml')
             with open(network_config, 'rt') as stream:
                 network_data = toml.load(stream)
-                network_data['peers'].append(
-                    dict(id_card=node_id, ip=node['host'], port=node['port']))
+                network_data['peers'].append(self.create_peer_data(node_id,node))
             with open(network_config, 'wt') as stream:
                 stream.write(f"# Current node ip is {config[old_id]['ip']}\n")
                 toml.dump(network_data, stream)
@@ -293,6 +347,8 @@ class ChainInfo(object):
             network_data = toml.load(stream)
             network_data['id_card'] = node_id
             network_data['port'] = node['port']
+            if self.enable_tls :
+                network_data['enable_tls'] = True
         with open(network_config, 'wt') as stream:
             stream.write(f"# Current node ip is {config[node_id]['ip']}\n")
             toml.dump(network_data, stream)
@@ -308,6 +364,7 @@ def run_subcmd_create(args, work_dir):
         os.path.join(work_dir, 'scripts/config_tool/config_example'))
     info.create_init_data(args.super_admin, args.contract_arguments)
     info.create_genesis(args.timestamp, args.resource_dir)
+    info.encrypted_create_rootca(args.enable_tls)
     for node in args.nodes:
         info.append_node(node)
 
@@ -315,6 +372,7 @@ def run_subcmd_create(args, work_dir):
 def run_subcmd_append(args, work_dir):
     info = ChainInfo(args.chain_name, work_dir)
     info.template_load_from_existed()
+    info.encrypted_load_from_existed()
     info.append_node(args.node)
 
 
@@ -380,6 +438,12 @@ def parse_arguments():
         default=4337,
         help='websocket port for this chain')
 
+    # enable encrypted 
+    pcreate.add_argument(
+        '--enable_tls',
+        action="store_true",
+        help='The data is encrypted and transmitted on the network')
+
     #
     # Subcommand: append
     #
@@ -407,6 +471,11 @@ def parse_arguments():
 
     # Check arguments
     if args.subcmd == SUBCMD_CREATE:
+        if not args.super_admin:
+            logging.critical('--super_admin is empty, it\'s required'
+                             ' to continue.'
+                            )
+            sys.exit(1)
         if not args.authorities:
             if not args.nodes:
                 logging.critical('Both --authorities and --nodes is empty.')

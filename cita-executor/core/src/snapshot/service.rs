@@ -56,26 +56,28 @@ impl DatabaseRestore for Executor {
     /// Restart the client with a new backend
     fn restore_db(&self, new_db: &str) -> Result<(), ::error::Error> {
         trace!("Replacing client database with {:?}", new_db);
-        let mut state_db = self.state_db.write();
+        let header;
+        {
+            let mut state_db = self.state_db.write();
 
-        let db = self.db.write();
-        db.restore(new_db)?;
+            let db = self.db.write();
+            db.restore(new_db)?;
 
-        let cache_size = state_db.cache_size();
-        *state_db = StateDB::new(
-            journaldb::new(db.clone(), Algorithm::Archive, ::db::COL_STATE),
-            cache_size,
-        );
+            let cache_size = state_db.cache_size();
+            *state_db = StateDB::new(
+                journaldb::new(db.clone(), Algorithm::Archive, ::db::COL_STATE),
+                cache_size,
+            );
 
-        // replace executor
-        // *chain = Arc::new(BlockChain::new(self.config.blockchain.clone(), &[], db.clone()));
-        let header = match get_current_header(&*db.clone()) {
-            Some(header) => header,
-            _ => {
-                trace!("Get header failed.");
-                return Err(Error::PowInvalid);
-            }
-        };
+            // replace executor
+            header = match get_current_header(&*db.clone()) {
+                Some(header) => header,
+                _ => {
+                    trace!("Get header failed.");
+                    return Err(Error::PowInvalid);
+                }
+            };
+        }
 
         self.replace_executor(header, false);
 
@@ -468,7 +470,8 @@ impl Service {
                                 rest.feed_state(hash, chunk, &self.restoring_snapshot)
                             } else {
                                 rest.feed_blocks(hash, chunk, &self.restoring_snapshot)
-                            }.map(|_| rest.is_done()),
+                            }
+                            .map(|_| rest.is_done()),
                             rest.db.clone(),
                         )
                     };

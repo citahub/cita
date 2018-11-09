@@ -13,6 +13,7 @@ members = ["cita-auth"
 ,"tests/consensus-mock"
 ,"tests/chain_performance_by_mq"
 ,"tests/box_executor"
+,"tools/bft-wal"
 ]
 
 [profile.bench]

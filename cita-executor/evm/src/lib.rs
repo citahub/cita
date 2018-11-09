@@ -16,6 +16,8 @@
 
 //! Ethereum virtual machine.
 
+#![feature(tool_lints)]
+
 extern crate bit_set;
 extern crate cita_types;
 extern crate common_types as types;
@@ -41,8 +43,6 @@ pub mod instructions;
 pub mod schedule;
 #[macro_use]
 extern crate lazy_static;
-#[cfg(feature = "jit")]
-mod jit;
 
 #[cfg(all(feature = "benches", test))]
 mod benches;

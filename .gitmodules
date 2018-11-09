@@ -9,3 +9,6 @@
 [submodule "scripts/txtool/txtool/proto"]
 	path = scripts/txtool/txtool/proto
 	url = https://github.com/cryptape/cita-proto.git
+[submodule "scripts/contracts/tests/abi"]
+	path = scripts/contracts/tests/abi
+	url = https://github.com/cryptape/cita-sys-abi.git

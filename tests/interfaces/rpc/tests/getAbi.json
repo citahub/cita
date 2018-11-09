@@ -10,7 +10,7 @@
         "method": "getAbi",
         "params": [
           "0xa31af83ee35e753a2bb19c2a82468080c2e92eee",
-          "latest"
+          "pending"
         ]
       },
       "expectedResponse": {
@@ -29,7 +29,7 @@
         "method": "getAbi",
         "params": [
           "0xeffb1dab2e6ed61aa213eacaefbd1a9a41000000",
-          "latest"
+          "pending"
         ]
       },
       "expectedResponse": {

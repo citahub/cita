@@ -67,6 +67,8 @@
 //!
 
 #![feature(try_from)]
+#![feature(tool_lints)]
+
 extern crate byteorder;
 extern crate cita_types;
 extern crate clap;
@@ -149,16 +151,10 @@ fn main() {
         &chain_config,
     ));
 
-    let current_height = chain.get_current_height();
-    if let Some(block_tx_hashes) = chain.block_tx_hashes(current_height) {
-        chain.delivery_block_tx_hashes(current_height, &block_tx_hashes, &ctx_pub);
-    }
-
     let (write_sender, write_receiver) = channel();
     let forward = Forward::new(Arc::clone(&chain), ctx_pub.clone(), write_sender);
 
     let block_processor = BlockProcessor::new(Arc::clone(&chain), ctx_pub);
-    block_processor.broadcast_current_status();
 
     //chain 读写分离
     //chain 读数据 => 查询数据

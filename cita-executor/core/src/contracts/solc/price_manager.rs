@@ -22,6 +22,7 @@ use cita_types::{Address, U256};
 use contracts::tools::{decode as decode_tools, method as method_tools};
 use libexecutor::executor::Executor;
 use std::str::FromStr;
+use types::ids::BlockId;
 use types::reserved_addresses;
 
 lazy_static! {
@@ -31,13 +32,24 @@ lazy_static! {
 }
 
 /// Configuration items from system contract
-pub struct PriceManagement;
+pub struct PriceManagement<'a> {
+    executor: &'a Executor,
+}
 
-impl PriceManagement {
+impl<'a> PriceManagement<'a> {
+    pub fn new(executor: &'a Executor) -> Self {
+        PriceManagement { executor }
+    }
+
     /// Set quota price
-    pub fn quota_price(executor: &Executor) -> Option<U256> {
-        executor
-            .call_method(&*CONTRACT_ADDRESS, &*GET_QUOTA_PRICE.as_slice(), None, None)
+    pub fn quota_price(&self, block_id: BlockId) -> Option<U256> {
+        self.executor
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*GET_QUOTA_PRICE.as_slice(),
+                None,
+                block_id,
+            )
             .ok()
             .and_then(|output| decode_tools::to_u256(&output))
     }

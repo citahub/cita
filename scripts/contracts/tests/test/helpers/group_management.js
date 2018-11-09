@@ -1,15 +1,17 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
 const { genContract, genTxParams } = util;
 
-const sender = config.superAdmin;
-const { abi, addr } = config.contract.group_management;
+const { superAdmin } = config;
+const { groupManagement } = config.contract;
+const abi = JSON.parse(fs.readFileSync('abi/GroupManagement.abi'));
 
-const contract = genContract(abi, addr);
+const contract = genContract(abi, groupManagement);
 
 // newPermission
-const newGroup = async (origin, name, accounts, _sender = sender) => {
+const newGroup = async (origin, name, accounts, _sender = superAdmin) => {
   const param = await genTxParams(_sender);
   return contract.methods.newGroup(
     origin,
@@ -19,7 +21,7 @@ const newGroup = async (origin, name, accounts, _sender = sender) => {
 };
 
 // deleteGroup
-const deleteGroup = async (origin, target, _sender = sender) => {
+const deleteGroup = async (origin, target, _sender = superAdmin) => {
   const param = await genTxParams(_sender);
   return contract.methods.deleteGroup(
     origin,
@@ -28,7 +30,7 @@ const deleteGroup = async (origin, target, _sender = sender) => {
 };
 
 // updateGroupName
-const updateGroupName = async (origin, target, name, _sender = sender) => {
+const updateGroupName = async (origin, target, name, _sender = superAdmin) => {
   const param = await genTxParams(_sender);
   return contract.methods.updateGroupName(
     origin,
@@ -38,7 +40,7 @@ const updateGroupName = async (origin, target, name, _sender = sender) => {
 };
 
 // addAccounts
-const addAccounts = async (origin, target, accounts, _sender = sender) => {
+const addAccounts = async (origin, target, accounts, _sender = superAdmin) => {
   const param = await genTxParams(_sender);
   return contract.methods.addAccounts(
     origin,
@@ -48,7 +50,7 @@ const addAccounts = async (origin, target, accounts, _sender = sender) => {
 };
 
 // deleteAccounts
-const deleteAccounts = async (origin, target, accounts, _sender = sender) => {
+const deleteAccounts = async (origin, target, accounts, _sender = superAdmin) => {
   const param = await genTxParams(_sender);
   return contract.methods.deleteAccounts(
     origin,
@@ -58,10 +60,10 @@ const deleteAccounts = async (origin, target, accounts, _sender = sender) => {
 };
 
 // checkScope
-const checkScope = async (origin, target) => contract.methods.checkScope(origin, target).call();
+const checkScope = async (origin, target) => contract.methods.checkScope(origin, target).call('pending');
 
 // queryGroups
-const queryGroups = () => contract.methods.queryGroups().call();
+const queryGroups = () => contract.methods.queryGroups().call('pending');
 
 module.exports = {
   newGroup,

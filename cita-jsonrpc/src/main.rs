@@ -53,6 +53,8 @@
 //!
 
 #![feature(try_from)]
+#![feature(tool_lints)]
+
 extern crate bytes;
 extern crate clap;
 extern crate cpuprofiler;
@@ -74,10 +76,7 @@ extern crate pubsub;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-#[cfg(not(test))]
-extern crate serde_json;
-#[cfg(test)]
-#[macro_use]
+#[cfg_attr(test, macro_use)]
 extern crate serde_json;
 extern crate threadpool;
 extern crate time;
@@ -140,7 +139,7 @@ fn main() {
     //enable HTTP or WebSocket server!
     if !config.ws_config.enable && !config.http_config.enable {
         error!("Please at least enable one of HTTP and WebSocket server!");
-        std::process::exit(-1);
+        std::process::exit(2);
     }
 
     start_profile(&config.profile_config);

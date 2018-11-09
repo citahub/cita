@@ -59,9 +59,9 @@ fn main() {
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .arg_from_usage("-m, --cmd=[snapshot] 'snapshot or restore'")
-        .arg_from_usage("-f, --file=[snapshot] 'the file of snapshot'")  //snap file path
-        .arg_from_usage("-s, --start_height=[0] 'start height'")  //latest or valid ancient block_id
-        .arg_from_usage("-e, --end_height=[1000] 'end height'")  //todo remove
+        .arg_from_usage("-f, --file=[snapshot] 'the file of snapshot'") //snap file path
+        .arg_from_usage("-s, --start_height=[0] 'start height'") //latest or valid ancient block_id
+        .arg_from_usage("-e, --end_height=[1000] 'end height'") //todo remove
         .get_matches();
 
     let cmd = matches.value_of("cmd").unwrap_or("snapshot");
@@ -84,7 +84,7 @@ fn main() {
     let (tx, rx) = channel();
     let (ctx_pub, crx_pub) = channel();
 
-    let snapshot_instance = SnapShot::new(ctx_pub, start_height, end_height, file.to_string());
+    let mut snapshot_instance = SnapShot::new(ctx_pub, start_height, end_height, file.to_string());
 
     start_pubsub(
         "snapshot",

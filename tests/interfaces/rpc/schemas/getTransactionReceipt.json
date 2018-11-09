@@ -76,13 +76,13 @@
                     "type": "string",
                     "description": "QUANTITY - block number where this transaction was in. null when its not in block"
                   },
-                  "cumulativeGasUsed": {
+                  "cumulativeQuotaUsed": {
                     "type": "string",
-                    "description": "QUANTITY - The total amount of gas used when this transaction was executed in the block."
+                    "description": "QUANTITY - The total amount of quota used when this transaction was executed in the block."
                   },
-                  "gasUsed": {
+                  "quotaUsed": {
                     "type": "string",
-                    "description": "QUANTITY - The amount of gas used by this specific transaction alone."
+                    "description": "QUANTITY - The amount of quota used by this specific transaction alone."
                   },
                   "contractAddress": {
                     "oneOf": [
@@ -174,8 +174,8 @@
                   "transactionIndex",
                   "blockHash",
                   "blockNumber",
-                  "cumulativeGasUsed",
-                  "gasUsed",
+                  "cumulativeQuotaUsed",
+                  "quotaUsed",
                   "contractAddress",
                   "logs",
                   "root",

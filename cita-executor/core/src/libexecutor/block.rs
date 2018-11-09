@@ -22,10 +22,7 @@ use engines::Engine;
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
-use header::*;
 use libexecutor::executor::{CheckOptions, EconomicalModel, Executor, GlobalSysConfig};
-use libproto::blockchain::SignedTransaction as ProtoSignedTransaction;
-use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody};
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use receipt::Receipt;
 use rlp::*;
@@ -37,8 +34,10 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
 use trace::FlatTrace;
+pub use types::block::{Block, BlockBody};
+use types::ids::BlockId;
 use types::transaction::SignedTransaction;
-use util::{merklehash, HeapSizeOf};
+use util::merklehash;
 
 /// Check the 256 transactions once
 const CHECK_NUM: usize = 0xff;
@@ -53,153 +52,6 @@ lazy_static! {
 pub trait Drain {
     /// Drop this object and return the underlieing database.
     fn drain(self) -> StateDB;
-}
-
-/// A block, encoded as it is on the block chain.
-#[derive(Default, Debug, Clone, PartialEq)]
-pub struct Block {
-    /// The header of this block.
-    pub header: Header,
-    /// The body of this block.
-    pub body: BlockBody,
-}
-
-impl Decodable for Block {
-    fn decode(r: &UntrustedRlp) -> Result<Self, DecoderError> {
-        if r.item_count()? != 2 {
-            return Err(DecoderError::RlpIncorrectListLen);
-        }
-        Ok(Block {
-            header: r.val_at(0)?,
-            body: r.val_at(1)?,
-        })
-    }
-}
-
-impl Encodable for Block {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(2);
-        s.append(&self.header);
-        s.append(&self.body);
-    }
-}
-
-impl From<ProtoBlock> for Block {
-    fn from(b: ProtoBlock) -> Self {
-        let mut header = Header::from(b.get_header().clone());
-        header.set_version(b.get_version());
-        Block {
-            header,
-            body: BlockBody::from(b.get_body().clone()),
-        }
-    }
-}
-
-impl Deref for Block {
-    type Target = Header;
-
-    fn deref(&self) -> &Self::Target {
-        &self.header
-    }
-}
-
-impl DerefMut for Block {
-    fn deref_mut(&mut self) -> &mut Header {
-        &mut self.header
-    }
-}
-
-impl Block {
-    pub fn new() -> Self {
-        Block {
-            header: Header::new(),
-            body: BlockBody::new(),
-        }
-    }
-
-    pub fn body(&self) -> &BlockBody {
-        &self.body
-    }
-
-    pub fn header(&self) -> &Header {
-        &self.header
-    }
-
-    pub fn set_header(&mut self, h: Header) {
-        self.header = h;
-    }
-
-    pub fn set_body(&mut self, b: BlockBody) {
-        self.body = b;
-    }
-
-    pub fn protobuf(&self) -> ProtoBlock {
-        let mut block = ProtoBlock::new();
-        block.set_version(self.version());
-        block.set_header(self.header.protobuf());
-        block.set_body(self.body.protobuf());
-        block
-    }
-
-    /// Check whether the block should re-execute
-    pub fn is_equivalent(&self, block: &Block) -> bool {
-        self.transactions_root() == block.transactions_root()
-            && self.timestamp() == block.timestamp()
-            && self.proposer() == block.proposer()
-    }
-}
-
-/// body of block.
-#[derive(Default, Debug, Clone, PartialEq, RlpEncodableWrapper, RlpDecodableWrapper)]
-pub struct BlockBody {
-    /// The transactions in this body.
-    pub transactions: Vec<SignedTransaction>,
-}
-
-impl HeapSizeOf for BlockBody {
-    fn heap_size_of_children(&self) -> usize {
-        self.transactions.heap_size_of_children()
-    }
-}
-
-impl From<ProtoBlockBody> for BlockBody {
-    fn from(body: ProtoBlockBody) -> Self {
-        BlockBody {
-            transactions: body
-                .get_transactions()
-                .iter()
-                .map(|t| SignedTransaction::new(t).expect("transaction can not be converted"))
-                .collect(),
-        }
-    }
-}
-
-impl BlockBody {
-    pub fn new() -> Self {
-        BlockBody {
-            transactions: Vec::new(),
-        }
-    }
-
-    pub fn transactions(&self) -> &[SignedTransaction] {
-        &self.transactions
-    }
-
-    pub fn set_transactions(&mut self, txs: Vec<SignedTransaction>) {
-        self.transactions = txs;
-    }
-
-    pub fn protobuf(&self) -> ProtoBlockBody {
-        let mut body = ProtoBlockBody::new();
-        let txs: Vec<ProtoSignedTransaction> =
-            self.transactions.iter().map(|t| t.protobuf()).collect();
-        body.set_transactions(txs.into());
-        body
-    }
-
-    pub fn transaction_hashes(&self) -> Vec<H256> {
-        self.transactions().iter().map(|ts| ts.hash()).collect()
-    }
 }
 
 /// Block that prepared to commit to db.
@@ -232,10 +84,10 @@ impl ClosedBlock {
             .set_log_bloom(self.log_bloom().to_vec());
         executed_info
             .mut_header()
-            .set_gas_used(u64::from(*self.gas_used()));
+            .set_quota_used(u64::from(*self.quota_used()));
         executed_info
             .mut_header()
-            .set_gas_limit(self.gas_limit().low_u64());
+            .set_quota_limit(self.quota_limit().low_u64());
 
         executed_info.receipts = self
             .receipts
@@ -280,7 +132,7 @@ pub struct ExecutedBlock {
     pub block: Block,
     pub receipts: Vec<Receipt>,
     pub state: State<StateDB>,
-    pub current_gas_used: U256,
+    pub current_quota_used: U256,
     traces: Option<Vec<Vec<FlatTrace>>>,
 }
 
@@ -310,7 +162,7 @@ impl ExecutedBlock {
             block,
             receipts: Default::default(),
             state,
-            current_gas_used: U256::zero(),
+            current_quota_used: U256::zero(),
             traces: if tracing { Some(Vec::new()) } else { None },
         }
     }
@@ -387,8 +239,8 @@ impl OpenBlock {
             timestamp: self.timestamp(),
             difficulty: U256::default(),
             last_hashes: Arc::clone(&self.last_hashes),
-            gas_used: self.current_gas_used,
-            gas_limit: *self.gas_limit(),
+            gas_used: self.current_quota_used,
+            gas_limit: *self.quota_limit(),
             account_gas_limit: 0.into(),
         }
     }
@@ -401,6 +253,10 @@ impl OpenBlock {
         chain_owner: Address,
         check_options: &CheckOptions,
     ) -> bool {
+        let price_management = PriceManagement::new(executor);
+        let quota_price = price_management
+            .quota_price(BlockId::Pending)
+            .unwrap_or_else(PriceManagement::default_quota_price);
         for (index, mut t) in self.body.transactions.clone().into_iter().enumerate() {
             if index & CHECK_NUM == 0 && executor.is_interrupted.load(Ordering::SeqCst) {
                 executor.is_interrupted.store(false, Ordering::SeqCst);
@@ -409,8 +265,7 @@ impl OpenBlock {
 
             let economical_model: EconomicalModel = *executor.economical_model.read();
             if economical_model == EconomicalModel::Charge {
-                t.gas_price = PriceManagement::quota_price(executor)
-                    .unwrap_or_else(PriceManagement::default_quota_price);
+                t.gas_price = quota_price;
             }
 
             self.apply_transaction(
@@ -427,12 +282,12 @@ impl OpenBlock {
         let new_now = Instant::now();
         debug!("state root use {:?}", new_now.duration_since(now));
 
-        let gas_used = self.current_gas_used;
-        self.set_gas_used(gas_used);
+        let quota_used = self.current_quota_used;
+        self.set_quota_used(quota_used);
         true
     }
 
-    #[allow(unknown_lints, too_many_arguments)] // TODO clippy
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn apply_transaction(
         &mut self,
         engine: &Engine,
@@ -465,11 +320,11 @@ impl OpenBlock {
                 if let Some(ref mut traces) = self.traces {
                     traces.push(outcome.trace);
                 }
-                let transaction_gas_used = outcome.receipt.gas_used - self.current_gas_used;
-                self.current_gas_used = outcome.receipt.gas_used;
+                let transaction_quota_used = outcome.receipt.quota_used - self.current_quota_used;
+                self.current_quota_used = outcome.receipt.quota_used;
                 if check_options.quota {
                     if let Some(value) = self.account_gas.get_mut(t.sender()) {
-                        *value = *value - transaction_gas_used;
+                        *value = *value - transaction_quota_used;
                     }
                 }
                 self.receipts.push(outcome.receipt);
@@ -485,7 +340,8 @@ impl OpenBlock {
         self.set_state_root(state_root);
         let receipts_root = merklehash::MerkleTree::from_bytes(
             self.receipts.iter().map(|r| r.rlp_bytes().to_vec()),
-        ).get_root_hash();
+        )
+        .get_root_hash();
         self.set_receipts_root(receipts_root);
 
         // blocks blooms
@@ -514,9 +370,7 @@ mod tests {
         let mut stx = SignedTransaction::default();
         stx.data = vec![1; 200];
         let transactions = vec![stx; 200];
-        let body = BlockBody {
-            transactions: transactions,
-        };
+        let body = BlockBody { transactions };
         let body_rlp = rlp::encode(&body);
         let body: BlockBody = rlp::decode(&body_rlp);
         let body_encoded = rlp::encode(&body).into_vec();

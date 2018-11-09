@@ -4,14 +4,14 @@
 
  | 错误码              | 错误消息        | 描述              |
  | ----------------  | :------------ | :---------------|
- | -32700             | 解析错误        | 非Json格式数据     |
+ | -32700             | 解析错误        | 非 JSON 格式数据     |
  | -32600             | 请求错误        | 含有错误的请求值    |
  | -32601             | 请求服务方法错误 | 调用方法不存在或错误 |
  | -32602             | 非法参数        | 调用方法参数错误    |
  | -32603             | 内部错误        | 内部错误(NotReady)           |
  | -32003             | 查询类错误      | 见示例             |
- | -32006             | 交易认证类错误   | 见示例(InvalidNonce,Dup,InvalidUntilBlock,BadSig,Buy)             |
- | -32099             | 请求超时        | 见示例(system time out,please resend)             |
+ | -32006             | 交易认证类错误   | 见示例          |
+ | -32099             | 请求超时        | 见示例           |
 
 ## 错误示例
 
@@ -133,7 +133,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"sendRawTransaction","params":[".
     "id": 1,
     "error": {
         "code": -32099,
-        "message": "system time out,please resend"
+        "message": "System time out, please resend"
     }
 }
 ```
@@ -207,7 +207,7 @@ curl -X POST -d '{"jsonrpc":"2.0","method":"getTransaction","params":["0x0063187
     "id": 2,
     "error": {
         "code": -32602,
-        "message": "invalid JsonRpc params length"
+        "message": "Invalid JSON-RPC params length"
     }
 }
 ```

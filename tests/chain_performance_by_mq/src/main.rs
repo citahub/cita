@@ -16,6 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![feature(try_from)]
+#![feature(tool_lints)]
+
 extern crate bincode;
 extern crate cita_crypto as crypto;
 extern crate cita_types;
@@ -52,7 +54,7 @@ use std::time;
 
 pub type PubType = (String, Vec<u8>);
 
-#[allow(unknown_lints, too_many_arguments)] // TODO clippy
+#[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
 fn create_contract(
     block_tx_num: u64,
     pre_hash: H256,

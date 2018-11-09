@@ -67,6 +67,7 @@
 #![feature(custom_attribute)]
 #![feature(integer_atomics)]
 #![feature(try_from)]
+#![feature(tool_lints)]
 
 extern crate cita_crypto as crypto;
 extern crate cita_types;

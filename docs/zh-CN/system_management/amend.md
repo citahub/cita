@@ -1,6 +1,6 @@
 # 数据订正
 
-## 数据订正概述
+## 简述
 
 数据订正 Amend 是超级管理员 Super Admin 通过发送特定的交易到链上，来干预或者修正链的运行
 
@@ -15,7 +15,7 @@ Amend 交易现在有四种不同的数据订正的类型 ABI,Code,Balance,Key-V
 
 * admin-private-key 参数为超级管理员的私钥
 
-* url 参数后面是JsonRpc的地址
+* url 参数后面是 JSON-RPC 的地址
 
 下面介绍具体的数据订正操作：
 

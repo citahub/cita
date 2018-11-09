@@ -7,12 +7,11 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>CITA Document</title>
+    <title>CITA document</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <meta name="description" content="Description">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <link rel="stylesheet" href="//unpkg.com/docsify/lib/themes/vue.css">
-    <link rel="stylesheet" href="https://cdn.cryptape.com/styles/docs.css?1">
 </head>
 
 <body>
@@ -22,31 +21,18 @@
         <ul>
             <!-- links to other docs -->
             <li>
-                <a href="https://cryptape.github.io/" target="_about" class="app-nav-1">Nervos</a>
-                <ul>
-                    <li>
-                        <a href="https://cryptape.github.io/nervos-appchain-docs/" target="_about">AppChain</a>
-                    </li>
-                    <li>
-                        <a href="https://cryptape.github.io/cita/">CITA</a>
-                    </li>
-                    <li>
-                        <a href="https://cryptape.github.io/neuron-android/#/" target="_about">Neuron</a>
-                    </li>
-                    <li>
-                        <a href="https://cryptape.github.io/microscope/" target="_about">Microscope</a>
-                    </li>
-                </ul>
+                <a href="https://cryptape.github.io/" target="_blank" class="app-nav-1">Nervos</a>
+                <ul id="project-list"></ul>
             </li>
             <!-- language selection -->
             <li>
                 <p id="tag_language" class="app-nav-1">Language</p>
                 <ul>
                     <li>
-                        <a href="" onclick="setLang('en-US');">English</a>
+                        <a href="javascript:setLang('en-US');">English</a>
                     </li>
                     <li>
-                        <a href="" onclick="setLang('zh-CN');">中文</a>
+                        <a href="javascript:setLang('zh-CN');">中文</a>
                     </li>
                 </ul>
             </li>
@@ -54,19 +40,10 @@
             <!-- you can add a new version by adding another <li></li> tag -->
             <li>
                 <p id="tag_version" class="app-nav-1">Version</p>
-                <ul>
+                <ul id="tag-list">
                     <li>
-                        <a href="" onclick="toVersion('develop');">Latest</a>
+                        <a href="javascript:setVersion('develop');">Latest</a>
                     </li>
-                    <li>
-                        <a href="" onclick="toVersion('v0.18');">v0.18</a>
-                    </li> 
-                    <li>
-                        <a href="" onclick="toVersion('v0.17');">v0.17</a>
-                    </li>
-                    <!-- <li>
-                        <a href="" onclick="toVersion('v0.16');">v0.16</a>
-                    </li> -->
                 </ul>
             </li>
         </ul>
@@ -75,16 +52,16 @@
     <script>
         function setLang(language) {
             localStorage.setItem("lng", language);
-            widnow.location.reload()
+            const path = `/cita/#/${window.location.hash.split('/').slice(3).join('/')}?language=${language}`
+            window.location.replace(path)
+            window.location.reload()
         }
 
-        function setVersion(version) {
-            sessionStorage.setItem("version", version);
-        }
-
-        function toVersion(ver) {
+        function setVersion(ver) {
             localStorage.setItem('version', ver)
-            widnow.location.reload()
+            const path = `/cita/#/${window.location.hash.split('/').slice(3).join('/')}?version=${ver}`
+            window.location.replace(path)
+            window.location.reload()
         }
     </script>
 
@@ -112,9 +89,17 @@
         gtag('js', new Date());
 
         gtag('config', 'UA-122001869-6');
+        // external script
+        const external = document.createElement("script")
+        const timeStamp = new Date().getTime()
+        external.src = "https://cdn.cryptape.com/scripts/external.js?" + timeStamp
+        document.body.appendChild(external)
+        // custom style
+        const docStyle = document.createElement('link')
+        docStyle.rel = 'stylesheet'
+        docStyle.href = "https://cdn.cryptape.com/styles/docs.css?" + timeStamp
+        document.head.appendChild(docStyle)
     </script>
-    <script src="https://cdn.cryptape.com/scripts/external.js"></script>
-
 </body>
 
 </html>

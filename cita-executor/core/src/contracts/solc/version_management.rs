@@ -35,11 +35,17 @@ lazy_static! {
         Address::from_str(reserved_addresses::VERSION_MANAGEMENT).unwrap();
 }
 
-pub struct VersionManager;
+pub struct VersionManager<'a> {
+    executor: &'a Executor,
+}
 
-impl VersionManager {
-    pub fn get_version(executor: &Executor, block_id: Option<BlockId>) -> Option<u32> {
-        executor
+impl<'a> VersionManager<'a> {
+    pub fn new(executor: &'a Executor) -> Self {
+        VersionManager { executor }
+    }
+
+    pub fn get_version(&self, block_id: BlockId) -> Option<u32> {
+        self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*VERSION_HASH.as_slice(),

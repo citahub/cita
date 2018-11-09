@@ -18,7 +18,7 @@ from url_util import endpoint
 from log import logger
 from jsonrpcclient.http_client import HTTPClient
 
-
+LATEST_VERSION = 1
 
 accounts_path = Path("../output/transaction")
 if not accounts_path.is_dir():
@@ -78,6 +78,24 @@ def get_chainid():
     logger.debug("final chainId is {}".format(chainid))
     return chainid
 
+def get_chainid_v1():
+    params = ['latest']
+    chainid = 0
+
+    try:
+        url = endpoint()
+        logger.debug(url)
+        response = HTTPClient(url).request("getMetaData", params)
+        chainid = response['chainIdV1']
+        logger.debug(response)
+    except:
+        chainid = "0"
+
+    # padding to 32 bytes
+    chainid = int(chainid)
+    logger.debug("final chainId is {}".format(chainid))
+    return chainid
+
 
 def generate_deploy_data(current_height,
                          bytecode,
@@ -86,7 +104,7 @@ def generate_deploy_data(current_height,
                          privatekey,
                          receiver=None,
                          newcrypto=False,
-                         version=0):
+                         version=LATEST_VERSION):
     if newcrypto:
         data = _blake2b_ed25519_deploy_data(current_height, bytecode, value, quota,
                                             privatekey, version, receiver)
@@ -102,22 +120,34 @@ def _blake2b_ed25519_deploy_data(current_height,
                                  value,
                                  quota,
                                  privatekey,
-                                 version=0,
+                                 version,
                                  receiver=None):
     sender = get_sender(private_key, True)
     logger.debug(sender)
     nonce = get_nonce()
     logger.debug("nonce is {}".format(nonce))
-    chainid = get_chainid()
-    logger.debug("chainid is {}".format(chainid))
 
     tx = Transaction()
     tx.valid_until_block = current_height + 88
     tx.nonce = nonce
-    tx.chain_id = chainid
     tx.version = version
+    if version == 0:
+        chainid = get_chainid()
+        logger.debug("chainid is {}".format(chainid))
+        tx.chain_id = chainid
+    elif version == 1:
+        chainid = get_chainid_v1()
+        logger.debug("chainid_v1 is {}".format(chainid))
+        tx.chain_id_v1 = chainid.to_bytes(32, byteorder='big')
+    else:
+        logger.error("unexpected version {}".format(version))
     if receiver is not None:
-        tx.to = receiver
+        if version == 0:
+            tx.to = receiver
+        elif version == 1:
+            tx.to_v1 = hex2bytes(receiver)
+        else:
+            logger.error("unexpected version {}".format(version))
     tx.data = hex2bytes(bytecode)
     tx.value = value.to_bytes(32, byteorder='big')
     tx.quota = quota
@@ -147,7 +177,7 @@ def _sha3_secp256k1_deploy_data(current_height,
                                 value,
                                 quota,
                                 privatekey,
-                                version=0,
+                                version,
                                 receiver=None):
     sender = get_sender(privatekey, False)
     if privatekey is None:
@@ -159,16 +189,28 @@ def _sha3_secp256k1_deploy_data(current_height,
     logger.debug(sender)
     nonce = get_nonce()
     logger.debug("nonce is {}".format(nonce))
-    chainid = get_chainid()
-    logger.debug("chainid is {}".format(chainid))
 
     tx = Transaction()
     tx.valid_until_block = current_height + 88
     tx.nonce = nonce
-    tx.chain_id = chainid
     tx.version = version
+    if version == 0:
+        chainid = get_chainid()
+        logger.debug("chainid is {}".format(chainid))
+        tx.chain_id = chainid
+    elif version == 1:
+        chainid = get_chainid_v1()
+        logger.debug("chainid_v1 is {}".format(chainid))
+        tx.chain_id_v1 = chainid.to_bytes(32, byteorder='big')
+    else:
+        logger.error("unexpected version {}".format(version))
     if receiver is not None:
-        tx.to = receiver
+        if version == 0:
+            tx.to = receiver
+        elif version == 1:
+            tx.to_v1 = hex2bytes(receiver)
+        else:
+            logger.error("unexpected version {}".format(version))
     tx.data = hex2bytes(bytecode)
     tx.value = value.to_bytes(32, byteorder='big')
     tx.quota = quota
@@ -211,7 +253,7 @@ def parse_arguments():
         action='store_false',
         help="Use ecdsa and sha3.")
     parser.add_argument(
-        "--version", help="Tansaction version.", default=0, type=int)
+        "--version", help="Tansaction version.", default=1, type=int)
     parser.add_argument("--chain_id", default=0, type=int)
     parser.set_defaults(newcrypto=False)
 

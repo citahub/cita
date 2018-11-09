@@ -22,7 +22,6 @@ use crypto::md5::Md5;
 use db::{self as db, Writable};
 use factory::Factories;
 use libexecutor::block::Block;
-use libexecutor::extras::*;
 use rustc_hex::FromHex;
 use serde_json;
 use state::State;
@@ -33,6 +32,7 @@ use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
+use types::extras::*;
 use util::kvdb::KeyValueDB;
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
@@ -114,7 +114,8 @@ impl Genesis {
             *self.block.state_root(),
             U256::from(0),
             factories.clone(),
-        ).expect("state db error");
+        )
+        .expect("state db error");
         self.block.set_version(0);
         self.block.set_parent_hash(self.spec.prevhash);
         self.block.set_timestamp(self.spec.timestamp);
@@ -223,7 +224,8 @@ mod test {
         let spec = Spec {
             prevhash: H256::from_str(
                 "0000000000000000000000000000000000000000000000000000000000000000",
-            ).unwrap(),
+            )
+            .unwrap(),
             timestamp: 1524000000,
             alloc: [
                 (
@@ -235,7 +237,8 @@ mod test {
                         storage: [
                             ("0x00".to_owned(), "0x013241b2".to_owned()),
                             ("0x01".to_owned(), "0x02".to_owned()),
-                        ].iter()
+                        ]
+                            .iter()
                             .cloned()
                             .collect(),
                     },
@@ -249,7 +252,8 @@ mod test {
                         storage: HashMap::new(),
                     },
                 ),
-            ].iter()
+            ]
+                .iter()
                 .cloned()
                 .collect(),
         };

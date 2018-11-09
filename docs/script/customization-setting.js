@@ -4,8 +4,9 @@
 
 var customization = {
 
-    name: 'CITA', // name of this document
-    subMaxLevel: 1,
+  name: 'CITA', // name of this document
+  subMaxLevel: 1,
 
-    homepage: 'index.md',// the home page, extension name '.md' cannot be omitted.
+  homepage: 'index.md', // the home page, extension name '.md' cannot be omitted.
+  // noCompileLinks: ['/']
 }

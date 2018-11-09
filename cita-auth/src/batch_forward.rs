@@ -45,7 +45,7 @@ impl BatchForward {
             batch_size,
             timeout,
             check_duration: 5,
-            last_timestamp: unix_now().as_millis(),
+            last_timestamp: AsMillis::as_millis(&unix_now()),
             request_buffer: Vec::new(),
             rx_request,
             tx_pub,
@@ -63,7 +63,7 @@ impl BatchForward {
                 }
             } else {
                 thread::sleep(Duration::new(0, self.check_duration * 1_000_000));
-                let now = unix_now().as_millis();
+                let now = AsMillis::as_millis(&unix_now());
                 if (now - self.last_timestamp) > self.timeout && !self.request_buffer.is_empty() {
                     self.batch_forward();
                 }
@@ -92,7 +92,7 @@ impl BatchForward {
             ))
             .unwrap();
 
-        self.last_timestamp = unix_now().as_millis();
+        self.last_timestamp = AsMillis::as_millis(&unix_now());
         self.request_buffer.clear();
     }
 }

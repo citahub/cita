@@ -20,9 +20,7 @@ pub mod block;
 pub mod cache;
 pub mod call_request;
 pub mod executor;
-pub mod extras;
 pub mod genesis;
-pub mod transaction;
 
 pub use self::genesis::Genesis;
 pub use contracts::grpc::{grpc_vm::CallEvmImpl, grpc_vm_adapter::vm_grpc_server};

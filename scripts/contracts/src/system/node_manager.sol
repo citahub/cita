@@ -1,53 +1,22 @@
 pragma solidity ^0.4.24;
 
+import "../common/model_type.sol";
 import "../lib/safe_math.sol";
+import "../lib/address_array.sol";
 import "../common/error.sol";
 import "../common/admin.sol";
-import "../permission_management/authorization.sol";
-
-
-/// @title The interface of node_manager
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
-interface NodeInterface {
-
-    event ApproveNode(address indexed _node);
-    event DeleteNode(address indexed _node);
-    event SetStake(address indexed _node, uint _stake);
-
-    /// @notice Approve to be consensus node. status will be start
-    function approveNode(address _node) external returns (bool);
-
-    /// @notice Delete the consensus node that has been approved. status will be close
-    function deleteNode(address _node) external returns (bool);
-
-    /// @notice List the consensus nodes that have been approved
-    /// which means list the node whose status is start
-    function listNode() external view returns (address[]);
-
-    /// @notice Set node stake
-    function setStake(address _node, uint64 stake) external;
-    /*
-     * @notice Get the status of the node:
-     * @return 0: Close
-     * @return 1: Start
-     */
-    function getStatus(address _node) external view returns (uint8);
-
-    /// @notice Node stake list
-    function listStake() external view returns (uint64[] _stakes);
-
-    /// @notice Stake permillage
-    function stakePermillage(address _node) external view returns (uint64);
-}
-
+import "../common/check.sol";
+import "../common/model_type.sol";
+import "../interfaces/node_manager.sol";
+import "../interfaces/sys_config.sol";
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020001
-contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
+contract NodeManager is INodeManager, Error, Check, EconomicalType {
 
     mapping(address => NodeStatus) public status;
-    // Recode the operation of the block
+    // Recode the operation of the block(deprecation)
     mapping(uint => bool) block_op;
     // Consensus node list
     address[] nodes;
@@ -57,10 +26,9 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
     enum NodeStatus { Close, Start }
 
     Admin admin = Admin(adminAddr);
-    Authorization auth = Authorization(authorizationAddr);
-    SysConfig sysConfig = SysConfig(sysConfigAddr);
+    ISysConfig sysConfig = ISysConfig(sysConfigAddr);
 
-    // Should operate one time in a block
+    // Should operate one time in a block(deprecation)
     modifier oneOperate {
         if (!block_op[block.number])
             _;
@@ -94,13 +62,8 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
         else return;
     }
 
-    modifier checkPermission(address _permission) {
-        require(auth.checkPermission(msg.sender, _permission), "permission denied.");
-        _;
-    }
-
     modifier OnlyChargeModel() {
-        if(sysConfig.getEconomicalModel() == EconomicalModel.Charge) 
+        if(sysConfig.getEconomicalModel() == uint8(EconomicalModel.Charge))
             _;
         else {
             return;
@@ -124,7 +87,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
     function setStake(address _node, uint64 stake)
         public
         onlyAdmin
-        checkPermission(builtInPermissions[17])
+        hasPermission(builtInPermissions[17])
         returns (bool)
     {
         require(AddressArray.exist(_node, nodes), "node not exist.");
@@ -134,6 +97,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
     }
 
     /// @notice Approve the new node
+    ///         The modifier of oneOperate will be deprecated!
     /// @param _node The node to be approved
     /// @return true if successed, otherwise false
     function approveNode(address _node)
@@ -141,7 +105,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
         onlyAdmin
         oneOperate
         onlyClose(_node)
-        checkPermission(builtInPermissions[15])
+        hasPermission(builtInPermissions[15])
         returns (bool)
     {
         status[_node] = NodeStatus.Start;
@@ -152,6 +116,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
     }
 
     /// @notice Delete the node
+    ///         The modifier of oneOperate will be deprecated!
     /// @param _node The node to be deleted
     /// @return true if successed, otherwise false
     function deleteNode(address _node)
@@ -159,7 +124,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
         onlyAdmin
         oneOperate
         onlyStart(_node)
-        checkPermission(builtInPermissions[16])
+        hasPermission(builtInPermissions[16])
         returns (bool)
     {
         require(AddressArray.remove(_node, nodes), "remove node failed.");
@@ -209,11 +174,11 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
     /// This is the slot number which ignore the remainder, not exactly precise.
     /// https://en.wikipedia.org/wiki/Largest_remainder_method
     /// Hare quota
-    function stakePermillage(address _node) 
-        public 
-        view 
+    function stakePermillage(address _node)
+        public
+        view
         OnlyChargeModel
-        returns (uint64) 
+        returns (uint64)
     {
         uint total;
         for (uint j = 0; j < nodes.length; j++) {
@@ -221,7 +186,7 @@ contract NodeManager is NodeInterface, Error, ReservedAddress, EconomicalType {
         }
 
         if(total == 0) {
-            return; 
+            return;
         }
         return uint64(SafeMath.div(SafeMath.mul(stakes[_node], 1000), total));
     }

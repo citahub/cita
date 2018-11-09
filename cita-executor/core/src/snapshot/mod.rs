@@ -56,12 +56,7 @@ use super::state_db::StateDB;
 use ethcore_bloom_journal::Bloom;
 use header::Header;
 
-use libexecutor::extras::{ConfigHistory, CurrentHash};
-
-use bincode::{serialize as bin_serialize, Infinite};
-
-//#[cfg(test)]
-//mod tests;
+use types::extras::CurrentHash;
 
 /// A sink for produced chunks.
 pub type ChunkSink<'a> = FnMut(&[u8]) -> Result<(), Error> + 'a;
@@ -477,7 +472,8 @@ pub fn chunk_secondary<'a>(
             current_hash: start_hash,
             writer: &mut chunk_sink,
             preferred_size: PREFERRED_CHUNK_SIZE,
-        }.chunk_all()?
+        }
+        .chunk_all()?
     }
 
     Ok(chunk_hashes)
@@ -607,7 +603,7 @@ impl StateRebuilder {
     pub fn finalize(mut self, era: u64, id: H256) -> Result<Box<JournalDB>, ::error::Error> {
         /*let missing = self.missing_code.values().cloned().collect::<Vec<_>>();
         if !missing.is_empty() { return Err(Error::MissingCode(missing).into()) }
-
+        
         let missing = self.missing_abi.values().cloned().collect::<Vec<_>>();
         if !missing.is_empty() { return Err(Error::MissingAbi(missing).into()) }*/
 
@@ -833,10 +829,6 @@ impl BlockRebuilder {
 
         if is_best {
             batch.write(COL_EXTRA, &CurrentHash, &hash);
-
-            let confs = self.executor.sys_configs.read().clone();
-            let res = bin_serialize(&confs, Infinite).expect("serialize sys config error?");
-            batch.write(COL_EXTRA, &ConfigHistory, &res);
         }
     }
 
@@ -846,7 +838,7 @@ impl BlockRebuilder {
 
         /*for (first_num, first_hash) in self.disconnected.drain(..) {
             let parent_num = first_num - 1;
-
+        
             // check if the parent is even in the chain.
             // since we don't restore every single block in the chain,
             // the first block of the first chunks has nothing to connect to.

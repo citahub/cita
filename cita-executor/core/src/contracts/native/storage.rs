@@ -116,7 +116,8 @@ impl SimpleStorage {
         let index = index + 32;
         let value = String::from_utf8(Vec::from(
             data.get(index..index + length).expect("no enough data"),
-        )).unwrap();
+        ))
+        .unwrap();
 
         self.string_value.set_bytes(ext, &value)?;
         Ok(GasLeft::Known(U256::from(100)))

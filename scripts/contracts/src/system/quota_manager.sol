@@ -4,47 +4,14 @@ import "../common/error.sol";
 import "../lib/address_array.sol";
 import "../common/admin.sol";
 import "../common/address.sol";
-import "../permission_management/authorization.sol";
-
-
-/// @title The interface of quota_manager
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
-interface QuotaInterface {
-    
-    event DefaultAqlSetted(uint indexed _value, address indexed _sender);
-    event BqlSetted(uint indexed _value, address indexed _sender);
-    event AqlSetted(address indexed _account, uint _value, address indexed _sender);
-
-    /// @notice Set the block quota limit
-    function setBQL(uint _value) external returns (bool);
-
-    /// @notice Set the default block quota limit
-    function setDefaultAQL(uint _value) external returns (bool);
-
-    /// @notice Set the account quota limit
-    function setAQL(address _account, uint _value) external returns (bool);
-
-    /// @notice Get all accounts that have account quota limit
-    function getAccounts() external view returns (address[]);
-
-    /// @notice Get all accounts' quotas
-    function getQuotas() external view returns (uint[]);
-
-    /// @notice Get block quota limit
-    function getBQL() external view returns (uint);
-
-    /// @notice Get default account quota limit
-    function getDefaultAQL() external view returns (uint);
-    
-    /// @notice Get account quota limit
-    function getAQL(address _account) external view returns (uint);
-}
-
+import "../common/check.sol";
+import "../interfaces/quota_manager.sol";
+import "../interfaces/authorization.sol";
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020003
-contract QuotaManager is QuotaInterface, Error, ReservedAddress {
+contract QuotaManager is IQuotaManager, Error, Check {
 
     mapping(address => uint) quota;
     // Block quota limit
@@ -56,7 +23,8 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
     uint maxLimit = 2 ** 63 - 1;
     uint baseLimit = 2 ** 22 - 1;
     Admin admin = Admin(adminAddr);
-    Authorization auth = Authorization(authorizationAddr);
+    /// Just for compatible
+    IAuthorization private _auth = IAuthorization(authorizationAddr);
 
     modifier checkBaseLimit(uint _v) {
         if (_v <= maxLimit && _v >= baseLimit)
@@ -75,11 +43,6 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
             emit ErrorLog(ErrorType.OutOfBlockLimit, "The value is out of block limit");
             return;
         }
-    }
-
-    modifier checkPermission(address _permission) {
-        require(auth.checkPermission(msg.sender, _permission), "permission denied.");
-        _;
     }
 
     modifier onlyAdmin {
@@ -104,7 +67,7 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
         public
         onlyAdmin
         checkBaseLimit(_value)
-        checkPermission(builtInPermissions[18])
+        hasPermission(builtInPermissions[18])
         returns (bool)
     {
         defaultAQL = _value;
@@ -120,7 +83,7 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
         public
         onlyAdmin
         checkBaseLimit(_value)
-        checkPermission(builtInPermissions[18])
+        hasPermission(builtInPermissions[18])
         returns (bool)
     {
         uint i = AddressArray.index(_account, accounts);
@@ -148,7 +111,7 @@ contract QuotaManager is QuotaInterface, Error, ReservedAddress {
         onlyAdmin
         checkBaseLimit(_value)
         checkBlockLimit(_value)
-        checkPermission(builtInPermissions[19])
+        hasPermission(builtInPermissions[19])
         returns (bool)
     {
         BQL = _value;

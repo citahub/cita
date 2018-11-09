@@ -22,6 +22,7 @@ use contracts::tools::{decode as decode_tools, method as method_tools};
 use libexecutor::executor::Executor;
 use std::collections::HashMap;
 use std::str::FromStr;
+use types::ids::BlockId;
 use types::reserved_addresses;
 
 const ALLGROUPS: &[u8] = &*b"queryGroups()";
@@ -34,17 +35,26 @@ lazy_static! {
         H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
 }
 
-pub struct UserManagement;
+pub struct UserManagement<'a> {
+    executor: &'a Executor,
+}
 
-impl UserManagement {
-    pub fn load_group_accounts(executor: &Executor) -> HashMap<Address, Vec<Address>> {
+impl<'a> UserManagement<'a> {
+    pub fn new(executor: &'a Executor) -> Self {
+        UserManagement { executor }
+    }
+
+    pub fn load_group_accounts(&self, block_id: BlockId) -> HashMap<Address, Vec<Address>> {
         let mut group_accounts = HashMap::new();
-        let groups = UserManagement::all_groups(executor).unwrap_or_else(Self::default_all_groups);
+        let groups = self
+            .all_groups(block_id)
+            .unwrap_or_else(Self::default_all_groups);
 
         trace!("ALl groups: {:?}", groups);
         for group in groups {
-            let accounts =
-                UserManagement::accounts(executor, &group).unwrap_or_else(Self::default_accounts);
+            let accounts = self
+                .accounts(&group, block_id)
+                .unwrap_or_else(Self::default_accounts);
             trace!("ALl accounts for group {}: {:?}", group, accounts);
             group_accounts.insert(group, accounts);
         }
@@ -53,9 +63,14 @@ impl UserManagement {
     }
 
     /// Group array
-    pub fn all_groups(executor: &Executor) -> Option<Vec<Address>> {
-        executor
-            .call_method(&*CONTRACT_ADDRESS, &*ALLGROUPS_HASH.as_slice(), None, None)
+    pub fn all_groups(&self, block_id: BlockId) -> Option<Vec<Address>> {
+        self.executor
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*ALLGROUPS_HASH.as_slice(),
+                None,
+                block_id,
+            )
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
@@ -66,9 +81,9 @@ impl UserManagement {
     }
 
     /// Accounts array
-    pub fn accounts(executor: &Executor, address: &Address) -> Option<Vec<Address>> {
-        executor
-            .call_method(address, &ACCOUNTS_HASH.as_slice(), None, None)
+    pub fn accounts(&self, address: &Address, block_id: BlockId) -> Option<Vec<Address>> {
+        self.executor
+            .call_method(address, &ACCOUNTS_HASH.as_slice(), None, block_id)
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
@@ -82,18 +97,20 @@ impl UserManagement {
 #[cfg(test)]
 mod tests {
     extern crate logger;
-    extern crate mktemp;
 
     use super::UserManagement;
     use cita_types::{Address, H160};
     use std::str::FromStr;
     use tests::helpers::init_executor;
+    use types::ids::BlockId;
     use types::reserved_addresses;
 
     #[test]
     fn test_all_groups() {
         let executor = init_executor(vec![]);
-        let all_groups: Vec<Address> = UserManagement::all_groups(&executor).unwrap();
+
+        let user_management = UserManagement::new(&executor);
+        let all_groups: Vec<Address> = user_management.all_groups(BlockId::Pending).unwrap();
 
         assert_eq!(
             all_groups,
@@ -111,10 +128,14 @@ mod tests {
                 "0x9dcd6b234e2772c5451fd4ccf7582f4283140697"
             ),
         )]);
-        let accounts: Vec<Address> = UserManagement::accounts(
-            &executor,
-            &H160::from_str("ffffffffffffffffffffffffffffffffff020009").unwrap(),
-        ).unwrap();
+
+        let user_management = UserManagement::new(&executor);
+        let accounts: Vec<Address> = user_management
+            .accounts(
+                &H160::from_str("ffffffffffffffffffffffffffffffffff020009").unwrap(),
+                BlockId::Pending,
+            )
+            .unwrap();
 
         assert_eq!(
             accounts,
@@ -137,7 +158,9 @@ mod tests {
             ),
         )]);
         let root = H160::from_str(reserved_addresses::GROUP).unwrap();
-        let group_accounts = UserManagement::load_group_accounts(&executor);
+
+        let user_management = UserManagement::new(&executor);
+        let group_accounts = user_management.load_group_accounts(BlockId::Pending);
         assert_eq!(group_accounts.contains_key(&root), true);
         assert_eq!(
             *group_accounts.get(&root).unwrap(),

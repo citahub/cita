@@ -12,7 +12,7 @@
 
 `send_to_side_chain` 只是在一条链上扣掉一部分 token 。
 
-等交易执行之后，使用 JsonRPC 接口 `cita_getTransactionProof` 获取交易执行的证明。
+等交易执行之后，使用 JSON-RPC 接口 `cita_getTransactionProof` 获取交易执行的证明。
 
 将证明发送到另外一个链上的 `recv_from_side_chain`。校验证明之后解析出原始交易的内容。在这个例子里就是转账金额。
 
@@ -70,7 +70,7 @@ cita-relayer-parser -c SEND_CHAIN_ID -t TX_HASH -f relayer-parser.json
 其中配置文件 `relayer-parser.json` 目前主要有 2 个参数：
 
 * 工具使用的私钥。
-* 所有相关链的 JsonRPC 网络地址，使用 Id 作为索引。
+* 所有相关链的 JSON-RPC 网络地址，使用 Id 作为索引。
 
 范例如下：
 

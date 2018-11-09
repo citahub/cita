@@ -1,10 +1,11 @@
 pragma solidity ^0.4.24;
 
+import "../interfaces/batch_tx.sol";
 
 /// @title Batch tx
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @dev TODO use native contract
-contract BatchTx {
+contract BatchTx is IBatchTx {
 
     /// @notice Proxy multiple transactions
     ///         The encoded transactions data: tuple(address,dataLen,data)

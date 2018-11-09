@@ -117,7 +117,7 @@ fn main() {
         numbers.sort();
         info!(">> numbers: {:?}", numbers);
     }
-    for number in 1..(mock_blocks.len() as u64 + 1) {
+    for number in 1..=mock_blocks.len() as u64 {
         if !mock_blocks.contains_key(&number) {
             error!("Block missing, number={}", number);
             return;

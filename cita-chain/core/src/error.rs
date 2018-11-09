@@ -111,7 +111,7 @@ impl fmt::Display for TransactionError {
     }
 }
 
-#[allow(unknown_lints, large_enum_variant)] // TODO clippy
+#[allow(unknown_lints, clippy::large_enum_variant)] // TODO clippy
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 /// Errors concerning block processing.
 pub enum BlockError {
@@ -228,21 +228,21 @@ pub enum ExecutionError {
         /// Gas provided.
         got: U256,
     },
-    /// Returned when block (gas_used + gas) > gas_limit.
+    /// Returned when block (quota_used + gas) > quota_limit.
     ///
-    /// If gas =< gas_limit, upstream may try to execute the transaction
+    /// If gas =< quota_limit, upstream may try to execute the transaction
     /// in next block.
     BlockGasLimitReached {
         /// Gas limit of block for transaction.
-        gas_limit: U256,
+        quota_limit: U256,
         /// Gas used in block prior to transaction.
-        gas_used: U256,
+        quota_used: U256,
         /// Amount of gas in block.
         gas: U256,
     },
     AccountGasLimitReached {
         /// Account Gas limit left
-        gas_limit: U256,
+        quota_limit: U256,
         /// Amount of gas in transaction
         gas: U256,
     },
@@ -277,11 +277,11 @@ impl fmt::Display for ExecutionError {
         let msg = match *self {
             NotEnoughBaseGas { ref required, ref got } => format!("Not enough base quota. {} is required, but only {} paid", required, got),
             BlockGasLimitReached {
-                ref gas_limit,
-                ref gas_used,
+                ref quota_limit,
+                ref quota_used,
                 ref gas,
-            } => format!("Block gas limit reached. The limit is {}, {} has already been used, and {} more is required", gas_limit, gas_used, gas),
-            AccountGasLimitReached { ref gas_limit, ref gas } => format!("Account gas limit reached. The limit is {}, {} more is required", gas_limit, gas),
+            } => format!("Block gas limit reached. The limit is {}, {} has already been used, and {} more is required", quota_limit, quota_used, gas),
+            AccountGasLimitReached { ref quota_limit, ref gas } => format!("Account gas limit reached. The limit is {}, {} more is required", quota_limit, gas),
             InvalidNonce { ref expected, ref got } => format!("Invalid transaction nonce: expected {}, found {}", expected, got),
             NotEnoughCash { ref required, ref got } => format!("Cost of transaction exceeds sender balance. {} is required but the sender only has {}", required, got),
             ExecutionInternal(ref msg) => msg.clone(),
@@ -295,7 +295,7 @@ impl fmt::Display for ExecutionError {
     }
 }
 
-#[allow(unknown_lints, large_enum_variant)] // TODO clippy
+#[allow(unknown_lints, clippy::large_enum_variant)] // TODO clippy
 #[derive(Debug)]
 /// General error type which should be capable of representing all errors in ethcore.
 pub enum Error {

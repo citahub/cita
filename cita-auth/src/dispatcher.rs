@@ -17,6 +17,7 @@
 
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256};
+use handler::SysConfigInfo;
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
@@ -71,20 +72,18 @@ impl Dispatcher {
         &mut self,
         height: usize,
         mq_pub: &Sender<(String, Vec<u8>)>,
-        block_gas_limit: u64,
-        account_gas_limit: AccountGasLimit,
-        check_quota: bool,
-        admin_address: &Option<Address>,
+        config_info: &SysConfigInfo,
     ) {
         let mut block_txs = BlockTxs::new();
         let mut body = BlockBody::new();
 
         let out_txs = self.get_txs_from_pool(
             height as u64,
-            block_gas_limit,
-            account_gas_limit,
-            check_quota,
-            admin_address,
+            config_info.block_quota_limit,
+            config_info.account_quota_limit.clone(),
+            config_info.check_quota,
+            &config_info.admin_address,
+            config_info.version.unwrap(),
         );
         info!(
             "public block txs height {} with {:?} transactions",
@@ -98,6 +97,21 @@ impl Dispatcher {
         block_txs.set_height(height as u64);
         block_txs.set_body(body);
         trace!("deal_txs send height {}", height);
+        let msg: Message = block_txs.into();
+        mq_pub
+            .send((
+                routing_key!(Auth >> BlockTxs).into(),
+                msg.try_into().unwrap(),
+            ))
+            .unwrap();
+    }
+
+    pub fn proposal_empty(&mut self, height: usize, mq_pub: &Sender<(String, Vec<u8>)>) {
+        let mut block_txs = BlockTxs::new();
+        let body = BlockBody::new();
+        block_txs.set_height(height as u64);
+        block_txs.set_body(body);
+        trace!("proposal empty block height {}", height);
         let msg: Message = block_txs.into();
         mq_pub
             .send((
@@ -129,18 +143,20 @@ impl Dispatcher {
     pub fn get_txs_from_pool(
         &self,
         height: u64,
-        block_gas_limit: u64,
-        account_gas_limit: AccountGasLimit,
+        block_quota_limit: u64,
+        account_quota_limit: AccountGasLimit,
         check_quota: bool,
         admin_address: &Option<Address>,
+        version: u32,
     ) -> Vec<SignedTransaction> {
         let txs_pool = &mut self.txs_pool.borrow_mut();
         txs_pool.package(
             height,
-            block_gas_limit,
-            account_gas_limit,
+            block_quota_limit,
+            account_quota_limit,
             check_quota,
             *admin_address,
+            version,
         )
     }
 

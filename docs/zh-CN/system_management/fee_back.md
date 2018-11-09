@@ -2,9 +2,9 @@
 
 ## 简述
 CITA 中存在两种经济模型：`Quota` 和 `Charge` 模型，默认经济模型 `Quota` ，没有余额概念。
-在具有余额的 `Charge` 经济模型中，出块奖励默认返还给矿工，但运营方可以通过配置，将出块奖励返还给自己。
+在具有余额的 `Charge` 经济模型中，出块奖励默认返还给共识节点，但运营方可以通过设置 `checkFeeBackPlatform` 和 `chainOwner`，将出块奖励返还给自己。
 
-出块奖励 = quotaUsed * quotaPrice, 其中 `quotaPrice` 默认为 1，`quotaUsed` 在交易回执中可以获取。 
+出块奖励 = quotaUsed * quotaPrice, 其中 `quotaPrice` 默认为 1，`quotaUsed` 在交易回执中可以获取。
 
 ### 操作示例
 
@@ -15,6 +15,7 @@ CITA 中存在两种经济模型：`Quota` 和 `Charge` 模型，默认经济模
 
 ```bash
 $ ./env.sh ./scripts/create_cita_config.py create \
+        --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" \
         --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
         --contract_arguments "SysConfig.checkFeeBackPlatform=true" \
         --contract_arguments "SysConfig.chainOwner=0x36a60d575b0dee0423abb6a57dbc6ca60bf47545" \  

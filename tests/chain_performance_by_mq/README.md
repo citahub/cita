@@ -11,7 +11,7 @@
 
 ## 注意
 
-* 调整交易配额和交易数，防止block超出block gas limit
+* 调整交易配额和交易数，防止block超出block quota limit
 * 创建合约/更改State时，随着State状态树变大，tps会越来越越慢
 * 通过查询block中最后一个交易的receipt来确认交易是否正常执行
 

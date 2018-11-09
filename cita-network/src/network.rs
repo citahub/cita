@@ -15,39 +15,45 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use connection::Connection;
+use connection::Task;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
 use libproto::{Message, Response};
 use std::convert::{Into, TryFrom, TryInto};
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use Source;
 
 /// Message forwarding, include p2p and local
 pub struct NetWork {
-    con: Arc<Connection>,
+    task_sender: Sender<Task>,
     tx_pub: Sender<(String, Vec<u8>)>,
     tx_sync: Sender<(Source, (String, Vec<u8>))>,
     tx_new_tx: Sender<(String, Vec<u8>)>,
     tx_consensus: Sender<(String, Vec<u8>)>,
+    is_pause: Arc<AtomicBool>,
+    connect_number: Arc<AtomicUsize>,
 }
 
 impl NetWork {
     pub fn new(
-        con: Arc<Connection>,
+        task_sender: Sender<Task>,
         tx_pub: Sender<(String, Vec<u8>)>,
         tx_sync: Sender<(Source, (String, Vec<u8>))>,
         tx_new_tx: Sender<(String, Vec<u8>)>,
         tx_consensus: Sender<(String, Vec<u8>)>,
+        is_pause: Arc<AtomicBool>,
+        connect_number: Arc<AtomicUsize>,
     ) -> Self {
         NetWork {
-            con,
+            task_sender,
             tx_pub,
             tx_sync,
             tx_new_tx,
             tx_consensus,
+            is_pause,
+            connect_number,
         }
     }
 
@@ -55,22 +61,23 @@ impl NetWork {
         let (key, data) = payload;
         let rtkey = RoutingKey::from(&key);
         trace!("Network receive Msg from {:?}/{}", source, key);
-        if self.con.is_disconnect.load(Ordering::SeqCst)
-            && rtkey.get_sub_module() != SubModules::Snapshot
-        {
+        if self.is_pause.load(Ordering::SeqCst) && rtkey.get_sub_module() != SubModules::Snapshot {
             return;
         }
         match source {
             // Come from MQ
             Source::LOCAL => match rtkey {
                 routing_key!(Chain >> Status) => {
-                    self.tx_sync.send((source, (key, data)));
+                    let _ = self.tx_sync.send((source, (key, data)));
                 }
                 routing_key!(Chain >> SyncResponse) => {
-                    self.con.broadcast_rawbytes(
-                        routing_key!(Synchronizer >> SyncResponse).into(),
-                        &data,
-                    );
+                    let msg = Message::try_from(&data).unwrap();
+                    self.task_sender
+                        .send(Task::Broadcast((
+                            routing_key!(Synchronizer >> SyncResponse).into(),
+                            msg,
+                        )))
+                        .unwrap();
                 }
                 routing_key!(Jsonrpc >> RequestNet) => {
                     self.reply_rpc(&data);
@@ -87,22 +94,26 @@ impl NetWork {
             Source::REMOTE => match rtkey {
                 routing_key!(Synchronizer >> Status)
                 | routing_key!(Synchronizer >> SyncResponse) => {
-                    self.tx_sync.send((source, (key, data)));
+                    let _ = self.tx_sync.send((source, (key, data)));
                 }
                 routing_key!(Synchronizer >> SyncRequest) => {
-                    self.tx_pub
+                    let _ = self
+                        .tx_pub
                         .send((routing_key!(Net >> SyncRequest).into(), data));
                 }
                 routing_key!(Auth >> Request) => {
-                    self.tx_new_tx
+                    let _ = self
+                        .tx_new_tx
                         .send((routing_key!(Net >> Request).into(), data));
                 }
                 routing_key!(Consensus >> SignedProposal) => {
-                    self.tx_consensus
+                    let _ = self
+                        .tx_consensus
                         .send((routing_key!(Net >> SignedProposal).into(), data));
                 }
                 routing_key!(Consensus >> RawBytes) => {
-                    self.tx_consensus
+                    let _ = self
+                        .tx_consensus
                         .send((routing_key!(Net >> RawBytes).into(), data));
                 }
                 _ => {
@@ -123,7 +134,7 @@ impl NetWork {
             }
             Cmd::Begin => {
                 info!("[snapshot] receive cmd: Begin");
-                self.con.is_disconnect.store(true, Ordering::SeqCst);
+                self.is_pause.store(true, Ordering::SeqCst);
                 resp.set_resp(Resp::BeginAck);
                 resp.set_flag(true);
                 send = true;
@@ -139,7 +150,7 @@ impl NetWork {
             }
             Cmd::End => {
                 info!("[snapshot] receive cmd: End");
-                self.con.is_disconnect.store(false, Ordering::SeqCst);
+                self.is_pause.store(false, Ordering::SeqCst);
                 resp.set_resp(Resp::EndAck);
                 resp.set_flag(true);
                 send = true;
@@ -165,13 +176,7 @@ impl NetWork {
                 let mut response = Response::new();
                 response.set_request_id(ts.take_request_id());
                 if ts.has_peercount() {
-                    let peercount = self
-                        .con
-                        .peers_pair
-                        .read()
-                        .iter()
-                        .filter(|x| x.2.is_some())
-                        .count();
+                    let peercount = self.connect_number.load(Ordering::Relaxed);
                     response.set_peercount(peercount as u32);
                     let ms: Message = response.into();
                     self.tx_pub

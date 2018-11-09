@@ -1,13 +1,13 @@
 pragma solidity ^0.4.24;
 
 import "../common/address.sol";
-
+import "../interfaces/permission.sol";
 
 /// @title Permission contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: Created by permissionCreator
 ///         The interface can be called: Only query type
-contract Permission is ReservedAddress {
+contract Permission is IPermission, ReservedAddress {
 
     struct Resource {
         // Contract address
@@ -41,7 +41,7 @@ contract Permission is ReservedAddress {
     /// @param _funcs The function signature of resource
     /// @return true if successed, otherwise false
     function addResources(address[] _conts, bytes4[] _funcs)
-        public
+        external
         onlyPermissionManagement
         returns (bool)
     {
@@ -54,7 +54,7 @@ contract Permission is ReservedAddress {
     /// @param _funcs The function signature of resource
     /// @return true if successed, otherwise false
     function deleteResources(address[] _conts, bytes4[] _funcs)
-        public
+        external
         onlyPermissionManagement
         returns (bool)
     {

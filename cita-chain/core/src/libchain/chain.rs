@@ -21,22 +21,19 @@ use bloomchain::group::{
 };
 use bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
 pub use byteorder::{BigEndian, ByteOrder};
-use cache_manager::CacheManager;
 use db;
 use db::*;
 
 use filters::{PollFilter, PollManager};
 use header::*;
-pub use libchain::block::*;
 use libchain::cache::CacheSize;
-use libchain::extras::*;
 use libchain::status::Status;
-pub use libchain::transaction::*;
-
 use libproto::blockchain::{
     AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
     RichStatus as ProtoRichStatus, StateSignal,
 };
+pub use types::block::*;
+use types::extras::*;
 
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
@@ -47,13 +44,13 @@ use libproto::{BlockTxHashes, FullTransaction, Message};
 use proof::BftProof;
 use receipt::{LocalizedReceipt, Receipt};
 use rlp::{self, Encodable};
-use state::State;
 use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::{Into, TryInto};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
+use types::cache_manager::CacheManager;
 use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
@@ -71,8 +68,8 @@ const LOG_BLOOMS_ELEMENTS_PER_INDEX: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct RelayInfo {
-    pub from_chain_id: u32,
-    pub to_chain_id: u32,
+    pub from_chain_id: U256,
+    pub to_chain_id: U256,
     pub dest_contract: Address,
     pub dest_hasher: [u8; 4],
     pub cross_chain_nonce: u64,
@@ -95,7 +92,8 @@ impl TxProof {
 
     pub fn verify(&self, authorities: &[Address]) -> bool {
         // Calculate transaction hash, and it should be same as the transaction hash in receipt.
-        if self.receipt.transaction_hash == self.tx.calc_transaction_hash() {
+        let tx_hash = self.tx.calc_transaction_hash();
+        if self.receipt.transaction_hash == tx_hash {
         } else {
             warn!("txproof verify transaction_hash failed");
             return false;
@@ -148,8 +146,8 @@ impl TxProof {
             None
         } else {
             let mut iter = data.chunks(32);
-            let from_chain_id = U256::from(iter.next().unwrap()).low_u32();
-            let to_chain_id = U256::from(iter.next().unwrap()).low_u32();
+            let from_chain_id = U256::from(iter.next().unwrap());
+            let to_chain_id = U256::from(iter.next().unwrap());
             let dest_contract = Address::from(H256::from(iter.next().unwrap()));
             let dest_hasher = iter.next().unwrap()[..4]
                 .into_iter()
@@ -178,7 +176,7 @@ impl TxProof {
         my_contrac_addr: Address,
         my_hasher: [u8; 4],
         my_cross_chain_nonce: u64,
-        my_chain_id: u32,
+        my_chain_id: U256,
         authorities: &[Address],
     ) -> Option<(Address, Vec<u8>)> {
         if self.verify(authorities) {
@@ -202,7 +200,7 @@ impl TxProof {
                         && dest_hasher == my_hasher
                         && cross_chain_nonce == my_cross_chain_nonce
                     {
-                        // sendToSideChain(uint32 toChainId, address destContract, bytes txData)
+                        // sendToSideChain(uint256 toChainId, address destContract, bytes txData)
                         // skip func hasher, uint32, address, bytes position and length
                         let (_, origin_tx_data) = self.tx.data.split_at(4 + 32 * 4);
                         Some((*self.tx.sender(), origin_tx_data.to_owned()))
@@ -278,9 +276,6 @@ pub enum BlockInQueue {
     SyncBlock((Block, Option<ProtoProof>)),
 }
 
-/// Database read and write and cache
-// TODO: chain对外开放的方法，是保证能正确解析结构，即类似于Result<Block,Err>
-// 所有直接unwrap的地方都可能会报错！
 pub struct Chain {
     pub blooms_config: BloomChainConfig,
     pub current_header: RwLock<Header>,
@@ -303,10 +298,11 @@ pub struct Chain {
     pub blocks_blooms: RwLock<HashMap<LogGroupPosition, LogBloomGroup>>,
     pub block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
     pub nodes: RwLock<Vec<Address>>,
+    pub validators: RwLock<Vec<Address>>,
     pub block_interval: RwLock<u64>,
 
-    pub block_gas_limit: AtomicUsize,
-    pub account_gas_limit: RwLock<ProtoAccountGasLimit>,
+    pub block_quota_limit: AtomicUsize,
+    pub account_quota_limit: RwLock<ProtoAccountGasLimit>,
     pub check_quota: AtomicBool,
 
     pub cache_man: Mutex<CacheManager<CacheId>>,
@@ -319,6 +315,8 @@ pub struct Chain {
     pub is_snapshot: RwLock<bool>,
 
     admin_address: RwLock<Option<Address>>,
+
+    pub version: RwLock<Option<u32>>,
 }
 
 /// Get latest status
@@ -402,16 +400,18 @@ impl Chain {
             state_db: RwLock::new(state_db),
             polls_filter: Arc::new(Mutex::new(PollManager::default())),
             nodes: RwLock::new(Vec::new()),
+            validators: RwLock::new(Vec::new()),
             // need to be cautious here
             // because it's not read from the config file
             block_interval: RwLock::new(3000),
-            block_gas_limit: AtomicUsize::new(18_446_744_073_709_551_615),
-            account_gas_limit: RwLock::new(ProtoAccountGasLimit::new()),
+            block_quota_limit: AtomicUsize::new(18_446_744_073_709_551_615),
+            account_quota_limit: RwLock::new(ProtoAccountGasLimit::new()),
             check_quota: AtomicBool::new(false),
             prooftype: chain_config.prooftype,
             proof_map: RwLock::new(BTreeMap::new()),
             is_snapshot: RwLock::new(false),
             admin_address: RwLock::new(None),
+            version: RwLock::new(None),
         };
 
         if let Some(proto_proof) = chain.current_block_poof() {
@@ -432,7 +432,8 @@ impl Chain {
             BlockId::Number(number) => Some(number),
             BlockId::Hash(hash) => self.block_height_by_hash(hash),
             BlockId::Earliest => Some(0),
-            BlockId::Latest => Some(self.get_current_height()),
+            BlockId::Latest => Some(self.get_latest_height()),
+            BlockId::Pending => Some(self.get_pending_height()),
         }
     }
 
@@ -466,33 +467,42 @@ impl Chain {
             .into_iter()
             .map(|vecaddr| Address::from_slice(&vecaddr[..]))
             .collect();
+        let validators = conf.get_validators();
+        let validators: Vec<Address> = validators
+            .into_iter()
+            .map(|vecaddr| Address::from_slice(&vecaddr[..]))
+            .collect();
         let block_interval = conf.get_block_interval();
+        let version = conf.get_version();
         debug!(
-            "consensus nodes {:?}, block_interval {:?}",
-            nodes, block_interval
+            "consensus nodes {:?}, block_interval {:?}, version {}",
+            nodes, block_interval, version
         );
 
         self.check_quota
             .store(conf.get_check_quota(), Ordering::Relaxed);
-        self.block_gas_limit
-            .store(conf.get_block_gas_limit() as usize, Ordering::SeqCst);
-        *self.account_gas_limit.write() = conf.get_account_gas_limit().clone();
-        *self.nodes.write() = nodes.clone();
+        self.block_quota_limit
+            .store(conf.get_block_quota_limit() as usize, Ordering::SeqCst);
+        *self.account_quota_limit.write() = conf.get_account_quota_limit().clone();
+        *self.nodes.write() = nodes;
+        *self.validators.write() = validators;
         *self.block_interval.write() = block_interval;
         *self.admin_address.write() = if conf.get_admin_address().is_empty() {
             None
         } else {
             Some(Address::from(conf.get_admin_address()))
         };
+        *self.version.write() = Some(version);
     }
 
     pub fn set_db_result(&self, ret: &ExecutedResult, block: &Block) {
         let info = ret.get_executed_info();
         let number = info.get_header().get_height();
+        let version = block.version();
         let mut hdr = Header::new();
         let log_bloom = LogBloom::from(info.get_header().get_log_bloom());
-        hdr.set_gas_limit(U256::from(info.get_header().get_gas_limit()));
-        hdr.set_gas_used(U256::from(info.get_header().get_gas_used()));
+        hdr.set_quota_limit(U256::from(info.get_header().get_quota_limit()));
+        hdr.set_quota_used(U256::from(info.get_header().get_quota_used()));
         hdr.set_number(number);
         // hdr.set_parent_hash(*block.parent_hash());
         hdr.set_parent_hash(H256::from_slice(info.get_header().get_prevhash()));
@@ -503,8 +513,15 @@ impl Chain {
         hdr.set_log_bloom(log_bloom);
         hdr.set_proof(block.proof().clone());
         hdr.set_proposer(Address::from(info.get_header().get_proposer()));
+        hdr.set_version(version);
 
         let hash = hdr.hash();
+        trace!(
+            "commit block in db hash {:?}, height {:?}, version {}",
+            hash,
+            number,
+            version
+        );
         let block_transaction_addresses = block.transaction_addresses(hash);
         let blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup> = if log_bloom.is_zero() {
             HashMap::new()
@@ -650,6 +667,11 @@ impl Chain {
 
         // Duplicated block
         if number <= self.get_current_height() {
+            let tx_hashes = self
+                .block_body_by_height(self.get_current_height())
+                .unwrap()
+                .transaction_hashes();
+            self.delivery_block_tx_hashes(self.get_current_height(), &tx_hashes, &ctx_pub);
             self.broadcast_current_status(&ctx_pub);
             return;
         }
@@ -715,11 +737,12 @@ impl Chain {
             BlockId::Hash(hash) => self.block_by_hash(hash),
             BlockId::Number(number) => self.block_by_height(number),
             BlockId::Earliest => self.block_by_height(0),
-            BlockId::Latest => self.block_by_height(self.get_current_height()),
+            BlockId::Latest => self.block_by_height(self.get_latest_height()),
+            BlockId::Pending => self.block_by_height(self.get_pending_height()),
         }
     }
 
-    // Get block by hash
+    /// Get block by hash
     pub fn block_by_hash(&self, hash: H256) -> Option<Block> {
         self.block_height_by_hash(hash)
             .and_then(|h| self.block_by_height(h))
@@ -742,11 +765,12 @@ impl Chain {
             BlockId::Hash(hash) => self.block_header_by_hash(hash),
             BlockId::Number(number) => self.block_header_by_height(number),
             BlockId::Earliest => self.block_header_by_height(0),
-            BlockId::Latest => self.block_header_by_height(self.get_current_height()),
+            BlockId::Latest => self.block_header_by_height(self.get_latest_height()),
+            BlockId::Pending => self.block_header_by_height(self.get_pending_height()),
         }
     }
 
-    // Get block header by hash
+    /// Get block header by hash
     pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
         {
             let header = self.current_header.read();
@@ -779,7 +803,8 @@ impl Chain {
             BlockId::Hash(hash) => self.block_body_by_hash(hash),
             BlockId::Number(number) => self.block_body_by_height(number),
             BlockId::Earliest => self.block_body_by_height(0),
-            BlockId::Latest => self.block_body_by_height(self.get_current_height()),
+            BlockId::Latest => self.block_body_by_height(self.get_latest_height()),
+            BlockId::Pending => self.block_body_by_height(self.get_pending_height()),
         }
     }
 
@@ -787,7 +812,8 @@ impl Chain {
         self.block_header_by_height(height)
             .and_then(|hdr| Some(hdr.hash()))
     }
-    // Get block body by hash
+
+    /// Get block body by hash
     fn block_body_by_hash(&self, hash: H256) -> Option<BlockBody> {
         self.block_height_by_hash(hash)
             .and_then(|h| self.block_body_by_height(h))
@@ -885,8 +911,9 @@ impl Chain {
                     .and_then(|receipt| {
                         merklehash::MerkleTree::from_bytes(
                             receipts.receipts.iter().map(|r| r.rlp_bytes().into_vec()),
-                        ).get_proof_by_input_index(index)
-                            .map(|receipt_proof| (index, block, receipt.clone(), receipt_proof))
+                        )
+                        .get_proof_by_input_index(index)
+                        .map(|receipt_proof| (index, block, receipt.clone(), receipt_proof))
                     })
             })
             .and_then(|(index, block, receipt, receipt_proof)| {
@@ -939,8 +966,9 @@ impl Chain {
                         block_header,
                         next_proposal_header,
                         proposal_proof,
-                    }.rlp_bytes()
-                        .into_vec()
+                    }
+                    .rlp_bytes()
+                    .into_vec()
                 },
             )
     }
@@ -967,8 +995,8 @@ impl Chain {
         receipts.truncate(index + 1);
         let last_receipt = receipts.pop().expect("Current receipt is provided; qed");
 
-        let prior_gas_used = match receipts.last() {
-            Some(ref r) => r.gas_used,
+        let prior_quota_used = match receipts.last() {
+            Some(ref r) => r.quota_used,
             _ => 0.into(),
         };
 
@@ -991,8 +1019,8 @@ impl Chain {
                 transaction_index: index,
                 block_hash: hash,
                 block_number: number,
-                cumulative_gas_used: last_receipt.gas_used,
-                gas_used: last_receipt.gas_used - prior_gas_used,
+                cumulative_quota_used: last_receipt.quota_used,
+                quota_used: last_receipt.quota_used - prior_quota_used,
                 contract_address,
                 logs: last_receipt
                     .logs
@@ -1019,27 +1047,43 @@ impl Chain {
         }
     }
 
+    #[inline]
     pub fn get_current_height(&self) -> u64 {
         self.current_height.load(Ordering::SeqCst) as u64
     }
 
+    #[inline]
+    pub fn get_pending_height(&self) -> u64 {
+        self.current_header.read().number()
+    }
+
+    #[inline]
+    pub fn get_latest_height(&self) -> u64 {
+        self.current_header.read().number().saturating_sub(1)
+    }
+
+    #[inline]
     pub fn get_current_hash(&self) -> H256 {
         self.current_header.read().hash()
     }
 
+    #[inline]
     pub fn get_max_store_height(&self) -> u64 {
         self.max_store_height.load(Ordering::SeqCst) as u64
     }
 
+    #[inline]
     pub fn set_max_store_height(&self, height: u64) {
         self.max_store_height
             .store(height as usize, Ordering::SeqCst);
     }
 
+    #[inline]
     pub fn current_state_root(&self) -> H256 {
         *self.current_header.read().state_root()
     }
 
+    #[inline]
     pub fn current_block_poof(&self) -> Option<ProtoProof> {
         self.db.read().read(db::COL_EXTRA, &CurrentProof)
     }
@@ -1166,8 +1210,12 @@ impl Chain {
     }
 
     pub fn get_logs(&self, filter: &Filter) -> Vec<LocalizedLogEntry> {
-        let blocks = filter.bloom_possibilities().iter()
-            .filter_map(|bloom| self.blocks_with_bloom_by_id(bloom, filter.from_block, filter.to_block))
+        let blocks = filter
+            .bloom_possibilities()
+            .iter()
+            .filter_map(|bloom| {
+                self.blocks_with_bloom_by_id(bloom, filter.from_block, filter.to_block)
+            })
             .flat_map(|m| m)
             // remove duplicate elements
             .collect::<HashSet<u64>>()
@@ -1185,18 +1233,25 @@ impl Chain {
         ctx_pub: &Sender<(String, Vec<u8>)>,
     ) {
         let ctx_pub_clone = ctx_pub.clone();
+        let version_opt = self.version.read();
+        if version_opt.is_none() {
+            trace!("delivery_block_tx_hashes : version is not ready!");
+            return;
+        }
         let mut block_tx_hashes = BlockTxHashes::new();
         block_tx_hashes.set_height(block_height);
         {
             block_tx_hashes.set_check_quota(self.check_quota.load(Ordering::Relaxed));
-            block_tx_hashes.set_block_gas_limit(self.block_gas_limit.load(Ordering::SeqCst) as u64);
-            block_tx_hashes.set_account_gas_limit(self.account_gas_limit.read().clone());
+            block_tx_hashes
+                .set_block_quota_limit(self.block_quota_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes.set_account_quota_limit(self.account_quota_limit.read().clone());
             block_tx_hashes.set_admin_address(
                 self.admin_address
                     .read()
                     .map(|admin| admin.to_vec())
                     .unwrap_or_else(Vec::new),
             );
+            block_tx_hashes.set_version(version_opt.unwrap());
         }
 
         let mut tx_hashes_in_u8 = Vec::new();
@@ -1219,20 +1274,25 @@ impl Chain {
     /// Consensus should resend block if chain commit block failed.
     pub fn delivery_current_rich_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let header = &*self.current_header.read();
+        let version_opt = self.version.read();
 
-        if self.nodes.read().is_empty() {
+        if self.nodes.read().is_empty() || version_opt.is_none() {
+            trace!("delivery_current_rich_status : node list or version is not ready!");
             return;
         }
         let current_hash = header.hash();
         let current_height = header.number();
         let nodes: Vec<Address> = self.nodes.read().clone();
+        let validators: Vec<Address> = self.validators.read().clone();
         let block_interval = self.block_interval.read();
 
         let mut rich_status = ProtoRichStatus::new();
         rich_status.set_hash(current_hash.0.to_vec());
         rich_status.set_height(current_height);
         rich_status.set_nodes(nodes.into_iter().map(|address| address.to_vec()).collect());
+        rich_status.set_validators(validators.into_iter().map(|a| a.to_vec()).collect());
         rich_status.set_interval(*block_interval);
+        rich_status.set_version(version_opt.unwrap());
 
         let msg: Message = rich_status.into();
         ctx_pub
@@ -1267,19 +1327,6 @@ impl Chain {
         status.set_hash(self.get_current_hash());
         status.set_number(self.get_current_height());
         status
-    }
-
-    // TODO: Need remove. Later the state may be moved back to chain, so keep it here.
-    /// Attempt to get a copy of a specific block's final state.
-    pub fn state_at(&self, id: BlockId) -> Option<State<StateDB>> {
-        self.block_header(id)
-            .and_then(|h| self.gen_state(*h.state_root()))
-    }
-
-    /// generate block's final state.
-    pub fn gen_state(&self, root: H256) -> Option<State<StateDB>> {
-        let db = self.state_db.read().boxed_clone();
-        State::from_existing(db, root).ok()
     }
 
     pub fn validate_hash(&self, block_hash: &H256) -> bool {

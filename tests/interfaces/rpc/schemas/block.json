@@ -24,7 +24,7 @@
             "stateRoot",
             "transactionsRoot",
             "receiptsRoot",
-            "gasUsed",
+            "quotaUsed",
             "proof"
           ],
           "properties": {
@@ -52,9 +52,9 @@
               "type": "string",
               "description": "DATA, 32 Bytes - the root of the receipts trie of the block."
             },
-            "gasUsed": {
+            "quotaUsed": {
               "type": "string",
-              "description": "QUANTITY - the total used gas by all transactions in this block."
+              "description": "QUANTITY - the total used quota by all transactions in this block."
             },
             "proof": {
               "oneOf": [

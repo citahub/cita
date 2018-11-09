@@ -16,12 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use cita_types::traits::LowerHex;
-use cita_types::{clean_0x, Address, H256};
+use cita_types::{clean_0x, Address, H256, U256};
 use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use dispatcher::Dispatcher;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::TxResponse;
-use libproto::auth::MiscellaneousReq;
+use libproto::auth::{Miscellaneous, MiscellaneousReq};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
@@ -126,12 +126,12 @@ impl HistoryHeights {
 
     // at least wait 3s from latest update
     pub fn is_too_frequent(&self) -> bool {
-        unix_now().as_millis() < self.last_timestamp + 3000
+        AsMillis::as_millis(&unix_now()) < self.last_timestamp + 3000
     }
 
     pub fn update_time_stamp(&mut self) {
         // update time_stamp
-        self.last_timestamp = unix_now().as_millis();
+        self.last_timestamp = AsMillis::as_millis(&unix_now());
     }
 }
 
@@ -206,16 +206,18 @@ pub fn verify_tx_sig(req: &VerifyTxReq) -> Result<Vec<u8>, ()> {
     }
 }
 
-// verify request
-fn verify_request(req: &Request) -> Ret {
-    let un_tx = req.get_un_tx();
-    let tx = un_tx.get_transaction();
-    let to = clean_0x(tx.get_to());
-    if to.is_empty() || Address::from_str(to).is_ok() {
-        Ret::OK
-    } else {
-        Ret::InvalidValue
-    }
+pub struct SysConfigInfo {
+    pub block_quota_limit: u64,
+    pub account_quota_limit: AccountGasLimit,
+    pub check_quota: bool,
+    pub admin_address: Option<Address>,
+    pub version: Option<u32>,
+}
+
+#[derive(Debug, PartialEq)]
+enum ChainId {
+    V0(u32),
+    V1(U256),
 }
 
 pub struct MsgHandler {
@@ -223,20 +225,17 @@ pub struct MsgHandler {
     tx_pub: Sender<(String, Vec<u8>)>,
     // only cache verify sig
     cache: LruCache<H256, Option<Vec<u8>>>,
-    chain_id: Option<u32>,
+    chain_id: Option<ChainId>,
     history_heights: HistoryHeights,
     cache_block_req: Option<VerifyBlockReq>,
     history_hashes: HashMap<u64, HashSet<H256>>,
     dispatcher: Dispatcher,
-    check_quota: bool,
-    block_gas_limit: u64,
-    account_gas_limit: AccountGasLimit,
     tx_request: Sender<Request>,
     tx_pool_limit: usize,
     is_snapshot: bool,
     black_list_cache: HashMap<Address, i8>,
     is_need_proposal_new_block: bool,
-    admin_address: Option<Address>,
+    config_info: SysConfigInfo,
 }
 
 impl MsgHandler {
@@ -262,20 +261,26 @@ impl MsgHandler {
             cache_block_req: None,
             history_hashes: HashMap::with_capacity(BLOCKLIMIT as usize),
             dispatcher,
-            check_quota: false,
-            block_gas_limit: 0,
-            account_gas_limit: AccountGasLimit::new(),
             tx_request,
             tx_pool_limit,
             is_snapshot: false,
             black_list_cache: HashMap::new(),
             is_need_proposal_new_block: false,
-            admin_address: None,
+            config_info: SysConfigInfo {
+                block_quota_limit: 0,
+                account_quota_limit: AccountGasLimit::new(),
+                check_quota: false,
+                admin_address: None,
+                version: None,
+            },
         }
     }
 
     fn is_ready(&self) -> bool {
-        self.history_heights.is_init() && self.chain_id.is_some() && !self.is_snapshot
+        self.history_heights.is_init()
+            && self.chain_id.is_some()
+            && !self.is_snapshot
+            && self.config_info.version.is_some()
     }
 
     fn is_flow_control(&self, tx_count: usize) -> bool {
@@ -312,7 +317,7 @@ impl MsgHandler {
         }
     }
 
-    #[allow(unknown_lints, option_option)] // TODO clippy
+    #[allow(unknown_lints, clippy::option_option)] // TODO clippy
     fn get_ret_from_cache(&self, tx_hash: &H256) -> Option<Option<Vec<u8>>> {
         self.cache.peek(tx_hash).cloned()
     }
@@ -323,10 +328,17 @@ impl MsgHandler {
 
     pub fn verify_block_quota(&self, blkreq: &VerifyBlockReq) -> bool {
         let reqs = blkreq.get_reqs();
-        let gas_limit = self.account_gas_limit.get_common_gas_limit();
-        let mut specific_gas_limit = self.account_gas_limit.get_specific_gas_limit().clone();
+        let quota_limit = self
+            .config_info
+            .account_quota_limit
+            .get_common_quota_limit();
+        let mut specific_quota_limit = self
+            .config_info
+            .account_quota_limit
+            .get_specific_quota_limit()
+            .clone();
         let mut account_gas_used: HashMap<Address, u64> = HashMap::new();
-        let mut n = self.block_gas_limit;
+        let mut n = self.config_info.block_quota_limit;
         for req in reqs {
             let quota = req.get_quota();
             let signer = pubkey_to_address(&PubKey::from(req.get_signer()));
@@ -335,12 +347,12 @@ impl MsgHandler {
                 return false;
             }
 
-            if self.check_quota {
+            if self.config_info.check_quota {
                 let value = account_gas_used.entry(signer).or_insert_with(|| {
-                    if let Some(value) = specific_gas_limit.remove(&signer.lower_hex()) {
+                    if let Some(value) = specific_quota_limit.remove(&signer.lower_hex()) {
                         value
                     } else {
-                        gas_limit
+                        quota_limit
                     }
                 });
                 if *value < quota {
@@ -355,20 +367,24 @@ impl MsgHandler {
     }
 
     pub fn verify_tx_quota(&self, quota: u64, signer: &[u8]) -> bool {
-        if quota > self.block_gas_limit {
+        if quota > self.config_info.block_quota_limit {
             return false;
         }
-        if self.check_quota {
+        if self.config_info.check_quota {
             let addr = pubkey_to_address(&PubKey::from(signer));
-            let mut gas_limit = self.account_gas_limit.get_common_gas_limit();
+            let mut quota_limit = self
+                .config_info
+                .account_quota_limit
+                .get_common_quota_limit();
             if let Some(value) = self
-                .account_gas_limit
-                .get_specific_gas_limit()
+                .config_info
+                .account_quota_limit
+                .get_specific_quota_limit()
                 .get(&addr.lower_hex())
             {
-                gas_limit = *value;
+                quota_limit = *value;
             }
-            if quota > gas_limit {
+            if quota > quota_limit {
                 return false;
             }
         }
@@ -480,6 +496,41 @@ impl MsgHandler {
         self.publish_block_verification_result(request_id, Ret::OK);
     }
 
+    // verify to and version
+    fn verify_request(&self, req: &Request) -> Ret {
+        let un_tx = req.get_un_tx();
+        let tx = un_tx.get_transaction();
+        let tx_version = tx.get_version();
+        if tx_version != self.config_info.version.unwrap() {
+            return Ret::InvalidVersion;
+        }
+        if tx_version == 0 {
+            // new to must be empty
+            if !tx.get_to_v1().is_empty() {
+                return Ret::InvalidValue;
+            }
+            let to = clean_0x(tx.get_to());
+            if !to.is_empty() && Address::from_str(to).is_err() {
+                return Ret::InvalidValue;
+            }
+        } else if tx_version == 1 {
+            // old to must be empty
+            if !tx.get_to().is_empty() {
+                return Ret::InvalidValue;
+            }
+            // check to_v1
+            let to = tx.get_to_v1();
+            if !to.is_empty() && to.len() != 20 {
+                return Ret::InvalidValue;
+            }
+        } else {
+            error!("unexpected version {}!", tx_version);
+            return Ret::InvalidValue;
+        }
+
+        Ret::OK
+    }
+
     /// Verify black list
     fn verify_black_list(&self, req: &VerifyTxReq) -> Ret {
         if let Some(credit) = self
@@ -496,11 +547,51 @@ impl MsgHandler {
         }
     }
 
+    fn verify_tx_req_chain_id(&self, req: &VerifyTxReq) -> Ret {
+        let version = self.config_info.version.unwrap();
+
+        let chain_id = match version {
+            0 => {
+                // new chain id must be empty
+                if !req.get_chain_id_v1().is_empty() {
+                    None
+                } else {
+                    let chain_id = req.get_chain_id();
+                    Some(ChainId::V0(chain_id))
+                }
+            }
+            1 => {
+                // old chain id must be empty
+                if req.get_chain_id() != 0 || req.get_chain_id_v1().len() != 32 {
+                    None
+                } else {
+                    let chain_id = U256::from(req.get_chain_id_v1());
+                    Some(ChainId::V1(chain_id))
+                }
+            }
+            _ => {
+                error!("unexpected version {}!", version);
+                None
+            }
+        };
+
+        if chain_id != self.chain_id {
+            trace!(
+                "tx chain_id {:?}, self.chain_id {:?}",
+                chain_id.unwrap(),
+                self.chain_id
+            );
+            return Ret::BadChainId;
+        }
+
+        Ret::OK
+    }
+
     // verify chain id, nonce, valid_until_block, dup, quota and black list
     fn verify_tx_req(&self, req: &VerifyTxReq) -> Ret {
-        let chain_id = req.get_chain_id();
-        if chain_id != self.chain_id.unwrap() {
-            return Ret::BadChainId;
+        let ret = self.verify_tx_req_chain_id(req);
+        if ret != Ret::OK {
+            return ret;
         }
 
         if req.get_nonce().len() > 128 {
@@ -512,6 +603,7 @@ impl MsgHandler {
         }
 
         if self
+            .config_info
             .admin_address
             .map(|admin| pubkey_to_address(&PubKey::from_slice(req.get_signer())) != admin)
             .unwrap_or_else(|| false)
@@ -575,11 +667,11 @@ impl MsgHandler {
             .unwrap();
     }
 
-    fn publish_tx_success_result(&self, request_id: Vec<u8>, ret: Ret, tx_hash: H256) {
+    fn publish_tx_success_result(&self, request_id: Vec<u8>, tx_hash: H256) {
         let mut response = Response::new();
         response.set_request_id(request_id);
 
-        let result = format!("{:?}", ret);
+        let result = format!("{:?}", Ret::OK);
         let tx_response = TxResponse::new(tx_hash, result.clone());
         let tx_state = serde_json::to_string(&tx_response).unwrap();
         response.set_tx_state(tx_state);
@@ -616,6 +708,11 @@ impl MsgHandler {
             warn!("Too frequent to send request!");
             return;
         }
+        trace!(
+            "send block tx hashes request {} to {}",
+            self.history_heights.min_height(),
+            self.history_heights.max_height()
+        );
         for i in self.history_heights.min_height()..self.history_heights.max_height() {
             if !self.history_hashes.contains_key(&i) {
                 self.send_single_block_tx_hashes_req(i);
@@ -628,7 +725,9 @@ impl MsgHandler {
     pub fn handle_remote_msg(&mut self) {
         loop {
             // send request to get chain id if we have not got it
-            if self.chain_id.is_none() {
+            // chain id need version
+            // so get chain id after get version
+            if self.chain_id.is_none() && self.config_info.version.is_some() {
                 trace!("chain id is not ready");
                 let msg: Message = MiscellaneousReq::new().into();
                 self.tx_pub
@@ -659,22 +758,12 @@ impl MsgHandler {
                     }
                 }
 
-                if self.is_need_proposal_new_block {
-                    // if not ready we will proposal empty blk by set block_gas_limit 0
-                    let block_gas_limit = if self.is_ready() {
-                        self.block_gas_limit
-                    } else {
-                        0
-                    };
+                if self.is_need_proposal_new_block && self.is_ready() {
                     self.dispatcher.proposal_tx_list(
                         (self.history_heights.next_height() - 1) as usize, // todo fix bft
                         &self.tx_pub,
-                        block_gas_limit,
-                        self.account_gas_limit.clone(),
-                        self.check_quota,
-                        &self.admin_address,
+                        &self.config_info,
                     );
-
                     // after proposal new block clear flag
                     self.is_need_proposal_new_block = false;
                 }
@@ -684,6 +773,7 @@ impl MsgHandler {
             if let Ok((key, payload)) = self.rx_sub.recv_timeout(Duration::new(3, 0)) {
                 let mut msg = Message::try_from(&payload).unwrap();
                 let rounting_key = RoutingKey::from(&key);
+                trace!("process message key = {}", key);
                 match rounting_key {
                     // we got this message when chain reach new height or response the BlockTxHashesReq
                     routing_key!(Chain >> BlockTxHashes) => {
@@ -705,8 +795,7 @@ impl MsgHandler {
                     }
                     routing_key!(Executor >> Miscellaneous) => {
                         let miscellaneous = msg.take_miscellaneous().unwrap();
-                        info!("Get chain_id({}) from executor", miscellaneous.chain_id);
-                        self.chain_id = Some(miscellaneous.chain_id);
+                        self.deal_miscellaneous(&miscellaneous);
                     }
                     routing_key!(Snapshot >> SnapshotReq) => {
                         let snapshot_req = msg.take_snapshot_req().unwrap();
@@ -731,17 +820,28 @@ impl MsgHandler {
             || (self.history_heights.next_height() == 1 && height == 0)
         {
             // get latest quota info from chain
-            let block_gas_limit = block_tx_hashes.get_block_gas_limit();
-            let account_gas_limit = block_tx_hashes.get_account_gas_limit().clone();
+            let block_quota_limit = block_tx_hashes.get_block_quota_limit();
+            let account_quota_limit = block_tx_hashes.get_account_quota_limit().clone();
             let check_quota = block_tx_hashes.get_check_quota();
-            self.check_quota = check_quota;
-            self.block_gas_limit = block_gas_limit;
-            self.account_gas_limit = account_gas_limit.clone();
-            self.admin_address = if block_tx_hashes.get_admin_address().is_empty() {
+            self.config_info.check_quota = check_quota;
+            self.config_info.block_quota_limit = block_quota_limit;
+            self.config_info.account_quota_limit = account_quota_limit.clone();
+            self.config_info.admin_address = if block_tx_hashes.get_admin_address().is_empty() {
                 None
             } else {
                 Some(Address::from(block_tx_hashes.get_admin_address()))
             };
+            if block_tx_hashes.get_version() == 1 && self.config_info.version == Some(0) {
+                trace!("Fetch new chain id");
+                let msg: Message = MiscellaneousReq::new().into();
+                self.tx_pub
+                    .send((
+                        routing_key!(Auth >> MiscellaneousReq).into(),
+                        msg.try_into().unwrap(),
+                    ))
+                    .unwrap();
+            }
+            self.config_info.version = Some(block_tx_hashes.get_version());
 
             // need to proposal new block
             self.is_need_proposal_new_block = true;
@@ -812,7 +912,7 @@ impl MsgHandler {
         self.process_block_verify(blk_req);
     }
 
-    #[allow(unknown_lints, cyclomatic_complexity)] // TODO clippy
+    #[allow(unknown_lints, clippy::cyclomatic_complexity)] // TODO clippy
     fn deal_request(&mut self, is_local: bool, newtx_req: Request) {
         if newtx_req.has_batch_req() {
             let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
@@ -909,7 +1009,7 @@ impl MsgHandler {
                     }
                 })
                 .filter(|(_tx_hash, (ref _req, ref tx_req, _flag))| {
-                    let ret = verify_request(tx_req);
+                    let ret = self.verify_request(tx_req);
                     if ret != Ret::OK {
                         if is_local {
                             let request_id = tx_req.get_request_id().to_vec();
@@ -940,13 +1040,13 @@ impl MsgHandler {
                     let request_id = tx_req.get_request_id().to_vec();
                     if self.dispatcher.add_tx_to_pool(&signed_tx) {
                         if is_local {
-                            self.publish_tx_success_result(request_id, Ret::OK, tx_hash);
+                            self.publish_tx_success_result(request_id, tx_hash);
                         }
                         // new tx need forward to other nodes
                         self.forward_request(tx_req.clone());
                     } else if is_local {
                         // dup with transaction in tx pool
-                        self.publish_tx_success_result(request_id, Ret::Dup, tx_hash);
+                        self.publish_tx_failed_result(request_id, Ret::Dup);
                     }
                 });
         } else if newtx_req.has_un_tx() {
@@ -1000,7 +1100,7 @@ impl MsgHandler {
                 return;
             }
 
-            let ret = verify_request(&newtx_req);
+            let ret = self.verify_request(&newtx_req);
             if ret != Ret::OK {
                 if is_local {
                     self.publish_tx_failed_result(request_id, ret);
@@ -1024,13 +1124,13 @@ impl MsgHandler {
             signed_tx.set_tx_hash(tx_hash.to_vec());
             if self.dispatcher.add_tx_to_pool(&signed_tx) {
                 if is_local {
-                    self.publish_tx_success_result(request_id, Ret::OK, tx_hash);
+                    self.publish_tx_success_result(request_id, tx_hash);
                 }
                 // new tx need forward to other nodes
                 self.forward_request(newtx_req);
             } else if is_local {
                 // dup with transaction in tx pool
-                self.publish_tx_success_result(request_id, Ret::Dup, tx_hash);
+                self.publish_tx_failed_result(request_id, Ret::Dup);
             }
         }
     }
@@ -1089,6 +1189,26 @@ impl MsgHandler {
                     (&msg).try_into().unwrap(),
                 ))
                 .unwrap();
+        }
+    }
+
+    fn deal_miscellaneous(&mut self, miscellaneous: &Miscellaneous) {
+        if let Some(version) = self.config_info.version {
+            self.chain_id = if version == 0 {
+                Some(ChainId::V0(miscellaneous.chain_id))
+            } else if version == 1 {
+                if miscellaneous.chain_id_v1.len() == 32 {
+                    Some(ChainId::V1(U256::from(
+                        miscellaneous.chain_id_v1.as_slice(),
+                    )))
+                } else {
+                    None
+                }
+            } else {
+                error!("unexpected version {}!", version);
+                None
+            };
+            info!("Get chain_id({:?}) from executor", self.chain_id);
         }
     }
 }

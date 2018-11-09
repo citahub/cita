@@ -93,7 +93,7 @@ The`create_cita_config.py`in the release directory is used to generate the node 
 The tool defaults to generate a Demo with 4 local nodes:
 
 ```shell
-./env.sh ./scripts/create_cita_config.py create --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
+./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003"
 ```
 
 In the production environment, user needs to change the default configuration according to the actual situation.
@@ -196,7 +196,7 @@ To plan related port configuration for deploy multiple chains on different serve
 Deploying multiple chains on the one server, in addition to planning port configuration, due to the `rabbmitmq` system service limitation, multiple chains can only be run in one docker. Generate a new chain based on the directory where the `test-chain` :
 
   ```shell
-  ./env.sh ./scripts/create_cita_config.py create --chain_name test2-chain --jsonrpc_port 2337 --ws_port 5337 --grpc_port 6000 --nodes "127.0.0.1:8000,127.0.0.1:8001,127.0.0.1:8002,127.0.0.1:8003"
+  ./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" --chain_name test2-chain --jsonrpc_port 2337 --ws_port 5337 --grpc_port 6000 --nodes "127.0.0.1:8000,127.0.0.1:8001,127.0.0.1:8002,127.0.0.1:8003"
   ```
   
   Run test2-chain is the same as the test-chain, and can only be run in the same docker.

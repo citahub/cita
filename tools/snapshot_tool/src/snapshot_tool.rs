@@ -19,12 +19,10 @@ use libproto::blockchain::Proof;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq};
 use libproto::Message;
-use std::cell::Cell;
 use std::convert::{TryFrom, TryInto};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
-use util::RwLock;
 
 #[derive(Clone, Copy)]
 enum AckType {
@@ -51,71 +49,88 @@ impl From<SubModules> for AckType {
     }
 }
 
-#[derive(Clone)]
-struct GotAck {
-    // (bool, bool) = (whether or not received response, whether or not succeed)
-    chain: Cell<(bool, bool)>,
-    executor: Cell<(bool, bool)>,
-    auth: Cell<(bool, bool)>,
-    consensus: Cell<(bool, bool)>,
-    net: Cell<(bool, bool)>,
+#[derive(Clone, Copy)]
+struct AckStatus {
+    have_received: bool,
+    is_succeed: bool,
 }
 
-impl Default for GotAck {
+impl Default for AckStatus {
     fn default() -> Self {
-        GotAck {
-            chain: Cell::new((false, false)),
-            executor: Cell::new((false, false)),
-            auth: Cell::new((false, false)),
-            consensus: Cell::new((false, false)),
-            net: Cell::new((false, false)),
+        AckStatus {
+            have_received: false,
+            is_succeed: false,
         }
     }
 }
 
-impl GotAck {
-    // set ack with received msgs.
-    pub fn set(&self, ack: AckType, is_succeed: bool) {
-        match ack {
-            AckType::Chain => self.chain.set((true, is_succeed)),
-            AckType::Executor => self.executor.set((true, is_succeed)),
-            AckType::Auth => self.auth.set((true, is_succeed)),
-            AckType::Consensus => self.consensus.set((true, is_succeed)),
-            AckType::Net => self.net.set((true, is_succeed)),
+#[derive(Clone)]
+struct GotAcks {
+    // (bool, bool) = (whether or not received response, whether or not succeed)
+    chain: AckStatus,
+    executor: AckStatus,
+    auth: AckStatus,
+    consensus: AckStatus,
+    net: AckStatus,
+}
+
+impl Default for GotAcks {
+    fn default() -> Self {
+        let ack_status = AckStatus::default();
+
+        GotAcks {
+            chain: ack_status,
+            executor: ack_status,
+            auth: ack_status,
+            consensus: ack_status,
+            net: ack_status,
         }
+    }
+}
+
+impl GotAcks {
+    fn get_position(&self, ack: AckType) -> &AckStatus {
+        match ack {
+            AckType::Chain => &self.chain,
+            AckType::Executor => &self.executor,
+            AckType::Auth => &self.auth,
+            AckType::Consensus => &self.consensus,
+            AckType::Net => &self.net,
+        }
+    }
+    fn get_mut_position(&mut self, ack: AckType) -> &mut AckStatus {
+        match ack {
+            AckType::Chain => &mut self.chain,
+            AckType::Executor => &mut self.executor,
+            AckType::Auth => &mut self.auth,
+            AckType::Consensus => &mut self.consensus,
+            AckType::Net => &mut self.net,
+        }
+    }
+    // set ack with received msgs.
+    pub fn set(&mut self, ack_type: AckType, is_succeed: bool) {
+        let p = self.get_mut_position(ack_type);
+        *p = AckStatus {
+            have_received: true,
+            is_succeed,
+        };
     }
 
     // reset ack
-    pub fn reset(&self, ack: AckType) {
-        match ack {
-            AckType::Chain => self.chain.set((false, false)),
-            AckType::Executor => self.executor.set((false, false)),
-            AckType::Auth => self.auth.set((false, false)),
-            AckType::Consensus => self.consensus.set((false, false)),
-            AckType::Net => self.net.set((false, false)),
-        }
+    pub fn reset(&mut self, ack_type: AckType) {
+        let p = self.get_mut_position(ack_type);
+        *p = AckStatus::default();
     }
 
     // whether or not received response.
-    pub fn get(&self, ack: AckType) -> bool {
-        match ack {
-            AckType::Chain => self.chain.get().0,
-            AckType::Executor => self.executor.get().0,
-            AckType::Auth => self.auth.get().0,
-            AckType::Consensus => self.consensus.get().0,
-            AckType::Net => self.net.get().0,
-        }
+    pub fn get(&self, ack_type: AckType) -> bool {
+        self.get_position(ack_type).have_received
     }
 
     // whether or not received response and the result is succeed.
-    pub fn is_succeed(&self, ack: AckType) -> bool {
-        match ack {
-            AckType::Chain => self.chain.get().0 && self.chain.get().1,
-            AckType::Executor => self.executor.get().0 && self.executor.get().1,
-            AckType::Auth => self.auth.get().0 && self.auth.get().1,
-            AckType::Consensus => self.consensus.get().0 && self.consensus.get().1,
-            AckType::Net => self.net.get().0 && self.net.get().0,
-        }
+    pub fn is_succeed(&self, ack_type: AckType) -> bool {
+        let p = self.get_position(ack_type);
+        p.have_received && p.is_succeed
     }
 }
 
@@ -124,9 +139,9 @@ pub struct SnapShot {
     start_height: u64,
     end_height: u64,
     file: String,
-    acks: GotAck,
-    proof: RwLock<Proof>,
-    restore_height: Cell<u64>,
+    acks: GotAcks,
+    proof: Proof,
+    restore_height: u64,
 }
 
 impl SnapShot {
@@ -141,14 +156,14 @@ impl SnapShot {
             start_height,
             end_height,
             file,
-            acks: GotAck::default(),
-            proof: RwLock::new(Proof::new()),
-            restore_height: Cell::new(0),
+            acks: GotAcks::default(),
+            proof: Proof::new(),
+            restore_height: 0,
         }
     }
 
     // parse resp data
-    pub fn parse_data(&self, key: &str, msg_vec: &[u8]) -> bool {
+    pub fn parse_data(&mut self, key: &str, msg_vec: &[u8]) -> bool {
         let mut msg = Message::try_from(msg_vec).unwrap();
 
         let routing_key = RoutingKey::from(key);
@@ -161,7 +176,7 @@ impl SnapShot {
         }
     }
 
-    fn parse_resp(&self, msg: &mut Message, routing_key: RoutingKey) -> bool {
+    fn parse_resp(&mut self, msg: &mut Message, routing_key: RoutingKey) -> bool {
         let sub_module = routing_key.get_sub_module();
 
         let snapshot_resp = msg.take_snapshot_resp().unwrap();
@@ -191,8 +206,8 @@ impl SnapShot {
             Resp::RestoreAck => {
                 info!("receive restore ack, sub_module = {:?}", sub_module);
                 if sub_module == SubModules::Chain {
-                    *self.proof.write() = snapshot_resp.get_proof().clone();
-                    self.restore_height.set(snapshot_resp.get_height());
+                    self.proof = snapshot_resp.get_proof().clone();
+                    self.restore_height = snapshot_resp.get_height();
                 }
 
                 if self.acks.get(AckType::Chain) && self.acks.get(AckType::Executor) {
@@ -272,8 +287,8 @@ impl SnapShot {
         thread::sleep(Duration::new(5, 0));
         let mut req = SnapshotReq::new();
         req.set_cmd(Cmd::End);
-        req.set_proof(self.proof.read().clone());
-        req.set_end_height(self.restore_height.get());
+        req.set_proof(self.proof.clone());
+        req.set_end_height(self.restore_height);
         self.send_cmd(&req);
     }
 

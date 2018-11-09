@@ -1,7 +1,7 @@
 # CITA JSON-RPC
 
 !> **Methods Name Changed ！**
-For the user of V0.16 and older versions: Please pay attention that we deprecated the pre-fix in the name of Json-RPC interfaces, which makes it looks more tidy and easier to use.
+For the user of V0.16 and older versions: Please pay attention that we deprecated the pre-fix in the name of JSON-RPC interfaces, which makes it looks more tidy and easier to use.
 
 <h2 class="hover-list">JSON-RPC</h2>
 
@@ -27,6 +27,7 @@ For the user of V0.16 and older versions: Please pay attention that we deprecate
 * [getMetaData](#getmetadata)
 * [getBlockHeader](#getblockheader)
 * [getStateProof](#getstateproof)
+* [getStorageAt](#getstorageat)
 
 ***
 
@@ -639,7 +640,7 @@ params: [
 * Parameters
 
     1. `Data20` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -670,7 +671,7 @@ params: [
 * Parameters
 
     1. `Data20` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -700,7 +701,7 @@ params: [
 * Parameters
 
     1. `Data20` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -820,7 +821,7 @@ $ cita-cli rpc getAbi \
 * Parameters
 
     1. `Data` - address.
-    2. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
@@ -1035,7 +1036,7 @@ params: [
 
 * Parameters
 
-    1. `BlockNumber`, integer of a block height or "latest"
+    1. `BlockNumber`, `BlockNumber`
 
 ```json
 params: [
@@ -1095,7 +1096,7 @@ Get block header by block number. For sidechain.
 
 * Parameters
 
-    1. `BlockNumber`, integer of a block height or "latest"
+    1. `BlockNumber`, `BlockNumber`
 
 ```json
 params: [
@@ -1130,7 +1131,7 @@ Get proof of a special variable at special block number. For sidechain.
 
     1. `Data20` - address.
     2. `Data32` - key, position of the variable
-    3. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+    3. `BlockNumber` - `BlockNumber`
 
 * Returns
     `Data` - State proof of special value. Include address, account proof, key, value proof.
@@ -1146,6 +1147,35 @@ Get proof of a special variable at special block number. For sidechain.
         "jsonrpc": "2.0",
         "id": 1,
         "result": "0xf902a594ad54ae137c6c39fa413fa1da7db6463e3ae45664f901eeb90114f9011180a088e2efeed0516020141cbbba149711e0ce67634363097a441520704040aa8dd9a0479ca451cdb343dd2eedbf313e805983e87c0f4f16e9c14f28ab3f1750eb1b8e80a0dd94e00536c62d8c801b8496fb0834ab7225954bac452a7d14c0f4a35df81074a07c689f1111314c391b164c458f902366bb18b90a53d9000a1ffd41abc96373d380808080a0b219eebc746ca232aa4a839213565d1932b4b952c93c5aa585e226ac5412d836a0b758264786a8fb6eaa6f7f2185a3f38111de3c532517ef4e46b99b80e4866d27a093ddedf515207b9a68b50f5f344aae23e709316d96345b146746ae2e511893178080a03b5530655278a731d4c895c92359fb217c64f9fde0c6945339863638396627f480b853f851808080808080808080808080a0d7a0fd35748eceb8fc8040517033416adcfb5523f4abe9789b749700c36b4ba5a0e4fe51db54afdd475e2c50888623567385f2b3694ffdb33c92a1bc782de44be7808080b880f87e942054ae137c6c39fa413fa1da7db6463e3ae45664b867f8658080a0a860517f2f639d5c3e9e8a8c04ef6c71018e18cd0881099776a73653973f90a4a00f1cd9fb6dda499878b60cdb90cf0acf25424afb5583131e4dff5e512cd64a4da0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470a0a40893b0c723e74515c3164afb5b2a310dd5854fac8823bfbffa1d912e98423ef87cb853f851a02c839c2946385ef0a820355b6969c49c97bdaa6a19b02384bcc39c992046d6b9808080808080808080a051be428c087e3544a47f273c93ffcb9999267593d3b36042a9d3e96ed068fceb808080808080a6e5a0340893b0c723e74515c3164afb5b2a310dd5854fac8823bfbffa1d912e98423e83827a02"
+    }
+    ```
+
+***
+
+### getStorageAt
+
+获取合约中在指定高度的 Key 对应的值。
+
+* Parameters
+
+    1. `Data20` - address.
+    2. `Data32` - key, position of the variable
+    3. `BlockNumber` - integer block number(Hex string), or the string "latest", "earliest"
+
+* Returns
+    `Data` - H256 value of the key in address.
+* Example
+
+    ```shell
+    curl -X POST --data '{"jsonrpc":"2.0","method":"getStorageAt","params":["0xffffffffffffffffffffffffffffffffff020000", "0x0000000000000000000000000000000000000000000000000000000000000007", "16"],"id":1}' 127.0.0.1:1337
+    ```
+
+    ```json
+    // Result
+    {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x000000000000000000000000ffffffffffffffffffffffffffffffffff02000d"
     }
     ```
 

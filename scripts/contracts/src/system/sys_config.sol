@@ -3,64 +3,11 @@ pragma solidity ^0.4.24;
 import "../common/model_type.sol";
 import "../common/admin.sol";
 import "../common/address.sol";
-
-
-/// @title The interface of system config
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
-interface SysConfigInterface {
-    /// @notice Update current chain name
-    function setChainName(string) external;
-
-    /// @notice Update current operator
-    function setOperator(string) external;
-
-    /// @notice Update current operator's website URL
-    function setWebsite(string) external;
-
-    /// @notice Get delay block number before validate
-    function getDelayBlockNumber() external view returns (uint);
-
-    /// @notice Whether check permission in the system or not, true represents check and false represents don't check.
-    function getPermissionCheck() external view returns (bool);
-
-    /// @notice Check sender's send transaction permission
-    function getSendTxPermissionCheck() external view returns (bool);
-
-    /// @notice Check sender's create contract permission
-    function getCreateContractPermissionCheck() external view returns (bool);
-
-    /// @notice Whether check quota in the system or not, true represents check and false represents don't check.
-    function getQuotaCheck() external view returns (bool);
-
-    /// @notice Whether check transaction fee back to operation platform or not, true represents back to platform and false represents back to nodes
-    function getFeeBackPlatformCheck() external view returns (bool);
-
-    /// @notice The owner of the chain
-    function getChainOwner() external view returns (address);
-
-    /// @notice The name of current chain
-    function getChainName() external view returns (string);
-
-    /// @notice The id of current chain
-    function getChainId() external view returns (uint32);
-
-    /// @notice The operator of current chain
-    function getOperator() external view returns (string);
-
-    /// @notice Current operator's website URL
-    function getWebsite() external view returns (string);
-
-    /// @notice The interval time for creating a block (milliseconds)
-    function getBlockInterval() external view returns (uint64);
-
-    /// @notice The token information
-    function getTokenInfo() external view returns (string, string, string);
-}
-
+import "../interfaces/sys_config.sol";
 
 /// @title System config contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
-contract SysConfig is SysConfigInterface, EconomicalType, ReservedAddress {
+contract SysConfig is ISysConfig, EconomicalType, ReservedAddress {
 
     /// @notice only chain_name, operator, website can be updated
     uint delayBlockNumber;
@@ -79,6 +26,7 @@ contract SysConfig is SysConfigInterface, EconomicalType, ReservedAddress {
     TokenInfo tokenInfo;
 
     Admin admin = Admin(adminAddr);
+    uint chainIdV1;
 
     modifier onlyAdmin {
         if (admin.isAdmin(msg.sender))
@@ -102,7 +50,7 @@ contract SysConfig is SysConfigInterface, EconomicalType, ReservedAddress {
         bool _checkFeeBackPlatform,
         address _chainOwner,
         string _chainName,
-        uint32 _chainId,
+        uint _chainId,
         string _operator,
         string _website,
         uint64 _blockInterval,
@@ -122,7 +70,8 @@ contract SysConfig is SysConfigInterface, EconomicalType, ReservedAddress {
         checkFeeBackPlatform = _checkFeeBackPlatform;
         chainOwner = _chainOwner;
         chainName = _chainName;
-        chainId = _chainId;
+        chainId = uint32(_chainId);
+        chainIdV1 = _chainId;
         operator = _operator;
         website = _website;
         blockInterval = _blockInterval;
@@ -153,6 +102,13 @@ contract SysConfig is SysConfigInterface, EconomicalType, ReservedAddress {
         onlyAdmin
     {
         chainName = _chainName;
+    }
+
+    function updateToChainIdV1()
+        external
+        onlyAdmin
+    {
+        chainIdV1 = uint(chainId);
     }
 
     function getDelayBlockNumber()
@@ -225,6 +181,14 @@ contract SysConfig is SysConfigInterface, EconomicalType, ReservedAddress {
         returns (uint32)
     {
         return chainId;
+    }
+
+    function getChainIdV1()
+        public
+        view
+        returns (uint)
+    {
+        return chainIdV1;
     }
 
     function getOperator()

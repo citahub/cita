@@ -32,7 +32,7 @@ CITA 作为联盟链共识节点采用轮流出块的方式进行出块。作为
 2. 生成新 node：
 
     ```bash
-    $ ./scripts/create_cita_config.py append --node "127.0.0.1:4004"
+    $ ./scripts/create_cita_config.py append --chain_name test-chain --node "127.0.0.1:4004"
     $ ls test-chain/
       0  1  2  3  4  template
     ```
@@ -70,80 +70,13 @@ CITA 作为一个面向企业级应用的区块链框架，需要保证监管方
 * 设置共识节点权重；
 * 获取共识节点权重千分比。
 
-### 共识节点管理合约接口
-
-<table>
-  <tr>
-    <th>名称</th>
-    <th>需要权限</th>
-    <th>传入参数</th>
-    <th>返回值</th>
-    <th>详细描述</th>
-  </tr>
-  <tr>
-    <td>approveNode(address) <br/> <strong>确认共识节点</strong></td>
-    <td>管理员权限</td>
-    <td>新增共识节点地址</td>
-    <td>操作是否成功 (bool)</td>
-    <td>新节点成功准备后，可调用此方法确认节点成为共识节点，同时节点将处于 start 状态</td>
-  </tr>
-  <tr>
-    <td>deleteNode(address) <br/> <strong>删除共识节点</strong></td>
-    <td>管理员权限</td>
-    <td>节点地址</td>
-    <td>操作是否成功 (bool)</td>
-    <td>成功后节点将从节点列表中删除，同时节点将处于 close 状态</td>
-  </tr>
-  <tr>
-    <td>listNode() <br/> <strong>获取共识节点列表</strong></td>
-    <td>普通权限(只读)</td>
-    <td>空</td>
-    <td>地址列表(address[])</td>
-    <td>获取共识节点列表，即状态为 start 的节点</td>
-  </tr>
-  <tr>
-    <td>listStake() <br/> <strong>获取共识节点Stake列表</strong></td>
-    <td>普通权限(只读)</td>
-    <td>空</td>
-    <td>地址列表(uint64[] _stakes)</td>
-    <td>获取共识节点Stake列表</td>
-  </tr>
-  <tr>
-    <td>setStake(address,uint64) <br/> <strong>设置共识节点Stake</strong></td>
-    <td>管理员权限</td>
-    <td>节点地址，Stake</td>
-    <td>操作是否成功 (bool)</td>
-    <td>设置共识节点Stake</td>
-  </tr>
-  <tr>
-    <td>stakePermillage(address _node) <br/> <strong>获取共识节点出块权重千分比</strong></td>
-    <td>普通权限(只读)</td>
-    <td>节点地址</td>
-    <td>权重千分比 (uint64)</td>
-    <td>获取共识节点节点出块权重千分比（省略小数部分）</td>
-  </tr>
-  <tr>
-    <td>getStatus(address) <br/> <strong>获得节点状态</strong></td>
-    <td>普通权限(只读)</td>
-    <td>节点地址</td>
-    <td>
-      节点的状态 (uint8):
-      <ul>
-        <li>0: close 状态</li>
-        <li>1: start 状态</li>
-      </ul>
-    </td>
-    <td>获取共识节点状态</td>
-  </tr>
-</table>
-
 ### 增加共识节点
 
 节点需先被添加成为普通节点（参考普通节点管理），才能申请成为共识节点，由管理员(拥有管理员角色的账号)确认才完成了添加操作。
 
 从普通节点升级到共识节点，具体操作需要用到上面合约方法 `approveNode(address)`。
 
-共识节点管理合约是系统合约，默认将放在创世块上，下面是共识节点管理合约的 hash：
+共识节点管理合约是系统合约，默认将放在创世块上，下面使用 [solc](https://solidity-cn.readthedocs.io/zh/develop/installing-solidity.html) 命令(solidity 的命令行编译器，在 cita 镜像中已安装)查看共识节点管理合约的 hash：
 
 ```bash
 # solc --hashes system/node_manager.sol --allow-paths .
@@ -161,7 +94,7 @@ Function signatures:
 
 *首先需要启动一条链，具体方法见快速入门部分*
 
-接下来的测试，用 cita-cli 命令行模式（与交互式模式的命令是一致的）进行演示。
+接下来的测试，用 [cita-cli](https://github.com/cryptape/cita-cli) 命令行模式（与交互式模式的命令是一致的）进行演示。
 
 #### 查看当前的共识节点列表：
 

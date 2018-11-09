@@ -40,7 +40,7 @@ pub trait AsMillis {
 
 impl AsMillis for Duration {
     fn as_millis(&self) -> u64 {
-        self.as_secs() * 1_000 + u64::from(self.subsec_nanos() / 1_000_000)
+        self.as_secs() * 1_000 + u64::from(self.subsec_millis())
     }
 }
 
@@ -85,6 +85,7 @@ impl BuildBlock {
         tx.set_valid_until_block(valid_until_block);
         tx.set_value(vec![0u8; 32]);
         tx.set_chain_id(123);
+        tx.set_chain_id_v1(vec![]);
         tx.sign(*privkey)
     }
 
@@ -116,7 +117,8 @@ impl BuildBlock {
                 Some(proof.proposal),
             ),
             Infinite,
-        ).unwrap();
+        )
+        .unwrap();
         let signature = Signature::sign(privkey, &msg.crypt_hash()).unwrap();
         commits.insert((*sender).into(), signature);
         proof.commits = commits;

@@ -30,7 +30,7 @@ contract MyToken is CrossChain {
     uint256 txDataSize = 0x20;
 
     function sendToSideChain(
-        uint32 toChainId,
+        uint toChainId,
         address destContract,
         bytes txData
     ) public {

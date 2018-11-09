@@ -53,6 +53,10 @@ NormalContracts:
 - VersionManager:
     address: '0xffffffffffffffffffffffffffffffffff020011'
     file: system/version_manager.sol
+- AllGroups:
+    address: '0xffffffffffffffffffffffffffffffffff020012'
+    file: user_management/all_groups.sol
+
 
 PermissionContracts:
   file: permission_management/permission.sol

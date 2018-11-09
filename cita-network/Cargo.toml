@@ -8,11 +8,8 @@ clap = "2"
 serde = "1.0"
 serde_derive = "1.0"
 futures = "0.1"
-tokio-io = "0.1"
 byteorder = "1.0.0"
-tokio-proto = { git = "https://github.com/cryptape/tokio-proto.git", rev = "7419e3aaca5d89a497acaf379471d53671a94159" }
-tokio-service = "0.1"
-dotenv = "0.10.0"
+dotenv = "0.13.0"
 bytes = "0.4"
 notify = "4.0.0"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -20,6 +17,9 @@ util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop"
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 rand = "0.3.*"
+tokio = "0.1.11"
+native-tls = "0.2.1"
+tokio-tls = "0.2"
 
 [dev-dependencies]
 tempfile = "2"

@@ -15,8 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::{Address, H256};
-use core::contracts::solc::sys_config::SysConfig;
+use cita_types::traits::LowerHex;
+use cita_types::{Address, H256, U256};
+use core::contracts::solc::sys_config::{ChainId, SysConfig};
 use core::contracts::solc::VersionManager;
 use core::db;
 use core::libexecutor::block::{Block, ClosedBlock};
@@ -81,7 +82,7 @@ impl ExecutorInstance {
         let grpc_port = executor_config.grpc_port;
         let executor = Executor::init_executor(Arc::new(db), genesis, &executor_config);
         let executor = Arc::new(executor);
-        executor.set_gas_and_nodes(executor.get_max_height());
+        // send init executed info only have ConsensusConfig
         executor.send_executed_info_to_chain(executor.get_max_height(), &ctx_pub);
         ExecutorInstance {
             ctx_pub,
@@ -319,15 +320,21 @@ impl ExecutorInstance {
     }
 
     fn get_auth_miscellaneous(&self) {
-        let sys_config = SysConfig::new(&self.ext);
-        let chain_id = sys_config
-            .chain_id(None)
-            .unwrap_or_else(SysConfig::default_chain_id);
-        let mut miscellaneous = Miscellaneous::new();
-        miscellaneous.set_chain_id(chain_id);
-        trace!("the chain id captured in executor is {}", chain_id);
-        let msg: Message = miscellaneous.into();
+        let version_manager = VersionManager::new(&self.ext);
 
+        let sys_config = SysConfig::new(&self.ext);
+        let mut miscellaneous = Miscellaneous::new();
+
+        if let Some(chain_id) = sys_config.deal_chain_id_version(&version_manager) {
+            match chain_id {
+                ChainId::V0(v0) => miscellaneous.set_chain_id(v0),
+                ChainId::V1(v1) => miscellaneous.set_chain_id_v1(<[u8; 32]>::from(v1).to_vec()),
+            }
+
+            trace!("miscellaneous msg, chain_id: {:?}", chain_id);
+        }
+
+        let msg: Message = miscellaneous.into();
         self.ctx_pub
             .send((
                 routing_key!(Executor >> Miscellaneous).into(),
@@ -442,6 +449,7 @@ impl ExecutorInstance {
                 let economical_model: EconomicalModel = (*self.ext.economical_model.read()).into();
                 let mut metadata = MetaData {
                     chain_id: 0,
+                    chain_id_v1: U256::from(0).lower_hex(),
                     chain_name: "".to_owned(),
                     operator: "".to_owned(),
                     website: "".to_owned(),
@@ -461,7 +469,8 @@ impl ExecutorInstance {
                         let number = match number {
                             BlockNumber::Tag(BlockTag::Earliest) => 0,
                             BlockNumber::Height(n) => n.into(),
-                            BlockNumber::Tag(BlockTag::Latest) => current_height,
+                            BlockNumber::Tag(BlockTag::Latest) => current_height.saturating_sub(1),
+                            BlockNumber::Tag(BlockTag::Pending) => current_height,
                         };
                         if number > current_height {
                             Err(format!(
@@ -476,19 +485,15 @@ impl ExecutorInstance {
                         let sys_config = SysConfig::new(&self.ext);
                         let block_id = BlockId::Number(number);
                         sys_config
-                            .chain_id(Some(block_id))
-                            .map(|chain_id| metadata.chain_id = chain_id)
-                            .ok_or_else(|| "Query chain id failed".to_owned())?;
-                        sys_config
-                            .chain_name(Some(block_id))
+                            .chain_name(block_id)
                             .map(|chain_name| metadata.chain_name = chain_name)
                             .ok_or_else(|| "Query chain name failed".to_owned())?;
                         sys_config
-                            .operator(Some(block_id))
+                            .operator(block_id)
                             .map(|operator| metadata.operator = operator)
                             .ok_or_else(|| "Query operator failed".to_owned())?;
                         sys_config
-                            .chain_name(Some(block_id))
+                            .website(block_id)
                             .map(|website| metadata.website = website)
                             .ok_or_else(|| "Query website failed".to_owned())?;
                         self.ext
@@ -497,23 +502,34 @@ impl ExecutorInstance {
                             .ok_or_else(|| "Query genesis_timestamp failed".to_owned())?;
                         self.ext
                             .node_manager()
-                            .shuffled_stake_nodes(Some(block_id))
+                            .shuffled_stake_nodes(block_id)
                             .map(|validators| metadata.validators = validators)
                             .ok_or_else(|| "Query validators failed".to_owned())?;
                         sys_config
-                            .block_interval(Some(block_id))
+                            .block_interval(block_id)
                             .map(|block_interval| metadata.block_interval = block_interval)
                             .ok_or_else(|| "Query block_interval failed".to_owned())?;
                         sys_config
-                            .token_info(Some(block_id))
+                            .token_info(block_id)
                             .map(|token_info| {
                                 metadata.token_name = token_info.name;
                                 metadata.token_avatar = token_info.avatar;
                                 metadata.token_symbol = token_info.symbol;
                             })
                             .ok_or_else(|| "Query token info failed".to_owned())?;
-                        metadata.version = VersionManager::get_version(&*self.ext, Some(block_id))
+
+                        let version_manager = VersionManager::new(&*self.ext);
+                        metadata.version = version_manager
+                            .get_version(block_id)
                             .unwrap_or_else(VersionManager::default_version);
+
+                        sys_config
+                            .deal_chain_id_version(&version_manager)
+                            .map(|chain_id| match chain_id {
+                                ChainId::V0(v0) => metadata.chain_id = v0,
+                                ChainId::V1(v1) => metadata.chain_id_v1 = v1.lower_hex(),
+                            })
+                            .ok_or_else(|| "Query chain id failed".to_owned())?;
                         Ok(())
                     });
                 match result {
@@ -549,6 +565,33 @@ impl ExecutorInstance {
                         response.set_error_msg(format!("{:?}", err));
                     });
             }
+            Request::storage_key(skey) => {
+                trace!("storage key info is {:?}", skey);
+                let _ = serde_json::from_str::<BlockNumber>(&skey.height)
+                    .map(|block_id| {
+                        match self.ext.state_at(block_id.into()).and_then(|state| {
+                            state
+                                .storage_at(
+                                    &Address::from(skey.get_address()),
+                                    &H256::from(skey.get_position()),
+                                )
+                                .ok()
+                        }) {
+                            Some(storage_val) => {
+                                response.set_storage_value(storage_val.to_vec());
+                            }
+                            None => {
+                                response.set_code(ErrorCode::query_error());
+                                response
+                                    .set_error_msg("get storage at something failed".to_string());
+                            }
+                        }
+                    })
+                    .map_err(|err| {
+                        response.set_code(ErrorCode::query_error());
+                        response.set_error_msg(format!("{:?}", err));
+                    });
+            }
 
             _ => {
                 error!("bad request msg!!!!");
@@ -572,11 +615,12 @@ impl ExecutorInstance {
         let block = Block::from(proto_block);
 
         debug!(
-            "consensus block {} {:?} tx hash  {:?} len {}",
+            "consensus block {} {:?} tx hash  {:?} len {} version {}",
             block.number(),
             block.hash(),
             block.transactions_root(),
-            block.body().transactions().len()
+            block.body().transactions().len(),
+            block.header.version()
         );
         if self.is_dup_block(block.number()) {
             return;
@@ -793,14 +837,15 @@ impl ExecutorInstance {
         } else {
             proof.height as u64
         };
-        let conf = self.ext.get_sys_config(number);
+        let conf = self.ext.global_config.read().clone();
         let authorities = conf.nodes.clone();
 
-        //fixbug when conf have changed such as adding consensus node
-        let prev_conf = self.ext.get_sys_config(number - 1);
+        // fixbug when conf have changed such as adding consensus node
+        let prev_conf = self.ext.load_config(BlockId::Number(number - 1));
         let prev_authorities = prev_conf.nodes.clone();
 
-        if self.ext.validate_height(number) && self.ext.validate_hash(block.parent_hash())
+        if self.ext.validate_height(number)
+            && self.ext.validate_hash(block.parent_hash())
             && (proof.check(proof_height as usize, &authorities)
                 || proof.check(proof_height as usize, &prev_authorities))
         {

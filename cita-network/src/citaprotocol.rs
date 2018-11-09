@@ -22,18 +22,13 @@ use bytes::BufMut;
 use bytes::BytesMut;
 use std::io;
 use std::str;
-use tokio_io::codec::{Decoder, Encoder, Framed};
-use tokio_io::{AsyncRead, AsyncWrite};
-use tokio_proto::pipeline::ServerProto;
+use tokio::codec::{Decoder, Encoder};
 
 pub type CitaRequest = (String, Vec<u8>);
 pub type CitaResponse = Option<(String, Vec<u8>)>;
 
 /// Our multiplexed line-based codec
 pub struct CitaCodec;
-
-/// Protocol definition
-pub struct CitaProto;
 
 /// Implementation of the multiplexed line-based protocol.
 ///
@@ -83,19 +78,6 @@ impl Encoder for CitaCodec {
     fn encode(&mut self, msg: Self::Item, buf: &mut BytesMut) -> io::Result<()> {
         pubsub_message_to_network_message(buf, msg);
         Ok(())
-    }
-}
-
-impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for CitaProto {
-    type Request = CitaRequest;
-    type Response = CitaResponse;
-
-    /// `Framed<T, CitaCodec>` is the return value of `io.framed(CitaCodec)`
-    type Transport = Framed<T, CitaCodec>;
-    type BindTransport = Result<Self::Transport, io::Error>;
-
-    fn bind_transport(&self, io: T) -> Self::BindTransport {
-        Ok(io.framed(CitaCodec))
     }
 }
 

@@ -1,33 +1,31 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
 const { genContract } = util;
 
-const {
-  abi, addr,
-} = config.contract.authorization;
-
-const contract = genContract(abi, addr);
+const { authorization } = config.contract;
+const abi = JSON.parse(fs.readFileSync('abi/Authorization.abi'));
+const contract = genContract(abi, authorization);
 
 // queryPermissions
-const queryPermissions = account => contract.methods.queryPermissions(account).call();
+const queryPermissions = account => contract.methods.queryPermissions(account).call('pending');
 
 // queryAccounts
-const queryAccounts = perm => contract.methods.queryAccounts(perm).call();
+const queryAccounts = perm => contract.methods.queryAccounts(perm).call('pending');
 
-// checkResource
-const checkResource = (account, cont, func) => contract.methods.checkResource(
+// checkPermission
+const checkPermission = (account, permission) => contract.methods.checkPermission(
   account,
-  cont,
-  func,
-).call();
+  permission,
+).call('pending');
 
 // queryAllAccounts
-const queryAllAccounts = () => contract.methods.queryAllAccounts().call();
+const queryAllAccounts = () => contract.methods.queryAllAccounts().call('pending');
 
 module.exports = {
   queryPermissions,
   queryAccounts,
-  checkResource,
+  checkPermission,
   queryAllAccounts,
 };

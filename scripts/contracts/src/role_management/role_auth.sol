@@ -1,18 +1,18 @@
 pragma solidity ^0.4.24;
 
 import "./role_creator.sol";
-import "../permission_management/authorization.sol";
+import "../interfaces/authorization.sol";
 import "../lib/contract_check.sol";
 import "../lib/address_array.sol";
-
+import "../interfaces/role_auth.sol";
 
 /// @title Authorization about role and account
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff02000d
 ///         The interface can be called: Only query type
-contract RoleAuth is ReservedAddress {
+contract RoleAuth is IRoleAuth, ReservedAddress {
 
-    Authorization auth = Authorization(authorizationAddr);
+    IAuthorization auth = IAuthorization(authorizationAddr);
 
     mapping(address => address[]) internal accounts;
     mapping(address => address[]) internal roles;
@@ -145,19 +145,6 @@ contract RoleAuth is ReservedAddress {
         returns (address[])
     {
         return accounts[_role];
-    }
-
-    /// @notice Check the account has the permission
-    /// @param _account The account to be checked
-    /// @param _permission The permission to be checked
-    /// @return true if has, otherwise false
-    function hasPermission(address _account, address _permission)
-        public 
-        view
-        returns (bool)
-    {
-
-        return auth.checkPermission(_account, _permission);
     }
 
     /// @notice Private: cancelRole

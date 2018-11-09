@@ -34,6 +34,8 @@ pub enum BlockId {
     Earliest,
     /// Latest mined block.
     Latest,
+    /// Pending block.
+    Pending,
 }
 
 pub type TransactionId = H256;
@@ -44,6 +46,7 @@ impl From<RpcBlockNumber> for BlockId {
             RpcBlockNumber::Height(height) => BlockId::Number(height.into()),
             RpcBlockNumber::Tag(BlockTag::Latest) => BlockId::Latest,
             RpcBlockNumber::Tag(BlockTag::Earliest) => BlockId::Earliest,
+            RpcBlockNumber::Tag(BlockTag::Pending) => BlockId::Pending,
         }
     }
 }

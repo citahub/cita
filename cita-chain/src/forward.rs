@@ -15,12 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(unused_must_use)]
-
 use cita_types::H256;
 use core::filters::eth_filter::EthFilter;
-use core::libchain::block::Block;
 use core::libchain::chain::{BlockInQueue, Chain};
+use core::libchain::Block;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{
     BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
@@ -156,7 +154,7 @@ impl Forward {
                                     include_txs,
                                     block.protobuf().try_into().unwrap(),
                                 );
-                                serde_json::to_string(&rpc_block)
+                                let _ = serde_json::to_string(&rpc_block)
                                     .map(|data| response.set_block(data))
                                     .map_err(|err| {
                                         response.set_code(ErrorCode::query_error());
@@ -184,7 +182,7 @@ impl Forward {
                             include_txs,
                             block.protobuf().try_into().unwrap(),
                         );
-                        serde_json::to_string(&rpc_block)
+                        let _ = serde_json::to_string(&rpc_block)
                             .map(|data| response.set_block(data))
                             .map_err(|err| {
                                 response.set_code(ErrorCode::query_error());
@@ -356,6 +354,13 @@ impl Forward {
             Request::peercount(_) | Request::un_tx(_) => {
                 error!("Get messages which should sent to other micro services!");
             }
+            Request::storage_key(skey) => {
+                trace!("storage key info is {:?}", skey);
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
+                return;
+            }
         };
         let msg: Message = response.into();
         self.ctx_pub
@@ -370,25 +375,35 @@ impl Forward {
     fn consensus_block_enqueue(&self, proof_blk: BlockWithProof) {
         let current_height = self.chain.get_current_height() as usize;
         let mut proof_blk = proof_blk;
-        let block = proof_blk.take_blk();
+        let proto_block = proof_blk.take_blk();
         let proof = proof_blk.take_proof();
-        let blk_height = block.get_header().get_height() as usize;
+        let blk_height = proto_block.get_header().get_height() as usize;
+
         trace!(
-            "Received consensus block: block_number:{:?} current_height: {:?}",
+            "Received consensus block: block_number:{:?} current_height: {:?} ",
             blk_height,
             current_height
         );
-        let rblock = Block::from(block);
+
+        let block = Block::from(proto_block);
+        debug!(
+            "consensus block {} {:?} tx hash  {:?} len {} version {}",
+            block.number(),
+            block.hash(),
+            block.transactions_root(),
+            block.body().transactions().len(),
+            block.header.version()
+        );
         if blk_height == (current_height + 1) {
             {
                 self.chain.block_map.write().insert(
                     blk_height as u64,
-                    BlockInQueue::ConsensusBlock(rblock.clone(), proof.clone()),
+                    BlockInQueue::ConsensusBlock(block.clone(), proof.clone()),
                 );
             };
             self.chain.set_proof_with_height(blk_height as u64, &proof);
             self.chain.save_current_block_poof(&proof);
-            self.chain.set_block_body(blk_height as u64, &rblock);
+            self.chain.set_block_body(blk_height as u64, &block);
             self.chain.set_max_store_height(blk_height as u64);
         }
     }
@@ -593,8 +608,8 @@ impl Forward {
             }
             block_tx_hashes.set_tx_hashes(tx_hashes_in_u8.into());
             block_tx_hashes
-                .set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
-            block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone());
+                .set_block_quota_limit(self.chain.block_quota_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes.set_account_quota_limit(self.chain.account_quota_limit.read().clone());
             let msg: Message = block_tx_hashes.into();
             self.ctx_pub
                 .send((
@@ -618,7 +633,7 @@ impl Forward {
                 let ctx_pub = self.ctx_pub.clone();
                 let snapshot_req = snapshot_req.clone();
                 let snapshot_builder = thread::Builder::new().name("snapshot_chain".into());
-                snapshot_builder.spawn(move || {
+                let _ = snapshot_builder.spawn(move || {
                     take_snapshot(&chain, &snapshot_req);
 
                     info!("Taking snapshot finished!!!");

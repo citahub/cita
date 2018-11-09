@@ -41,6 +41,7 @@ AUTHORITIES=`cat ${SOURCE_DIR}/tests/interfaces/rpc/config/authorities | xargs e
 ${BINARY_DIR}/scripts/create_cita_config.py create \
              --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
              --chain_name ${CHAIN_NAME} \
+             --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" \
              --contract_arguments "SysConfig.economicalModel=${ECONOMICAL_MODEL}" \
              --contract_arguments "SysConfig.chainId=123" \
              --timestamp 1524000000 \

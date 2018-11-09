@@ -13,8 +13,8 @@ rustc-serialize = "0.3"
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-dotenv = "0.10.0"
-uuid = { version = "0.4", features = ["v4"] }
+dotenv = "0.13.0"
+uuid = { version = "0.7", features = ["v4"] }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 core = { path = "../../cita-chain/core" }
