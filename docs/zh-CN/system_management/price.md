@@ -9,9 +9,11 @@
 
 > 接下来的测试，用 [cita-cli](https://github.com/cryptape/cita-cli) 命令行模式进行演示。
 
-默认的`quotaPrice` 默认为 1， 接下来演示管理员如何修改 quotaPrice。
+默认的 `quotaPrice` 默认为 1000000， 接下来演示管理员如何修改 quotaPrice。
 
-首先查询当前的 `quota_price`：
+> 0.20 版本之前的默认 `quotaPrice` 是 1
+
+首先查询当前的 `quotaPrice`：
 ```bash
 $ cita-cli scm PriceManager getQuotaPrice
 ```
@@ -21,19 +23,23 @@ $ cita-cli scm PriceManager getQuotaPrice
 {
   "id": 1,
   "jsonrpc": "2.0",
-  "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
+  "result": "0x00000000000000000000000000000000000000000000000000000000000f4240"
 }
 
 ```
 
-修改 `quota_price`， 我们把 `quota_price` 由 1  改为 2:
+得到 `quotaPrice` 是十六进制的默认值。
+
+修改 `quotaPrice`， 我们把 `quotaPrice` 由 1000000  改为 2000000：
+
 ```bash
 $ cita-cli scm PriceManager setQuotaPrice \
               --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
-              --price 0x0000000000000000000000000000000000000000000000000000000000000002
+              --price 0x00000000000000000000000000000000000000000000000000000000001e8480
 ```
 
-再次查询， 发现 `quota_price` 已更新：
+再次查询， 发现 `quotaPrice` 已更新：
+
 ```bash
 $ cita-cli scm PriceManager getQuotaPrice
 ```
@@ -43,6 +49,6 @@ $ cita-cli scm PriceManager getQuotaPrice
 {
   "id": 1,
   "jsonrpc": "2.0",
-  "result": "0x0000000000000000000000000000000000000000000000000000000000000002"
+  "result": "0x00000000000000000000000000000000000000000000000000000000001e8480"
 }
 ```

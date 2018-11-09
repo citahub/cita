@@ -19,6 +19,13 @@ contract PriceManager is IPriceManager, ReservedAddrPublic {
         else return;
     }
 
+    /// @notice Setup
+    constructor(uint _quotaPrice)
+        public
+    {
+        quotaPrice = _quotaPrice;
+    }
+
     /// @notice Set quota price
     function setQuotaPrice(uint _quotaPrice)
         external

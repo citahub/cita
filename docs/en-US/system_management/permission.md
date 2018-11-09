@@ -85,7 +85,7 @@ Then you can get:
 
 ### Deploy the contract
 
-We use [test contract](https://github.com/cryptape/cita/blob/develop/scripts/contracts/tests/contracts/test_example.sol) in here.
+We use [test contract](https://github.com/cryptape/cita/blob/develop/scripts/contracts/tests/contracts/SimpleStorage.sol) in here.
 
 #### Get information about the contract
 

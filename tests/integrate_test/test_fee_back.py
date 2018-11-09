@@ -11,6 +11,7 @@ import argparse
 from jsonrpcclient.http_client import HTTPClient
 
 LATEST_VERSION = 1
+DEFAULT_QUOTA_PRICE = 1000000
 
 def send_tx(privkey, code="", version=LATEST_VERSION):
     """
@@ -74,7 +75,7 @@ def main():
     print('[operator.balance old]:{}'.format(operator_balance_old))
     print('[operator.balance]:{}'.format(operator_balance_new))
     print('[quotaUsed]:{}'.format(receipt['quotaUsed']))
-    assert operator_balance_new - operator_balance_old == int(receipt['quotaUsed'], 16)
+    assert operator_balance_new - operator_balance_old == int(receipt['quotaUsed'], 16) * DEFAULT_QUOTA_PRICE
 
     print('>>> Test fee back successfully!')
 

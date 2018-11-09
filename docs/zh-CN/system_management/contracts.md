@@ -25,7 +25,7 @@ CITA 中关于配额，有两个限制 BQL(BlockQuotaLimit) 和 AQL(AccountQuota
 
 ### 配额价格管理系统合约
 
-通过上边的讲述，我们已经清楚的知道配额的含义。CITA 类似于高速行驶的汽车，那么 `quota` 就是消耗的汽油，当然 `quota` 也是有价格的，我们用 `quota_price` 来表示它。幸运的是，管理员可以通过发送交易给配额价格管理系统合约来做自定义修改。
+通过上边的讲述，我们已经清楚的知道配额的含义。CITA 类似于高速行驶的汽车，那么 `quota` 就是消耗的汽油，当然 `quota` 也是有价格的，我们用 `quotaPrice` 来表示它。幸运的是，管理员可以通过发送交易给配额价格管理系统合约来做自定义修改。
 
 配额管理合约存放在 `/scripts/contracts/src/system/price_management.sol`， 地址是 `0xffffffffffffffffffffffffffffffffff020010`
 
