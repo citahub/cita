@@ -156,7 +156,7 @@ class GenesisData(object):
                 doc_file = os.path.join(self.contracts_docs_dir,
                                         '{}-{}.json'.format(name, doc_type))
                 with open(doc_file, 'w') as stream:
-                    json.dump(data[doc_type], stream, separators=(',', ': '),indent=4)
+                    json.dump(data[doc_type], stream, separators=(',', ': '), indent=4)
 
     def mine_contract_on_chain_tester(self, addr, code):
         """Mine in test chain to get data of a contract."""
@@ -176,6 +176,13 @@ class GenesisData(object):
     def init_normal_contracts(self):
         """Compile normal contracts from files and construct by arguments.
         """
+        flags = [
+            'checkPermission',
+            'checkSendTxPermission',
+            'checkCreateContractPermission',
+            'checkQuota',
+            'checkFeeBackPlatform'
+        ]
         ncinfo = self.contracts_list['NormalContracts']
         for name, info in ncinfo.items():
             addr = info['address']
@@ -184,6 +191,11 @@ class GenesisData(object):
             self.write_docs(name, data)
             ctt = ContractTranslator(data['abi'])
             args = self.contracts_args.get(name)
+            if name == 'SysConfig':
+                args['flags'] = []
+                for flag in flags:
+                    args['flags'].append(args[flag])
+                    args.pop(flag)
             extra = b'' if not args else ctt.encode_constructor_arguments(
                 [arg for arg in args.values()])
             self.mine_contract_on_chain_tester(addr, data['bin'] + extra)
