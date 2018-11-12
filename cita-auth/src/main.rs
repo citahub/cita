@@ -34,6 +34,8 @@
 //!     | auth  | Net       | Request           |
 //!     | auth  | Snapshot  | SnapshotReq       |
 //!     | auth  | Executor  | Miscellaneous     |
+//!     | auth  | Net       | GetBlockTxn       |
+//!     | auth  | Net       | BlockTxn          |
 //!
 //! 2. Publish channel
 //!
@@ -46,6 +48,8 @@
 //!     | auth  | Auth      | Consensus | BlockTxs          |
 //!     | auth  | Auth      | Snapshot  | SnapshotResp      |
 //!     | auth  | Auth      | Executor  | MiscellaneousReq  |
+//!     | auth  | Auth      | Net       | GetBlockTxn       |
+//!     | auth  | Auth      | Net       | BlockTxn          |
 //!
 //! ### Key behavior
 //!
@@ -176,6 +180,8 @@ fn main() {
             Net >> Request,
             Snapshot >> SnapshotReq,
             Executor >> Miscellaneous,
+            Net >> GetBlockTxn,
+            Net >> BlockTxn,
         ]),
         tx_sub,
         rx_pub,
