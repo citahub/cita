@@ -190,6 +190,73 @@ $ ./env.sh ./bin/cita help
 > * 请勿在一台服务器上运行多个容器。因为虽然 CITA 在 Docker 中运行，但是容器并没有做网络隔离。
 > * 请不要同时在 host 系统里面运行 CITA 以及相关的 RabbitMQ 等软件，以免造成端口冲突
 
+### 使用docker-compose
+
+前面运行节点的方法，是将所有节点放在同一个容器中，并且容器没有做网络隔离。
+
+对于复杂的测试场景，会造成一些不便。
+
+使用`docker-compose`可以让每个节点单独一个容器，网络也是隔离的。
+
+##### 安装docker-compose
+
+```
+sudo curl -L "https://github.com/docker/compose/releases/download/1.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+docker-compose --version
+```
+
+##### 准备发布件
+
+```
+wget https://github.com/cryptape/cita/releases/download/v0.20/cita_secp256k1_sha3.tar.gz
+tar zxvf cita_secp256k1_sha3.tar.gz
+cp -r cita_secp256k1_sha3 cita_secp256k1_sha3_node0
+cp -r cita_secp256k1_sha3 cita_secp256k1_sha3_node1
+cp -r cita_secp256k1_sha3 cita_secp256k1_sha3_node2
+cp -r cita_secp256k1_sha3 cita_secp256k1_sha3_node3
+
+wget https://raw.githubusercontent.com/cryptape/cita/develop/tests/integrate_test/docker-compose.yaml
+```
+
+##### 启动
+
+```
+USER_ID=`id -u $USER` docker-compose up
+```
+
+后台启动
+
+```
+USER_ID=`id -u $USER` docker-compose up -d
+```
+
+##### 停止
+
+```
+docker-compose down
+```
+
+##### 进入容器内执行命令
+
+```
+docker-compose exec node0 /usr/bin/gosu user /bin/bash
+```
+
+##### 日志
+
+容器默认输出的是`chain`微服务的日志
+
+```
+docker-compose logs -f
+```
+
+也可以直接到挂载目录下查看所有微服务的日志
+
+```
+tail -100f cita_secp256k1_sha3_node0/test-chain/0/logs/cita-jsonrpc.log
+```
+
 ## 验证
 
 * 查询节点个数

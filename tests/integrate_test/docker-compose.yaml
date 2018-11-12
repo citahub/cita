@@ -1,0 +1,118 @@
+version: '2'
+
+services:
+  config:
+    container_name: config
+    image: cita/cita-run:ubuntu-18.04-20180813
+    hostname: config
+    environment:
+      - USER_ID
+    volumes:
+      - ./:/opt/cita-run
+    networks:
+      main:
+        aliases:
+          - config
+    command: |
+      bash -c '
+      cd cita_secp256k1_sha3;
+      ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" --nodes "node0:4000,node1:4000,node2:4000,node3:4000";
+      cp -r --parents ./test-chain/0 ../cita_secp256k1_sha3_node0/;
+      cp -r --parents ./test-chain/1 ../cita_secp256k1_sha3_node1/;
+      cp -r --parents ./test-chain/2 ../cita_secp256k1_sha3_node2/;
+      cp -r --parents ./test-chain/3 ../cita_secp256k1_sha3_node3/;'
+
+  node0:
+    container_name: node0
+    depends_on:
+      - config
+    image: cita/cita-run:ubuntu-18.04-20180813
+    hostname: node0
+    environment:
+      - USER_ID
+    volumes:
+      - ./cita_secp256k1_sha3_node0:/opt/cita-run
+    ports:
+      - "1337:1337"
+    networks:
+      main:
+        aliases:
+          - node0
+    command: |
+      bash -c '
+      while [[ ! -d /opt/cita-run/test-chain ]]; do sleep 1; done;
+      bin/cita setup test-chain/0;
+      bin/cita start test-chain/0;
+      bin/cita logs test-chain/0 chain;'
+
+  node1:
+    container_name: node1
+    depends_on:
+      - config
+    image: cita/cita-run:ubuntu-18.04-20180813
+    hostname: node1
+    environment:
+      - USER_ID
+    volumes:
+      - ./cita_secp256k1_sha3_node1:/opt/cita-run
+    ports:
+      - "1338:1338"
+    networks:
+      main:
+        aliases:
+          - node1
+    command: |
+      bash -c '
+      while [[ ! -d /opt/cita-run/test-chain ]]; do sleep 1; done;
+      bin/cita setup test-chain/1;
+      bin/cita start test-chain/1;
+      bin/cita logs test-chain/1 chain;'
+
+  node2:
+    container_name: node2
+    depends_on:
+      - config
+    image: cita/cita-run:ubuntu-18.04-20180813
+    hostname: node2
+    environment:
+      - USER_ID
+    volumes:
+      - ./cita_secp256k1_sha3_node2:/opt/cita-run
+    ports:
+      - "1339:1339"
+    networks:
+      main:
+        aliases:
+          - node2
+    command: |
+      bash -c '
+      while [[ ! -d /opt/cita-run/test-chain ]]; do sleep 1; done;
+      bin/cita setup test-chain/2;
+      bin/cita start test-chain/2;
+      bin/cita logs test-chain/2 chain;'
+
+  node3:
+    container_name: node3
+    depends_on:
+      - config
+    image: cita/cita-run:ubuntu-18.04-20180813
+    hostname: node3
+    environment:
+      - USER_ID
+    volumes:
+      - ./cita_secp256k1_sha3_node3:/opt/cita-run
+    ports:
+      - "1340:1340"
+    networks:
+      main:
+        aliases:
+          - node3
+    command: |
+      bash -c '
+      while [[ ! -d /opt/cita-run/test-chain ]]; do sleep 1; done;
+      bin/cita setup test-chain/3;
+      bin/cita start test-chain/3;
+      bin/cita logs test-chain/3 chain;'
+
+networks:
+  main:
