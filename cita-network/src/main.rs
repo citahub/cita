@@ -32,6 +32,8 @@
 //!     | network           | Chain     | Status         |
 //!     | network           | Chain     | SyncResponse   |
 //!     | network           | Jonsonrpc | RequestNet     |
+//!     | network           | Auth      | GetBlockTxn    |
+//!     | network           | Auth      | BlockTxn       |
 //!
 //! 2. Publish channel
 //!
@@ -43,6 +45,8 @@
 //!     | network_tx        | Net       | Auth                | Request        |
 //!     | network_consensus | Net       | Executor, Consensus | SignedProposal |
 //!     | network_consensus | Net       | Consensus           | RawBytes       |
+//!     | network           | Net       | Auth                | BlockTxn       |
+//!     | network           | Net       | Auth                | GetBlockTxn    |
 //!
 //! ### p2p binary protocol
 //! | Start      | Full length | Key length | Key value      | Message value    |
@@ -152,7 +156,7 @@ fn main() {
     let (ctx_pub_tx, crx_pub_tx) = channel();
     start_pubsub(
         "network_tx",
-        routing_key!([Auth >> Request]),
+        routing_key!([Auth >> Request, Auth >> GetBlockTxn, Auth >> BlockTxn]),
         ctx_sub_tx,
         crx_pub_tx,
     );
@@ -174,7 +178,7 @@ fn main() {
             Chain >> Status,
             Chain >> SyncResponse,
             Jsonrpc >> RequestNet,
-            Snapshot >> SnapshotReq,
+            Snapshot >> SnapshotReq
         ]),
         ctx_sub,
         crx_pub,

@@ -116,6 +116,16 @@ impl NetWork {
                         .tx_consensus
                         .send((routing_key!(Net >> RawBytes).into(), data));
                 }
+                routing_key!(Auth >> GetBlockTxn) => {
+                    let _ = self
+                        .tx_new_tx
+                        .send((routing_key!(Net >> GetBlockTxn).into(), data));
+                }
+                routing_key!(Auth >> BlockTxn) => {
+                    let _ = self
+                        .tx_new_tx
+                        .send((routing_key!(Net >> BlockTxn).into(), data));
+                }
                 _ => {
                     error!("Unexpected key {} from {:?}", key, source);
                 }
