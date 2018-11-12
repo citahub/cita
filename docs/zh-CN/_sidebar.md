@@ -9,6 +9,7 @@
     - [权限管理](system_management/permission.md)
     - [用户管理](system_management/user.md)
     - [配额管理](system_management/quota.md)
+    - [配额价格管理](system_management/price.md)
     - [日志管理](system_management/log.md)
     - [系统配置](system_management/sys.md)
     - [备份管理](system_management/snapshot.md)

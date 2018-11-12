@@ -9,6 +9,7 @@
     - [Permisson Management](system_management/permission.md)
     - [Account Management](system_management/user.md)
     - [Quota Management ](system_management/quota.md)
+    - [Quota Price Management](system_management/price.md)
     - [Log Management](system_management/log.md)
     - [System Management](system_management/sys.md)
     - [Snapshot](system_management/snapshot.md)
