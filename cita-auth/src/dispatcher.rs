@@ -77,7 +77,7 @@ impl Dispatcher {
         let mut block_txs = BlockTxs::new();
         let mut body = BlockBody::new();
 
-        let out_txs = self.get_txs_from_pool(
+        let out_txs = self.take_txs_from_pool(
             height as u64,
             config_info.block_quota_limit,
             config_info.account_quota_limit.clone(),
@@ -140,7 +140,16 @@ impl Dispatcher {
         success
     }
 
-    pub fn get_txs_from_pool(
+    pub fn get_txs(&self, ids: &[H256]) -> Vec<SignedTransaction> {
+        let pool = self.txs_pool.borrow();
+        ids.into_iter()
+            .map(|id| pool.get(id).cloned())
+            .filter(|tx| tx.is_some())
+            .map(|tx| tx.unwrap())
+            .collect()
+    }
+
+    pub fn take_txs_from_pool(
         &self,
         height: u64,
         block_quota_limit: u64,

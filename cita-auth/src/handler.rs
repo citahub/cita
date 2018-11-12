@@ -26,8 +26,9 @@ use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
 use libproto::{
-    BlackList, BlockTxHashes, BlockTxHashesReq, Crypto, Message, Request, Response, Ret,
-    VerifyBlockReq, VerifyBlockResp, VerifyTxReq,
+    BlackList, BlockTxHashes, BlockTxHashesReq, BlockTxn, Crypto, GetBlockTxn, Message,
+    OperateType, Origin, Request, Response, Ret, UnverifiedTransaction, VerifyBlockReq,
+    VerifyBlockResp, VerifyTxReq,
 };
 use lru::LruCache;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -801,6 +802,16 @@ impl MsgHandler {
                         let snapshot_req = msg.take_snapshot_req().unwrap();
                         self.deal_snapshot(&snapshot_req);
                     }
+                    routing_key!(Net >> GetBlockTxn) => {
+                        let mut get_block_txn = msg.take_get_block_txn().unwrap();
+                        let origin = msg.get_origin();
+                        self.deal_get_block_txn(&mut get_block_txn, origin);
+                    }
+                    routing_key!(Net >> BlockTxn) => {
+                        let block_txn = msg.take_block_txn().unwrap();
+                        let origin = msg.get_origin();
+                        self.deal_block_txn(&block_txn, origin);
+                    }
                     _ => {
                         error!("receive unexpected message key {}", key);
                     }
@@ -1208,5 +1219,35 @@ impl MsgHandler {
             };
             info!("Get chain_id({:?}) from executor", self.chain_id);
         }
+    }
+
+    fn deal_get_block_txn(&mut self, get_block_txn: &mut GetBlockTxn, origin: Origin) {
+        let short_ids: Vec<H256> = get_block_txn
+            .get_short_ids()
+            .into_iter()
+            .map(|id| H256::from(U256::from(id.as_slice())))
+            .collect();
+        let txs: Vec<UnverifiedTransaction> = self
+            .dispatcher
+            .get_txs(&short_ids)
+            .into_iter()
+            .map(|mut tx| tx.take_transaction_with_sig())
+            .collect();
+
+        let mut block_txn = BlockTxn::new();
+        block_txn.set_block_hash(get_block_txn.take_block_hash());
+        block_txn.set_transactions(txs.into());
+        let msg = Message::init(OperateType::Single, origin, block_txn.into());
+
+        self.tx_pub
+            .send((
+                routing_key!(Auth >> BlockTxn).into(),
+                (&msg).try_into().unwrap(),
+            ))
+            .unwrap();
+    }
+
+    fn deal_block_txn(&mut self, _block_txn: &BlockTxn, _origin: Origin) {
+        unimplemented!();
     }
 }
