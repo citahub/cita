@@ -593,12 +593,6 @@ impl Account {
 
     /// Commit any unsaved code. `code_hash` will always return the hash of the `code_cache` after this.
     pub fn commit_code(&mut self, db: &mut HashDB) {
-        trace!(
-            "Commiting code of {:?} - {:?}, {:?}",
-            self,
-            self.code_filth == Filth::Dirty,
-            self.code_cache.is_empty()
-        );
         match (self.code_filth == Filth::Dirty, self.code_cache.is_empty()) {
             (true, true) => {
                 self.code_size = Some(0);
@@ -615,12 +609,6 @@ impl Account {
 
     /// Commit any unsaved abi. `abi_hash` will always return the hash of the `abi_cache` after this.
     pub fn commit_abi(&mut self, db: &mut HashDB) {
-        trace!(
-            "Commiting abi of {:?} - {:?}, {:?}",
-            self,
-            self.abi_filth == Filth::Dirty,
-            self.abi_cache.is_empty()
-        );
         match (self.abi_filth == Filth::Dirty, self.abi_cache.is_empty()) {
             (true, true) => {
                 self.abi_size = Some(0);

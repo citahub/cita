@@ -93,7 +93,6 @@ pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
         .expect("failed to open deploy code file!")
         .read_to_string(&mut content)
         .expect("failed to read binary");
-    trace!("deploy code: {}", content);
     let deploy_code = content.as_str().from_hex().unwrap();
 
     // read runtime code
@@ -102,7 +101,6 @@ pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
         .expect("failed to open deploy code file!")
         .read_to_string(&mut content)
         .expect("failed to read binary");
-    trace!("runtime code: {}", content);
     let runtime_code = content.from_hex().unwrap();
     (deploy_code, runtime_code)
 }

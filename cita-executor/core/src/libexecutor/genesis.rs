@@ -153,12 +153,6 @@ impl Genesis {
             for (key, values) in &contract.storage {
                 let result =
                     state.storage_at(&address, &H256::from_unaligned(key.as_ref()).unwrap());
-                trace!(
-                    "address = {:?}, key = {:?}, result = {:?}",
-                    address,
-                    key,
-                    result
-                );
                 assert_eq!(
                     H256::from_unaligned(values.as_ref()).unwrap(),
                     result.expect("storage error")
