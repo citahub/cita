@@ -27,8 +27,8 @@ use std::convert::TryInto;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
-use std::net::SocketAddr;
 use std::net::{Shutdown, TcpStream};
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
@@ -223,7 +223,9 @@ impl Connections {
             for peer in peers.iter() {
                 let id_card: u32 = peer.id_card.unwrap();
                 let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap())
-                    .parse()
+                    .to_socket_addrs()
+                    .unwrap()
+                    .next()
                     .unwrap();
                 connect_sender
                     .send((id_card, addr, peer.common_name.clone().unwrap_or_default()))
@@ -286,7 +288,9 @@ impl Connections {
                     .map(|peer| {
                         let id_card: u32 = peer.id_card.unwrap();
                         let addr = format!("{}:{}", peer.ip.unwrap(), peer.port.unwrap())
-                            .parse()
+                            .to_socket_addrs()
+                            .unwrap()
+                            .next()
                             .unwrap();
                         (id_card, addr, peer.common_name.unwrap_or_default())
                     })
