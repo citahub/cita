@@ -31,4 +31,7 @@ interface IQuotaManager {
 
     /// @notice Get account quota limit
     function getAQL(address _account) external view returns (uint);
+
+    /// @notice Get account quota limit
+    function getAutoExecQL() external pure returns (uint);
 }

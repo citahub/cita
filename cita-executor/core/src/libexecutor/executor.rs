@@ -22,7 +22,7 @@ use contracts::{
     native::factory::Factory as NativeFactory,
     solc::{
         AccountQuotaLimit, EmergencyBrake, NodeManager, PermissionManagement, QuotaManager,
-        Resource, SysConfig, UserManagement, VersionManager,
+        Resource, SysConfig, UserManagement, VersionManager, AUTO_EXEC_QL_VALUE,
     },
 };
 use db;
@@ -153,6 +153,8 @@ pub struct GlobalSysConfig {
     pub block_interval: u64,
     pub emergency_brake: bool,
     pub chain_version: u32,
+    pub auto_exec_quota_limit: u64,
+    pub auto_exec: bool,
 }
 
 impl GlobalSysConfig {
@@ -176,6 +178,8 @@ impl GlobalSysConfig {
             block_interval: 3000,
             emergency_brake: false,
             chain_version: 0,
+            auto_exec_quota_limit: AUTO_EXEC_QL_VALUE,
+            auto_exec: false,
         }
     }
 }
@@ -824,6 +828,9 @@ impl Executor {
             .block_quota_limit(block_id)
             .unwrap_or_else(QuotaManager::default_block_quota_limit)
             as usize;
+        conf.auto_exec_quota_limit = quota_manager
+            .auto_exec_quota_limit(block_id)
+            .unwrap_or_else(QuotaManager::default_auto_exec_quota_limit);
         let sys_config = SysConfig::new(self);
         conf.delay_active_interval = sys_config
             .delay_block_number(block_id)
@@ -850,6 +857,9 @@ impl Executor {
         conf.block_interval = sys_config
             .block_interval(block_id)
             .unwrap_or_else(SysConfig::default_block_interval);
+        conf.auto_exec = sys_config
+            .auto_exec(block_id)
+            .unwrap_or_else(SysConfig::default_auto_exec);
 
         let permission_manager = PermissionManagement::new(self);
         conf.account_permissions = permission_manager.load_account_permissions(block_id);
@@ -913,7 +923,7 @@ impl Executor {
         )
         .unwrap();
         if executed_block.apply_transactions(self, &check_options) {
-            let closed_block = executed_block.close();
+            let closed_block = executed_block.close(*self.economical_model.read());
             let new_now = Instant::now();
             info!(
                 "execute {} block use {:?}",
@@ -950,7 +960,7 @@ impl Executor {
         )
         .unwrap();
         if executed_block.apply_transactions(self, &check_options) {
-            let closed_block = executed_block.close();
+            let closed_block = executed_block.close(*self.economical_model.read());
             let new_now = Instant::now();
             debug!(
                 "execute {} proposal use {:?}",

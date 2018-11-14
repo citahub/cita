@@ -32,16 +32,18 @@ const QUOTAS: &[u8] = &*b"getQuotas()";
 const ACCOUNTS: &[u8] = &*b"getAccounts()";
 const BQL: &[u8] = &*b"getBQL()";
 const DEFAULT_AQL: &[u8] = &*b"getDefaultAQL()";
-#[cfg(test)]
-const BQL_VALUE: u64 = 1073741824;
-#[cfg(test)]
-const AQL_VALUE: u64 = 268435456;
+// Quota limit of autoExec
+const AUTO_EXEC_QL: &[u8] = &*b"getAutoExecQL()";
+const BQL_VALUE: u64 = 1_073_741_824;
+const AQL_VALUE: u64 = 268_435_456;
+pub const AUTO_EXEC_QL_VALUE: u64 = 1_048_576;
 
 lazy_static! {
     static ref QUOTAS_HASH: Vec<u8> = method_tools::encode_to_vec(QUOTAS);
     static ref ACCOUNTS_HASH: Vec<u8> = method_tools::encode_to_vec(ACCOUNTS);
     static ref BQL_HASH: Vec<u8> = method_tools::encode_to_vec(BQL);
     static ref DEFAULT_AQL_HASH: Vec<u8> = method_tools::encode_to_vec(DEFAULT_AQL);
+    static ref AUTO_EXEC_QL_HASH: Vec<u8> = method_tools::encode_to_vec(AUTO_EXEC_QL);
     static ref CONTRACT_ADDRESS: H160 = H160::from_str(reserved_addresses::QUOTA_MANAGER).unwrap();
 }
 
@@ -151,7 +153,7 @@ impl<'a> QuotaManager<'a> {
 
     pub fn default_block_quota_limit() -> u64 {
         error!("Use default block quota limit.");
-        1_073_741_824
+        BQL_VALUE
     }
 
     /// Global account quota limit
@@ -169,7 +171,25 @@ impl<'a> QuotaManager<'a> {
 
     pub fn default_account_quota_limit() -> u64 {
         error!("Use default account quota limit.");
-        268_435_456
+        AQL_VALUE
+    }
+
+    /// Auto exec quota limit
+    pub fn auto_exec_quota_limit(&self, block_id: BlockId) -> Option<u64> {
+        self.executor
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*AUTO_EXEC_QL_HASH.as_slice(),
+                None,
+                block_id,
+            )
+            .ok()
+            .and_then(|output| decode_tools::to_u64(&output))
+    }
+
+    pub fn default_auto_exec_quota_limit() -> u64 {
+        error!("Use default auto exec quota limit.");
+        AUTO_EXEC_QL_VALUE
     }
 }
 
@@ -177,7 +197,7 @@ impl<'a> QuotaManager<'a> {
 mod tests {
     extern crate logger;
 
-    use super::{QuotaManager, AQL_VALUE, BQL_VALUE};
+    use super::{QuotaManager, AQL_VALUE, AUTO_EXEC_QL_VALUE, BQL_VALUE};
     use cita_types::H160;
     use std::str::FromStr;
     use tests::helpers::init_executor;
@@ -223,5 +243,11 @@ mod tests {
             .account_quota_limit(BlockId::Pending)
             .unwrap();
         assert_eq!(account_quota_limit, AQL_VALUE);
+
+        // Test auto exec quota limit
+        let auto_exec_quota_limit = quota_management
+            .auto_exec_quota_limit(BlockId::Pending)
+            .unwrap();
+        assert_eq!(auto_exec_quota_limit, AUTO_EXEC_QL_VALUE);
     }
 }
