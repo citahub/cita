@@ -784,6 +784,7 @@ impl<B: Backend> State<B> {
             check_quota: check_options.quota,
             check_send_tx_permission: check_options.send_tx_permission,
             check_create_contract_permission: check_options.create_contract_permission,
+            fee_back_platform: check_options.fee_back_platform,
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
@@ -796,10 +797,8 @@ impl<B: Backend> State<B> {
             &native_factory,
             false,
             economical_model,
-            check_options.fee_back_platform,
-            chain_owner,
         )
-        .transact(t, options)
+        .transact(t, options, chain_owner)
         {
             Ok(e) => {
                 // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));

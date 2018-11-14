@@ -129,8 +129,6 @@ fn call_vm(params: ActionParams) -> evm::Result<evm::FinalizationResult> {
         &native_factory,
         false,
         EconomicalModel::Quota,
-        false,
-        Address::from(0),
     );
     let mut out = vec![];
     ex.call(

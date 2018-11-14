@@ -281,7 +281,6 @@ impl Executor {
             state_db: RwLock::new(state_db),
             factories,
             last_hashes: RwLock::new(VecDeque::new()),
-
             executed_result: RwLock::new(executed_map),
             prooftype: executor_config.prooftype,
             global_config: RwLock::new(GlobalSysConfig::new()),
@@ -611,6 +610,7 @@ impl Executor {
             check_quota: false,
             check_send_tx_permission: false,
             check_create_contract_permission: false,
+            fee_back_platform: false,
         };
 
         Executive::new(
@@ -621,10 +621,8 @@ impl Executor {
             &self.factories.native,
             false,
             EconomicalModel::Quota,
-            false,
-            Address::from(0),
         )
-        .transact(t, options)
+        .transact(t, options, self.global_config.read().chain_owner)
         .map_err(Into::into)
     }
 
@@ -910,7 +908,7 @@ impl Executor {
             last_hashes.into(),
         )
         .unwrap();
-        if executed_block.apply_transactions(self, conf.chain_owner, &check_options) {
+        if executed_block.apply_transactions(self, &check_options) {
             let closed_block = executed_block.close();
             let new_now = Instant::now();
             info!(
@@ -929,7 +927,6 @@ impl Executor {
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
         let conf = self.global_config.read().clone();
-        let chain_owner = conf.chain_owner;
         let parent_hash = *block.parent_hash();
         let check_options = CheckOptions {
             permission: conf.check_permission,
@@ -948,7 +945,7 @@ impl Executor {
             last_hashes.into(),
         )
         .unwrap();
-        if executed_block.apply_transactions(self, chain_owner, &check_options) {
+        if executed_block.apply_transactions(self, &check_options) {
             let closed_block = executed_block.close();
             let new_now = Instant::now();
             debug!(

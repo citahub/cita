@@ -65,6 +65,7 @@ pub struct ExecutedBlock {
     last_hashes: Arc<LastHashes>,
     account_gas_limit: U256,
     account_gas: HashMap<Address, U256>,
+    chain_owner: Address,
 }
 
 impl Deref for ExecutedBlock {
@@ -111,6 +112,7 @@ impl ExecutedBlock {
             ),
             current_quota_used: Default::default(),
             receipts: Default::default(),
+            chain_owner: conf.chain_owner,
         };
 
         Ok(r)
@@ -139,7 +141,6 @@ impl ExecutedBlock {
     pub fn apply_transactions(
         &mut self,
         executor: &Executor,
-        chain_owner: Address,
         check_options: &CheckOptions,
     ) -> bool {
         let price_management = PriceManagement::new(executor);
@@ -157,13 +158,7 @@ impl ExecutedBlock {
                 t.gas_price = quota_price;
             }
 
-            self.apply_transaction(
-                &*executor.engine,
-                &t,
-                *executor.economical_model.read(),
-                chain_owner,
-                check_options,
-            );
+            self.apply_transaction(&*executor.engine, &t, economical_model, check_options);
         }
 
         let now = Instant::now();
@@ -180,7 +175,6 @@ impl ExecutedBlock {
         engine: &Engine,
         t: &SignedTransaction,
         economical_model: EconomicalModel,
-        chain_owner: Address,
         check_options: &CheckOptions,
     ) {
         let mut env_info = self.env_info();
@@ -199,7 +193,7 @@ impl ExecutedBlock {
             t,
             has_traces,
             economical_model,
-            chain_owner,
+            self.chain_owner,
             check_options,
         ) {
             Ok(outcome) => {
