@@ -33,7 +33,7 @@ fn call_vm(
     use engines::NullEngine;
     use evm::env_info::EnvInfo;
     use evm::{Factory, VMType};
-    use libexecutor::executor::EconomicalModel;
+    use libexecutor::economical_model::EconomicalModel;
     use state::Substate;
     use trace::{ExecutiveTracer, ExecutiveVMTracer};
     let factory = Factory::new(VMType::Interpreter, 1024 * 32);

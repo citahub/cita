@@ -39,7 +39,7 @@ use evm::env_info::EnvInfo;
 use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
 pub use executed::{Executed, ExecutionResult};
 use externalities::*;
-use libexecutor::executor::EconomicalModel;
+use libexecutor::economical_model::EconomicalModel;
 use state::backend::Backend as StateBackend;
 use state::{State, Substate};
 use std::cmp;

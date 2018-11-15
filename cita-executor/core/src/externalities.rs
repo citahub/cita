@@ -33,7 +33,7 @@ use substate::Substate;
 use trace::{Tracer, VMTracer};
 use util::*;
 use cita_types::{Address, H256, U256};
-use libexecutor::executor::EconomicalModel;
+use libexecutor::economical_model::EconomicalModel;
 
 /// Policy for handling output data on `RETURN` opcode.
 pub enum OutputPolicy<'a, 'b> {
