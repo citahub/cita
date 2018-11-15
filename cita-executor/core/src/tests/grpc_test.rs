@@ -30,7 +30,7 @@ use evm::action_params::{ActionParams, ActionValue};
 use evm::env_info::EnvInfo;
 use evm::{Factory, VMType};
 use executive::Executive;
-use libexecutor::executor::EconomicalModel;
+use libexecutor::economical_model::EconomicalModel;
 use state::Substate;
 use trace::{ExecutiveTracer, ExecutiveVMTracer};
 use util::BytesRef;
