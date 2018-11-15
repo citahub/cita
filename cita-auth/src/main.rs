@@ -99,9 +99,11 @@ extern crate util;
 extern crate uuid;
 
 pub mod batch_forward;
+pub mod block;
 pub mod config;
 pub mod dispatcher;
 pub mod handler;
+pub mod history;
 pub mod txwal;
 use batch_forward::BatchForward;
 use clap::App;
