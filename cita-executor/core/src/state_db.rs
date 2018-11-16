@@ -212,66 +212,17 @@ impl StateDB {
         self.db.mark_canonical(batch, now, id)
     }
 
-    /// Propagate local cache into the global cache and synchonize
-    /// the global cache with the best block state.
-    /// This function updates the global cache by removing entries
-    /// that are invalidated by chain reorganization. `sync_cache`
-    /// should be called after the block has been committed and the
-    /// blockchain route has ben calculated.
-    pub fn sync_cache(&mut self, enacted: &[H256], retracted: &[H256], is_best: bool) {
+    /// Propagate local cache into the global cache.
+    /// `sync_cache` should be called after the block has been committed.
+    pub fn sync_cache(&mut self) {
         trace!(
-            "sync_cache id = (#{:?}, {:?}), parent={:?}, best={}",
+            "sync_cache id = (#{:?}, {:?}), parent={:?}",
             self.commit_number,
             self.commit_hash,
             self.parent_hash,
-            is_best
         );
         let mut cache = self.account_cache.lock();
         let cache = &mut *cache;
-
-        // Purge changes from re-enacted and retracted blocks.
-        // Filter out commiting block if any.
-        let mut clear = false;
-        for block in enacted
-            .iter()
-            .filter(|h| self.commit_hash.as_ref().map_or(true, |p| *h != p))
-        {
-            clear = clear || {
-                if let Some(ref mut m) = cache.modifications.iter_mut().find(|m| &m.hash == block) {
-                    trace!("Reverting enacted block {:?}", block);
-                    m.is_canon = true;
-                    for a in &m.accounts {
-                        trace!("Reverting enacted address {:?}", a);
-                        cache.accounts.remove(a);
-                    }
-                    false
-                } else {
-                    true
-                }
-            };
-        }
-
-        for block in retracted {
-            clear = clear || {
-                if let Some(ref mut m) = cache.modifications.iter_mut().find(|m| &m.hash == block) {
-                    trace!("Retracting block {:?}", block);
-                    m.is_canon = false;
-                    for a in &m.accounts {
-                        trace!("Retracted address {:?}", a);
-                        cache.accounts.remove(a);
-                    }
-                    false
-                } else {
-                    true
-                }
-            };
-        }
-        if clear {
-            // We don't know anything about the block; clear everything
-            trace!("Wiping cache");
-            cache.accounts.clear();
-            cache.modifications.clear();
-        }
 
         // Propagate cache only if committing on top of the latest canonical state
         // blocks are ordered by number and only one block with a given number is marked as canonical
@@ -288,20 +239,18 @@ impl StateDB {
                 if account.modified {
                     modifications.insert(account.address);
                 }
-                if is_best {
-                    let acc = account.account.0;
-                    if let Some(&mut Some(ref mut existing)) =
-                        cache.accounts.get_mut(&account.address)
-                    {
-                        if let Some(new) = acc {
-                            if account.modified {
-                                existing.overwrite_with(new);
-                            }
-                            continue;
+
+                let acc = account.account.0;
+                if let Some(&mut Some(ref mut existing)) = cache.accounts.get_mut(&account.address)
+                {
+                    if let Some(new) = acc {
+                        if account.modified {
+                            existing.overwrite_with(new);
                         }
+                        continue;
                     }
-                    cache.accounts.insert(account.address, acc);
                 }
+                cache.accounts.insert(account.address, acc);
             }
 
             // Save modified accounts. These are ordered by the block number.
@@ -309,7 +258,7 @@ impl StateDB {
                 accounts: modifications,
                 number: *number,
                 hash: *hash,
-                is_canon: is_best,
+                is_canon: true,
                 parent: *parent,
             };
             let insert_at = cache

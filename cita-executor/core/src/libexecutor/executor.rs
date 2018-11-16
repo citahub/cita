@@ -730,15 +730,15 @@ impl Executor {
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
         batch.write(db::COL_EXTRA, &height, &hash);
 
-        let mut state = block.drain();
+        let mut state_db = block.drain();
         // Store triedb changes in journal db
-        state
+        state_db
             .journal_under(&mut batch, height, &hash)
             .expect("DB commit failed");
-        state.sync_cache(&[], &[], true);
+        state_db.sync_cache();
         self.db.read().write_buffered(batch);
 
-        self.prune_ancient(state).expect("mark_canonical failed");
+        self.prune_ancient(state_db).expect("mark_canonical failed");
 
         // Saving in db
         let now = Instant::now();
@@ -1105,13 +1105,17 @@ mod tests {
     extern crate logger;
 
     use super::*;
+    use cita_crypto::{CreateKey, KeyPair};
     use cita_types::Address;
     use core::receipt::ReceiptError;
     use libproto::router::{MsgType, RoutingKey, SubModules};
     use libproto::Message;
+    use rustc_hex::FromHex;
     use std::convert::TryFrom;
+    use std::str::FromStr;
     use std::sync::mpsc::channel;
     use tests::helpers::{create_block, init_chain, init_executor, solc};
+    use types::reserved_addresses;
 
     fn generate_contract() -> Vec<u8> {
         let source = r#"
@@ -1140,11 +1144,14 @@ mod tests {
 
     #[test]
     fn test_contract_address_from_permission_denied() {
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+
         let executor = init_executor(vec![("SysConfig.checkCreateContractPermission", "true")]);
         let chain = init_chain();
 
         let data = generate_contract();
-        let block = create_block(&executor, Address::from(0), &data, (0, 1));
+        let block = create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
 
         let (send, recv) = channel::<(String, Vec<u8>)>();
         let inchain = chain.clone();
@@ -1186,5 +1193,38 @@ mod tests {
         rhs.nodes.push(Address::from(0x100004));
 
         assert_eq!(lhs, rhs);
+    }
+
+    #[test]
+    fn test_chain_name_valid_block_number() {
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let addr = keypair.address().lower_hex();
+
+        let executor = init_executor(vec![
+            ("SysConfig.chainName", "abcd"),
+            ("Admin.admin", &addr),
+        ]);
+
+        let to = Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
+        let data = "c0c41f220000000000000000000000000000000000000000000\
+                    000000000000000000020000000000000000000000000000000\
+                    000000000000000000000000000000000531323334350000000\
+                    00000000000000000000000000000000000000000000000";
+        let code = data.from_hex().unwrap();
+        let block = create_block(&executor, to, &code, (0, 1), &privkey);
+        let (send, _recv) = channel::<(String, Vec<u8>)>();
+        executor.execute_block(block.clone(), &send);
+
+        let chain_name_latest = SysConfig::new(&executor)
+            .chain_name(BlockId::Latest)
+            .unwrap();
+
+        let chain_name_pending = SysConfig::new(&executor)
+            .chain_name(BlockId::Pending)
+            .unwrap();
+
+        assert_eq!(chain_name_pending, "12345");
+        assert_eq!(chain_name_latest, "abcd");
     }
 }

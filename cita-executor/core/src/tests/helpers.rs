@@ -20,7 +20,7 @@ extern crate tempdir;
 
 use self::rustc_serialize::hex::FromHex;
 use self::tempdir::TempDir;
-use cita_crypto::KeyPair;
+use cita_crypto::PrivKey;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, U256};
 use core::libchain::chain;
@@ -42,7 +42,6 @@ use std::process::{Command, Output};
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
 use types::transaction::SignedTransaction;
-use util::crypto::CreateKey;
 use util::kvdb::{Database, DatabaseConfig};
 use util::AsMillis;
 use util::KeyValueDB;
@@ -51,8 +50,8 @@ const EXECUTOR_CONFIG: &str = "executor.toml";
 const CHAIN_CONFIG: &str = "chain.toml";
 const SCRIPTS_DIR: &str = "../../scripts";
 pub fn get_temp_state() -> State<StateDB> {
-    let journal_db = get_temp_state_db();
-    State::new(journal_db, 0.into(), Default::default())
+    let state_db = get_temp_state_db();
+    State::new(state_db, 0.into(), Default::default())
 }
 
 fn new_db() -> Arc<KeyValueDB> {
@@ -196,6 +195,7 @@ pub fn create_block(
     to: Address,
     data: &Vec<u8>,
     nonce: (u32, u32),
+    privkey: &PrivKey,
 ) -> OpenBlock {
     let mut block = OpenBlock::default();
 
@@ -206,8 +206,6 @@ pub fn create_block(
 
     let mut body = BlockBody::default();
     let mut txs = Vec::new();
-    let keypair = KeyPair::gen_keypair();
-    let privkey = keypair.privkey();
 
     for i in nonce.0..nonce.1 {
         let mut tx = blockchain::Transaction::new();
