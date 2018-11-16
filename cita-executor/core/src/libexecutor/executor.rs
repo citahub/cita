@@ -751,19 +751,31 @@ impl Executor {
     /// 1. Delivery rich status
     /// 2. Update cache
     /// 3. Commited data to db
-    pub fn finalize_block(&self, closed_block: &ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn finalize_block(&self, closed_block: ClosedBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let header = closed_block.header().clone();
         {
             *self.current_header.write() = header;
         }
         self.update_last_hashes(&self.get_current_hash());
-        self.write_batch(closed_block.clone());
-
-        self.reorg_config(&closed_block);
+        let number = closed_block.number();
 
         self.set_executed_result(&closed_block);
-        self.send_executed_info_to_chain(closed_block.number(), ctx_pub);
+        self.send_executed_info_to_chain(number, ctx_pub);
         self.pub_black_list(&closed_block, ctx_pub);
+
+        let has_dirty = {
+            let cache = closed_block.state.cache();
+            let permission_management = PermissionManagement::new(self);
+            let permissions = permission_management.permission_addresses(BlockId::Pending);
+            cache.iter().any(|(address, ref _a)| {
+                &address.lower_hex()[..34] == "ffffffffffffffffffffffffffffffffff"
+                    || permissions.contains(&address)
+            })
+        };
+
+        self.write_batch(closed_block);
+        // Note: reorg_config should come after write_batch
+        self.reorg_config(has_dirty);
     }
 
     pub fn finalize_proposal(
@@ -774,7 +786,7 @@ impl Executor {
     ) {
         closed_block.set_proof(coming.proof().clone());
         closed_block.rehash();
-        self.finalize_block(&closed_block, ctx_pub);
+        self.finalize_block(closed_block, ctx_pub);
     }
 
     #[inline]
@@ -786,15 +798,7 @@ impl Executor {
     /// 1. Consensus nodes
     /// 2. BlockQuotaLimit and AccountQuotaLimit
     /// 3. Account permissions
-    pub fn reorg_config(&self, close_block: &ClosedBlock) {
-        let cache = close_block.state.cache();
-        let permission_management = PermissionManagement::new(self);
-        let permissions = permission_management.permission_addresses(BlockId::Pending);
-        let has_dirty = cache.iter().any(|(address, ref _a)| {
-            &address.lower_hex()[..34] == "ffffffffffffffffffffffffffffffffff"
-                || permissions.contains(&address)
-        });
-
+    pub fn reorg_config(&self, has_dirty: bool) {
         if has_dirty {
             let conf = self.load_config(BlockId::Pending);
             {
@@ -918,7 +922,7 @@ impl Executor {
                 closed_block.number(),
                 new_now.duration_since(now)
             );
-            self.finalize_block(&closed_block, ctx_pub);
+            self.finalize_block(closed_block, ctx_pub);
         } else {
             warn!("executing block is interrupted.");
         }
