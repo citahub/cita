@@ -1210,8 +1210,21 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             return Err(evm::Error::OutOfGas);
         }
         trace!(
-            "Executive::create(params={:?}) self.env_info={:?}, static={}",
-            params,
+            "Executive::create(
+                params.code_address={:?}, params.code_hash={:?},
+                params.address={:?}, params.sender={:?}, params.origin={:?}
+                params.gas={:?}, params.gas_price={:?}, params.value={:?}
+            )
+            self.env_info={:?},
+            static={}",
+            params.code_address,
+            params.code_hash,
+            params.address,
+            params.sender,
+            params.origin,
+            params.gas,
+            params.gas_price,
+            params.value,
             self.info,
             self.static_flag
         );
