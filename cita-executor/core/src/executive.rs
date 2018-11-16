@@ -327,6 +327,8 @@ pub struct TransactOptions {
     pub check_send_tx_permission: bool,
     /// Check sender's create_contract permission
     pub check_create_contract_permission: bool,
+    /// Enable tx fee back to platform
+    pub fee_back_platform: bool,
 }
 
 /// Transaction executor.
@@ -340,8 +342,6 @@ pub struct Executive<'a, B: 'a + StateBackend> {
     native_factory: &'a NativeFactory,
     /// Check EconomicalModel
     economical_model: EconomicalModel,
-    check_fee_back_platform: bool,
-    chain_owner: Address,
 }
 
 impl<'a, B: 'a + StateBackend> Executive<'a, B> {
@@ -355,8 +355,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         native_factory: &'a NativeFactory,
         static_flag: bool,
         economical_model: EconomicalModel,
-        check_fee_back_platform: bool,
-        chain_owner: Address,
     ) -> Self {
         Executive {
             state,
@@ -367,8 +365,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             depth: 0,
             static_flag,
             economical_model,
-            check_fee_back_platform,
-            chain_owner,
         }
     }
 
@@ -387,8 +383,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         parent_depth: usize,
         static_flag: bool,
         economical_model: EconomicalModel,
-        check_fee_back_platform: bool,
-        chain_owner: Address,
     ) -> Self {
         Executive {
             state,
@@ -399,8 +393,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             depth: parent_depth + 1,
             static_flag,
             economical_model,
-            check_fee_back_platform,
-            chain_owner,
         }
     }
 
@@ -415,8 +407,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         vm_tracer: &'any mut V,
         static_call: bool,
         economical_model: EconomicalModel,
-        check_fee_back_platform: bool,
-        chain_owner: Address,
     ) -> Externalities<'any, T, V, B>
     where
         T: Tracer,
@@ -437,8 +427,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             vm_tracer,
             is_static,
             economical_model,
-            check_fee_back_platform,
-            chain_owner,
         )
     }
 
@@ -447,6 +435,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         &'a mut self,
         t: &SignedTransaction,
         options: TransactOptions,
+        chain_owner: Address,
     ) -> Result<Executed, ExecutionError> {
         match (options.tracing, options.vm_tracing) {
             (true, true) => self.transact_with_tracer(
@@ -454,14 +443,25 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 options,
                 ExecutiveTracer::default(),
                 ExecutiveVMTracer::toplevel(),
+                chain_owner,
             ),
-            (true, false) => {
-                self.transact_with_tracer(t, options, ExecutiveTracer::default(), NoopVMTracer)
+            (true, false) => self.transact_with_tracer(
+                t,
+                options,
+                ExecutiveTracer::default(),
+                NoopVMTracer,
+                chain_owner,
+            ),
+            (false, true) => self.transact_with_tracer(
+                t,
+                options,
+                NoopTracer,
+                ExecutiveVMTracer::toplevel(),
+                chain_owner,
+            ),
+            (false, false) => {
+                self.transact_with_tracer(t, options, NoopTracer, NoopVMTracer, chain_owner)
             }
-            (false, true) => {
-                self.transact_with_tracer(t, options, NoopTracer, ExecutiveVMTracer::toplevel())
-            }
-            (false, false) => self.transact_with_tracer(t, options, NoopTracer, NoopVMTracer),
         }
     }
 
@@ -530,6 +530,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         options: TransactOptions,
         mut tracer: T,
         mut vm_tracer: V,
+        chain_owner: Address,
     ) -> Result<Executed, ExecutionError>
     where
         T: Tracer,
@@ -738,6 +739,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             output,
             tracer.traces(),
             vm_tracer.drain(),
+            chain_owner,
+            options.fee_back_platform,
         )?)
     }
 
@@ -760,8 +763,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         if (self.depth + 1) % depth_threshold != 0 {
             let vm_factory = self.vm_factory;
             let economical_model = self.economical_model;
-            let check_fee_back_platform = self.check_fee_back_platform;
-            let chain_owner = self.chain_owner;
             let mut ext = self.as_externalities(
                 OriginInfo::from(params),
                 unconfirmed_substate,
@@ -770,8 +771,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 vm_tracer,
                 static_call,
                 economical_model,
-                check_fee_back_platform,
-                chain_owner,
             );
             return vm_factory
                 .create(params.gas)
@@ -785,8 +784,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         crossbeam::scope(|scope| {
             let vm_factory = self.vm_factory;
             let economical_model = self.economical_model;
-            let check_fee_back_platform = self.check_fee_back_platform;
-            let chain_owner = self.chain_owner;
             let mut ext = self.as_externalities(
                 OriginInfo::from(params),
                 unconfirmed_substate,
@@ -795,8 +792,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 vm_tracer,
                 static_call,
                 economical_model,
-                check_fee_back_platform,
-                chain_owner,
             );
 
             scope.spawn(move || {
@@ -838,6 +833,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let static_call = params.call_type == CallType::StaticCall;
 
         // at first, transfer value to destination
+        // TODO Keep it for compatibility. Remove it later.
         if let (true, ActionValue::Transfer(val)) = (self.payment_required(), &params.value) {
             self.state
                 .transfer_balance(&params.sender, &params.address, &val)?
@@ -1172,8 +1168,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             let mut tracer = NoopTracer;
             let mut vmtracer = NoopVMTracer;
             let economical_model = self.economical_model;
-            let check_fee_back_platform = self.check_fee_back_platform;
-            let chain_owner = self.chain_owner;
             let mut ext = self.as_externalities(
                 OriginInfo::from(&params),
                 &mut unconfirmed_substate,
@@ -1182,8 +1176,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 &mut vmtracer,
                 static_call,
                 economical_model,
-                check_fee_back_platform,
-                chain_owner,
             );
             contract.exec(&params, &mut ext).finalize(ext)
         };
@@ -1249,6 +1241,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let nonce_offset = if schedule.no_empty {1} else {0}.into();*/
         let nonce_offset = U256::from(0);
         let prev_bal = self.state.balance(&params.address)?;
+        // TODO Keep it for compatibility. Remove it later.
         if let (true, &ActionValue::Transfer(val)) = (self.payment_required(), &params.value) {
             self.state.sub_balance(&params.sender, &val)?;
             self.state
@@ -1307,6 +1300,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         output: Bytes,
         trace: Vec<FlatTrace>,
         vm_trace: Option<VMTrace>,
+        chain_owner: Address,
+        fee_back_platform: bool,
     ) -> ExecutionResult {
         /*
         let schedule = self.engine.schedule(self.info);
@@ -1364,15 +1359,15 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         );
 
         if let EconomicalModel::Charge = self.economical_model {
-            if self.check_fee_back_platform {
+            if fee_back_platform {
                 // check_fee_back_platform is true, but chain_owner not set, fee still back to author(miner)
-                if self.chain_owner == Address::from(0) {
+                if chain_owner == Address::from(0) {
                     self.state
                         .add_balance(&self.info.author, &fees_value)
                         .expect("Add balance to author(miner) must success");
                 } else {
                     self.state
-                        .add_balance(&self.chain_owner, &fees_value)
+                        .add_balance(&chain_owner, &fees_value)
                         .expect("Add balance to chain owner must success");
                 }
             } else {
@@ -1521,8 +1516,6 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Charge,
-                false,
-                Address::from(0),
             );
             let opts = TransactOptions {
                 tracing: false,
@@ -1531,8 +1524,9 @@ mod tests {
                 check_quota: true,
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
+                fee_back_platform: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, opts, Address::from(0))
         };
 
         let schedule = Schedule::new_v1();
@@ -1586,8 +1580,6 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Charge,
-                false,
-                Address::from(0),
             );
             let opts = TransactOptions {
                 tracing: false,
@@ -1596,8 +1588,9 @@ mod tests {
                 check_quota: true,
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
+                fee_back_platform: false,
             };
-            ex.transact(&t, opts).unwrap()
+            ex.transact(&t, opts, Address::from(0)).unwrap()
         };
 
         let schedule = Schedule::new_v1();
@@ -1650,8 +1643,6 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Charge,
-                false,
-                Address::from(0),
             );
             let opts = TransactOptions {
                 tracing: false,
@@ -1660,8 +1651,9 @@ mod tests {
                 check_quota: true,
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
+                fee_back_platform: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, opts, Address::from(0))
         };
 
         match result {
@@ -1706,8 +1698,6 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let opts = TransactOptions {
                 tracing: false,
@@ -1716,8 +1706,9 @@ mod tests {
                 check_quota: true,
                 check_send_tx_permission: false,
                 check_create_contract_permission: false,
+                fee_back_platform: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, opts, Address::from(0))
         };
 
         assert!(result.is_ok());
@@ -1770,8 +1761,6 @@ contract HelloWorld {
             &native_factory,
             false,
             EconomicalModel::Quota,
-            false,
-            Address::from(0),
         );
         let res = ex.create(&params, &mut substate, &mut tracer, &mut vm_tracer);
         assert!(res.is_err());
@@ -1827,8 +1816,6 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let _ = ex.create(&params, &mut substate, &mut tracer, &mut vm_tracer);
         }
@@ -1891,8 +1878,6 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let mut out = vec![];
             let _ = ex.call(
@@ -1971,8 +1956,6 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let mut out = vec![];
             let res = ex.call(
@@ -2056,8 +2039,6 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let mut out = vec![];
             let res = ex.call(
@@ -2157,8 +2138,6 @@ contract FakePermissionManagement {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let mut out = vec![];
             let res = ex.call(
