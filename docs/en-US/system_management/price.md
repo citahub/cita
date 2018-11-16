@@ -1,24 +1,24 @@
-# 配额价格管理
+# Quota Price Management
 
-## 简述
+## Overview
 
-和以太坊消耗 gas 类似，在 CITA 的 `Charge` 经济模型中发送交易，部署合约等也需要花费一定的手续费，具体的计算方法是: `手续费 = quotaUsed * quotaPrice` 。
-为了更好的满足运营方的需求，我们提供了设置 `quotaPrice` 的接口，拥有权限的管理员可以通过发送交易来设置 `quotaPrice`。
+When you choose `Charge` economic model in CITA, similar to gas in Ethereum, it is required to spend a certain amount of quota when sending a transaction or deploying a contract, etc.
+The specific calculation method is: `Transaction fee = quotaUsed * quotaPrice`.
+In order to better meet the needs of the operators, we provide an interface to set `quotaPrice`, and only administrator can set `quotaPrice` by sending a transaction.
 
-## 操作示例
+## Operation Example
 
-> 接下来的测试，用 [cita-cli](https://github.com/cryptape/cita-cli) 命令行模式进行演示。
+The default `quotaPrice` is 1000000, and we will demonstrates how to modify the quotaPrice by administrator using [cita-cli] (https://github.com/cryptape/cita-cli).
 
-默认的 `quotaPrice` 默认为 1000000， 接下来演示管理员如何修改 quotaPrice。
+> The default `quotaPrice` before version 0.20 is 1
 
-> 0.20 版本之前的默认 `quotaPrice` 是 1
+First, query the current `quotaPrice`:
 
-首先查询当前的 `quotaPrice`：
 ```bash
 $ cita-cli scm PriceManager getQuotaPrice
 ```
 
-输出：
+Get the output：
 ```json
 {
   "id": 1,
@@ -28,9 +28,9 @@ $ cita-cli scm PriceManager getQuotaPrice
 
 ```
 
-得到 `quotaPrice` 是十六进制的默认值。
+In here, we get the `quotaPrice`, which is default in hexadecimal.
 
-修改 `quotaPrice`， 我们把 `quotaPrice` 由 1000000  改为 2000000：
+Next, we change `quotaPrice` from 1000000 to 2000000:
 
 ```bash
 $ cita-cli scm PriceManager setQuotaPrice \
@@ -38,13 +38,13 @@ $ cita-cli scm PriceManager setQuotaPrice \
               --price 0x00000000000000000000000000000000000000000000000000000000001e8480
 ```
 
-再次查询， 发现 `quotaPrice` 已更新：
+Query again:
 
 ```bash
 $ cita-cli scm PriceManager getQuotaPrice
 ```
 
-输出：
+Get the Output：
 ```json
 {
   "id": 1,
@@ -52,3 +52,5 @@ $ cita-cli scm PriceManager getQuotaPrice
   "result": "0x00000000000000000000000000000000000000000000000000000000001e8480"
 }
 ```
+
+In here, we can see that quotaPrice changed sucessfully.
