@@ -26,6 +26,7 @@
     "store": "eslint test/integrate/store.js && mocha test/integrate/store.js -t 20s --exit",
     "batch_tx": "eslint test/integrate/batch_tx.js && mocha test/integrate/batch_tx.js -t 20s --exit",
     "permission": "eslint test/integrate/permission.js && mocha test/integrate/permission.js -t 20s --exit",
+    "auto_exec": "eslint test/integrate/auto_exec.js && mocha test/integrate/auto_exec.js -t 20s --exit",
     "lint": "eslint test",
     "lint-fix": "eslint --fix test"
   },
