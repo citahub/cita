@@ -26,6 +26,7 @@ rayon = "1.0"
 
 [dev-dependencies]
 tempfile = "2"
+tempdir = "0.3.7"
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
