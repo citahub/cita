@@ -137,6 +137,9 @@ class GenesisData(object):
 
     def compile_to_data(self, name, path):
         """Compile a solidity file and return the result data."""
+
+        import logging
+
         compiled = solidity.compile_file(
             path,
             combined='bin,abi,userdoc,devdoc,hashes',
@@ -146,6 +149,7 @@ class GenesisData(object):
                 self.contracts_interfaces_dir))
         data = solidity.solidity_get_contract_data(compiled, path, name)
         if not data['bin']:
+            logging.critical('The bin of contract %r is empty. Please check it!', name)
             sys.exit(1)
         return data
 
