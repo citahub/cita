@@ -1,78 +1,77 @@
-# 跨链合约编写及操作示例
+# Cross-chain Contract Writing and Operation Guide
 
-## 跨链合约编写
+## How to write cross-chain contract ?
 
-### 跨链合约示例
+Let's illustrate it with a [contract sample](https://github.com/cryptape/cita/blob/develop/scripts/contracts/tests/contracts/MyToken.sol).
 
-可以参照[示例合约](https://github.com/cryptape/cita/blob/develop/scripts/contracts/tests/contracts/cross_chain_token.sol)。
+This is a token contract used to transfer tokens cross chains and need to be deployed in both sidechain and mainchain.
 
-这是一个可以跨链转移 token 的 Token 合约。
+Compared with ordinary token contract, two functions, `send_to_side_chain` and `recv_from_side_chain`, are added which can be used in cross-chain token transfer.
 
-相比普通的 Token 合约增加了 `send_to_side_chain` 和 `recv_from_side_chain` 两个函数用于跨链转 token 。
+`send_to_side_chain` is designed to deduct tokens from one chain.
 
-`send_to_side_chain` 只是在一条链上扣掉一部分 token 。
+After the transaction is executed, use JsonRPC `cita_getTransactionProof` interface to get the transaction proof.
 
-等交易执行之后，使用 JSON-RPC 接口 `cita_getTransactionProof` 获取交易执行的证明。
+Send this proof to function `recv_from_side_chain` of another chain. After verification, this proof can be parsed out original transaction information,  which is transfer amount in here. In the end, add the same number of tokens to the same user.
 
-将证明发送到另外一个链上的 `recv_from_side_chain`。校验证明之后解析出原始交易的内容。在这个例子里就是转账金额。
+Now we have completed the token transfer cross chains.
 
-然后执行整个交易的后半段，给同样的用户增加同样数量的 token ，完成 token 的跨链转移。
+### Notices
 
-### 跨链合约注意事项
+1. `RECV_FUNC_HASHER` is the function signature of `recv_from_side_chain`. You can use following command to view the detail：
 
-`send_to_side_chain` 中 `destFuncHasher` 是 `recv_from_side_chain` 的 function signature 。用来确保发送方和接受方的合约是匹配的。
+  ```shell
+  solc --hashes cross_chain_token.sol
+  ```
 
-`txDataSize` 是跨链传递的数据的大小。即 `send_to_side_chain` 除去前两个参数（固定必须的参数）之后所有参数的总大小，这些参数需要以bytes的方式传递。
+2. `DATA_SIZE` is the size of the data transfered cross the chain, that is, the total size of all other arguments except for the first two arguments (fixed arguments) in function  `send_to_side_chain`.
 
-`nonce` 是为了防止跨链交易重放攻击增加的，作用同 `CITA` 交易中的 `nonce` 。
+3. `nonce`  is designed to protect cross-chain transaction from replay attacks,  same function as `nonce` in `CITA`.
 
-跨链交易必须严格按照交易发生的顺序在两条链之间传递，因此 `crosschain_nonce` 设计为自增的计数。
+   The cross-chain transaction data must be transfered strictly in the order of transaction execution，so the count of `crosschain_nonce` is designed as autoincrement. 
 
-将证明发送到另外一个链上之前，先调用 `get_cross_chain_nonce` 获取当前 `nonce`。
+   Before sending the proof to another chain, call `get_cross_chain_nonce` to get current `nonce`. Then, there are tools also used to parse the proof and extract the `nonce`. Comparing two nonce values for equality, Only if they are equal, the transaction can be sent successfully. Otherwise, the proof may need to be discarded since the proof has been sent before, or the transaction needs to wait until preorder transaction was sent successfully.
 
-同时有工具可以解析证明，提取证明中的 `nonce` 。只有两者相等才能发送成功，如果不相等，则说明证明已经发送过，可以丢弃；或者前序交易还未发送，还需要等待。
+4. `event cross_chain(uint256 from_chain_id, uint256 to_chain_id, address dest_contract, uint256 hasher, uint256 nonce)`in `send_to_side_chain` privide necessary information for cross-chain transaction. 
 
-`sendTransaction` 中的 `event` 为跨链提供必须的信息。请勿修改，也不要在`sendToSideChain`中增加其他 `event`。
+   Do not modify or add other `event` to this function.
 
-`recv_from_side_chain` 解析出原始交易的数据为 `bytes` 类型，用户需要参照 `send_to_side_chain` 自行解析成对应的类型。
+5. Users need to parse the data into the original type following the signature of `send_to_side_chain`.
 
-## 跨链合约操作示例
+## Operations
 
-### 新建、注册和启动侧链
+### Create, register，and launch sidechains
 
-目前，侧链使用系统合约 [ChainManager](https://github.com/cryptape/cita/blob/develop/scripts/contracts/src/system/chain_manager.sol) 进行管理。
+Currently, sidechains are managed using the [ChainManager](https://github.com/cryptape/cita/blob/develop/scripts/contracts/system/chain_manager.sol).
 
-* 生成侧链的验证节点的私钥，使用侧链的验证节点地址，在主链上使用系统合约 `ChainManager` 的方法 `newSideChain` 进行新建侧链，得到侧链的 Id 。
-* 在主链上使用系统合约 `ChainManager` 的方法 `enableSideChain` 启动指定 Id 的侧链。
-* 新建侧链，创世块里的系统合约 `ChainManager` 构造时，使用上一个步骤申请的侧链 Id 、主链的 Id 和主链的验证节点地址作为参数。
-* 启动侧链即可。
+* Generate the private key and address of sidechain verification node, then call `newSideChain` in mainchain to create a sidechain ID using the sidechain address. 
+* Call `enableSideChain` in mainchain to enable the sidechain with specified Id.
+* When enable sidechain contract `ChainManager` inside genesis block on sidechain, use the sidechain Id , mainchain id and mainchain verification node applied for in the previous step as aruguments.
+* Launch the sidechain now.
 
-### 部署跨链合约
+### Deploy crosschain contract
 
-在主侧链分别部署跨链合约，分别得到合约地址。
+Deploy crosschain contract in both sidechain and mainchain and obtain these two contract address.
 
-### 发送跨链交易
+### Send cross-chain transaction
 
-调用任意一条链的跨链合约的 `send_to_side_chain` 方法，
-使用接收链（另一条链）的 Id 、接收链跨链合约的合约地址和转移的 token 数量作为参数，
-发送跨链转移 token 交易，并得到交易 hash 。
+Call `send_to_side_chain` of sender chain,  using the ID and contract address of the other chain, and the token transfer amount as the arguments, to send the cross chain token transaction，and get the transaction hash.
+No distination is made between mainchain and sidechain in operations.
 
-在操作步骤中不区分主链和侧链。
+### Use the relayer tool to send transactions to receiver chain
 
-### 使用 Relayer 工具发送跨链交易到目标链
-
-使用跨链交易的交易 hash 、该交易所在链的 Id，和一个配置文件作为入参调用工具：
+Use the cross-chain token transaction hash, the ID of the sender chain, and a configuration file as input arguments to invoke the tool:
 
 ```shell
 cita-relayer-parser -c SEND_CHAIN_ID -t TX_HASH -f relayer-parser.json
 ```
 
-其中配置文件 `relayer-parser.json` 目前主要有 2 个参数：
+In current，the configuration file `relayer-parser.json` has two parameters:
 
-* 工具使用的私钥。
-* 所有相关链的 JSON-RPC 网络地址，使用 Id 作为索引。
+* The private key used by the tool
+* The Jsonrpc network address of all related chains, using chain ID as index
 
-范例如下：
+For example:
 
 ```json
 {
@@ -100,35 +99,12 @@ cita-relayer-parser -c SEND_CHAIN_ID -t TX_HASH -f relayer-parser.json
 }
 ```
 
-该工具主要做的任务为：
+Main task of this tool：
 
-* 根据入参，去发送链上查询跨链交易的交易证明数据。
-* 根据跨链交易的交易证明数据，得到转移 token 的接收链的 Id 。
-* 发送证明到接收链上，完成 token 转移。
+* Based on the input parameters, check the transaction proof of the sender chain.
+* According to the transaction proof, get the ID of the receiver chain.
+* Send the proof to the receiver chain.
 
-### 验证跨链是否成功
+### Verify if the cross-chain token transfer is successful
 
-在发送链和接收链分别使用跨链合约中的查询接口（实例合约中 `get_balance` 方法）查询当前用户的 token 数量。
-
-### 从侧链退出
-用户转移到侧链的资产，需要发送跨链交易才能再回到主链。如果侧链不再工作，用户将无法通过这种方式从侧链退出。
-
-为此我们提供了状态证明，通过jsonrpc接口`getStateProof`，可以获取合约中一个变量在指定高度的值的证明。
-
-将这个证明发送到主链上的`ChainManager`系统合约中的`verifyState`，对证明进行校验之后会进行后续处理。
-
-### relay block header
-`state proof`功能需要将侧链的block header同步到主链。
-
-relayer可以在侧链上调用`getBlockHeader`，获取指定高度的侧链的`block header`，然后将数据发送到主链上的`ChainManager`系统合约`verifyBlockHeader`。
-
-`ChainManager`系统合约验证之后，保存侧链每个高度的`state root`，用来验证用户提交的`state proof`。
-
-`block header`需要按顺序传递，因此`ChainManager`系统合约提供了`getExpectedBlockNumber`，可以查询指定侧链同步的进度。
-
-### 侧链交易的确定性
-考虑极端的情况，侧链可能随时退出。
-
-因此用户在侧链上发生的交易，必须等交易所在的block的header同步到主链，交易才算确定。
-
-这样即使侧链退出，也可以用过`state proof`的方式在主链上恢复对应的资产。
+Query the number of tokens for current user using the query interface ( `get_balance` in contract sample) in both sender chain and receiver chain.
