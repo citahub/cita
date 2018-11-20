@@ -15,11 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use authentication::check_permission;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use db::{self as db, Writable};
 use error::{Error, ExecutionError};
-use executive::{check_permission, TransactOptions};
+use executive::TransactOptions;
 use grpc::Result as GrpcResult;
 
 use contracts::grpc::{
