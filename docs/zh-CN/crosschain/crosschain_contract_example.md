@@ -4,7 +4,7 @@
 
 ### 跨链合约示例
 
-可以参照[示例合约](https://github.com/cryptape/cita/blob/develop/scripts/contracts/tests/contracts/cross_chain_token.sol)。
+可以参照[示例合约](https://github.com/cryptape/cita/blob/develop/scripts/contracts/tests/contracts/MyToken.sol)。
 
 这是一个可以跨链转移 token 的 Token 合约。
 
