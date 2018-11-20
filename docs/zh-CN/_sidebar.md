@@ -18,6 +18,7 @@
     - [数据订正](system_management/amend.md)
     - [出块激励返回管理](system_management/fee_back.md)
     - [协议版本管理](system_management/version.md)
+    - [自动执行](system_management/auto_exec.md)
 - JSON-RPC指南
     - [JSON-RPC参数和返回值类型](rpc_guide/rpc-types.md)
     - [JSON-RPC列表](rpc_guide/rpc.md)
@@ -37,6 +38,7 @@
     - [批量交易合约接口](contracts_guide/batch.md)
     - [紧急制动合约接口](contracts_guide/emergency_brake.md)
     - [管理员管理合约接口](contracts_guide/admin.md)
+    - [自动执行合约接口](contracts_guide/auto_exec.md)
     - [错误类型](contracts_guide/error.md)
 - 架构设计
     - [整体架构](architecture/architecture.md)

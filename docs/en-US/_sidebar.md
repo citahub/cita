@@ -18,6 +18,7 @@
     - [Amend Data](system_management/amend.md)
     - [Fee back](system_management/fee_back.md)
     - [Protocol Version Management](system_management/version.md)
+    - [Auto Exec](system_management/auto_exec.md)
 - JSON-RPC Guide
     - [JSON-RPC Parameters and Returns](rpc_guide/rpc-types.md)
     - [JSON-RPC List](rpc_guide/rpc.md)
@@ -37,6 +38,7 @@
     - [Batch Tx Contract Interface](contracts_guide/batch.md)
     - [Emergency Brake Contract Interface](contracts_guide/emergency_brake.md)
     - [Admin Management Contract Interface](contracts_guide/admin.md)
+    - [Auto Exec Contract Interface](contracts_guide/auto_exec.md)
     - [Error Type](contracts_guide/error.md)
 - Architecture
     - [Overall Architecture](architecture/architecture.md)

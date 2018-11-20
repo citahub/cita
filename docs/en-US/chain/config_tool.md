@@ -14,7 +14,8 @@ After compiling successfully, the chain configuration items are recorded in `ini
    checkSendTxPermission: false
    checkCreateContractPermission: false
    checkQuota: false
-   checkFeeBackPlatform:false
+   checkFeeBackPlatform: false
+   autoExec: false
    chainOwner: '0x0000000000000000000000000000000000000000'
    chainName: test-chain
    chainId: 1
@@ -55,6 +56,7 @@ After compiling successfully, the chain configuration items are recorded in `ini
   - `checkCreateContractPermission` : contract create permission switch
   - `checkQuota` : quota switch
   - `checkFeeBackPlatform` : feeback switch, the default is `false`, which means return to the address of consensus node, while `true` means return to a certain address set by chain owner
+  - `autoExec` : autoExec switch, the default is `false`. while `true` means turn on the autoExec feature
   - `chainOwner` : a certain address set by chain owner, used when `checkFeeBackPlatform` is `true`
   - `chainName` : the name of the chain
   - `chainId` : chain Id
