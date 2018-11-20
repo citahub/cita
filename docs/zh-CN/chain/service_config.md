@@ -77,12 +77,14 @@ executor.toml 是 Executor 微服务的配置文件，如下：
 journaldb_type = "archive"
 prooftype = 2
 grpc_port = 5000
+statedb_cache_size = 5242880
 
 ```
 
 * `journaldb_type` : 表示当前使用的 JournalDB 算法，有 "archive" "light" "fast" "basic" 等4种类型，默认是 archive。
 * `prooftype` : 表示当前使用的共识算法，目前只支持 CITA-BFT 算法。
-* `grpc_port` : grpc 端口
+* `grpc_port` : grpc 端口。
+* `statedb_cache_size`: 表示 StateDB 中 global cache 的大小，用于缓存账户和 code， 默认是 5242880，即 5M。
 
 ## RPC
 

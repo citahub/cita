@@ -67,11 +67,14 @@ use util::RwLock;
 use util::UtilError;
 use util::{journaldb, Bytes};
 
+const DEFAULT_STATEDB_CACHE_SIZE: usize = 5 * 1024 * 1024;
+
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
     pub prooftype: u8,
     pub journaldb_type: String,
     pub grpc_port: u16,
+    pub statedb_cache_size: Option<usize>,
 }
 
 impl Config {
@@ -80,6 +83,7 @@ impl Config {
             prooftype: 2,
             journaldb_type: String::from("archive"),
             grpc_port: 5000,
+            statedb_cache_size: Some(DEFAULT_STATEDB_CACHE_SIZE),
         }
     }
 
@@ -247,7 +251,11 @@ impl Executor {
             .parse()
             .unwrap_or(journaldb::Algorithm::Archive);
         let journal_db = journaldb::new(Arc::clone(&db), journaldb_type, COL_STATE);
-        let state_db = StateDB::new(journal_db, 5 * 1024 * 1024); // todo : cache_size would be set in config file.
+
+        let cache_size = executor_config
+            .statedb_cache_size
+            .unwrap_or(DEFAULT_STATEDB_CACHE_SIZE);
+        let state_db = StateDB::new(journal_db, cache_size);
 
         let header = match get_current_header(&*db) {
             Some(header) => header,

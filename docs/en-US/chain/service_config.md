@@ -43,7 +43,7 @@ prof_duration = 0
 
 ## Consensus
 
-Consensus.toml is the configuration file for the Consensus microservice，as follows:
+Consensus.toml is the configuration file for the Consensus microservice, as follows:
 
 ```bash
 
@@ -79,12 +79,14 @@ Executor.toml is the configuration file for the Executor microservice as follows
 journaldb_type = "archive"
 prooftype = 2
 grpc_port = 5000
+statedb_cache_size = 5242880
 
 ```
 
 * `journaldb_type` : type of JournalDB algorithm. There are 4 types, including "archive", "light", "fast" and "basic". The default is `archive`
-* `prooftype` : tyoe of consensus algorithm, (CITA only supports the CITA-BFT algorithm in current)
+* `prooftype` : type of consensus algorithm, (CITA only supports the CITA-BFT algorithm in current)
 * `grpc_port` : grpc port
+* `statedb_cache_size`:  size of global cache in StateDB, which is used to save account and code. The default is 5242880, that is, 5M.
 
 ## RPC
 

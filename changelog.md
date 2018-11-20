@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file. And this pr
 ### Executor
 
 - [Feature] Automatic execution by [@kaikai]
+- [Optimazation] Enable changing size of global cache in StateDB by [@lhf]
 
 ### Chain
 
@@ -36,3 +37,4 @@ All notable changes to this project will be documented in this file. And this pr
 [@WPF]:https://github.com/ouwenkg
 [@zhiwei]:https://github.com/rink1969
 [@zhouyun-zoe]:https://github.com/zhouyun-zoe
+[@lhf]:https://github.com/EighteenZi
