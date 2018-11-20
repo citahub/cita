@@ -42,6 +42,6 @@ respawn = 3
 [[process]]
 name = "cita-executor"
 command = "cita-executor"
-args = ["-g","genesis.json","-c","executor.toml"]
+args = ["-c","executor.toml"]
 pidfile = ".cita-executor.pid"
 respawn = 3
