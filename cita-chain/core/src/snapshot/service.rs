@@ -37,9 +37,6 @@ use util::Bytes;
 use util::UtilError;
 use util::{Mutex, RwLock, RwLockReadGuard};
 
-use state_db::StateDB;
-use util::journaldb::{self, Algorithm};
-
 use libchain::chain::{get_chain, get_chain_body_height, Chain};
 
 use filters::PollManager;
@@ -61,16 +58,8 @@ impl DatabaseRestore for Chain {
     fn restore_db(&self, new_db: &str) -> Result<(), Error> {
         info!("Replacing client database with {:?}", new_db);
 
-        let mut state_db = self.state_db.write();
-
         let db = self.db.write();
         db.restore(new_db)?;
-
-        *state_db = StateDB::new(journaldb::new(
-            db.clone(),
-            Algorithm::Archive,
-            ::db::COL_STATE,
-        ));
 
         // replace chain
         //*chain = Arc::new(BlockChain::new(self.config.blockchain.clone(), &[], db.clone()));
