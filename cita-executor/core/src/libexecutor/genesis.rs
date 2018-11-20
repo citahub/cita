@@ -74,7 +74,7 @@ impl Genesis {
             set_param_path(resource_path.join("PARAMS").to_str().unwrap());
         }
         if resource_path.exists() {
-            let file_list_path = resource_path.join("file_list");
+            let file_list_path = resource_path.join("files.list");
             if file_list_path.exists() {
                 let file_list = File::open(file_list_path).unwrap();
                 let mut buf_reader = BufReader::new(file_list);
