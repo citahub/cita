@@ -44,7 +44,6 @@ use libproto::{BlockTxHashes, FullTransaction, Message};
 use proof::BftProof;
 use receipt::{LocalizedReceipt, Receipt};
 use rlp::{self, Encodable};
-use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::{Into, TryInto};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -55,7 +54,6 @@ use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
 use types::transaction::{Action, SignedTransaction};
-use util::journaldb;
 use util::kvdb::*;
 use util::merklehash;
 use util::Hashable;
@@ -286,7 +284,6 @@ pub struct Chain {
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
     pub proof_map: RwLock<BTreeMap<u64, ProtoProof>>,
     pub db: RwLock<Arc<KeyValueDB>>,
-    pub state_db: RwLock<StateDB>,
 
     // block cache
     pub block_headers: RwLock<HashMap<BlockNumber, Header>>,
@@ -363,8 +360,6 @@ impl Chain {
             400,
         );
 
-        let journal_db = journaldb::new(Arc::clone(&db), journaldb::Algorithm::Archive, COL_STATE);
-        let state_db = StateDB::new(journal_db);
         let blooms_config = BloomChainConfig {
             levels: LOG_BLOOMS_LEVELS,
             elements_per_index: LOG_BLOOMS_ELEMENTS_PER_INDEX,
@@ -397,7 +392,6 @@ impl Chain {
             block_receipts: RwLock::new(HashMap::new()),
             cache_man: Mutex::new(cache_man),
             db: RwLock::new(db),
-            state_db: RwLock::new(state_db),
             polls_filter: Arc::new(Mutex::new(PollManager::default())),
             nodes: RwLock::new(Vec::new()),
             validators: RwLock::new(Vec::new()),

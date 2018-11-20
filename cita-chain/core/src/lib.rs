@@ -53,8 +53,7 @@ extern crate cita_crypto;
 extern crate test;
 
 pub mod env_info;
-pub mod state;
-pub mod state_db;
+
 #[macro_use]
 pub mod error;
 
