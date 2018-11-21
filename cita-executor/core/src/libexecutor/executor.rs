@@ -745,7 +745,6 @@ impl Executor {
         state_db
             .journal_under(&mut batch, height, &hash)
             .expect("DB commit failed");
-        state_db.sync_cache();
         self.db.read().write_buffered(batch);
 
         self.prune_ancient(state_db).expect("mark_canonical failed");

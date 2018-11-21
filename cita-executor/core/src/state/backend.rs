@@ -31,6 +31,9 @@ pub trait Backend: Send {
     /// Add an account entry to the cache.
     fn add_to_account_cache(&mut self, addr: Address, data: Option<Account>, modified: bool);
 
+    /// Sync all account entries from backend's local cache to global cache.
+    fn sync_account_cache(&mut self);
+
     /// Add a global code cache entry. This doesn't need to worry about canonicality because
     /// it simply maps hashes to raw code and will always be correct in the absence of
     /// hash collisions.

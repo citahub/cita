@@ -968,6 +968,7 @@ impl<B: Backend> State<B> {
             self.db
                 .add_to_account_cache(address, a.account, a.state == AccountState::Committed);
         }
+        self.db.sync_account_cache();
     }
 
     /// Clear state cache

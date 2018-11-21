@@ -181,7 +181,6 @@ impl Genesis {
         state_db
             .journal_under(&mut batch, height, &hash)
             .expect("DB commit failed");
-        state_db.sync_cache();
         db.write(batch)
     }
 }
