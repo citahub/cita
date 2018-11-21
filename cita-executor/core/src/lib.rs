@@ -18,10 +18,10 @@
 #![feature(try_from)]
 #![cfg_attr(test, feature(test))]
 #![feature(tool_lints)]
+#![feature(mpsc_select)]
 
 extern crate bincode;
 extern crate byteorder;
-#[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate logger;
@@ -32,8 +32,10 @@ extern crate rlp;
 extern crate serde_derive;
 #[cfg_attr(test, macro_use)]
 extern crate serde_json;
-#[macro_use]
 extern crate util;
+
+#[macro_use]
+extern crate crossbeam_channel;
 
 #[macro_use]
 extern crate rlp_derive;
@@ -91,7 +93,6 @@ pub mod substate;
 pub mod authentication;
 pub mod contracts;
 pub mod libexecutor;
-pub mod snapshot;
 
 mod spec;
 
