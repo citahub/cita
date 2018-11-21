@@ -268,17 +268,6 @@ impl MsgHandler {
             request_id
         );
 
-        // for block verify, req must include signer
-        for req in blk_req.get_reqs() {
-            let req_signer = req.get_signer();
-            if req_signer.is_empty() {
-                let tx_hash = H256::from_slice(req.get_tx_hash());
-                self.publish_block_verification_result(request_id, Ret::BadSig);
-                self.save_ret_to_cache(tx_hash, None);
-                return;
-            }
-        }
-
         let mut reqs_no_cache = Vec::new();
         for req in blk_req.get_reqs() {
             let tx_hash = H256::from_slice(req.get_tx_hash());
