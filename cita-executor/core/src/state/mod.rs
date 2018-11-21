@@ -29,7 +29,7 @@ use evm::Schedule;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
 use libexecutor::economical_model::EconomicalModel;
-use libexecutor::executor::CheckOptions;
+use libexecutor::sys_config::CheckOptions;
 use receipt::{Receipt, ReceiptError};
 use rlp::{self, Encodable};
 use std::cell::{Ref, RefCell, RefMut};

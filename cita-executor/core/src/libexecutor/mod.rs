@@ -25,6 +25,7 @@ pub mod executor;
 pub mod fsm;
 pub mod genesis;
 pub mod lru_cache;
+pub mod sys_config;
 
 pub use self::genesis::Genesis;
 pub use libproto::*;

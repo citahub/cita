@@ -219,7 +219,7 @@ mod tests {
     use core::header::OpenHeader;
     use core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
     use core::libexecutor::economical_model::EconomicalModel;
-    use core::libexecutor::executor::GlobalSysConfig;
+    use core::libexecutor::sys_config::GlobalSysConfig;
     use core::state_db::StateDB;
     use libproto::ExecutedResult;
     use proof::BftProof;
