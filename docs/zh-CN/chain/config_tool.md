@@ -47,6 +47,8 @@
    admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
  -VersionManager:
    version: 1
+ -PriceManager:
+   quotaPrice: 1000000
 ```
 
 * `SysConfig` : 初始化一些系统信息
@@ -85,6 +87,8 @@
     - `admin` : 管理员地址
 * `VersionManager` : 协议版本号
     - `version` : 协议版本号
+* `PriceManager` : 配额管理
+    - `quotaPrice` : 配额价格
 
 创世块一旦生成，只有 `chainName`，`operator`，`website` 这三项可以在链运行之后再进行修改，其他项均不可再修改。
 
