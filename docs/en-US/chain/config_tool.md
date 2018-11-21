@@ -47,6 +47,8 @@ After compiling successfully, the chain configuration items are recorded in `ini
    admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
  -VersionManager:
    version: 1
+- PriceManager:
+   quotaPrice: 1000000
 ```
 
 * `SysConfig` : initialize some system information
@@ -66,12 +68,12 @@ After compiling successfully, the chain configuration items are recorded in `ini
   - `economicalModel`: economic model (more details on this below)
   - `name` : token name
   - `symbol` : token symbol
-  - `avatar` : link of token icon 
+  - `avatar` : link of token icon
 * `QuotaManager` : initialize the administrator address
   - `admin` : default administrator address
 * `NodeManager` : initialize consensus node
   - `nodes` : consensus node address
-  - `stakes` : the weight of consensus nodes to produce the block 
+  - `stakes` : the weight of consensus nodes to produce the block
 * `ChainManager` : initialize some information for cross-chain
   - `parentChainId` : parent chain ID
   - `parentChainAuthorities` : list of consensus nodes for the parent chain
@@ -83,8 +85,10 @@ After compiling successfully, the chain configuration items are recorded in `ini
   - `accounts` : list of users in the group
 * `Admin` : administrator
   - `admin` : administrator address
-* `VersionManager` : protocol version number
+* `VersionManager` : protocol version
   - `version` : protocol version number
+* `PriceManager` : quota price
+  - `quotaPrice` : quota price value
 
 Once the Genesis block is generated, only this three items `chainName`, `operator`, and `website` can be modified after the chain is run. No other items can be modified.
 
@@ -212,5 +216,5 @@ According to the given parameters, 4 nodes are generated. `test-chain/*` contain
 * `*.toml` : microservice configuration file, please refer to the microservice description for details.
 * `genesis.json` : genesis block file, in which, `timestamp` is in seconds; `prevhash` refers to the previous block hash, here is the default value; and `alloc` refers to the contract content deployed to the Genesis block;
 * The `test-chain/template` ：template files, including the consensus node address in `test-chain/template/authorities.list`, and the system contract generation parameter in `test-chain/template/init_data.yml`, node Port address in `test-chain/template/nodes.list` and other information
-* `logs` : log information 
+* `logs` : log information
 * `data` : data storage
