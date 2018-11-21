@@ -88,6 +88,7 @@ pub mod engines;
 pub mod error;
 pub mod substate;
 
+pub mod authentication;
 pub mod contracts;
 pub mod libexecutor;
 pub mod snapshot;
