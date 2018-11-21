@@ -11,6 +11,7 @@ module.exports = {
     chainManager: '0xffffffffffffffffffffffffffffffffff020002',
     admin: '0xffffffffffffffffffffffffffffffffff02000c',
     roleAuth: '0xffffffffffffffffffffffffffffffffff02000d',
+    autoExecAddr: '0xffffffffffffffffffffffffffffffffff020013',
   },
   localServer: 'http://127.0.0.1:1337',
   remoteServer: 'http://xx.xx.xx.xx:1337',

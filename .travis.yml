@@ -204,3 +204,17 @@ jobs:
         - ./daemon.sh ./bin/cita start test-chain/0
       script:
         - npm run-script permission
+
+    - <<: *stage-contract-test-sha3-secp256k1
+      name: Integrate AutoExec
+      install:
+        - cd $TRAVIS_BUILD_DIR/target/install
+        - ./env.sh ./scripts/create_cita_config.py create
+            --nodes "127.0.0.1:4100"
+            --contract_arguments "VersionManager.version=0"
+            --contract_arguments "SysConfig.autoExec=true"
+            --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"
+        - ./env.sh ./bin/cita setup test-chain/0
+        - ./daemon.sh ./bin/cita start test-chain/0
+      script:
+        - npm run-script auto_exec
