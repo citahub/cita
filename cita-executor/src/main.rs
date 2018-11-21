@@ -52,7 +52,7 @@
 //!
 //! key struct:
 //!
-//! - `ExecutorInstance`: `executor_instance::ExecutorInstance`
+//! - `Postman`: `postman::Postman`
 //! - [`Executor`]
 //! - [`GlobalSysConfig`]
 //! - [`Genesis`]
@@ -108,12 +108,12 @@ extern crate serde_derive;
 extern crate util;
 
 mod backlogs;
-mod executor_instance;
+mod postman;
 
 use clap::App;
 use core::contracts::grpc::grpc_vm_adapter;
 use core::libexecutor::executor::Executor;
-use executor_instance::Postman;
+use postman::Postman;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
