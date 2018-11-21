@@ -27,6 +27,7 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddrPublic {
 
     Admin admin = Admin(adminAddr);
     uint chainIdV1;
+    bool autoExec;
 
     modifier onlyAdmin {
         if (admin.isAdmin(msg.sender))
@@ -47,6 +48,7 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddrPublic {
     ///    2: _checkCreateContractPermission
     ///    3: _checkQuota
     ///    4: _checkFeeBackPlatform
+    ///    5: _autoExec
     constructor(
         uint _delayBlockNumber,
         address _chainOwner,
@@ -70,6 +72,7 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddrPublic {
         checkCreateContractPermission = flags[2];
         checkQuota = flags[3];
         checkFeeBackPlatform = flags[4];
+        autoExec = flags[5];
         chainOwner = _chainOwner;
         chainName = _chainName;
         chainId = uint32(_chainId);
@@ -233,5 +236,13 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddrPublic {
         name = tokenInfo.name;
         symbol = tokenInfo.symbol;
         avatar = tokenInfo.avatar;
+    }
+
+    function getAutoExec()
+        public
+        view
+        returns (bool)
+    {
+        return autoExec;
     }
 }

@@ -51,6 +51,7 @@ lazy_static! {
         Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
     static ref ECONOMICAL_MODEL: Vec<u8> = method_tools::encode_to_vec(b"getEconomicalModel()");
     static ref GET_TOKEN_INFO: Vec<u8> = method_tools::encode_to_vec(b"getTokenInfo()");
+    static ref AUTO_EXEC: Vec<u8> = method_tools::encode_to_vec(b"getAutoExec()");
 }
 
 #[derive(PartialEq, Debug)]
@@ -326,6 +327,18 @@ impl<'a> SysConfig<'a> {
             None
         }
     }
+
+    /// Get the flag of autoExec
+    pub fn auto_exec(&self, block_id: BlockId) -> Option<bool> {
+        self.get_value(&[ParamType::Bool], AUTO_EXEC.as_slice(), block_id)
+            .ok()
+            .and_then(|mut x| x.remove(0).to_bool())
+    }
+
+    pub fn default_auto_exec() -> bool {
+        error!("Use the default autoEXEC.");
+        false
+    }
 }
 
 #[cfg(test)]
@@ -431,5 +444,9 @@ mod tests {
                 avatar: "avatar".to_owned()
             }
         );
+
+        // Test auto_exec
+        let auto_exec = config.auto_exec(BlockId::Pending).unwrap();
+        assert_eq!(auto_exec, false);
     }
 }

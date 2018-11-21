@@ -22,6 +22,7 @@ use engines::Engine;
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
+use libexecutor::auto_exec::auto_exec;
 use libexecutor::economical_model::EconomicalModel;
 use libexecutor::executor::{CheckOptions, Executor, GlobalSysConfig};
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
@@ -66,6 +67,8 @@ pub struct ExecutedBlock {
     account_gas_limit: U256,
     account_gas: HashMap<Address, U256>,
     chain_owner: Address,
+    auto_exec_quota_limit: u64,
+    auto_exec: bool,
 }
 
 impl Deref for ExecutedBlock {
@@ -113,6 +116,8 @@ impl ExecutedBlock {
             current_quota_used: Default::default(),
             receipts: Default::default(),
             chain_owner: conf.chain_owner,
+            auto_exec_quota_limit: conf.auto_exec_quota_limit,
+            auto_exec: conf.auto_exec,
         };
 
         Ok(r)
@@ -215,7 +220,15 @@ impl ExecutedBlock {
     }
 
     /// Turn this into a `ClosedBlock`.
-    pub fn close(self) -> ClosedBlock {
+    pub fn close(mut self, economical_model: EconomicalModel) -> ClosedBlock {
+        if self.auto_exec {
+            auto_exec(
+                &mut self.state,
+                self.auto_exec_quota_limit,
+                economical_model,
+            );
+            self.state.commit().expect("commit trie error");
+        }
         // Rebuild block
         let mut block = Block::new(self.block);
         let state_root = *self.state.root();

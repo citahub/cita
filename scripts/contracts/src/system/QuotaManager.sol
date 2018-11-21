@@ -24,6 +24,8 @@ contract QuotaManager is IQuotaManager, Error, Check {
     Admin admin = Admin(adminAddr);
     /// Just for compatible
     IAuthorization private _auth = IAuthorization(authorizationAddr);
+    // quota limit for autoExec: 2^20 = 1048576
+    uint constant autoExecQL = 2 ** 20;
 
     modifier checkBaseLimit(uint _v) {
         if (_v <= maxLimit && _v >= baseLimit)
@@ -168,5 +170,14 @@ contract QuotaManager is IQuotaManager, Error, Check {
         if (quota[_account] == 0)
             return defaultAQL;
         return quota[_account];
+    }
+
+    /// @notice Get autoExec quota limit
+    function getAutoExecQL()
+        external
+        pure
+        returns (uint)
+    {
+        return autoExecQL;
     }
 }

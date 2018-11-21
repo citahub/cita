@@ -185,7 +185,8 @@ class GenesisData(object):
             'checkSendTxPermission',
             'checkCreateContractPermission',
             'checkQuota',
-            'checkFeeBackPlatform'
+            'checkFeeBackPlatform',
+            'autoExec'
         ]
         ncinfo = self.contracts_list['NormalContracts']
         for name, info in ncinfo.items():

@@ -32,7 +32,7 @@ pub use self::emergency_brake::EmergencyBrake;
 pub use self::node_manager::NodeManager;
 pub use self::permission_management::{PermissionManagement, Resource};
 pub use self::price_manager::PriceManagement;
-pub use self::quota_manager::{AccountQuotaLimit, QuotaManager};
+pub use self::quota_manager::{AccountQuotaLimit, QuotaManager, AUTO_EXEC_QL_VALUE};
 pub use self::sys_config::SysConfig;
 pub use self::user_management::UserManagement;
 pub use self::version_management::VersionManager;

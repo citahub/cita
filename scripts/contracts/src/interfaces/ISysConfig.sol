@@ -56,4 +56,6 @@ interface ISysConfig {
 
     function getEconomicalModel() external view returns (uint8);
 
+    /// @notice Get autoExec
+    function getAutoExec() external view returns (bool);
 }
