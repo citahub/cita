@@ -73,12 +73,10 @@ impl Postman {
             match self.recv() {
                 (None, None) | (Some(_), Some(_)) => return,
                 (Some((key, msg_vec)), None) => {
-                    match self.handle_mq_message(key.as_str(), msg_vec) {
-                        Err(rollback_id) => {
-                            self.close(rollback_id);
-                            return;
-                        }
-                        Ok(_) => {}
+                    let result = self.handle_mq_message(key.as_str(), msg_vec);
+                    if let Err(rollback_id) = result {
+                        self.close(rollback_id);
+                        return;
                     }
                 }
                 (None, Some((closed_block, executed_result))) => {
@@ -597,7 +595,10 @@ mod tests {
     #[test]
     fn test_wrap_height() {
         assert_eq!(0, wrap_height(::std::usize::MAX));
-        assert_eq!(::std::usize::MAX as u64 - 1, wrap_height(::std::usize::MAX - 1));
+        assert_eq!(
+            ::std::usize::MAX as u64 - 1,
+            wrap_height(::std::usize::MAX - 1)
+        );
         assert_eq!(2, wrap_height(2));
     }
 }

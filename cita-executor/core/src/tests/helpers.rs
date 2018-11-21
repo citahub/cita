@@ -200,6 +200,7 @@ pub fn init_executor2(
     let executor = Executor::init(
         genesis_json.to_str().unwrap(),
         "archive",
+        5 * 1024 * 1024,
         tempdir.to_str().unwrap().to_string(),
         fsm_req_receiver,
         fsm_resp_sender,

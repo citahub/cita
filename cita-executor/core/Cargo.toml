@@ -27,6 +27,7 @@ num_cpus = "1.2"
 rand = "0.3"
 time = "0.1"
 crossbeam = "0.2"
+crossbeam-channel = "0.2"
 transient-hashmap = "0.4.0"
 
 cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

@@ -224,6 +224,7 @@ mod tests {
     use cita_types::H256;
     use core::header::OpenHeader;
     use core::libexecutor::block::{BlockBody, ExecutedBlock, OpenBlock};
+    use core::libexecutor::economical_model::EconomicalModel;
     use core::libexecutor::executor::GlobalSysConfig;
     use core::state_db::StateDB;
     use libproto::blockchain::Proof;
@@ -288,7 +289,7 @@ mod tests {
             Arc::new(Vec::new()),
         )
         .unwrap();
-        let closed_block = exec_block.close();
+        let closed_block = exec_block.close(EconomicalModel::Quota);
 
         {
             let backlog = Backlog {
@@ -337,7 +338,7 @@ mod tests {
             Arc::new(Vec::new()),
         )
         .unwrap();
-        let closed_block = exec_block.close();
+        let closed_block = exec_block.close(EconomicalModel::Quota);
 
         {
             let mut block = open_block.clone();
@@ -378,7 +379,7 @@ mod tests {
             Arc::new(Vec::new()),
         )
         .unwrap();
-        let closed_block = exec_block.close();
+        let closed_block = exec_block.close(EconomicalModel::Quota);
 
         let mut backlog = Backlog {
             open_block: Some(open_block),
@@ -405,7 +406,7 @@ mod tests {
             Arc::new(Vec::new()),
         )
         .unwrap();
-        let closed_block = exec_block.close();
+        let closed_block = exec_block.close(EconomicalModel::Quota);
 
         let mut backlog = Backlog {
             open_block: Some(open_block),
@@ -436,7 +437,7 @@ mod tests {
             Arc::new(Vec::new()),
         )
         .unwrap();
-        let closed_block = exec_block.close();
+        let closed_block = exec_block.close(EconomicalModel::Quota);
 
         let mut backlogs = Backlogs::new(3);
         assert_eq!(false, backlogs.insert_open_block(2, open_block.clone()));
@@ -490,7 +491,7 @@ mod tests {
             Arc::new(Vec::new()),
         )
         .unwrap();
-        let closed_block = exec_block.close();
+        let closed_block = exec_block.close(EconomicalModel::Quota);
 
         let mut backlogs = Backlogs::new(3);
         assert_eq!(true, backlogs.insert_open_block(3, open_block2));

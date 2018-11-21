@@ -167,7 +167,7 @@ impl FSM for Executor {
             .commit()
             .expect("failed to commit state trie");
 
-        let closed_block = executed_block.close();
+        let closed_block = executed_block.close(*self.economical_model.read());
         let executed_result = self.make_executed_result(&closed_block);
         StatusOfFSM::Reply(closed_block, executed_result)
     }
@@ -262,7 +262,7 @@ mod tests {
         );
     }
 
-     #[test]
+    #[test]
     fn test_fsm_pause_recv_same_block() {
         let (fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
         let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
@@ -275,7 +275,7 @@ mod tests {
             command_req_receiver,
             command_resp_sender,
         );
-        let mut open_block = generate_block();
+        let open_block = generate_block();
         let executed_block = executor.to_executed_block(open_block.clone());
 
         thread::spawn(move || {
