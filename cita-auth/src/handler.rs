@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use block::{BlockTxnMessage, BlockTxnReq};
+use block_txn::{BlockTxnMessage, BlockTxnReq};
 use cita_types::traits::LowerHex;
 use cita_types::{clean_0x, Address, H256, U256};
 use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};

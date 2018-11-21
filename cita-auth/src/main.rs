@@ -99,7 +99,8 @@ extern crate util;
 extern crate uuid;
 
 pub mod batch_forward;
-pub mod block;
+pub mod block_txn;
+pub mod block_verify;
 pub mod config;
 pub mod dispatcher;
 pub mod handler;
