@@ -138,6 +138,17 @@ impl Dispatcher {
         success
     }
 
+    pub fn add_txs_to_pool(&self, txs: Vec<SignedTransaction>) {
+        let txs_pool = &mut self.txs_pool.borrow_mut();
+        let added: Vec<SignedTransaction> = txs
+            .into_iter()
+            .filter(|tx| txs_pool.enqueue(tx.clone()))
+            .collect();
+        if self.wal_enable {
+            self.wal.write_batch(&added);
+        }
+    }
+
     pub fn get_txs(&self, ids: &[H256]) -> Vec<SignedTransaction> {
         let pool = self.txs_pool.borrow();
         ids.into_iter()

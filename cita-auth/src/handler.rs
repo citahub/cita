@@ -663,7 +663,6 @@ impl MsgHandler {
                         let mut block_txn_message = BlockTxnMessage { origin, block_txn };
                         self.deal_block_txn(block_txn_message);
                         // TODO: notify network to add the origin to blacklist if BadTxSignature
-                        // TODO: Add in tx pool
                         // TODO: Verify block quota limit
                         // TODO: send block transactions to consensus
                     }
@@ -1116,9 +1115,20 @@ impl MsgHandler {
             let result = block_txn.validate(block_txn_req);
             match result {
                 Ok(pubkey_and_hashes) => {
-                    for (pubkey, hash) in pubkey_and_hashes {
-                        self.save_ret_to_cache(hash, Some(pubkey));
-                    }
+                    let signed_txn: Vec<SignedTransaction> = pubkey_and_hashes
+                        .into_iter()
+                        .zip(block_txn.take_transactions().into_iter())
+                        .map(|((pubkey, hash), tx)| {
+                            self.save_ret_to_cache(hash, Some(pubkey.clone()));
+
+                            let mut signed_tx = SignedTransaction::new();
+                            signed_tx.set_transaction_with_sig(tx);
+                            signed_tx.set_signer(pubkey);
+                            signed_tx.set_tx_hash(hash.to_vec());
+                            signed_tx
+                        })
+                        .collect();
+                    self.dispatcher.add_txs_to_pool(signed_txn);
                 }
                 Err(error) => {
                     info!("Validate BlockTxn error: {}", error);
