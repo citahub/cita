@@ -24,16 +24,20 @@ use cita_crypto::PrivKey;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, U256};
 use core::libchain::chain;
+use crossbeam_channel::{Receiver, Sender};
 use db;
 use journaldb;
-use libexecutor::block::{Block, BlockBody, OpenBlock};
-use libexecutor::executor::{Config, Executor};
+use libexecutor::block::{Block, BlockBody, ClosedBlock, OpenBlock};
+use libexecutor::command;
+use libexecutor::executor::Executor;
 use libexecutor::genesis::Genesis;
 use libexecutor::genesis::Spec;
 use libproto::blockchain;
+use libproto::ExecutedResult;
 use serde_json;
 use state::State;
 use state_db::*;
+use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
@@ -46,9 +50,9 @@ use util::kvdb::{Database, DatabaseConfig};
 use util::AsMillis;
 use util::KeyValueDB;
 
-const EXECUTOR_CONFIG: &str = "executor.toml";
 const CHAIN_CONFIG: &str = "chain.toml";
 const SCRIPTS_DIR: &str = "../../scripts";
+
 pub fn get_temp_state() -> State<StateDB> {
     let state_db = get_temp_state_db();
     State::new(state_db, 0.into(), Default::default())
@@ -104,11 +108,29 @@ pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
     (deploy_code, runtime_code)
 }
 
-pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Arc<Executor> {
-    let tempdir = TempDir::new("init_executor").unwrap().into_path();
-    let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-    let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
+pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Executor {
+    let (_fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
+    let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
+    let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
+    let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
+    init_executor2(
+        contract_arguments,
+        fsm_req_receiver,
+        fsm_resp_sender,
+        command_req_receiver,
+        command_resp_sender,
+    )
+}
 
+pub fn init_executor2(
+    contract_arguments: Vec<(&str, &str)>,
+    fsm_req_receiver: Receiver<OpenBlock>,
+    fsm_resp_sender: Sender<(ClosedBlock, ExecutedResult)>,
+    command_req_receiver: Receiver<command::Command>,
+    command_resp_sender: Sender<command::CommandResp>,
+) -> Executor {
+    // FIXME temp dir should be removed automatically, but at present it is not
+    let tempdir = TempDir::new("init_executor").unwrap().into_path();
     let create_init_data_py = Path::new(SCRIPTS_DIR).join("config_tool/create_init_data.py");
     let create_genesis_py = Path::new(SCRIPTS_DIR).join("config_tool/create_genesis.py");
     let contracts_dir = Path::new(SCRIPTS_DIR).join("contracts");
@@ -167,17 +189,24 @@ pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Arc<Executor> {
     println!("genesis_json: {}", genesis_json.to_str().unwrap());
     let genesis_file = File::open(genesis_json.to_str().unwrap()).unwrap();
     let spec: Spec = serde_json::from_reader(genesis_file).expect("Failed to load genesis.");
-    let genesis = Genesis {
-        spec: spec,
+    let _genesis = Genesis {
+        spec,
         block: Block::default(),
     };
 
-    let executor_config = Config::new(EXECUTOR_CONFIG);
-    Arc::new(Executor::init_executor(
-        Arc::new(db),
-        genesis,
-        &executor_config,
-    ))
+    let mut data_path = tempdir.clone();
+    data_path.push("data");
+    env::set_var("DATA_PATH", data_path);
+    let executor = Executor::init(
+        genesis_json.to_str().unwrap(),
+        "archive",
+        tempdir.to_str().unwrap().to_string(),
+        fsm_req_receiver,
+        fsm_resp_sender,
+        command_req_receiver,
+        command_resp_sender,
+    );
+    executor
 }
 
 pub fn init_chain() -> Arc<chain::Chain> {

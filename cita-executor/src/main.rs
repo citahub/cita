@@ -129,6 +129,7 @@ pub struct Options {
     grpc_port: u16,
     journaldb_type: String,
     genesis_path: String,
+    statedb_cache_size: usize,
 }
 
 impl Options {
@@ -138,6 +139,7 @@ impl Options {
             grpc_port: 5000,
             journaldb_type: String::from("archive"),
             genesis_path: String::from("genesis.json"),
+            statedb_cache_size: 5 * 1024 * 1024,
         }
     }
 
@@ -219,6 +221,7 @@ fn main() {
         let mut executor = Executor::init(
             &options.genesis_path,
             &options.journaldb_type,
+            options.statedb_cache_size,
             data_path,
             fsm_req_receiver.clone(),
             fsm_resp_sender.clone(),
