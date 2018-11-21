@@ -14,7 +14,8 @@
    checkSendTxPermission: false
    checkCreateContractPermission: false
    checkQuota: false
-   checkFeeBackPlatform:false
+   checkFeeBackPlatform: false
+   autoExec: false
    chainOwner: '0x0000000000000000000000000000000000000000'
    chainName: test-chain
    chainId: 1
@@ -55,6 +56,7 @@
     - `checkCreateContractPermission` : 创建合约权限检查开关
     - `checkQuota` : 配额检查开关
     - `checkFeeBackPlatform` : 出块激励选择开关，默认为 false，表示返回给共识节点，为 true 时返回给运营方地址( chainOwner )
+    - `autoExec` : 自动执行开关，默认为 false，为 true 时开启自动执行功能
     - `chainOwner` : 运营方地址，结合 checkFeeBackPlatform 一块使用
     - `chainName` : 链的名字
     - `chainId` : 链 Id

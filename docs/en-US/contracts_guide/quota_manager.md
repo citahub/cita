@@ -10,6 +10,7 @@
 * [getBQL](#getBQL)
 * [getDefaultAQL](#getDefaultAQL)
 * [getAQL](#getAQL)
+* [getAutoExecAQL](#getAQL)
 
 ### setBQL
 
@@ -183,3 +184,15 @@ $ scm QuotaManager getAQL --address 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523
   "result": "0x0000000000000000000000000000000000000000000000000000000040000000"
 }
 ```
+
+### getAutoExecQL
+
+查询自动执行配额限制。
+
+* Parameters
+
+    None
+
+* Returns
+
+    `uint value` - The autoExec quota limit value
