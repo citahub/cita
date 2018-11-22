@@ -240,7 +240,7 @@ impl Postman {
         }
 
         trace!("send {}-th ExecutedResult", height);
-        let executed_result = executed_result.unwrap();
+        let executed_result = executed_result.unwrap().clone();
         let msg: Message = executed_result.into();
         self.response_mq(
             routing_key!(Executor >> ExecutedResult).into(),
@@ -300,11 +300,9 @@ impl Postman {
     fn maybe_grow_up(&mut self) {
         let next_height = self.get_current_height() + 1;
         if self.backlogs.is_completed(next_height) {
-            let backlog = self.backlogs.complete(next_height);
-            let closed_block = backlog.clone_closed_block();
-
             // make sure executor grow up first
             trace!("postman notice executor to grow up to {}", next_height,);
+            let closed_block = self.backlogs.complete(next_height);
             command::grow(
                 &self.command_req_sender,
                 &self.command_resp_receiver,
@@ -318,14 +316,11 @@ impl Postman {
 
     fn execute_next_block(&mut self) {
         let next_height = self.get_current_height() + 1;
-        if let Some(block) = self.backlogs.get_open_block(next_height) {
-            if let Some(closed_block) = self.backlogs.get_closed_block(next_height) {
-                if closed_block.is_equivalent(&block) {
-                    return;
-                }
+        if !self.backlogs.is_matched(next_height) {
+            if let Some(open_block) = self.backlogs.get_open_block(next_height) {
+                trace!("postman send {}-th block to executor", next_height);
+                self.fsm_req_sender.send(open_block.clone());
             }
-            trace!("postman send {}-th block to executor", block.number());
-            self.fsm_req_sender.send(block);
         }
     }
 

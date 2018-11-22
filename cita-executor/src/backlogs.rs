@@ -15,15 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use core::header::Header;
-use core::libexecutor::block::{ClosedBlock, OpenBlock};
+use super::core::libexecutor::block::{ClosedBlock, OpenBlock};
 use libproto::ExecutedResult;
+use proof::BftProof as Proof;
 use std::collections::BTreeMap;
 use util::Itertools;
-// TODO compact Proof trait but not only BftProof
-use proof::BftProof as Proof;
 
-#[derive(Clone)]
 pub struct Backlog {
     open_block: Option<OpenBlock>,
     proof: Option<Proof>,
@@ -43,67 +40,68 @@ impl Default for Backlog {
 }
 
 impl Backlog {
-    // is_completed return true if block, proof, and executed_result are all exist and matched
+    // When a block is processed done and proofed, we can say this block is completed. So that our
+    // chain grows up.
+    // So, a Backlog `is_completed` return true if block, proof, and executed_result for that height
+    // are all exist and matched.
     pub fn is_completed(&self) -> bool {
         if self.open_block.is_none()
             || self.proof.is_none()
             || self.executed_result.is_none()
             || self.closed_block.is_none()
         {
-            false
-        } else {
-            let open_block = self.open_block.as_ref().unwrap();
-            let closed_block = self.closed_block.as_ref().unwrap();
-            closed_block.is_equivalent(open_block)
+            return false;
         }
+
+        self.is_matched()
     }
 
-    pub fn complete(&mut self) {
+    // `is_matched` check whether the inside closed_block is equal to open_block
+    pub fn is_matched(&self) -> bool {
+        if self.open_block.is_none() || self.closed_block.is_none() {
+            return false;
+        }
+
+        let open_block = self.open_block.as_ref().unwrap();
+        let closed_block = self.closed_block.as_ref().unwrap();
+        closed_block.is_equivalent(open_block)
+    }
+
+    // Mark this Backlog as completed.
+    //
+    // Make sure the backlog is really completed, otherwise it would panic.
+    pub fn complete(self) -> (ClosedBlock, ExecutedResult) {
         assert!(self.is_completed());
-        let bft_proof = self.clone_proof();
-        let mut closed_block = self.clone_closed_block();
+
+        let bft_proof = self.proof.unwrap();
+        let mut closed_block = self.closed_block.unwrap();
+        let executed_result = self.executed_result.unwrap();
         closed_block.header.set_proof(bft_proof.into());
         closed_block.rehash();
 
-        self.closed_block = Some(closed_block);
+        (closed_block, executed_result)
     }
 
-    pub fn is_equivalent_block(&self, header: &Header) -> bool {
-        match self.open_block {
-            Some(ref open_block) => open_block.is_equivalent(header),
-            None => false,
-        }
-    }
-
-    pub fn clone_closed_block(&self) -> ClosedBlock {
-        self.closed_block.clone().unwrap()
-    }
-
-    pub fn clone_proof(&self) -> Proof {
-        self.proof.clone().unwrap()
+    pub fn get_open_block(&self) -> Option<&OpenBlock> {
+        self.open_block.as_ref()
     }
 }
 
-#[derive(Clone)]
 pub struct Backlogs {
-    // max height within backlogs, should be equal to `max(backlog.keys())`
-    max_height: u64,
-
     // current height of local chain, should be equal to `min(backlog.keys())`
     current_height: u64,
 
     // {height => Block}, which indicates pending processing blocks
     backlogs: BTreeMap<u64, Backlog>,
 
-    // {height => ClosedBlock}, which indicates the executed results of elder blocks
-    completed: BTreeMap<u64, Backlog>,
+    // {height => ExecutedResult}, which indicates the executed results of elder blocks
+    completed: BTreeMap<u64, ExecutedResult>,
 }
 
 impl Backlogs {
     pub fn new(current_height: u64) -> Backlogs {
         Backlogs {
             current_height,
-            max_height: current_height,
             backlogs: BTreeMap::new(),
             completed: BTreeMap::new(),
         }
@@ -113,25 +111,15 @@ impl Backlogs {
         self.current_height
     }
 
-    pub fn get_open_block(&self, height: u64) -> Option<OpenBlock> {
+    pub fn get_open_block(&self, height: u64) -> Option<&OpenBlock> {
         match self.backlogs.get(&height) {
-            Some(backlog) => backlog.open_block.clone(),
+            Some(ref backlog) => backlog.get_open_block(),
             None => None,
         }
     }
 
-    pub fn get_closed_block(&self, height: u64) -> Option<ClosedBlock> {
-        match self.backlogs.get(&height) {
-            Some(backlog) => backlog.closed_block.clone(),
-            None => None,
-        }
-    }
-
-    pub fn get_completed_result(&self, height: u64) -> Option<ExecutedResult> {
-        match self.completed.get(&height) {
-            Some(backlog) => backlog.executed_result.clone(),
-            None => None,
-        }
+    pub fn get_completed_result(&self, height: u64) -> Option<&ExecutedResult> {
+        self.completed.get(&height)
     }
 
     pub fn insert_open_block(&mut self, height: u64, open_block: OpenBlock) -> bool {
@@ -141,11 +129,6 @@ impl Backlogs {
 
         let backlog = self.backlogs.entry(height).or_default();
         backlog.open_block = Some(open_block);
-        backlog.proof = None;
-
-        if self.max_height < height {
-            self.max_height = height;
-        }
         true
     }
 
@@ -170,14 +153,9 @@ impl Backlogs {
         }
 
         let backlog = self.backlogs.entry(height).or_default();
-        if !backlog.is_equivalent_block(closed_block.header()) {
-            // discard staled executed result
-            false
-        } else {
-            backlog.closed_block = Some(closed_block);
-            backlog.executed_result = Some(executed_result);
-            true
-        }
+        backlog.closed_block = Some(closed_block);
+        backlog.executed_result = Some(executed_result);
+        true
     }
 
     pub fn is_completed(&self, height: u64) -> bool {
@@ -187,14 +165,21 @@ impl Backlogs {
         }
     }
 
-    // move "front of backlogs" into "back of completed"
-    pub fn complete(&mut self, height: u64) -> Backlog {
-        let mut backlog = self.backlogs.remove(&height).unwrap();
-        backlog.complete();
+    pub fn is_matched(&self, height: u64) -> bool {
+        match self.backlogs.get(&height) {
+            Some(backlog) => backlog.is_matched(),
+            None => false,
+        }
+    }
 
-        self.completed.insert(height, backlog.clone());
+    // move "front of backlogs" into "back of completed"
+    pub fn complete(&mut self, height: u64) -> ClosedBlock {
+        let backlog = self.backlogs.remove(&height).unwrap();
+        let (closed_block, executed_result) = backlog.complete();
+
+        self.completed.insert(height, executed_result);
         self.current_height += 1;
-        backlog
+        closed_block
     }
 
     pub fn completed_keys(&self) -> ::std::vec::Vec<&u64> {
@@ -223,11 +208,10 @@ mod tests {
     use super::Backlogs;
     use cita_types::H256;
     use core::header::OpenHeader;
-    use core::libexecutor::block::{BlockBody, ExecutedBlock, OpenBlock};
+    use core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
     use core::libexecutor::economical_model::EconomicalModel;
     use core::libexecutor::executor::GlobalSysConfig;
     use core::state_db::StateDB;
-    use libproto::blockchain::Proof;
     use libproto::ExecutedResult;
     use proof::BftProof;
     use std::collections::HashMap;
@@ -273,11 +257,11 @@ mod tests {
         assert_eq!(false, Backlog::default().is_completed());
     }
 
-    #[test]
-    fn test_backlog_is_completed_with_none() {
-        let open_block = generate_block();
-        let proof = generate_bft_proof();
-        let executed_result = ExecutedResult::new();
+    fn generate_executed_result() -> ExecutedResult {
+        ExecutedResult::new()
+    }
+
+    fn generate_closed_block(open_block: OpenBlock) -> ClosedBlock {
         let state_db = generate_state_db();
         let exec_block = ExecutedBlock::new(
             Default::default(),
@@ -289,34 +273,39 @@ mod tests {
             Arc::new(Vec::new()),
         )
         .unwrap();
-        let closed_block = exec_block.close(EconomicalModel::Quota);
+        exec_block.close(EconomicalModel::Quota)
+    }
 
+    #[test]
+    fn test_backlog_is_completed_with_none() {
         {
             let backlog = Backlog {
                 open_block: None,
-                proof: Some(proof.clone()),
-                closed_block: Some(closed_block.clone()),
-                executed_result: Some(executed_result.clone()),
+                proof: Some(generate_bft_proof()),
+                closed_block: Some(generate_closed_block(generate_block())),
+                executed_result: Some(generate_executed_result()),
             };
             assert_eq!(false, backlog.is_completed(), "block is none");
         }
 
         {
+            let block = generate_block();
+            let closed_block = generate_closed_block(block.clone());
             let backlog = Backlog {
-                open_block: Some(open_block.clone()),
+                open_block: Some(block),
                 proof: None,
-                closed_block: Some(closed_block.clone()),
-                executed_result: Some(executed_result.clone()),
+                closed_block: Some(closed_block),
+                executed_result: Some(generate_executed_result()),
             };
             assert_eq!(false, backlog.is_completed(), "proof is none");
         }
 
         {
             let backlog = Backlog {
-                open_block: Some(open_block.clone()),
-                proof: Some(proof.clone()),
+                open_block: Some(generate_block()),
+                proof: Some(generate_bft_proof()),
                 closed_block: None,
-                executed_result: Some(executed_result.clone()),
+                executed_result: Some(generate_executed_result()),
             };
             assert_eq!(false, backlog.is_completed(), "closed_block is none");
         }
@@ -324,40 +313,31 @@ mod tests {
 
     #[test]
     fn test_is_completed_with_unequal_block() {
-        let open_block = generate_block();
-        let proof = generate_bft_proof();
-        let executed_result = ExecutedResult::new();
-        let state_db = generate_state_db();
-        let exec_block = ExecutedBlock::new(
-            Default::default(),
-            GlobalSysConfig::default(),
-            false,
-            open_block.clone(),
-            state_db,
-            util::hashable::HASH_NULL_RLP,
-            Arc::new(Vec::new()),
-        )
-        .unwrap();
-        let closed_block = exec_block.close(EconomicalModel::Quota);
-
         {
-            let mut block = open_block.clone();
+            let mut block = generate_block();
+            let closed_block = generate_closed_block(block.clone());
             block.header.set_timestamp(1);
             let backlog = Backlog {
-                open_block: Some(block.clone()),
-                proof: Some(proof.clone()),
-                closed_block: Some(closed_block.clone()),
-                executed_result: Some(executed_result.clone()),
+                open_block: Some(block),
+                proof: Some(generate_bft_proof()),
+                closed_block: Some(closed_block),
+                executed_result: Some(generate_executed_result()),
             };
-            assert_eq!(false, backlog.is_completed());
+            assert_eq!(
+                false,
+                backlog.is_completed(),
+                "false cause block.timestamp is not equal"
+            );
         }
 
         {
+            let block = generate_block();
+            let closed_block = generate_closed_block(block.clone());
             let backlog = Backlog {
-                open_block: Some(open_block.clone()),
-                proof: Some(proof.clone()),
-                closed_block: Some(closed_block.clone()),
-                executed_result: Some(executed_result.clone()),
+                open_block: Some(block),
+                proof: Some(generate_bft_proof()),
+                closed_block: Some(closed_block),
+                executed_result: Some(generate_executed_result()),
             };
             assert!(backlog.is_completed());
         }
@@ -367,99 +347,68 @@ mod tests {
     #[should_panic]
     fn test_complete_but_is_completed_false() {
         let open_block = generate_block();
-        let executed_result = ExecutedResult::new();
-        let state_db = generate_state_db();
-        let exec_block = ExecutedBlock::new(
-            Default::default(),
-            GlobalSysConfig::default(),
-            false,
-            open_block.clone(),
-            state_db,
-            util::hashable::HASH_NULL_RLP,
-            Arc::new(Vec::new()),
-        )
-        .unwrap();
-        let closed_block = exec_block.close(EconomicalModel::Quota);
+        let closed_block = generate_closed_block(open_block.clone());
 
-        let mut backlog = Backlog {
+        let backlog = Backlog {
             open_block: Some(open_block),
             proof: None,
-            closed_block: Some(closed_block.clone()),
-            executed_result: Some(executed_result.clone()),
+            closed_block: Some(closed_block),
+            executed_result: Some(generate_executed_result()),
         };
+        assert_eq!(false, backlog.is_completed(), "false cause proof is none");
+
+        // panic cause is_completed return false
         backlog.complete();
     }
 
     #[test]
     fn test_complete_normal() {
         let open_block = generate_block();
-        let proof = generate_bft_proof();
-        let executed_result = ExecutedResult::new();
-        let state_db = generate_state_db();
-        let exec_block = ExecutedBlock::new(
-            Default::default(),
-            GlobalSysConfig::default(),
-            false,
-            open_block.clone(),
-            state_db,
-            util::hashable::HASH_NULL_RLP,
-            Arc::new(Vec::new()),
-        )
-        .unwrap();
-        let closed_block = exec_block.close(EconomicalModel::Quota);
+        let closed_block = generate_closed_block(open_block.clone());
 
-        let mut backlog = Backlog {
+        let backlog = Backlog {
             open_block: Some(open_block),
-            proof: Some(proof),
-            closed_block: Some(closed_block.clone()),
-            executed_result: Some(executed_result.clone()),
+            proof: Some(generate_bft_proof()),
+            closed_block: Some(closed_block),
+            executed_result: Some(generate_executed_result()),
         };
+        assert!(backlog.is_completed());
         backlog.complete();
-        let closed_block = backlog.clone_closed_block();
-        let proof = backlog.clone_proof();
-        let proto_proof: Proof = proof.into();
-        assert_eq!(proto_proof.content, closed_block.proof().content);
+        //        let closed_block = backlog.clone_closed_block();
+        //        let proof = backlog.clone_proof();
+        //        let proto_proof: Proof = proof.into();
+        //        assert_eq!(proto_proof.content, closed_block.proof().content);
     }
 
     #[test]
     fn test_backlogs_whole_flow() {
         let open_block = generate_block();
-        let proof = generate_bft_proof();
-        let executed_result = ExecutedResult::new();
-        let state_db = generate_state_db();
-        let exec_block = ExecutedBlock::new(
-            Default::default(),
-            GlobalSysConfig::default(),
-            false,
-            open_block.clone(),
-            state_db,
-            util::hashable::HASH_NULL_RLP,
-            Arc::new(Vec::new()),
-        )
-        .unwrap();
-        let closed_block = exec_block.close(EconomicalModel::Quota);
+        let closed_block = generate_closed_block(open_block.clone());
 
+        // insert height 2 should be always failed
         let mut backlogs = Backlogs::new(3);
         assert_eq!(false, backlogs.insert_open_block(2, open_block.clone()));
-        assert_eq!(false, backlogs.insert_proof(2, proof.clone()));
+        assert_eq!(false, backlogs.insert_proof(2, generate_bft_proof()));
         assert_eq!(
             false,
-            backlogs.insert_result(2, closed_block.clone(), executed_result.clone()),
+            backlogs.insert_result(2, closed_block, generate_executed_result()),
             "insert staled result should return false",
         );
         assert!(backlogs.get_open_block(2).is_none());
-        assert!(backlogs.get_closed_block(2).is_none());
 
+        // insert height 3 should be ok
+        let closed_block = generate_closed_block(open_block.clone());
         assert_eq!(true, backlogs.insert_open_block(3, open_block.clone()));
-        assert_eq!(true, backlogs.insert_proof(3, proof.clone()));
+        assert_eq!(true, backlogs.insert_proof(3, generate_bft_proof()));
         assert_eq!(
             true,
-            backlogs.insert_result(3, closed_block.clone(), executed_result.clone()),
+            backlogs.insert_result(3, closed_block, generate_executed_result()),
             "insert current result should return true",
         );
         assert!(backlogs.get_open_block(3).is_some());
-        assert!(backlogs.get_closed_block(3).is_some());
 
+        // complete height 3
+        assert!(backlogs.is_completed(3));
         let _backlog = backlogs.complete(3);
         assert!(backlogs.get_completed_result(2).is_none());
         assert!(backlogs.get_completed_result(3).is_some());
@@ -470,36 +419,6 @@ mod tests {
             backlogs.insert_open_block(3, open_block.clone()),
             "insert staled open_block should return false",
         );
-        assert_eq!(false, backlogs.insert_proof(3, proof.clone()));
-    }
-
-    #[test]
-    fn test_insert_unequal_result() {
-        let open_block = generate_block();
-        let mut open_block2 = generate_block();
-        open_block2.set_timestamp(2222);
-        let proof = generate_bft_proof();
-        let executed_result = ExecutedResult::new();
-        let state_db = generate_state_db();
-        let exec_block = ExecutedBlock::new(
-            Default::default(),
-            GlobalSysConfig::default(),
-            false,
-            open_block.clone(),
-            state_db,
-            util::hashable::HASH_NULL_RLP,
-            Arc::new(Vec::new()),
-        )
-        .unwrap();
-        let closed_block = exec_block.close(EconomicalModel::Quota);
-
-        let mut backlogs = Backlogs::new(3);
-        assert_eq!(true, backlogs.insert_open_block(3, open_block2));
-        assert_eq!(true, backlogs.insert_proof(3, proof));
-        assert_eq!(
-            false,
-            backlogs.insert_result(3, closed_block, executed_result),
-            "insert unequal closed_block should return false",
-        );
+        assert_eq!(false, backlogs.insert_proof(3, generate_bft_proof()));
     }
 }
