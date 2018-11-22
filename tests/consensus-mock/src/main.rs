@@ -61,7 +61,7 @@ pub enum Step {
 
 fn build_proof(height: u64, sender: Address, privkey: &PrivKey) -> BftProof {
     let mut proof = BftProof::default();
-    proof.height = (height - 1) as usize;
+    proof.height = height as usize;
     proof.round = 0;
     proof.proposal = H256::default();
 
