@@ -137,7 +137,7 @@ fn send_block(
 }
 
 fn main() {
-    logger::init();
+    logger::init_config("consensus_mock");
     info!("CITA: Consensus Mock");
 
     // set up the clap to receive info from CLI

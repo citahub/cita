@@ -64,7 +64,7 @@ const GENESIS_TIMESTAMP: u64 = 1_524_000_000;
 fn main() {
     dotenv::dotenv().ok();
     env::set_var("RUST_BACKTRACE", "full");
-    logger::init();
+    logger::init_config("chain-executor-mock");
     info!("CITA:Chain executor mock");
 
     let matches = App::new("Chain executor mock")
