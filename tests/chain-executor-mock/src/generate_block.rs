@@ -104,7 +104,7 @@ impl BuildBlock {
         block.mut_header().set_prevhash(pre_hash.0.to_vec());
         block.mut_body().set_transactions(txs.into());
         let mut proof = BftProof::default();
-        proof.height = (height - 1) as usize;
+        proof.height = height as usize;
         proof.round = 0;
         proof.proposal = H256::default();
         let mut commits = HashMap::new();
