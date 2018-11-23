@@ -284,12 +284,32 @@ impl Postman {
                     let proof_height = wrap_height(proof.height);
                     let block_height = wrap_height(open_block.number() as usize);
 
+                    if !self.check_proof(&proof) {
+                        error!("Synchronized {}-th Proof is invalid", proof_height);
+                        break;
+                    }
                     trace!("insert {}-th Sync into backlog", block_height);
                     self.backlogs.insert_open_block(block_height, open_block);
                     self.backlogs.insert_proof(proof_height, proof);
                 }
             }
             _ => unimplemented!(),
+        }
+    }
+
+    fn check_proof(&self, proof: &BftProof) -> bool {
+        let proof_height = proof.height;
+        let prev_height = wrap_height(proof_height) - 1;
+        match self.backlogs.get_completed_result(prev_height) {
+            Some(executed_result) => {
+                let validators = executed_result.get_config().get_validators();
+                let validators: Vec<Address> = validators
+                    .into_iter()
+                    .map(|vec| Address::from_slice(&vec[..]))
+                    .collect();
+                proof.check(proof_height, &validators)
+            }
+            None => false,
         }
     }
 
