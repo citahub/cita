@@ -28,7 +28,6 @@ pub enum StatusOfFSM {
     Pause(ExecutedBlock, usize),
     Execute(ExecutedBlock, usize),
     Finalize(ExecutedBlock),
-    Reply(ClosedBlock, ExecutedResult),
 }
 
 impl std::fmt::Display for StatusOfFSM {
@@ -41,21 +40,21 @@ impl std::fmt::Display for StatusOfFSM {
                 open_block.parent_hash(),
                 open_block.timestamp(),
             ),
-            StatusOfFSM::Pause(ref executed_block, iter) => write!(
+            StatusOfFSM::Pause(ref executed_block, index) => write!(
                 f,
-                "StatusOfFSM::Pause(height: {}, parent_hash: {:?}, timestamp: {}, iter: {})",
+                "StatusOfFSM::Pause(height: {}, parent_hash: {:?}, timestamp: {}, index: {})",
                 executed_block.number(),
                 executed_block.parent_hash(),
                 executed_block.timestamp(),
-                iter,
+                index,
             ),
-            StatusOfFSM::Execute(ref executed_block, iter) => write!(
+            StatusOfFSM::Execute(ref executed_block, index) => write!(
                 f,
-                "StatusOfFSM::Execute(height: {}, parent_hash: {:?}, timestamp: {}, iter: {})",
+                "StatusOfFSM::Execute(height: {}, parent_hash: {:?}, timestamp: {}, index: {})",
                 executed_block.number(),
                 executed_block.parent_hash(),
                 executed_block.timestamp(),
-                iter,
+                index,
             ),
             StatusOfFSM::Finalize(ref executed_block) => write!(
                 f,
@@ -64,14 +63,6 @@ impl std::fmt::Display for StatusOfFSM {
                 executed_block.parent_hash(),
                 executed_block.timestamp(),
             ),
-            StatusOfFSM::Reply(ref closed_block, _) => write!(
-                f,
-                "StatusOfFSM::Reply(height: {}, parent_hash: {:?}, timestamp: {}, tranaction_root: {:?})",
-                closed_block.number(),
-                closed_block.parent_hash(),
-                closed_block.timestamp(),
-                closed_block.transactions_root(),
-            ),
         }
     }
 }
@@ -79,9 +70,9 @@ impl std::fmt::Display for StatusOfFSM {
 pub trait FSM {
     fn into_fsm(&mut self, open_block: OpenBlock) -> (ClosedBlock, ExecutedResult);
     fn fsm_initialize(&self, open_block: OpenBlock) -> StatusOfFSM;
-    fn fsm_pause(&self, executed_block: ExecutedBlock, iter: usize) -> StatusOfFSM;
-    fn fsm_execute(&self, executed_block: ExecutedBlock, iter: usize) -> StatusOfFSM;
-    fn fsm_finalize(&self, executed_block: ExecutedBlock) -> StatusOfFSM;
+    fn fsm_pause(&self, executed_block: ExecutedBlock, index: usize) -> StatusOfFSM;
+    fn fsm_execute(&self, executed_block: ExecutedBlock, index: usize) -> StatusOfFSM;
+    fn fsm_finalize(&self, executed_block: ExecutedBlock) -> (ClosedBlock, ExecutedResult);
 }
 
 impl FSM for Executor {
@@ -91,14 +82,11 @@ impl FSM for Executor {
             trace!("executor is at {}", status);
             status = match status {
                 StatusOfFSM::Initialize(open_block) => self.fsm_initialize(open_block),
-                StatusOfFSM::Pause(executed_block, iter) => self.fsm_pause(executed_block, iter),
-                StatusOfFSM::Execute(executed_block, iter) => {
-                    self.fsm_execute(executed_block, iter)
+                StatusOfFSM::Pause(executed_block, index) => self.fsm_pause(executed_block, index),
+                StatusOfFSM::Execute(executed_block, index) => {
+                    self.fsm_execute(executed_block, index)
                 }
-                StatusOfFSM::Finalize(executed_block) => self.fsm_finalize(executed_block),
-                StatusOfFSM::Reply(closed_block, executed_result) => {
-                    return (closed_block, executed_result)
-                }
+                StatusOfFSM::Finalize(executed_block) => return self.fsm_finalize(executed_block),
             }
         }
     }
@@ -108,19 +96,19 @@ impl FSM for Executor {
         StatusOfFSM::Pause(executed_block, 0)
     }
 
-    fn fsm_pause(&self, executed_block: ExecutedBlock, iter: usize) -> StatusOfFSM {
+    fn fsm_pause(&self, executed_block: ExecutedBlock, index: usize) -> StatusOfFSM {
         match self.fsm_req_receiver.try_recv() {
             None => {
-                if iter == executed_block.body().transactions().len() {
+                if index == executed_block.body().transactions().len() {
                     StatusOfFSM::Finalize(executed_block)
                 } else {
-                    StatusOfFSM::Execute(executed_block, iter + 1)
+                    StatusOfFSM::Execute(executed_block, index + 1)
                 }
             }
             Some(open_block) => {
                 if executed_block.header().is_equivalent(&open_block.header()) {
                     let new_executed_block = self.to_executed_block(open_block);
-                    let status = StatusOfFSM::Pause(new_executed_block, iter);
+                    let status = StatusOfFSM::Pause(new_executed_block, index);
                     trace!("executor receive equivalent block: {}", status);
                     status
                 } else {
@@ -130,7 +118,7 @@ impl FSM for Executor {
         }
     }
 
-    fn fsm_execute(&self, mut executed_block: ExecutedBlock, iter: usize) -> StatusOfFSM {
+    fn fsm_execute(&self, mut executed_block: ExecutedBlock, index: usize) -> StatusOfFSM {
         let conf = self.sys_config.clone();
         // FIXME move into Self for performance
         let check_options = CheckOptions {
@@ -141,7 +129,7 @@ impl FSM for Executor {
             create_contract_permission: conf.check_create_contract_permission,
         };
 
-        let mut transaction = executed_block.body().transactions[iter - 1].clone();
+        let mut transaction = executed_block.body().transactions[index - 1].clone();
         let quota_price = PriceManagement::new(self)
             .quota_price(BlockId::Pending)
             .unwrap_or_else(PriceManagement::default_quota_price);
@@ -157,10 +145,10 @@ impl FSM for Executor {
             &check_options,
         );
 
-        StatusOfFSM::Pause(executed_block, iter)
+        StatusOfFSM::Pause(executed_block, index)
     }
 
-    fn fsm_finalize(&self, mut executed_block: ExecutedBlock) -> StatusOfFSM {
+    fn fsm_finalize(&self, mut executed_block: ExecutedBlock) -> (ClosedBlock, ExecutedResult) {
         // commit changed-accounts into trie structure
         executed_block
             .state
@@ -169,7 +157,7 @@ impl FSM for Executor {
 
         let closed_block = executed_block.close(*self.economical_model.read());
         let executed_result = self.make_executed_result(&closed_block);
-        StatusOfFSM::Reply(closed_block, executed_result)
+        (closed_block, executed_result)
     }
 }
 
