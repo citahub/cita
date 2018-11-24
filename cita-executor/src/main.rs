@@ -93,6 +93,7 @@ extern crate common_types as types;
 extern crate core_executor as core;
 extern crate dotenv;
 extern crate error;
+extern crate evm;
 extern crate grpc;
 extern crate jsonrpc_types;
 #[macro_use]

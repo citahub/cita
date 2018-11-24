@@ -15,10 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::{Address, H256};
+use cita_types::{Address, H256, U256};
 use core::contracts::solc::sys_config::ChainId;
+use core::libexecutor::blacklist::BlackList;
 use core::libexecutor::block::{ClosedBlock, OpenBlock};
 use core::libexecutor::call_request::CallRequest;
+use core::libexecutor::economical_model::EconomicalModel;
+use core::receipt::ReceiptError;
 use crossbeam_channel::{Receiver, Sender};
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{BlockNumber, CountOrCode};
@@ -30,15 +33,19 @@ use libproto::{request, response, ConsensusConfig, ExecutedResult, Message};
 use proof::BftProof;
 use serde_json;
 use std::convert::{Into, TryFrom, TryInto};
+use std::sync::RwLock;
 use std::u8;
 use types::ids::BlockId;
 
 use core::libexecutor::command;
+use core::libexecutor::lru_cache::LRUCache;
+use evm::Schedule;
 
 use super::backlogs::Backlogs;
 
 pub struct Postman {
     backlogs: Backlogs,
+    black_list_cache: RwLock<LRUCache<u64, Address>>,
     mq_req_receiver: Receiver<(String, Vec<u8>)>,
     mq_resp_sender: Sender<(String, Vec<u8>)>,
     fsm_req_sender: Sender<OpenBlock>,
@@ -59,6 +66,7 @@ impl Postman {
     ) -> Self {
         Postman {
             backlogs: Backlogs::new(current_height),
+            black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
             mq_req_receiver,
             mq_resp_sender,
             fsm_req_sender,
@@ -90,9 +98,15 @@ impl Postman {
     // call this function every times Executor start/restart, to broadcast current state
     // to cita-chain. This broadcast state only contains system config but not block data,
     // cita-chain would deal with it.
-    pub fn bootstrap_broadcast(&self, consensus_config: ConsensusConfig) {
+    pub fn bootstrap_broadcast(&mut self, consensus_config: ConsensusConfig) {
+        let current_height = self.get_current_height();
         let mut executed_result = ExecutedResult::new();
         executed_result.set_config(consensus_config);
+
+        // the current executed result would be used to check the arrived synchronized proof
+        self.backlogs
+            .insert_completed_result(current_height, executed_result.clone());
+
         let msg: Message = executed_result.into();
         self.response_mq(
             routing_key!(Executor >> ExecutedResult).into(),
@@ -109,6 +123,9 @@ impl Postman {
         );
     }
 
+    // listen messages from RabbitMQ and Executor.
+    //
+    // Return `(None, None)` if any channel closed
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     fn recv(
         &self,
@@ -239,7 +256,13 @@ impl Postman {
         // thread. Then main() would restart executor thread and let executor starts with
         // `BlockId::Number(height - 1)`.
         if executed_result.is_none() {
-            warn!("cita-chain(height={}) is lagging behind cita-executor(height={}), gonna roll back to {}", height, self.get_current_height(), height - 1);
+            warn!(
+                "chain(height={}) is lagging behind executor(height={}). \
+                 Gonna roll back to {}",
+                height,
+                self.get_current_height(),
+                height - 1
+            );
             return Err(BlockId::Number(height - 1));
         }
 
@@ -288,6 +311,7 @@ impl Postman {
                     let proof_height = wrap_height(proof.height);
                     let block_height = wrap_height(open_block.number() as usize);
 
+                    // The received synchronized proof may be falsified, so we have to validate it
                     if !self.check_proof(&proof) {
                         error!("Synchronized {}-th Proof is invalid", proof_height);
                         break;
@@ -301,19 +325,28 @@ impl Postman {
         }
     }
 
+    // FIXME BUG generated nodes -> validated nodes
+    // FIXME should get nodes from proof.height - 1 but not current_height
     fn check_proof(&self, proof: &BftProof) -> bool {
-        let proof_height = proof.height;
-        let prev_height = wrap_height(proof_height) - 1;
-        match self.backlogs.get_completed_result(prev_height) {
+        let proof_height = wrap_height(proof.height);
+        match self
+            .backlogs
+            .get_completed_result(self.get_current_height())
+        {
             Some(executed_result) => {
-                let validators = executed_result.get_config().get_validators();
-                let validators: Vec<Address> = validators
+                //                let validators = executed_result.get_config().get_validators();
+                //                let authorities: Vec<Address> = validators
+                //                    .into_iter()
+                //                    .map(|vec| Address::from_slice(&vec[..]))
+                //                    .collect();
+                let nodes = executed_result.get_config().get_nodes();
+                let authorities: Vec<Address> = nodes
                     .into_iter()
                     .map(|vec| Address::from_slice(&vec[..]))
                     .collect();
-                proof.check(proof_height, &validators)
+                proof.check(proof_height as usize, &authorities)
             }
-            None => false,
+            None => proof.check(proof_height as usize, &Vec::new()),
         }
     }
 
@@ -331,6 +364,7 @@ impl Postman {
         let next_height = self.get_current_height() + 1;
         trace!("postman notice executor to grow up to {}", next_height);
         let closed_block = self.backlogs.complete(next_height);
+        self.pub_black_list(&closed_block);
         command::grow(
             &self.command_req_sender,
             &self.command_resp_receiver,
@@ -338,7 +372,6 @@ impl Postman {
         );
 
         self.send_executed_info_to_chain(next_height).unwrap();
-        // FIXME self.pub_black_list(&closed_block, ctx_pub);
     }
 
     fn execute_next_block(&mut self) {
@@ -348,6 +381,87 @@ impl Postman {
                 trace!("postman send {}-th block to executor", next_height);
                 self.fsm_req_sender.send(open_block.clone());
             }
+        }
+    }
+
+    fn get_economical_model(&self) -> EconomicalModel {
+        command::economical_model(&self.command_req_sender, &self.command_resp_receiver)
+    }
+
+    /// Find the public key of all senders that caused the specified error message, and then publish it
+    // TODO: I think it is not necessary to distinguish economical_model, maybe remove
+    //       this opinion in the future
+    fn pub_black_list(&self, close_block: &ClosedBlock) {
+        match self.get_economical_model() {
+            EconomicalModel::Charge => {
+                // Get all transaction hash that is reported as not enough quota
+                let blacklist_transaction_hash: Vec<H256> = close_block
+                    .receipts
+                    .iter()
+                    .filter(|ref receipt| match receipt.error {
+                        Some(ReceiptError::NotEnoughBaseQuota) => true,
+                        _ => false,
+                    })
+                    .map(|receipt| receipt.transaction_hash)
+                    .filter(|hash| hash != &H256::default())
+                    .collect();
+
+                let schedule = Schedule::new_v1();
+                // Filter out accounts in the black list where the account balance has reached the benchmark value.
+                // Get the smaller value between tx_create_gas and tx_gas for the benchmark value.
+                let bm_value = std::cmp::min(schedule.tx_gas, schedule.tx_create_gas);
+                let mut clear_list: Vec<Address> = self
+                    .black_list_cache
+                    .read()
+                    .unwrap()
+                    .values()
+                    .filter(|address| {
+                        close_block
+                            .state
+                            .balance(address)
+                            .and_then(|x| Ok(x >= U256::from(bm_value)))
+                            .unwrap_or(false)
+                    })
+                    .cloned()
+                    .collect();
+
+                // Get address of sending account by transaction hash
+                let blacklist: Vec<Address> = close_block
+                    .body()
+                    .transactions()
+                    .iter()
+                    .filter(|tx| blacklist_transaction_hash.contains(&tx.get_transaction_hash()))
+                    .map(|tx| *tx.sender())
+                    .collect();
+
+                {
+                    let mut black_list_cache = self.black_list_cache.write().unwrap();
+                    black_list_cache
+                        .prune(&clear_list)
+                        .extend(&blacklist[..], close_block.number());
+                    clear_list.extend(black_list_cache.lru().iter());
+                }
+
+                let black_list = BlackList::new()
+                    .set_black_list(blacklist)
+                    .set_clear_list(clear_list);
+
+                if !black_list.is_empty() {
+                    let black_list_bytes: Message = black_list.protobuf().into();
+
+                    info!(
+                        "black list is {:?}, clear list is {:?}",
+                        black_list.black_list(),
+                        black_list.clear_list()
+                    );
+
+                    self.response_mq(
+                        routing_key!(Executor >> BlackList).into(),
+                        black_list_bytes.try_into().unwrap(),
+                    );
+                }
+            }
+            EconomicalModel::Quota => {}
         }
     }
 
@@ -603,6 +717,7 @@ impl Postman {
 }
 
 // System Convention: 0-th block's proof is `::std::usize::MAX`
+// Ok, I know it is tricky, but ... just keep it in mind, it is tricky ...
 fn wrap_height(height: usize) -> u64 {
     match height {
         ::std::usize::MAX => 0,

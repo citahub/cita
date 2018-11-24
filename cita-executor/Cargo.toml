@@ -21,6 +21,7 @@ proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop
 core-executor = { path = "./core" }
 common-types = { path = "../cita-chain/types" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+evm = { path = "evm" }
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

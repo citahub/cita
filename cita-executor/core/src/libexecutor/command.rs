@@ -55,6 +55,7 @@ pub enum Command {
     Call(SignedTransaction, BlockId, CallAnalytics),
     ChainID,
     Metadata(String),
+    EconomicalModel,
     Grow(ClosedBlock),
     Exit(BlockId),
 }
@@ -72,6 +73,7 @@ pub enum CommandResp {
     Call(Result<Executed, CallError>),
     ChainID(Option<ChainId>),
     Metadata(Result<MetaData, String>),
+    EconomicalModel(EconomicalModel),
     Grow,
     Exit,
 }
@@ -90,6 +92,7 @@ impl fmt::Display for Command {
             Command::Call(_, _, _) => write!(f, "Command::Call"),
             Command::ChainID => write!(f, "Command::ChainID "),
             Command::Metadata(_) => write!(f, "Command::Metadata"),
+            Command::EconomicalModel => write!(f, "Command::EconomicalModel"),
             Command::Grow(_) => write!(f, "Command::Grow"),
             Command::Exit(_) => write!(f, "Command::Exit"),
         }
@@ -110,6 +113,7 @@ impl fmt::Display for CommandResp {
             CommandResp::Call(_) => write!(f, "CommandResp::Call"),
             CommandResp::ChainID(_) => write!(f, "CommandResp::ChainID "),
             CommandResp::Metadata(_) => write!(f, "CommandResp::Metadata"),
+            CommandResp::EconomicalModel(_) => write!(f, "CommandResp::EconomicalModel"),
             CommandResp::Grow => write!(f, "CommandResp::Grow"),
             CommandResp::Exit => write!(f, "CommandResp::Exit"),
         }
@@ -134,6 +138,7 @@ pub trait Commander {
     ) -> Result<Executed, CallError>;
     fn chain_id(&self) -> Option<ChainId>;
     fn metadata(&self, data: String) -> Result<MetaData, String>;
+    fn economical_model(&self) -> EconomicalModel;
     fn grow(&mut self, closed_block: ClosedBlock);
     fn exit(&mut self, rollback_id: BlockId);
 }
@@ -166,6 +171,7 @@ impl Commander for Executor {
             }
             Command::ChainID => CommandResp::ChainID(self.chain_id()),
             Command::Metadata(data) => CommandResp::Metadata(self.metadata(data)),
+            Command::EconomicalModel => CommandResp::EconomicalModel(self.economical_model()),
             Command::Grow(closed_block) => {
                 self.grow(closed_block);
                 CommandResp::Grow
@@ -386,15 +392,18 @@ impl Commander for Executor {
         }
     }
 
+    fn economical_model(&self) -> EconomicalModel {
+        *self.economical_model.read()
+    }
+
     fn grow(&mut self, closed_block: ClosedBlock) {
         info!(
             "executor grow according to ClosedBlock(height: {}, hash: {:?}, parent_hash: {:?},\
-             timestamp: {}, proof: {:?}, state_root: {:?}, transaction_root: {:?}, proposer: {:?})",
+             timestamp: {}, state_root: {:?}, transaction_root: {:?}, proposer: {:?})",
             closed_block.number(),
             closed_block.hash().unwrap(),
             closed_block.parent_hash(),
             closed_block.timestamp(),
-            closed_block.proof(),
             closed_block.state_root(),
             closed_block.transactions_root(),
             closed_block.proposer(),
@@ -563,6 +572,17 @@ pub fn metadata(
     command_req_sender.send(Command::Metadata(data));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::Metadata(r) => r,
+        _ => unimplemented!(),
+    }
+}
+
+pub fn economical_model(
+    command_req_sender: &Sender<Command>,
+    command_resp_receiver: &Receiver<CommandResp>,
+) -> EconomicalModel {
+    command_req_sender.send(Command::EconomicalModel);
+    match command_resp_receiver.recv().unwrap() {
+        CommandResp::EconomicalModel(r) => r,
         _ => unimplemented!(),
     }
 }

@@ -122,6 +122,10 @@ impl Backlogs {
         self.completed.get(&height)
     }
 
+    pub fn insert_completed_result(&mut self, height: u64, executed_result: ExecutedResult) {
+        self.completed.insert(height, executed_result);
+    }
+
     pub fn insert_open_block(&mut self, height: u64, open_block: OpenBlock) -> bool {
         if !self.assert_height(height) {
             return false;
@@ -187,7 +191,12 @@ impl Backlogs {
     }
 
     pub fn prune(&mut self, height: u64) {
-        self.completed = self.completed.split_off(&height);
+        // Importance guard: we must keep the executed result of the previous
+        // height(current_height - 1), which used when postman check arrived
+        // proof via `Postman::check_proof`
+        if height < self.get_current_height() - 1 && self.get_current_height() != 0 {
+            self.completed = self.completed.split_off(&height);
+        }
     }
 
     fn assert_height(&self, height: u64) -> bool {
