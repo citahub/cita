@@ -246,7 +246,7 @@ impl Executor {
         }
     }
 
-    pub fn rollback_current_height(&self, rollback_id: BlockId) {
+    pub fn rollback_current_height(&mut self, rollback_id: BlockId) {
         let rollback_height: BlockNumber = match rollback_id {
             BlockId::Number(height) => height,
             BlockId::Earliest => 0,
@@ -265,6 +265,9 @@ impl Executor {
             batch.write(db::COL_EXTRA, &CurrentHash, &rollback_hash);
             self.db.read().write(batch).unwrap();
         }
+
+        let rollback_header = self.block_header_by_height(rollback_height).unwrap();
+        self.current_header = RwLock::new(rollback_header);
     }
 
     /// Write data to db
@@ -696,21 +699,6 @@ mod tests {
     }
 
     #[test]
-    fn test_global_sys_config_equal() {
-        let mut lhs = GlobalSysConfig::default();
-
-        lhs.nodes.push(Address::from(0x100003));
-        lhs.nodes.push(Address::from(0x100004));
-
-        let mut rhs = GlobalSysConfig::default();
-
-        rhs.nodes.push(Address::from(0x100003));
-        rhs.nodes.push(Address::from(0x100004));
-
-        assert_eq!(lhs, rhs);
-    }
-
-    #[test]
     fn test_chain_name_valid_block_number() {
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
@@ -742,5 +730,54 @@ mod tests {
 
         assert_eq!(chain_name_pending, "12345");
         assert_eq!(chain_name_latest, "abcd");
+    }
+
+    #[test]
+    fn test_rollback_current_height() {
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let mut executor = helpers::init_executor(vec![]);
+
+        let data = generate_contract();
+        for _i in 0..5 {
+            let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
+            let (closed_block, _executed_result) = executor.into_fsm(block.clone());
+            executor.grow(closed_block);
+        }
+
+        let current_height = executor.get_current_height();
+        assert_eq!(current_height, 5);
+
+        // rollback_height = current_height
+        executor.rollback_current_height(BlockId::Number(current_height));
+        assert_eq!(executor.get_current_height(), current_height);
+
+        // rollback height = current_height - 3
+        let rollback_to_2 = current_height - 3;
+        executor.rollback_current_height(BlockId::Number(rollback_to_2));
+        assert_eq!(executor.get_current_height(), 2);
+
+        // rollback_height = 0
+        executor.rollback_current_height(BlockId::Earliest);
+        assert_eq!(executor.get_current_height(), 0);
+    }
+
+    #[test]
+    fn test_closed_block_grow() {
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let mut executor = helpers::init_executor(vec![]);
+
+        let data = generate_contract();
+        let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
+        let (closed_block, _executed_result) = executor.into_fsm(block.clone());
+        let closed_block_height = closed_block.number();
+        let closed_block_hash = closed_block.hash();
+        executor.grow(closed_block);
+
+        let current_height = executor.get_current_height();
+        let current_hash = executor.block_hash(current_height);
+        assert_eq!(closed_block_height, current_height);
+        assert_eq!(closed_block_hash, current_hash);
     }
 }
