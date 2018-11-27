@@ -1046,6 +1046,7 @@ params: [
 
 * Returns
     * `chainId`, `Integer` - Deal with transaction replay attack
+    * `chainIdV1`, `Integer` - ChainId in version 1
     * `chainName`, `String` - Chain name
     * `operator`, `String` - Chain operator
     * `genesisTimestamp`, `Integer` - Genesis timestamp
@@ -1064,30 +1065,30 @@ params: [
 
     ```json
     {
-        "jsonrpc": "2.0",
         "id": 1,
+        "jsonrpc": "2.0",
         "result": {
-            "chainId": 1,
-            "chainName": "test-chain",
-            "operator": "test-operator",
-            "website": "https://www.example.com",
-            "genesisTimestamp": 1528076976075,
-            "validators": [
-                "0x18e79b84cd3e5801e7f3dc66546b3b46af812cbd",
-                "0x5bb02723557a4633cebfa3f83b1ecb657002f444",
-                "0xafbf170735a3535f141cd929f67296de50842638",
-                "0xdd321f6586f2c5ceb4ae3ce28d0bd92fb631d3ae"
-            ],
             "blockInterval": 3000,
-            "tokenName": "tokenName",
-            "tokenSymbol": "tokenSymbol",
-            "tokenAvatar": "tokenAvatar",
-            "version":1,
-            "economicalModel": 0
+            "chainId": 0,
+            "chainIdV1": "1",
+            "chainName": "test-chain",
+            "economicalModel": 1,
+            "genesisTimestamp": 1541058686340,
+            "operator": "test-operator",
+            "tokenAvatar": "https://cdn.cryptape.com/icon_appchain.png",
+            "tokenName": "Nervos AppChain Test Token",
+            "tokenSymbol": "NATT",
+            "validators": [
+                "0xc489d5cb6f497e4708cc8c3805473b9528f83c7a",
+                "0x497c68f02bbe335cc879356af120371ebf6cbc29",
+                "0x6fbb4c8bb76ace631d634545fe39cbee979dd08e",
+                "0x3c0f681e13f18b51d5350823eae45cb502231cf4"
+            ],
+            "version": 1,
+            "website": "https://www.example.com"
         }
     }
     ```
-
 ***
 
 ### getBlockHeader

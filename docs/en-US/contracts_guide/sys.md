@@ -6,6 +6,8 @@
 * [setOperator](#setOperator)
 * [setWebsite](#setWebsite)
 * [getPermissionCheck](#getPermissionCheck)
+* [getSendTxPermissionCheck](#getSendTxPermissionCheck)
+* [getCreateContractPermissionCheck](#getCreateContractPermissionCheck)
 * [getQuotaCheck](#getQuotaCheck)
 * [getFeeBackPlatformCheck](#getFeeBackPlatformCheck)
 * [getChainOwner](#getChainOwner)
@@ -74,7 +76,7 @@ $ scm SysConfig setWebsite \
 
 ### getPermissionCheck
 
-查询权限是否开启。
+查询调用合约权限是否开启， 默认关闭。
 
 * Parameters
 
@@ -90,9 +92,45 @@ $ scm SysConfig setWebsite \
 $ scm SysConfig getPermissionCheck
 ```
 
+### getSendTxPermissionCheck
+
+查询发送交易权限是否开启, 默认关闭。
+
+* Parameters
+
+    `height(Optional)`
+
+* Returns
+
+    `bool` - True, if permission check, otherwise false.
+
+* Example
+
+```shell
+$ scm SysConfig getSendTxPermissionCheck
+```
+
+### getCreateContractPermissionCheck
+
+查询创建合约权限是否开启, 默认关闭。
+
+* Parameters
+
+    `height(Optional)`
+
+* Returns
+
+    `bool` - True, if permission check, otherwise false.
+
+* Example
+
+```shell
+$ scm SysConfig getCreateContractPermissionCheck
+```
+
 ### getQuotaCheck
 
-查询 quota 检查是否开启。
+查询 quota 检查是否开启， 默认关闭。
 
 * Parameters
 
@@ -110,7 +148,7 @@ $ scm SysConfig getQuotaCheck
 
 ### getFeeBackPlatformCheck
 
-查询出块激励返回开关是否开启。
+查询出块激励返回开关是否开启， 默认关闭。
 
 * Parameters
 
