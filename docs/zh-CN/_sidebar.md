@@ -1,8 +1,8 @@
 - [首页](index.md)
-- 快速入门
-    - [快速搭链](chain/getting_started.md)
-    - [链的配置](chain/config_tool.md)
-    - [微服务配置](chain/service_config.md)
+- [快速入门](chain/getting_started.md)
+- [配置](configuration/config_overview.md)
+    - [链级配置](configuration/chain_config.md)
+    - [微服务配置](configuration/service_config.md)
 - 系统管理
     - [系统合约](system_management/contracts.md)
     - [节点管理](system_management/node.md)
