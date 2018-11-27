@@ -18,6 +18,8 @@
 use bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
+use cita_types::traits::LowerHex;
+use cita_types::{Address, H256, U256};
 use contracts::{
     native::factory::Factory as NativeFactory,
     solc::{
@@ -41,17 +43,13 @@ use libexecutor::call_request::CallRequest;
 use libexecutor::economical_model::EconomicalModel;
 use libexecutor::genesis::Genesis;
 use libexecutor::lru_cache::LRUCache;
-
 use libproto::blockchain::{Proof as ProtoProof, ProofType, RichStatus};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{ConsensusConfig, ExecutedResult, Message};
-
-use cita_types::traits::LowerHex;
-use cita_types::{Address, H256, U256};
 use state::State;
 use state_db::StateDB;
 use std::cmp::min;
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{BTreeMap, HashMap};
 use std::convert::{From, Into, TryInto};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
@@ -208,8 +206,6 @@ pub struct Executor {
     pub db: RwLock<Arc<KeyValueDB>>,
     pub state_db: RwLock<StateDB>,
     pub factories: Factories,
-    /// Hash of the given block - only works for 256 most recent blocks excluding current
-    pub last_hashes: RwLock<VecDeque<H256>>,
 
     /// Cache results after block that executed
     pub executed_result: RwLock<BTreeMap<u64, ExecutedResult>>,
@@ -292,7 +288,6 @@ impl Executor {
             db: RwLock::new(db),
             state_db: RwLock::new(state_db),
             factories,
-            last_hashes: RwLock::new(VecDeque::new()),
             executed_result: RwLock::new(executed_map),
             prooftype: executor_config.prooftype,
             global_config: RwLock::new(GlobalSysConfig::new()),
@@ -300,9 +295,6 @@ impl Executor {
             black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
             engine: Box::new(NullEngine::cita()),
         };
-
-        // Build executor config
-        executor.build_last_hashes(Some(header.hash().unwrap()), header.number());
 
         let conf = executor.load_config(BlockId::Pending);
         {
@@ -362,10 +354,6 @@ impl Executor {
             }
         }
         self.db.read().read(db::COL_HEADERS, &hash)
-    }
-
-    fn last_hashes(&self) -> LastHashes {
-        LastHashes::from(self.last_hashes.read().clone())
     }
 
     #[inline]
@@ -457,46 +445,31 @@ impl Executor {
     }
 
     /// Build last 256 block hashes.
-    fn build_last_hashes(&self, prevhash: Option<H256>, parent_height: u64) -> Arc<LastHashes> {
+    fn build_last_hashes(&self, prevhash: Option<H256>, parent_height: u64) -> LastHashes {
         let parent_hash = prevhash.unwrap_or_else(|| {
             self.block_hash(parent_height)
                 .expect("Block height always valid.")
         });
-        {
-            let hashes = self.last_hashes.read();
-            if hashes.front().map_or(false, |h| h == &parent_hash) {
-                let mut res = Vec::from(hashes.clone());
-                res.resize(256, H256::default());
-                return Arc::new(res);
-            }
-        }
+
         let mut last_hashes = LastHashes::new();
         last_hashes.resize(256, H256::default());
         last_hashes[0] = parent_hash;
-        for i in 0..255 {
-            if parent_height < i + 1 {
-                break;
-            };
-            let height = parent_height - i - 1;
+        for (i, last_hash) in last_hashes
+            .iter_mut()
+            .enumerate()
+            .take(255 as usize)
+            .skip(1)
+        {
+            let height = parent_height - i as u64;
             match self.block_hash(height) {
                 Some(hash) => {
-                    let index = (i + 1) as usize;
-                    last_hashes[index] = hash;
+                    *last_hash = hash;
                 }
                 None => break,
             }
         }
-        let mut cached_hashes = self.last_hashes.write();
-        *cached_hashes = VecDeque::from(last_hashes.clone());
-        Arc::new(last_hashes)
-    }
 
-    fn update_last_hashes(&self, hash: &H256) {
-        let mut hashes = self.last_hashes.write();
-        if hashes.len() > 255 {
-            hashes.pop_back();
-        }
-        hashes.push_front(*hash);
+        last_hashes
     }
 
     fn prune_ancient(&self, mut state_db: StateDB) -> Result<(), UtilError> {
@@ -606,7 +579,7 @@ impl Executor {
             author: *header.proposer(),
             timestamp: header.timestamp(),
             difficulty: U256::default(),
-            last_hashes,
+            last_hashes: Arc::new(last_hashes),
             gas_used: *header.quota_used(),
             gas_limit: *header.quota_limit(),
             account_gas_limit: u64::max_value().into(),
@@ -765,7 +738,6 @@ impl Executor {
         {
             *self.current_header.write() = header;
         }
-        self.update_last_hashes(&self.get_current_hash());
         let number = closed_block.number();
 
         self.set_executed_result(&closed_block);
@@ -908,7 +880,7 @@ impl Executor {
     pub fn execute_block(&self, block: OpenBlock, ctx_pub: &Sender<(String, Vec<u8>)>) {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
-        let last_hashes = self.last_hashes();
+        let last_hashes = self.build_last_hashes(None, block.number() - 1);
         let conf = { self.global_config.read().clone() };
         let parent_hash = *block.parent_hash();
         let check_options = CheckOptions {
@@ -946,7 +918,7 @@ impl Executor {
     pub fn execute_proposal(&self, block: OpenBlock) -> Option<ClosedBlock> {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
-        let last_hashes = self.last_hashes();
+        let last_hashes = self.build_last_hashes(None, block.number() - 1);
         let conf = self.global_config.read().clone();
         let parent_hash = *block.parent_hash();
         let check_options = CheckOptions {
