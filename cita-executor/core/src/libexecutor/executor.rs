@@ -43,7 +43,7 @@ use super::fsm::FSM;
 use cita_types::{Address, H256};
 use crossbeam_channel::{Receiver, Sender};
 use state_db::StateDB;
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::convert::{From, Into};
 use std::sync::Arc;
 use std::time::Instant;
@@ -124,9 +124,6 @@ pub struct Executor {
     pub economical_model: RwLock<EconomicalModel>,
     pub engine: Box<Engine>,
 
-    // block-hashes of recent 256 blocks, which used for `BLOCKHASH` opcode
-    pub last_hashes: RwLock<VecDeque<H256>>,
-
     pub fsm_req_receiver: Receiver<OpenBlock>,
     pub fsm_resp_sender: Sender<(ClosedBlock, ExecutedResult)>,
     pub command_req_receiver: Receiver<Command>,
@@ -169,14 +166,11 @@ impl Executor {
                 genesis.block.header().clone()
             }
         };
-        let hash = current_header.hash().unwrap();
-        let number = current_header.number();
         let mut executor = Executor {
             current_header: RwLock::new(current_header),
             db: RwLock::new(database),
             state_db: RwLock::new(state_db),
             factories,
-            last_hashes: RwLock::new(VecDeque::new()),
             sys_config: GlobalSysConfig::default(),
             economical_model: RwLock::new(EconomicalModel::Quota),
             engine: Box::new(NullEngine::cita()),
@@ -186,7 +180,6 @@ impl Executor {
             command_resp_sender,
         };
 
-        executor.build_last_hashes(Some(hash), number);
         executor.sys_config = executor.load_sys_config(BlockId::Pending);
 
         info!(
@@ -355,10 +348,6 @@ impl Executor {
         self.db.read().read(db::COL_HEADERS, &hash)
     }
 
-    fn last_hashes(&self) -> LastHashes {
-        LastHashes::from(self.last_hashes.read().clone())
-    }
-
     #[inline]
     fn get_latest_height(&self) -> u64 {
         self.current_header.read().number().saturating_sub(1)
@@ -380,46 +369,30 @@ impl Executor {
     }
 
     /// Build last 256 block hashes.
-    pub fn build_last_hashes(&self, prevhash: Option<H256>, parent_height: u64) -> Arc<LastHashes> {
+    pub fn build_last_hashes(&self, prevhash: Option<H256>, parent_height: u64) -> LastHashes {
         let parent_hash = prevhash.unwrap_or_else(|| {
             self.block_hash(parent_height)
                 .expect("Block height always valid.")
         });
-        {
-            let hashes = self.last_hashes.read();
-            if hashes.front().map_or(false, |h| h == &parent_hash) {
-                let mut res = Vec::from(hashes.clone());
-                res.resize(256, H256::default());
-                return Arc::new(res);
-            }
-        }
+
         let mut last_hashes = LastHashes::new();
         last_hashes.resize(256, H256::default());
         last_hashes[0] = parent_hash;
-        for i in 0..255 {
-            if parent_height < i + 1 {
-                break;
-            };
-            let height = parent_height - i - 1;
+        for (i, last_hash) in last_hashes
+            .iter_mut()
+            .enumerate()
+            .take(255 as usize)
+            .skip(1)
+        {
+            let height = parent_height - i as u64;
             match self.block_hash(height) {
                 Some(hash) => {
-                    let index = (i + 1) as usize;
-                    last_hashes[index] = hash;
+                    *last_hash = hash;
                 }
                 None => break,
             }
         }
-        let mut cached_hashes = self.last_hashes.write();
-        *cached_hashes = VecDeque::from(last_hashes.clone());
-        Arc::new(last_hashes)
-    }
-
-    pub fn update_last_hashes(&self, hash: &H256) {
-        let mut hashes = self.last_hashes.write();
-        if hashes.len() > 255 {
-            hashes.pop_back();
-        }
-        hashes.push_front(*hash);
+        last_hashes
     }
 
     pub fn make_consensus_config(&self) -> ConsensusConfig {
@@ -589,7 +562,7 @@ impl Executor {
 
     pub fn to_executed_block(&self, open_block: OpenBlock) -> ExecutedBlock {
         let current_state_root = self.current_state_root();
-        let last_hashes = self.last_hashes();
+        let last_hashes = self.build_last_hashes(None, open_block.number() - 1);
         let sys_config = self.sys_config.clone();
         let parent_hash = *open_block.parent_hash();
 

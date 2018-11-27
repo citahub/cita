@@ -262,7 +262,7 @@ impl Commander for Executor {
             author: *header.proposer(),
             timestamp: header.timestamp(),
             difficulty: U256::default(),
-            last_hashes,
+            last_hashes: ::std::sync::Arc::new(last_hashes),
             gas_used: *header.quota_used(),
             gas_limit: *header.quota_limit(),
             account_gas_limit: u64::max_value().into(),
@@ -421,7 +421,6 @@ impl Commander for Executor {
         {
             *self.current_header.write() = closed_block.header().clone();
         }
-        self.update_last_hashes(&self.get_current_hash());
         self.write_batch(closed_block);
 
         if are_permissions_changed {
