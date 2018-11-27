@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file. And this pr
 
 - [Feature] Automatic execution by [@kaikai]
 - [Optimazation] Enable changing size of global cache in StateDB by [@lhf]
+- [Refactor] Decouple executor and postman [@keroro520] [@WPF]
+- [Configuration] deprecate `--genesis` command option, instead place into `executor.toml`
 
 ### Chain
 
@@ -40,3 +42,4 @@ All notable changes to this project will be documented in this file. And this pr
 [@zhiwei]:https://github.com/rink1969
 [@zhouyun-zoe]:https://github.com/zhouyun-zoe
 [@lhf]:https://github.com/EighteenZi
+[@keroro520]:https://github.com/keroro520

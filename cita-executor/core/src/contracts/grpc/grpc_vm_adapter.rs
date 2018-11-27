@@ -17,16 +17,19 @@
 
 use cita_types::{Address, H256, U256};
 use contracts::grpc::service_registry;
+use crossbeam_channel::{Receiver, Sender};
 use grpc::Server;
-use libexecutor::executor::Executor;
+use libexecutor::command;
 use libproto::executor::{LoadRequest, LoadResponse, RegisterRequest, RegisterResponse};
 use libproto::executor_grpc::{ExecutorService, ExecutorServiceServer};
 use std::str::FromStr;
-use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
 use types::ids::BlockId;
 
 pub struct ExecutorServiceImpl {
-    ext: Arc<Executor>,
+    command_req_sender: Sender<command::Command>,
+    command_resp_receiver: Receiver<command::CommandResp>,
 }
 
 impl ExecutorService for ExecutorServiceImpl {
@@ -73,12 +76,6 @@ impl ExecutorService for ExecutorServiceImpl {
         if let Some(info) = service_registry::find_contract(address, true) {
             hi = info.height;
         }
-        //
-        //        if hi == 0 {
-        //            if let Some(value) = self.ext.db.read().read(db::COL_EXTRA, &address) {
-        //                hi = value.height
-        //            }
-        //        }
         if hi == 0 {
             error!("contract address {} have not created", caddr);
             r.set_value("".to_string());
@@ -93,14 +90,24 @@ impl ExecutorService for ExecutorServiceImpl {
 }
 
 impl ExecutorServiceImpl {
-    pub fn new(ext: Arc<Executor>) -> Self {
-        ExecutorServiceImpl { ext }
+    pub fn new(
+        command_req_sender: Sender<command::Command>,
+        command_resp_receiver: Receiver<command::CommandResp>,
+    ) -> Self {
+        ExecutorServiceImpl {
+            command_req_sender,
+            command_resp_receiver,
+        }
     }
 
     //  get vec
     fn get_bytes(&self, block_id: BlockId, address: &Address, key: H256) -> Vec<u8> {
         let mut out = Vec::new();
-        match self.ext.state_at(block_id) {
+        match command::state_at(
+            &self.command_req_sender,
+            &self.command_resp_receiver,
+            block_id,
+        ) {
             Some(state) => {
                 if let Ok(len) = state.storage_at(&address, &key) {
                     let len = len.low_u64();
@@ -134,15 +141,25 @@ impl ExecutorServiceImpl {
     }
 }
 
-pub fn vm_grpc_server(port: u16, ext: Arc<Executor>) -> Option<Server> {
+pub fn vm_grpc_server(
+    grpc_port: u16,
+    command_req_sender: Sender<command::Command>,
+    command_resp_receiver: Receiver<command::CommandResp>,
+) -> Option<Server> {
     let mut server = ::grpc::ServerBuilder::new_plain();
-    server.http.set_port(port);
+    server.http.set_port(grpc_port);
     server.add_service(ExecutorServiceServer::new_service_def(
-        ExecutorServiceImpl::new(ext),
+        ExecutorServiceImpl::new(command_req_sender, command_resp_receiver),
     ));
     server.http.set_cpu_pool_threads(4);
     match server.build() {
         Ok(server) => Some(server),
         Err(_) => None,
+    }
+}
+
+pub fn serve(_server: &Server) {
+    loop {
+        thread::sleep(Duration::from_secs(5))
     }
 }

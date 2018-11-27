@@ -6,7 +6,10 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 [dependencies]
 dotenv = "0.13.0"
 clap = "2"
+serde = "1.0"
+crossbeam-channel = "0.2"
 serde_json = "1.0"
+serde_derive = "1.0"
 grpc = "0.5.0"
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -18,10 +21,10 @@ proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop
 core-executor = { path = "./core" }
 common-types = { path = "../cita-chain/types" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+evm = { path = "evm" }
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]

@@ -39,6 +39,7 @@ pub use self::version_management::VersionManager;
 
 use cita_types::Address;
 use libexecutor::call_request::CallRequest;
+use libexecutor::command::Commander;
 use libexecutor::executor::Executor;
 use types::ids::BlockId;
 use util::Bytes;
@@ -55,7 +56,7 @@ trait ContractCallExt {
     ) -> Result<Bytes, String>;
 }
 
-impl ContractCallExt for Executor {
+impl<'a> ContractCallExt for Executor {
     fn call_method(
         &self,
         address: &Address,

@@ -1,3 +1,5 @@
 journaldb_type = "archive"
 prooftype = 2
 grpc_port = 5000
+genesis_path = "./genesis.json"
+statedb_cache_size = 5242880

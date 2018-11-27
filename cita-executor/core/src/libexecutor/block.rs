@@ -17,14 +17,13 @@
 
 use basic_types::LogBloom;
 use cita_types::{Address, H256, U256};
-use contracts::solc::PriceManagement;
 use engines::Engine;
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
 use libexecutor::auto_exec::auto_exec;
 use libexecutor::economical_model::EconomicalModel;
-use libexecutor::executor::{CheckOptions, Executor, GlobalSysConfig};
+use libexecutor::executor::{CheckOptions, GlobalSysConfig};
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use receipt::Receipt;
 use rlp::*;
@@ -32,17 +31,11 @@ use state::State;
 use state_db::StateDB;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::time::Instant;
 use trace::FlatTrace;
 pub use types::block::{Block, BlockBody, OpenBlock};
-use types::ids::BlockId;
 use types::transaction::SignedTransaction;
 use util::merklehash;
-
-/// Check the 256 transactions once
-const CHECK_NUM: usize = 0xff;
 
 lazy_static! {
     /// Block Reward
@@ -139,39 +132,6 @@ impl ExecutedBlock {
             gas_limit: *self.quota_limit(),
             account_gas_limit: 0.into(),
         }
-    }
-
-    /// Execute transactions
-    /// Return false if be interrupted
-    pub fn apply_transactions(
-        &mut self,
-        executor: &Executor,
-        check_options: &CheckOptions,
-    ) -> bool {
-        let price_management = PriceManagement::new(executor);
-        let quota_price = price_management
-            .quota_price(BlockId::Pending)
-            .unwrap_or_else(PriceManagement::default_quota_price);
-        for (index, mut t) in self.body.transactions.clone().into_iter().enumerate() {
-            if index & CHECK_NUM == 0 && executor.is_interrupted.load(Ordering::SeqCst) {
-                executor.is_interrupted.store(false, Ordering::SeqCst);
-                return false;
-            }
-
-            let economical_model: EconomicalModel = *executor.economical_model.read();
-            if economical_model == EconomicalModel::Charge {
-                t.gas_price = quota_price;
-            }
-
-            self.apply_transaction(&*executor.engine, &t, economical_model, check_options);
-        }
-
-        let now = Instant::now();
-        self.state.commit().expect("commit trie error");
-        let new_now = Instant::now();
-        debug!("state root use {:?}", new_now.duration_since(now));
-
-        true
     }
 
     #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
