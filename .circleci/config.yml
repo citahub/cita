@@ -218,7 +218,7 @@ jobs:
       HASH_ALGO: sm3hash
       CRYPTO_ALGO: sm2
 
-  "Integrate Test":
+  "Integrate Test Part-1":
     <<: *job-default
     steps:
       - restore_cache: *restore-source-codes-cache
@@ -230,6 +230,12 @@ jobs:
       - run:
           name: Basic Tls Integrate Test
           command: ./tests/integrate_test/cita_tls_basic.sh
+  "Integrate Test Part-2":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
           name: JSON-RPC Mock Test in Quota Mode
           command: ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota
@@ -245,7 +251,7 @@ jobs:
           name: Test Executor Process SignProposal/BlockWithProof
           command: ./tests/integrate_test/box_executor_test.sh
 
-  "Byzantine Test":
+  "Byzantine Test in Quota Mode":
     <<: *job-default
     steps:
       - restore_cache: *restore-source-codes-cache
@@ -254,6 +260,13 @@ jobs:
       - run:
           name: Byzantine Test in Quota Mode
           command: ./tests/integrate_test/cita_byzantinetest.sh quota
+
+  "Byzantine Test in Charge Mode":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
           name: Byzantine Test in Charge Mode
           command: ./tests/integrate_test/cita_byzantinetest.sh charge
@@ -319,10 +332,16 @@ workflows:
           requires:
             - "Release"
 
-      - "Integrate Test":
+      - "Integrate Test Part-1":
           requires:
             - "Release"
-      - "Byzantine Test":
+      - "Integrate Test Part-2":
+          requires:
+            - "Release"
+      - "Byzantine Test in Quota Mode":
+          requires:
+            - "Release"
+      - "Byzantine Test in Charge Mode":
           requires:
             - "Release"
       - "Crosschain Test":

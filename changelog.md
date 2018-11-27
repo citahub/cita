@@ -26,12 +26,14 @@ All notable changes to this project will be documented in this file. And this pr
 
 ### Test
 
+- [Optimazation] Split large ci jobs by [@u2]
+
 ### Doc
 
 [Unreleased]:https://github.com/cryptape/cita/compare/v0.20...HEAD
 
 [@driftluo]:https://github.com/driftluo
-[@zhangyaning]:https://github.com/u2
+[@u2]:https://github.com/u2
 [@Buyu Yang]:https://github.com/yangby-cryptape
 [@kaikai]:https://github.com/kaikai1024
 [@WPF]:https://github.com/ouwenkg
