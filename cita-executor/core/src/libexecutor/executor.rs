@@ -372,7 +372,7 @@ impl Executor {
     pub fn build_last_hashes(&self, prevhash: Option<H256>, parent_height: u64) -> LastHashes {
         let parent_hash = prevhash.unwrap_or_else(|| {
             self.block_hash(parent_height)
-                .expect("Block height always valid.")
+                .unwrap_or_else(|| panic!("invalid block height: {}", parent_height))
         });
 
         let mut last_hashes = LastHashes::new();
@@ -384,13 +384,13 @@ impl Executor {
             .take(255 as usize)
             .skip(1)
         {
-            let height = parent_height - i as u64;
-            match self.block_hash(height) {
-                Some(hash) => {
-                    *last_hash = hash;
-                }
-                None => break,
+            if i >= parent_height as usize {
+                break;
             }
+            let height = parent_height - i as u64;
+            *last_hash = self
+                .block_hash(height)
+                .expect("blocks lower then parent must exist");
         }
         last_hashes
     }

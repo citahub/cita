@@ -185,7 +185,8 @@ mod tests {
 
     fn generate_block() -> OpenBlock {
         let block_body = generate_block_body();
-        let block_header = generate_block_header();
+        let mut block_header = generate_block_header();
+        block_header.set_number(1);
         OpenBlock {
             body: block_body,
             header: block_header,
