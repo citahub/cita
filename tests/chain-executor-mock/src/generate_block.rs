@@ -122,7 +122,9 @@ impl BuildBlock {
         let signature = Signature::sign(privkey, &msg.crypt_hash()).unwrap();
         commits.insert((*sender).into(), signature);
         proof.commits = commits;
-        block.mut_header().set_proof(proof.clone().into());
+        let mut previous_proof = proof.clone();
+        previous_proof.height = height as usize - 1;
+        block.mut_header().set_proof(previous_proof.into());
         let transactions_root = block.get_body().transactions_root();
         block
             .mut_header()
