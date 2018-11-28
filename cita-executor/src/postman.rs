@@ -780,4 +780,95 @@ mod tests {
         );
         assert_eq!(2, wrap_height(2));
     }
+
+    #[test]
+    fn test_bootstrap_broadcast_at_0th() {
+        let (_mq_req_sender, mq_req_receiver) = crossbeam_channel::unbounded();
+        let (mq_resp_sender, mq_resp_receiver) = crossbeam_channel::unbounded();
+        let (fsm_req_sender, _fsm_req_receiver) = crossbeam_channel::unbounded();
+        let (_fsm_resp_sender, fsm_resp_receiver) = crossbeam_channel::unbounded();
+        let (command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
+        let (command_resp_sender, command_resp_receiver) = crossbeam_channel::bounded(0);
+        let mut postman = Postman::new(
+            0,
+            Default::default(),
+            mq_req_receiver,
+            mq_resp_sender,
+            fsm_req_sender,
+            fsm_resp_receiver,
+            command_req_sender,
+            command_resp_receiver,
+        );
+
+        ::std::thread::spawn(move || {
+            let command = command_req_receiver.recv().unwrap();
+            match command {
+                command::Command::LoadExecutedResult(0) => command_resp_sender.send(
+                    command::CommandResp::LoadExecutedResult(libproto::ExecutedResult::new()),
+                ),
+                _ => panic!("received should be Command::LoadExecutedResult(0)"),
+            }
+        });
+        postman.bootstrap_broadcast();
+
+        assert_eq!(0, postman.get_current_height());
+        assert!(postman.backlogs.get_completed_result(0).is_some());
+        assert!(postman.backlogs.get_completed_result(1).is_none());
+
+        let (key, _message) = mq_resp_receiver.recv().unwrap();
+        assert_eq!(
+            routing_key!(Executor >> ExecutedResult),
+            RoutingKey::from(key)
+        );
+    }
+
+    #[test]
+    fn test_bootstrap_broadcast_at_3th() {
+        let (_mq_req_sender, mq_req_receiver) = crossbeam_channel::unbounded();
+        let (mq_resp_sender, mq_resp_receiver) = crossbeam_channel::unbounded();
+        let (fsm_req_sender, _fsm_req_receiver) = crossbeam_channel::unbounded();
+        let (_fsm_resp_sender, fsm_resp_receiver) = crossbeam_channel::unbounded();
+        let (command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
+        let (command_resp_sender, command_resp_receiver) = crossbeam_channel::bounded(0);
+        let mut postman = Postman::new(
+            3,
+            Default::default(),
+            mq_req_receiver,
+            mq_resp_sender,
+            fsm_req_sender,
+            fsm_resp_receiver,
+            command_req_sender,
+            command_resp_receiver,
+        );
+
+        ::std::thread::spawn(move || {
+            let command = command_req_receiver.recv().unwrap();
+            match command {
+                command::Command::LoadExecutedResult(3) => command_resp_sender.send(
+                    command::CommandResp::LoadExecutedResult(libproto::ExecutedResult::new()),
+                ),
+                _ => panic!("received should be Command::LoadExecutedResult(3)"),
+            }
+            let command = command_req_receiver.recv().unwrap();
+            match command {
+                command::Command::LoadExecutedResult(2) => command_resp_sender.send(
+                    command::CommandResp::LoadExecutedResult(libproto::ExecutedResult::new()),
+                ),
+                _ => panic!("received should be Command::LoadExecutedResult(2)"),
+            }
+        });
+        postman.bootstrap_broadcast();
+
+        assert_eq!(3, postman.get_current_height());
+        assert!(postman.backlogs.get_completed_result(0).is_none());
+        assert!(postman.backlogs.get_completed_result(1).is_none());
+        assert!(postman.backlogs.get_completed_result(2).is_some());
+        assert!(postman.backlogs.get_completed_result(3).is_some());
+
+        let (key, _message) = mq_resp_receiver.recv().unwrap();
+        assert_eq!(
+            routing_key!(Executor >> ExecutedResult),
+            RoutingKey::from(key)
+        );
+    }
 }
