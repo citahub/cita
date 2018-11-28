@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -17,13 +17,7 @@
 
 use bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 pub use byteorder::{BigEndian, ByteOrder};
-use contracts::{
-    native::factory::Factory as NativeFactory,
-    solc::{
-        AccountQuotaLimit, EmergencyBrake, NodeManager, PermissionManagement, QuotaManager,
-        Resource, SysConfig, UserManagement, VersionManager, AUTO_EXEC_QL_VALUE,
-    },
-};
+use contracts::{native::factory::Factory as NativeFactory, solc::NodeManager};
 use db;
 use db::*;
 use engines::{Engine, NullEngine};
@@ -40,10 +34,10 @@ use libproto::{ConsensusConfig, ExecutedResult};
 use super::command::{Command, CommandResp, Commander};
 use super::economical_model::EconomicalModel;
 use super::fsm::FSM;
-use cita_types::{Address, H256};
+use super::sys_config::GlobalSysConfig;
+use cita_types::H256;
 use crossbeam_channel::{Receiver, Sender};
 use state_db::StateDB;
-use std::collections::HashMap;
 use std::convert::{From, Into};
 use std::sync::Arc;
 use std::time::Instant;
@@ -54,65 +48,6 @@ use util::kvdb::{Database, DatabaseConfig};
 use util::trie::{TrieFactory, TrieSpec};
 use util::RwLock;
 use util::UtilError;
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct GlobalSysConfig {
-    pub nodes: Vec<Address>,
-    pub validators: Vec<Address>,
-    pub block_quota_limit: usize,
-    pub account_quota_limit: AccountQuotaLimit,
-    pub delay_active_interval: usize,
-    pub changed_height: usize,
-    pub check_quota: bool,
-    pub check_permission: bool,
-    pub check_send_tx_permission: bool,
-    pub check_create_contract_permission: bool,
-    pub check_fee_back_platform: bool,
-    pub chain_owner: Address,
-    pub account_permissions: HashMap<Address, Vec<Resource>>,
-    pub group_accounts: HashMap<Address, Vec<Address>>,
-    pub super_admin_account: Option<Address>,
-    pub block_interval: u64,
-    pub emergency_brake: bool,
-    pub chain_version: u32,
-    pub auto_exec_quota_limit: u64,
-    pub auto_exec: bool,
-}
-
-impl Default for GlobalSysConfig {
-    fn default() -> Self {
-        GlobalSysConfig {
-            nodes: Vec::new(),
-            validators: Vec::new(),
-            block_quota_limit: 18_446_744_073_709_551_615,
-            account_quota_limit: AccountQuotaLimit::new(),
-            delay_active_interval: 1,
-            changed_height: 0,
-            check_quota: false,
-            check_permission: false,
-            check_send_tx_permission: false,
-            check_create_contract_permission: false,
-            check_fee_back_platform: false,
-            chain_owner: Address::from(0),
-            account_permissions: HashMap::new(),
-            group_accounts: HashMap::new(),
-            super_admin_account: None,
-            block_interval: 3000,
-            emergency_brake: false,
-            chain_version: 0,
-            auto_exec_quota_limit: AUTO_EXEC_QL_VALUE,
-            auto_exec: false,
-        }
-    }
-}
-
-pub struct CheckOptions {
-    pub permission: bool,
-    pub quota: bool,
-    pub fee_back_platform: bool,
-    pub send_tx_permission: bool,
-    pub create_contract_permission: bool,
-}
 
 pub struct Executor {
     pub current_header: RwLock<Header>,
@@ -180,7 +115,7 @@ impl Executor {
             command_resp_sender,
         };
 
-        executor.sys_config = executor.load_sys_config(BlockId::Pending);
+        executor.sys_config = GlobalSysConfig::load(&executor, BlockId::Pending);
 
         info!(
             "executor init, current_height: {}, current_hash: {:?}",
@@ -414,7 +349,7 @@ impl Executor {
         consensus_config.set_account_quota_limit(account_quota_limit);
         consensus_config.set_nodes(node_list);
         consensus_config.set_validators(validators);
-        consensus_config.set_check_quota(sys_config.check_quota);
+        consensus_config.set_check_quota(sys_config.check_options.quota);
         consensus_config.set_block_interval(sys_config.block_interval);
         consensus_config.set_version(sys_config.chain_version);
         if sys_config.emergency_brake {
@@ -467,99 +402,6 @@ impl Executor {
         NodeManager::new(self, self.genesis_header().timestamp())
     }
 
-    // TODO We have to update all default value when they was changed in .sol files.
-    // Is there any better solution?
-    /// ensure system configurations reloaded if has changed, of which address is stored within a
-    /// special system contract
-    ///   1. consensus nodes
-    ///   2. BlockGasLimit and AccountQuotaLimit
-    ///   3. account permissions
-    ///   4. version
-    pub fn load_sys_config(&self, block_id: BlockId) -> GlobalSysConfig {
-        let mut conf = GlobalSysConfig::default();
-        conf.nodes = self
-            .node_manager()
-            .shuffled_stake_nodes(block_id)
-            .unwrap_or_else(NodeManager::default_shuffled_stake_nodes);
-        conf.validators = self
-            .node_manager()
-            .nodes(block_id)
-            .unwrap_or_else(NodeManager::default_shuffled_stake_nodes);
-
-        let quota_manager = QuotaManager::new(self);
-        conf.block_quota_limit = quota_manager
-            .block_quota_limit(block_id)
-            .unwrap_or_else(QuotaManager::default_block_quota_limit)
-            as usize;
-        conf.auto_exec_quota_limit = quota_manager
-            .auto_exec_quota_limit(block_id)
-            .unwrap_or_else(QuotaManager::default_auto_exec_quota_limit);
-        let sys_config = SysConfig::new(self);
-        conf.delay_active_interval = sys_config
-            .delay_block_number(block_id)
-            .unwrap_or_else(SysConfig::default_delay_block_number)
-            as usize;
-        conf.check_permission = sys_config
-            .permission_check(block_id)
-            .unwrap_or_else(SysConfig::default_permission_check);
-        conf.check_send_tx_permission = sys_config
-            .send_tx_permission_check(block_id)
-            .unwrap_or_else(SysConfig::default_send_tx_permission_check);
-        conf.check_create_contract_permission = sys_config
-            .create_contract_permission_check(block_id)
-            .unwrap_or_else(SysConfig::default_create_contract_permission_check);
-        conf.check_quota = sys_config
-            .quota_check(block_id)
-            .unwrap_or_else(SysConfig::default_quota_check);
-        conf.check_fee_back_platform = sys_config
-            .fee_back_platform_check(block_id)
-            .unwrap_or_else(SysConfig::default_fee_back_platform_check);
-        conf.chain_owner = sys_config
-            .chain_owner(block_id)
-            .unwrap_or_else(SysConfig::default_chain_owner);
-        conf.block_interval = sys_config
-            .block_interval(block_id)
-            .unwrap_or_else(SysConfig::default_block_interval);
-        conf.auto_exec = sys_config
-            .auto_exec(block_id)
-            .unwrap_or_else(SysConfig::default_auto_exec);
-
-        let permission_manager = PermissionManagement::new(self);
-        conf.account_permissions = permission_manager.load_account_permissions(block_id);
-        conf.super_admin_account = permission_manager.get_super_admin_account(block_id);
-
-        let user_manager = UserManagement::new(self);
-        conf.group_accounts = user_manager.load_group_accounts(block_id);
-        {
-            // FIXME move out this ugly code from here !!!
-            *self.economical_model.write() = sys_config
-                .economical_model(block_id)
-                .unwrap_or_else(SysConfig::default_economical_model);
-        }
-
-        let common_quota_limit = quota_manager
-            .account_quota_limit(block_id)
-            .unwrap_or_else(QuotaManager::default_account_quota_limit);
-        let specific = quota_manager.specific(block_id);
-
-        conf.account_quota_limit
-            .set_common_quota_limit(common_quota_limit);
-        conf.account_quota_limit.set_specific_quota_limit(specific);
-        conf.changed_height = self.get_current_height() as usize;
-
-        let emergency_manager = EmergencyBrake::new(self);
-        conf.emergency_brake = emergency_manager
-            .state(block_id)
-            .unwrap_or_else(EmergencyBrake::default_state);
-
-        let version_manager = VersionManager::new(self);
-        conf.chain_version = version_manager
-            .get_version(block_id)
-            .unwrap_or_else(VersionManager::default_version);
-
-        conf
-    }
-
     pub fn to_executed_block(&self, open_block: OpenBlock) -> ExecutedBlock {
         let current_state_root = self.current_state_root();
         let last_hashes = self.build_last_hashes(None, open_block.number() - 1);
@@ -610,14 +452,17 @@ mod tests {
     extern crate logger;
     extern crate tempdir;
 
-    use super::*;
     use cita_crypto::{CreateKey, KeyPair};
     use cita_types::traits::LowerHex;
     use cita_types::Address;
+    use contracts::solc::sys_config::SysConfig;
     use core::receipt::ReceiptError;
+    use libexecutor::command::Commander;
+    use libexecutor::fsm::FSM;
     use rustc_hex::FromHex;
     use std::str::FromStr;
     use tests::helpers;
+    use types::ids::BlockId;
     use types::reserved_addresses;
 
     #[test]

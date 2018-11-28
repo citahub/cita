@@ -32,6 +32,7 @@ use jsonrpc_types::rpctypes::{
 
 use super::economical_model::EconomicalModel;
 use super::executor::Executor;
+use super::sys_config::GlobalSysConfig;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use crossbeam_channel::{Receiver, Sender};
@@ -424,7 +425,7 @@ impl Commander for Executor {
         self.write_batch(closed_block);
 
         if are_permissions_changed {
-            self.sys_config = self.load_sys_config(BlockId::Pending);
+            self.sys_config = GlobalSysConfig::load(&self, BlockId::Pending);
         }
     }
 

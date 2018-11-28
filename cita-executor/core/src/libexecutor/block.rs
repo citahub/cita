@@ -23,7 +23,7 @@ use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
 use libexecutor::auto_exec::auto_exec;
 use libexecutor::economical_model::EconomicalModel;
-use libexecutor::executor::{CheckOptions, GlobalSysConfig};
+use libexecutor::sys_config::{CheckOptions, GlobalSysConfig};
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use receipt::Receipt;
 use rlp::*;

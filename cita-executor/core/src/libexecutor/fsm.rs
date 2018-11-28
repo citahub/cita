@@ -17,10 +17,8 @@
 
 use super::block::{ClosedBlock, ExecutedBlock, OpenBlock};
 use super::economical_model::EconomicalModel;
-use super::executor::{CheckOptions, Executor};
-use contracts::solc::PriceManagement;
+use super::executor::Executor;
 use libexecutor::ExecutedResult;
-use types::ids::BlockId;
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]
 pub enum StatusOfFSM {
@@ -120,19 +118,9 @@ impl FSM for Executor {
 
     fn fsm_execute(&self, mut executed_block: ExecutedBlock, index: usize) -> StatusOfFSM {
         let conf = self.sys_config.clone();
-        // FIXME move into Self for performance
-        let check_options = CheckOptions {
-            permission: conf.check_permission,
-            quota: conf.check_quota,
-            fee_back_platform: conf.check_fee_back_platform,
-            send_tx_permission: conf.check_send_tx_permission,
-            create_contract_permission: conf.check_create_contract_permission,
-        };
-
+        let check_options = conf.check_options;
         let mut transaction = executed_block.body().transactions[index - 1].clone();
-        let quota_price = PriceManagement::new(self)
-            .quota_price(BlockId::Pending)
-            .unwrap_or_else(PriceManagement::default_quota_price);
+        let quota_price = conf.quota_price;
         let economical_model: EconomicalModel = *self.economical_model.read();
         if economical_model == EconomicalModel::Charge {
             transaction.gas_price = quota_price;
