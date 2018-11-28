@@ -488,7 +488,7 @@ mod tests {
             helpers::init_executor(vec![("SysConfig.checkCreateContractPermission", "true")]);
 
         let chain = helpers::init_chain();
-        let data = generate_contract();
+        let data = helpers::generate_contract();
         let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
         let inchain = chain.clone();
         let txs = block.body().transactions().clone();
@@ -505,29 +505,6 @@ mod tests {
             .expect("failed to get localized_receipt");
         assert_eq!(receipt.contract_address, None);
         assert_eq!(receipt.error, Some(ReceiptError::NoContractPermission));
-    }
-
-    fn generate_contract() -> Vec<u8> {
-        let source = r#"
-            pragma solidity ^0.4.8;
-            contract ConstructSol {
-                uint a;
-                event LogCreate(address contractAddr);
-                event A(uint);
-                function ConstructSol(){
-                    LogCreate(this);
-                }
-                function set(uint _a) {
-                    a = _a;
-                    A(a);
-                }
-                function get() returns (uint) {
-                    return a;
-                }
-            }
-        "#;
-        let (data, _) = helpers::solc("ConstructSol", source);
-        data
     }
 
     #[test]
@@ -570,7 +547,7 @@ mod tests {
         let privkey = keypair.privkey();
         let mut executor = helpers::init_executor(vec![]);
 
-        let data = generate_contract();
+        let data = helpers::generate_contract();
         for _i in 0..5 {
             let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
             let closed_block = executor.into_fsm(block.clone());
@@ -600,7 +577,7 @@ mod tests {
         let privkey = keypair.privkey();
         let mut executor = helpers::init_executor(vec![]);
 
-        let data = generate_contract();
+        let data = helpers::generate_contract();
         let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
         let closed_block = executor.into_fsm(block.clone());
         let closed_block_height = closed_block.number();

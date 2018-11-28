@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -253,4 +253,27 @@ pub fn create_block(
     body.set_transactions(txs);
     block.set_body(body);
     block
+}
+
+pub fn generate_contract() -> Vec<u8> {
+    let source = r#"
+            pragma solidity ^0.4.8;
+            contract ConstructSol {
+                uint a;
+                event LogCreate(address contractAddr);
+                event A(uint);
+                function ConstructSol(){
+                    LogCreate(this);
+                }
+                function set(uint _a) {
+                    a = _a;
+                    A(a);
+                }
+                function get() returns (uint) {
+                    return a;
+                }
+            }
+        "#;
+    let (data, _) = solc("ConstructSol", source);
+    data
 }
