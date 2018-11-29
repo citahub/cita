@@ -18,7 +18,6 @@
 use super::block::{ClosedBlock, ExecutedBlock, OpenBlock};
 use super::economical_model::EconomicalModel;
 use super::executor::Executor;
-use libexecutor::ExecutedResult;
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]
 pub enum StatusOfFSM {
@@ -66,15 +65,15 @@ impl std::fmt::Display for StatusOfFSM {
 }
 
 pub trait FSM {
-    fn into_fsm(&mut self, open_block: OpenBlock) -> (ClosedBlock, ExecutedResult);
+    fn into_fsm(&mut self, open_block: OpenBlock) -> ClosedBlock;
     fn fsm_initialize(&self, open_block: OpenBlock) -> StatusOfFSM;
     fn fsm_pause(&self, executed_block: ExecutedBlock, index: usize) -> StatusOfFSM;
     fn fsm_execute(&self, executed_block: ExecutedBlock, index: usize) -> StatusOfFSM;
-    fn fsm_finalize(&self, executed_block: ExecutedBlock) -> (ClosedBlock, ExecutedResult);
+    fn fsm_finalize(&self, executed_block: ExecutedBlock) -> ClosedBlock;
 }
 
 impl FSM for Executor {
-    fn into_fsm(&mut self, open_block: OpenBlock) -> (ClosedBlock, ExecutedResult) {
+    fn into_fsm(&mut self, open_block: OpenBlock) -> ClosedBlock {
         let mut status = StatusOfFSM::Initialize(open_block);
         loop {
             trace!("executor is at {}", status);
@@ -130,16 +129,13 @@ impl FSM for Executor {
         StatusOfFSM::Pause(executed_block, index)
     }
 
-    fn fsm_finalize(&self, mut executed_block: ExecutedBlock) -> (ClosedBlock, ExecutedResult) {
+    fn fsm_finalize(&self, mut executed_block: ExecutedBlock) -> ClosedBlock {
         // commit changed-accounts into trie structure
         executed_block
             .state
             .commit()
             .expect("failed to commit state trie");
-
-        let closed_block = executed_block.close(&(self.sys_config.block_sys_config));
-        let executed_result = self.make_executed_result(&closed_block);
-        (closed_block, executed_result)
+        executed_block.close(&(self.sys_config.block_sys_config))
     }
 }
 

@@ -33,7 +33,6 @@ use libexecutor::executor::Executor;
 use libexecutor::genesis::Genesis;
 use libexecutor::genesis::Spec;
 use libproto::blockchain;
-use libproto::ExecutedResult;
 use serde_json;
 use state::State;
 use state_db::*;
@@ -125,7 +124,7 @@ pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Executor {
 pub fn init_executor2(
     contract_arguments: Vec<(&str, &str)>,
     fsm_req_receiver: Receiver<OpenBlock>,
-    fsm_resp_sender: Sender<(ClosedBlock, ExecutedResult)>,
+    fsm_resp_sender: Sender<ClosedBlock>,
     command_req_receiver: Receiver<command::Command>,
     command_resp_sender: Sender<command::CommandResp>,
 ) -> Executor {

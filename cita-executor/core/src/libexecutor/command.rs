@@ -31,11 +31,12 @@ use jsonrpc_types::rpctypes::{
 };
 
 use super::economical_model::EconomicalModel;
-use super::executor::Executor;
+use super::executor::*;
 use super::sys_config::GlobalSysConfig;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use crossbeam_channel::{Receiver, Sender};
+use libproto::ExecutedResult;
 use state::State;
 use state_db::StateDB;
 use std::convert::{From, Into};
@@ -57,6 +58,7 @@ pub enum Command {
     ChainID,
     Metadata(String),
     EconomicalModel,
+    LoadExecutedResult(u64),
     Grow(ClosedBlock),
     Exit(BlockId),
 }
@@ -75,7 +77,8 @@ pub enum CommandResp {
     ChainID(Option<ChainId>),
     Metadata(Result<MetaData, String>),
     EconomicalModel(EconomicalModel),
-    Grow,
+    LoadExecutedResult(ExecutedResult),
+    Grow(ExecutedResult),
     Exit,
 }
 
@@ -94,6 +97,7 @@ impl fmt::Display for Command {
             Command::ChainID => write!(f, "Command::ChainID "),
             Command::Metadata(_) => write!(f, "Command::Metadata"),
             Command::EconomicalModel => write!(f, "Command::EconomicalModel"),
+            Command::LoadExecutedResult(_) => write!(f, "Command::LoadExecutedResult"),
             Command::Grow(_) => write!(f, "Command::Grow"),
             Command::Exit(_) => write!(f, "Command::Exit"),
         }
@@ -115,7 +119,8 @@ impl fmt::Display for CommandResp {
             CommandResp::ChainID(_) => write!(f, "CommandResp::ChainID "),
             CommandResp::Metadata(_) => write!(f, "CommandResp::Metadata"),
             CommandResp::EconomicalModel(_) => write!(f, "CommandResp::EconomicalModel"),
-            CommandResp::Grow => write!(f, "CommandResp::Grow"),
+            CommandResp::LoadExecutedResult(_) => write!(f, "CommandResp::LoadExecutedResult"),
+            CommandResp::Grow(_) => write!(f, "CommandResp::Grow"),
             CommandResp::Exit => write!(f, "CommandResp::Exit"),
         }
     }
@@ -140,7 +145,8 @@ pub trait Commander {
     fn chain_id(&self) -> Option<ChainId>;
     fn metadata(&self, data: String) -> Result<MetaData, String>;
     fn economical_model(&self) -> EconomicalModel;
-    fn grow(&mut self, closed_block: ClosedBlock);
+    fn load_executed_result(&self, height: u64) -> ExecutedResult;
+    fn grow(&mut self, closed_block: ClosedBlock) -> ExecutedResult;
     fn exit(&mut self, rollback_id: BlockId);
 }
 
@@ -173,10 +179,10 @@ impl Commander for Executor {
             Command::ChainID => CommandResp::ChainID(self.chain_id()),
             Command::Metadata(data) => CommandResp::Metadata(self.metadata(data)),
             Command::EconomicalModel => CommandResp::EconomicalModel(self.economical_model()),
-            Command::Grow(closed_block) => {
-                self.grow(closed_block);
-                CommandResp::Grow
+            Command::LoadExecutedResult(height) => {
+                CommandResp::LoadExecutedResult(self.load_executed_result(height))
             }
+            Command::Grow(closed_block) => CommandResp::Grow(self.grow(closed_block)),
             Command::Exit(rollback_id) => {
                 self.exit(rollback_id);
                 CommandResp::Exit
@@ -393,7 +399,11 @@ impl Commander for Executor {
         self.sys_config.block_sys_config.economical_model
     }
 
-    fn grow(&mut self, closed_block: ClosedBlock) {
+    fn load_executed_result(&self, height: u64) -> ExecutedResult {
+        self.executed_result_by_height(height)
+    }
+
+    fn grow(&mut self, closed_block: ClosedBlock) -> ExecutedResult {
         info!(
             "executor grow according to ClosedBlock(height: {}, hash: {:?}, parent_hash: {:?},\
              timestamp: {}, state_root: {:?}, transaction_root: {:?}, proposer: {:?})",
@@ -418,11 +428,20 @@ impl Commander for Executor {
         {
             *self.current_header.write() = closed_block.header().clone();
         }
+
+        let executed_info = closed_block.protobuf();
+
+        // Must make sure write into database before load_sys_config
         self.write_batch(closed_block);
 
         if are_permissions_changed {
             self.sys_config = GlobalSysConfig::load(&self, BlockId::Pending);
         }
+        let mut executed_result = ExecutedResult::new();
+        let consensus_config = make_consensus_config(self.sys_config.clone());
+        executed_result.set_config(consensus_config);
+        executed_result.set_executed_info(executed_info);
+        executed_result
     }
 
     fn exit(&mut self, rollback_id: BlockId) {
@@ -583,14 +602,26 @@ pub fn economical_model(
     }
 }
 
+pub fn load_executed_result(
+    command_req_sender: &Sender<Command>,
+    command_resp_receiver: &Receiver<CommandResp>,
+    height: u64,
+) -> ExecutedResult {
+    command_req_sender.send(Command::LoadExecutedResult(height));
+    match command_resp_receiver.recv().unwrap() {
+        CommandResp::LoadExecutedResult(r) => r,
+        _ => unimplemented!(),
+    }
+}
+
 pub fn grow(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
     closed_block: ClosedBlock,
-) -> () {
+) -> ExecutedResult {
     command_req_sender.send(Command::Grow(closed_block));
     match command_resp_receiver.recv().unwrap() {
-        CommandResp::Grow => (),
+        CommandResp::Grow(r) => r,
         _ => unimplemented!(),
     }
 }
