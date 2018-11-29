@@ -1,8 +1,8 @@
 - [Welcome](index.md)
-- Getting Started
-    - [Build your own Appchain](chain/getting_started.md)
-    - [Blockchain Configuration](chain/config_tool.md)
-    - [Node Configuration](chain/service_config.md)
+- [Getting Started](getting_started.md)
+- [Configuration](./configuration/config_overview.md)
+    - [Chain Configuration](configuration/chain_config.md)
+    - [Microservice Configuration](configuration/service_config.md)
 - System Management
     - [System Contracts](system_management/contracts.md)
     - [Node Management](system_management/node.md)
@@ -11,7 +11,6 @@
     - [Quota Management ](system_management/quota.md)
     - [Quota Price Management](system_management/price.md)
     - [Log Management](system_management/log.md)
-    - [System Management](system_management/sys.md)
     - [Snapshot](system_management/snapshot.md)
     - [Batch Tx](system_management/batch_tx.md)
     - [Emergency Brake](system_management/emergency_brake.md)
