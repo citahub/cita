@@ -36,11 +36,20 @@ mkdir -p ${HOME}/.docker_cargo/git
 mkdir -p ${HOME}/.docker_cargo/registry
 
 docker ps | grep ${CONTAINER_NAME} > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-    echo "docker container ${CONTAINER_NAME} is already running"
-else
+if [ $? -ne 0 ]; then
     echo "Start docker container ${CONTAINER_NAME} ..."
     docker rm ${CONTAINER_NAME} > /dev/null 2>&1
+
+    # test network and set init cmd
+    timeout=3
+    target=www.google.com
+    ret_code=`curl -I -s --connect-timeout $timeout $target -w %{http_code} | tail -n1`
+    if [ "x$ret_code" = "x200" ]; then
+        INIT_CMD="while true;do sleep 100;done"
+    else
+        INIT_CMD="echo -e '[source.crates-io]\nregistry = \"https://github.com/rust-lang/crates.io-index\"\nreplace-with = \"ustc\"\n[source.ustc]\nregistry = \"https://mirrors.ustc.edu.cn/crates.io-index\"' | sudo tee /opt/.cargo/config;while true;do sleep 100;done"
+    fi
+
     docker run -d \
            --volume ${SOURCE_DIR}:${WORKDIR} \
            --volume ${HOME}/.docker_cargo/registry:${CARGO_HOME}/registry \
@@ -49,7 +58,7 @@ else
            --env USER_ID=${USER_ID} \
            --workdir ${WORKDIR} \
            --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
-           /bin/bash -c "while true;do sleep 100;done"
+           /bin/bash -c "${INIT_CMD}"
     # Wait entrypoint.sh to finish
     sleep 3
 fi

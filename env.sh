@@ -36,9 +36,7 @@ mkdir -p ${HOME}/.docker_cargo/git
 mkdir -p ${HOME}/.docker_cargo/registry
 
 docker ps | grep ${CONTAINER_NAME} > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-    echo "docker container ${CONTAINER_NAME} is already running"
-else
+if [ $? -ne 0 ]; then
     echo "Start docker container ${CONTAINER_NAME} ..."
     docker rm ${CONTAINER_NAME} > /dev/null 2>&1
 
