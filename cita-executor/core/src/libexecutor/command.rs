@@ -275,11 +275,6 @@ impl Commander for Executor {
         let options = TransactOptions {
             tracing: analytics.transaction_tracing,
             vm_tracing: analytics.vm_tracing,
-            check_permission: false,
-            check_quota: false,
-            check_send_tx_permission: false,
-            check_create_contract_permission: false,
-            fee_back_platform: false,
         };
 
         Executive::new(
@@ -291,7 +286,7 @@ impl Commander for Executor {
             false,
             EconomicalModel::Quota,
         )
-        .transact(t, options, self.sys_config.chain_owner)
+        .transact(t, options, &self.sys_config.block_sys_config)
         .map_err(Into::into)
     }
 
@@ -303,7 +298,8 @@ impl Commander for Executor {
 
     fn metadata(&self, data: String) -> Result<MetaData, String> {
         trace!("metadata request from jsonrpc {:?}", data);
-        let economical_model: RpcEconomicalModel = (*self.economical_model.read()).into();
+        let economical_model: RpcEconomicalModel =
+            (self.sys_config.block_sys_config.economical_model).into();
         let mut metadata = MetaData {
             chain_id: 0,
             chain_id_v1: U256::from(0).lower_hex(),
@@ -394,7 +390,7 @@ impl Commander for Executor {
     }
 
     fn economical_model(&self) -> EconomicalModel {
-        *self.economical_model.read()
+        self.sys_config.block_sys_config.economical_model
     }
 
     fn grow(&mut self, closed_block: ClosedBlock) {

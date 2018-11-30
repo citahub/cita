@@ -22,8 +22,7 @@ use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
 use libexecutor::auto_exec::auto_exec;
-use libexecutor::economical_model::EconomicalModel;
-use libexecutor::sys_config::{CheckOptions, GlobalSysConfig};
+use libexecutor::sys_config::BlockSysConfig;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use receipt::Receipt;
 use rlp::*;
@@ -59,9 +58,6 @@ pub struct ExecutedBlock {
     last_hashes: Arc<LastHashes>,
     account_gas_limit: U256,
     account_gas: HashMap<Address, U256>,
-    chain_owner: Address,
-    auto_exec_quota_limit: u64,
-    auto_exec: bool,
 }
 
 impl Deref for ExecutedBlock {
@@ -81,18 +77,14 @@ impl DerefMut for ExecutedBlock {
 impl ExecutedBlock {
     pub fn new(
         factories: Factories,
-        conf: GlobalSysConfig,
+        conf: &BlockSysConfig,
         tracing: bool,
         block: OpenBlock,
         db: StateDB,
         state_root: H256,
         last_hashes: Arc<LastHashes>,
     ) -> Result<Self, Error> {
-        let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
-        state.account_permissions = conf.account_permissions;
-        state.group_accounts = conf.group_accounts;
-        state.super_admin_account = conf.super_admin_account;
-
+        let state = State::from_existing(db, state_root, U256::default(), factories)?;
         let r = ExecutedBlock {
             block,
             state,
@@ -108,9 +100,6 @@ impl ExecutedBlock {
             ),
             current_quota_used: Default::default(),
             receipts: Default::default(),
-            chain_owner: conf.chain_owner,
-            auto_exec_quota_limit: conf.auto_exec_quota_limit,
-            auto_exec: conf.auto_exec,
         };
 
         Ok(r)
@@ -139,8 +128,7 @@ impl ExecutedBlock {
         &mut self,
         engine: &Engine,
         t: &SignedTransaction,
-        economical_model: EconomicalModel,
-        check_options: &CheckOptions,
+        conf: &BlockSysConfig,
     ) {
         let mut env_info = self.env_info();
         self.account_gas
@@ -152,15 +140,7 @@ impl ExecutedBlock {
             .expect("account should exist in account_gas_limit");
 
         let has_traces = self.traces.is_some();
-        match self.state.apply(
-            &env_info,
-            engine,
-            t,
-            has_traces,
-            economical_model,
-            self.chain_owner,
-            check_options,
-        ) {
+        match self.state.apply(&env_info, engine, t, has_traces, conf) {
             Ok(outcome) => {
                 trace!("apply signed transaction {} success", t.hash());
                 if let Some(ref mut traces) = self.traces {
@@ -168,7 +148,7 @@ impl ExecutedBlock {
                 }
                 let transaction_quota_used = outcome.receipt.quota_used - self.current_quota_used;
                 self.current_quota_used = outcome.receipt.quota_used;
-                if check_options.quota {
+                if conf.check_options.quota {
                     if let Some(value) = self.account_gas.get_mut(t.sender()) {
                         *value = *value - transaction_quota_used;
                     }
@@ -180,12 +160,12 @@ impl ExecutedBlock {
     }
 
     /// Turn this into a `ClosedBlock`.
-    pub fn close(mut self, economical_model: EconomicalModel) -> ClosedBlock {
-        if self.auto_exec {
+    pub fn close(mut self, conf: &BlockSysConfig) -> ClosedBlock {
+        if conf.auto_exec {
             auto_exec(
                 &mut self.state,
-                self.auto_exec_quota_limit,
-                economical_model,
+                conf.auto_exec_quota_limit,
+                conf.economical_model,
             );
             self.state.commit().expect("commit trie error");
         }

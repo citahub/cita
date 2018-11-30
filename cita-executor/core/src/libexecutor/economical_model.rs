@@ -18,7 +18,7 @@
 use jsonrpc_types::rpctypes::EconomicalModel as RpcEconomicalModel;
 
 enum_from_primitive! {
-    #[derive(Debug, Clone, PartialEq, Copy)]
+    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Copy)]
     pub enum EconomicalModel {
         /// Default model. Sending Transaction is free, should work with authority together.
         Quota,

@@ -21,6 +21,7 @@ use contracts::solc::{
     AccountQuotaLimit, EmergencyBrake, NodeManager, PermissionManagement, PriceManagement,
     QuotaManager, Resource, SysConfig, UserManagement, VersionManager, AUTO_EXEC_QL_VALUE,
 };
+use libexecutor::economical_model::EconomicalModel;
 use std::collections::HashMap;
 use types::ids::BlockId;
 
@@ -29,43 +30,27 @@ pub struct GlobalSysConfig {
     pub nodes: Vec<Address>,
     pub validators: Vec<Address>,
     pub block_quota_limit: usize,
-    pub account_quota_limit: AccountQuotaLimit,
     pub delay_active_interval: usize,
     pub changed_height: usize,
-    pub chain_owner: Address,
-    pub account_permissions: HashMap<Address, Vec<Resource>>,
-    pub group_accounts: HashMap<Address, Vec<Address>>,
-    pub super_admin_account: Option<Address>,
     /// Interval time for creating a block (milliseconds)
     pub block_interval: u64,
     pub emergency_brake: bool,
     pub chain_version: u32,
-    pub auto_exec_quota_limit: u64,
-    pub auto_exec: bool,
-    pub check_options: CheckOptions,
-    pub quota_price: U256,
+    pub block_sys_config: BlockSysConfig,
 }
 
 impl Default for GlobalSysConfig {
-    fn default() -> GlobalSysConfig {
+    fn default() -> Self {
         GlobalSysConfig {
             nodes: Vec::new(),
             validators: Vec::new(),
             block_quota_limit: 18_446_744_073_709_551_615,
-            account_quota_limit: AccountQuotaLimit::new(),
             delay_active_interval: 1,
             changed_height: 0,
-            chain_owner: Address::from(0),
-            account_permissions: HashMap::new(),
-            group_accounts: HashMap::new(),
-            super_admin_account: None,
             block_interval: 3000,
             emergency_brake: false,
             chain_version: 0,
-            auto_exec_quota_limit: AUTO_EXEC_QL_VALUE,
-            auto_exec: false,
-            check_options: CheckOptions::default(),
-            quota_price: PriceManagement::default_quota_price(),
+            block_sys_config: BlockSysConfig::default(),
         }
     }
 }
@@ -90,7 +75,7 @@ impl GlobalSysConfig {
             .block_quota_limit(block_id)
             .unwrap_or_else(QuotaManager::default_block_quota_limit)
             as usize;
-        conf.auto_exec_quota_limit = quota_manager
+        conf.block_sys_config.auto_exec_quota_limit = quota_manager
             .auto_exec_quota_limit(block_id)
             .unwrap_or_else(QuotaManager::default_auto_exec_quota_limit);
         let sys_config = SysConfig::new(executor);
@@ -98,51 +83,56 @@ impl GlobalSysConfig {
             .delay_block_number(block_id)
             .unwrap_or_else(SysConfig::default_delay_block_number)
             as usize;
-        conf.check_options.permission = sys_config
+        conf.block_sys_config.check_options.permission = sys_config
             .permission_check(block_id)
             .unwrap_or_else(SysConfig::default_permission_check);
-        conf.check_options.send_tx_permission = sys_config
+        conf.block_sys_config.check_options.send_tx_permission = sys_config
             .send_tx_permission_check(block_id)
             .unwrap_or_else(SysConfig::default_send_tx_permission_check);
-        conf.check_options.create_contract_permission = sys_config
+        conf.block_sys_config
+            .check_options
+            .create_contract_permission = sys_config
             .create_contract_permission_check(block_id)
             .unwrap_or_else(SysConfig::default_create_contract_permission_check);
-        conf.check_options.quota = sys_config
+        conf.block_sys_config.check_options.quota = sys_config
             .quota_check(block_id)
             .unwrap_or_else(SysConfig::default_quota_check);
-        conf.check_options.fee_back_platform = sys_config
+        conf.block_sys_config.check_options.fee_back_platform = sys_config
             .fee_back_platform_check(block_id)
             .unwrap_or_else(SysConfig::default_fee_back_platform_check);
-        conf.chain_owner = sys_config
+        conf.block_sys_config.chain_owner = sys_config
             .chain_owner(block_id)
             .unwrap_or_else(SysConfig::default_chain_owner);
         conf.block_interval = sys_config
             .block_interval(block_id)
             .unwrap_or_else(SysConfig::default_block_interval);
-        conf.auto_exec = sys_config
+        conf.block_sys_config.auto_exec = sys_config
             .auto_exec(block_id)
             .unwrap_or_else(SysConfig::default_auto_exec);
 
         let permission_manager = PermissionManagement::new(executor);
-        conf.account_permissions = permission_manager.load_account_permissions(block_id);
-        conf.super_admin_account = permission_manager.get_super_admin_account(block_id);
+        conf.block_sys_config.account_permissions =
+            permission_manager.load_account_permissions(block_id);
+        conf.block_sys_config.super_admin_account =
+            permission_manager.get_super_admin_account(block_id);
 
         let user_manager = UserManagement::new(executor);
-        conf.group_accounts = user_manager.load_group_accounts(block_id);
-        {
-            *executor.economical_model.write() = sys_config
-                .economical_model(block_id)
-                .unwrap_or_else(SysConfig::default_economical_model);
-        }
+        conf.block_sys_config.group_accounts = user_manager.load_group_accounts(block_id);
+        conf.block_sys_config.economical_model = sys_config
+            .economical_model(block_id)
+            .unwrap_or_else(SysConfig::default_economical_model);
 
         let common_quota_limit = quota_manager
             .account_quota_limit(block_id)
             .unwrap_or_else(QuotaManager::default_account_quota_limit);
         let specific = quota_manager.specific(block_id);
 
-        conf.account_quota_limit
+        conf.block_sys_config
+            .account_quota_limit
             .set_common_quota_limit(common_quota_limit);
-        conf.account_quota_limit.set_specific_quota_limit(specific);
+        conf.block_sys_config
+            .account_quota_limit
+            .set_specific_quota_limit(specific);
         conf.changed_height = executor.get_current_height() as usize;
 
         let emergency_manager = EmergencyBrake::new(executor);
@@ -156,7 +146,7 @@ impl GlobalSysConfig {
             .unwrap_or_else(VersionManager::default_version);
 
         let price_management = PriceManagement::new(executor);
-        conf.quota_price = price_management
+        conf.block_sys_config.quota_price = price_management
             .quota_price(BlockId::Pending)
             .unwrap_or_else(PriceManagement::default_quota_price);
 
@@ -164,11 +154,42 @@ impl GlobalSysConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default, Copy)]
 pub struct CheckOptions {
     pub permission: bool,
     pub quota: bool,
     pub fee_back_platform: bool,
     pub send_tx_permission: bool,
     pub create_contract_permission: bool,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct BlockSysConfig {
+    pub account_quota_limit: AccountQuotaLimit,
+    pub chain_owner: Address,
+    pub auto_exec_quota_limit: u64,
+    pub auto_exec: bool,
+    pub quota_price: U256,
+    pub super_admin_account: Option<Address>,
+    pub account_permissions: HashMap<Address, Vec<Resource>>,
+    pub group_accounts: HashMap<Address, Vec<Address>>,
+    pub check_options: CheckOptions,
+    pub economical_model: EconomicalModel,
+}
+
+impl Default for BlockSysConfig {
+    fn default() -> Self {
+        BlockSysConfig {
+            account_quota_limit: AccountQuotaLimit::new(),
+            chain_owner: Address::from(0),
+            auto_exec_quota_limit: AUTO_EXEC_QL_VALUE,
+            auto_exec: false,
+            quota_price: PriceManagement::default_quota_price(),
+            super_admin_account: None,
+            account_permissions: HashMap::new(),
+            group_accounts: HashMap::new(),
+            check_options: CheckOptions::default(),
+            economical_model: EconomicalModel::Quota,
+        }
+    }
 }

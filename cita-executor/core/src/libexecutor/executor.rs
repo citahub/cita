@@ -32,7 +32,6 @@ use types::extras::*;
 use libproto::{ConsensusConfig, ExecutedResult};
 
 use super::command::{Command, CommandResp, Commander};
-use super::economical_model::EconomicalModel;
 use super::fsm::FSM;
 use super::sys_config::GlobalSysConfig;
 use cita_types::H256;
@@ -56,7 +55,6 @@ pub struct Executor {
     pub factories: Factories,
 
     pub sys_config: GlobalSysConfig,
-    pub economical_model: RwLock<EconomicalModel>,
     pub engine: Box<Engine>,
 
     pub fsm_req_receiver: Receiver<OpenBlock>,
@@ -107,7 +105,6 @@ impl Executor {
             state_db: RwLock::new(state_db),
             factories,
             sys_config: GlobalSysConfig::default(),
-            economical_model: RwLock::new(EconomicalModel::Quota),
             engine: Box::new(NullEngine::cita()),
             fsm_req_receiver,
             fsm_resp_sender,
@@ -333,7 +330,7 @@ impl Executor {
     pub fn make_consensus_config(&self) -> ConsensusConfig {
         let sys_config = self.sys_config.clone();
         let block_quota_limit = sys_config.block_quota_limit as u64;
-        let account_quota_limit = sys_config.account_quota_limit.into();
+        let account_quota_limit = sys_config.block_sys_config.account_quota_limit.into();
         let node_list = sys_config
             .nodes
             .into_iter()
@@ -349,11 +346,15 @@ impl Executor {
         consensus_config.set_account_quota_limit(account_quota_limit);
         consensus_config.set_nodes(node_list);
         consensus_config.set_validators(validators);
-        consensus_config.set_check_quota(sys_config.check_options.quota);
+        consensus_config.set_check_quota(sys_config.block_sys_config.check_options.quota);
         consensus_config.set_block_interval(sys_config.block_interval);
         consensus_config.set_version(sys_config.chain_version);
         if sys_config.emergency_brake {
-            let super_admin_account = sys_config.super_admin_account.unwrap().to_vec();
+            let super_admin_account = sys_config
+                .block_sys_config
+                .super_admin_account
+                .unwrap()
+                .to_vec();
             consensus_config.set_admin_address(super_admin_account);
         }
 
@@ -405,12 +406,11 @@ impl Executor {
     pub fn to_executed_block(&self, open_block: OpenBlock) -> ExecutedBlock {
         let current_state_root = self.current_state_root();
         let last_hashes = self.build_last_hashes(None, open_block.number() - 1);
-        let sys_config = self.sys_config.clone();
         let parent_hash = *open_block.parent_hash();
 
         ExecutedBlock::new(
             self.factories.clone(),
-            sys_config,
+            &self.sys_config.block_sys_config,
             false,
             open_block,
             self.state_db.read().boxed_clone_canon(&parent_hash),

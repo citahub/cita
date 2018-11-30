@@ -20,7 +20,6 @@
 //! or rolled back.
 
 use cita_types::{Address, H256, U256};
-use contracts::solc::Resource;
 use engines::Engine;
 use error::{Error, ExecutionError};
 use evm::env_info::EnvInfo;
@@ -29,7 +28,7 @@ use evm::Schedule;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
 use libexecutor::economical_model::EconomicalModel;
-use libexecutor::sys_config::CheckOptions;
+use libexecutor::sys_config::BlockSysConfig;
 use receipt::{Receipt, ReceiptError};
 use rlp::{self, Encodable};
 use std::cell::{Ref, RefCell, RefMut};
@@ -265,8 +264,6 @@ pub struct State<B: Backend> {
     checkpoints: RefCell<Vec<HashMap<Address, Option<AccountEntry>>>>,
     account_start_nonce: U256,
     factories: Factories,
-    pub account_permissions: HashMap<Address, Vec<Resource>>,
-    pub group_accounts: HashMap<Address, Vec<Address>>,
     pub super_admin_account: Option<Address>,
 }
 
@@ -312,8 +309,6 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce,
             factories,
-            account_permissions: HashMap::new(),
-            group_accounts: HashMap::new(),
             super_admin_account: None,
         }
     }
@@ -340,8 +335,6 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce,
             factories,
-            account_permissions: HashMap::new(),
-            group_accounts: HashMap::new(),
             super_admin_account: None,
         };
 
@@ -773,18 +766,11 @@ impl<B: Backend> State<B> {
         engine: &Engine,
         t: &SignedTransaction,
         tracing: bool,
-        economical_model: EconomicalModel,
-        chain_owner: Address,
-        check_options: &CheckOptions,
+        conf: &BlockSysConfig,
     ) -> ApplyResult {
         let options = TransactOptions {
             tracing,
             vm_tracing: false,
-            check_permission: check_options.permission,
-            check_quota: check_options.quota,
-            check_send_tx_permission: check_options.send_tx_permission,
-            check_create_contract_permission: check_options.create_contract_permission,
-            fee_back_platform: check_options.fee_back_platform,
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
@@ -796,9 +782,9 @@ impl<B: Backend> State<B> {
             &vm_factory,
             &native_factory,
             false,
-            economical_model,
+            conf.economical_model,
         )
-        .transact(t, options, chain_owner)
+        .transact(t, options, conf)
         {
             Ok(e) => {
                 // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
@@ -866,7 +852,7 @@ impl<B: Backend> State<B> {
                     ),
                 };
 
-                if economical_model == EconomicalModel::Charge {
+                if (*conf).economical_model == EconomicalModel::Charge {
                     let fee_value = tx_gas_used * t.gas_price();
                     let sender_balance = self.balance(&sender).unwrap();
 
@@ -879,7 +865,8 @@ impl<B: Backend> State<B> {
                         error!("Sub balance from error transaction sender failed, tx_fee_value={}, error={:?}", tx_fee_value, err);
                     }
 
-                    if check_options.fee_back_platform && chain_owner != Address::from(0) {
+                    let chain_owner = (*conf).chain_owner;
+                    if (*conf).check_options.fee_back_platform && chain_owner != Address::from(0) {
                         self.add_balance(&chain_owner, &tx_fee_value)
                             .expect("Add balance to chain owner must success");
                     } else {
@@ -1250,8 +1237,6 @@ impl Clone for State<StateDB> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: self.account_start_nonce,
             factories: self.factories.clone(),
-            account_permissions: self.account_permissions.clone(),
-            group_accounts: self.group_accounts.clone(),
             super_admin_account: self.super_admin_account,
         }
     }
@@ -1272,6 +1257,7 @@ mod tests {
     use cita_types::{Address, H256};
     use engines::NullEngine;
     use evm::env_info::EnvInfo;
+    use libexecutor::sys_config::BlockSysConfig;
     use std::sync::Arc;
     use tests::helpers::*;
     use util::crypto::CreateKey;
@@ -1346,23 +1332,8 @@ mod tests {
 
         println!("contract_address {:?}", contract_address);
 
-        let check_options = CheckOptions {
-            permission: false,
-            quota: false,
-            fee_back_platform: false,
-            send_tx_permission: false,
-            create_contract_permission: false,
-        };
         let result = state
-            .apply(
-                &info,
-                &engine,
-                &signed,
-                true,
-                Default::default(),
-                Address::from(0),
-                &check_options,
-            )
+            .apply(&info, &engine, &signed, true, &BlockSysConfig::default())
             .unwrap();
         println!(
             "{:?}",

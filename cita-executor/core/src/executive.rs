@@ -40,6 +40,7 @@ use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
 pub use executed::{Executed, ExecutionResult};
 use externalities::*;
 use libexecutor::economical_model::EconomicalModel;
+use libexecutor::sys_config::BlockSysConfig;
 use state::backend::Backend as StateBackend;
 use state::{State, Substate};
 use std::cmp;
@@ -98,16 +99,6 @@ pub struct TransactOptions {
     pub tracing: bool,
     /// Enable VM tracing.
     pub vm_tracing: bool,
-    /// Check permission before execution.
-    pub check_permission: bool,
-    /// Check account gas limit
-    pub check_quota: bool,
-    /// Check sender's send_tx permission
-    pub check_send_tx_permission: bool,
-    /// Check sender's create_contract permission
-    pub check_create_contract_permission: bool,
-    /// Enable tx fee back to platform
-    pub fee_back_platform: bool,
 }
 
 /// Transaction executor.
@@ -214,33 +205,22 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         &'a mut self,
         t: &SignedTransaction,
         options: TransactOptions,
-        chain_owner: Address,
+        conf: &BlockSysConfig,
     ) -> Result<Executed, ExecutionError> {
         match (options.tracing, options.vm_tracing) {
             (true, true) => self.transact_with_tracer(
                 t,
-                options,
                 ExecutiveTracer::default(),
                 ExecutiveVMTracer::toplevel(),
-                chain_owner,
+                conf,
             ),
-            (true, false) => self.transact_with_tracer(
-                t,
-                options,
-                ExecutiveTracer::default(),
-                NoopVMTracer,
-                chain_owner,
-            ),
-            (false, true) => self.transact_with_tracer(
-                t,
-                options,
-                NoopTracer,
-                ExecutiveVMTracer::toplevel(),
-                chain_owner,
-            ),
-            (false, false) => {
-                self.transact_with_tracer(t, options, NoopTracer, NoopVMTracer, chain_owner)
+            (true, false) => {
+                self.transact_with_tracer(t, ExecutiveTracer::default(), NoopVMTracer, conf)
             }
+            (false, true) => {
+                self.transact_with_tracer(t, NoopTracer, ExecutiveVMTracer::toplevel(), conf)
+            }
+            (false, false) => self.transact_with_tracer(t, NoopTracer, NoopVMTracer, conf),
         }
     }
 
@@ -306,10 +286,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     pub fn transact_with_tracer<T, V>(
         &'a mut self,
         t: &SignedTransaction,
-        options: TransactOptions,
         mut tracer: T,
         mut vm_tracer: V,
-        chain_owner: Address,
+        conf: &BlockSysConfig,
     ) -> Result<Executed, ExecutionError>
     where
         T: Tracer,
@@ -320,13 +299,16 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         self.state.inc_nonce(&sender)?;
 
-        trace!("permission should be check: {}", options.check_permission);
+        trace!(
+            "permission should be check: {}",
+            (*conf).check_options.permission
+        );
 
         check_permission(
-            &self.state.group_accounts,
-            &self.state.account_permissions,
+            &conf.group_accounts,
+            &conf.account_permissions,
             t,
-            options,
+            conf.check_options,
         )?;
 
         let schedule = Schedule::new_v1();
@@ -345,7 +327,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }
 
         if t.action == Action::AmendData {
-            if let Some(admin) = self.state.super_admin_account {
+            if let Some(admin) = conf.super_admin_account {
                 if *t.sender() != admin {
                     return Err(ExecutionError::NoTransactionPermission);
                 }
@@ -518,8 +500,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             output,
             tracer.traces(),
             vm_tracer.drain(),
-            chain_owner,
-            options.fee_back_platform,
+            (*conf).chain_owner,
+            (*conf).check_options.fee_back_platform,
         )?)
     }
 
@@ -776,9 +758,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let response = if is_create {
             service_registry::enable_contract(address);
-            create_grpc_contract(self.info, &params, self.state, true, true, &connect_info)
+            create_grpc_contract(self.info, &params, self.state, true, &connect_info)
         } else {
-            invoke_grpc_contract(self.info, &params, self.state, true, true, &connect_info)
+            invoke_grpc_contract(self.info, &params, self.state, true, &connect_info)
         };
         match response {
             Ok(invoke_response) => {
@@ -1249,6 +1231,7 @@ mod tests {
     use evm::env_info::EnvInfo;
     use evm::Schedule;
     use evm::{Factory, VMType};
+    use libexecutor::sys_config::BlockSysConfig;
     use state::Substate;
     use std::ops::Deref;
     use std::str::FromStr;
@@ -1299,13 +1282,8 @@ mod tests {
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
-                check_permission: false,
-                check_quota: true,
-                check_send_tx_permission: false,
-                check_create_contract_permission: false,
-                fee_back_platform: false,
             };
-            ex.transact(&t, opts, Address::from(0))
+            ex.transact(&t, opts, &BlockSysConfig::default())
         };
 
         let schedule = Schedule::new_v1();
@@ -1363,13 +1341,8 @@ mod tests {
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
-                check_permission: false,
-                check_quota: true,
-                check_send_tx_permission: false,
-                check_create_contract_permission: false,
-                fee_back_platform: false,
             };
-            ex.transact(&t, opts, Address::from(0)).unwrap()
+            ex.transact(&t, opts, &BlockSysConfig::default()).unwrap()
         };
 
         let schedule = Schedule::new_v1();
@@ -1426,13 +1399,8 @@ mod tests {
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
-                check_permission: false,
-                check_quota: true,
-                check_send_tx_permission: false,
-                check_create_contract_permission: false,
-                fee_back_platform: false,
             };
-            ex.transact(&t, opts, Address::from(0))
+            ex.transact(&t, opts, &BlockSysConfig::default())
         };
 
         match result {
@@ -1481,13 +1449,8 @@ mod tests {
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
-                check_permission: false,
-                check_quota: true,
-                check_send_tx_permission: false,
-                check_create_contract_permission: false,
-                fee_back_platform: false,
             };
-            ex.transact(&t, opts, Address::from(0))
+            ex.transact(&t, opts, &BlockSysConfig::default())
         };
 
         assert!(result.is_ok());

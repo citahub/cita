@@ -218,8 +218,7 @@ mod tests {
     use cita_types::H256;
     use core::header::OpenHeader;
     use core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
-    use core::libexecutor::economical_model::EconomicalModel;
-    use core::libexecutor::sys_config::GlobalSysConfig;
+    use core::libexecutor::sys_config::BlockSysConfig;
     use core::state_db::StateDB;
     use libproto::ExecutedResult;
     use proof::BftProof;
@@ -274,7 +273,7 @@ mod tests {
         let state_db = generate_state_db();
         let exec_block = ExecutedBlock::new(
             Default::default(),
-            GlobalSysConfig::default(),
+            &BlockSysConfig::default(),
             false,
             open_block.clone(),
             state_db,
@@ -282,7 +281,7 @@ mod tests {
             Arc::new(Vec::new()),
         )
         .unwrap();
-        exec_block.close(EconomicalModel::Quota)
+        exec_block.close(&BlockSysConfig::default())
     }
 
     #[test]

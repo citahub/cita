@@ -20,8 +20,8 @@ use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use db::{self as db, Writable};
 use error::{Error, ExecutionError};
-use executive::TransactOptions;
 use grpc::Result as GrpcResult;
+use libexecutor::sys_config::BlockSysConfig;
 
 use contracts::grpc::{
     contract_state::{ConnectInfo, ContractState},
@@ -65,15 +65,13 @@ pub fn extract_logs_from_response(sender: Address, response: &InvokeResponse) ->
 pub struct CallEvmImpl<'a, B: 'a + StateBackend> {
     state: &'a mut State<B>,
     gas_used: U256,
-    check_permission: bool,
 }
 
 impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
-    pub fn new(state: &'a mut State<B>, check_permission: bool) -> Self {
+    pub fn new(state: &'a mut State<B>) -> Self {
         CallEvmImpl {
             state,
             gas_used: 0.into(),
-            check_permission,
         }
     }
 
@@ -126,7 +124,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
         env_info: &EnvInfo,
         action_params: &ActionParams,
         connect_info: &ConnectInfo,
-        options: TransactOptions,
+        conf: &BlockSysConfig,
     ) -> Result<Receipt, Error> {
         let mut invoke_request = InvokeRequest::new();
         invoke_request.set_param(action_params.to_owned());
@@ -135,17 +133,15 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
         let sender = *t.sender();
         let nonce = self.state.nonce(&sender).map_err(|err| *err)?;
         self.state.inc_nonce(&sender).map_err(|err| *err)?;
-
-        trace!("permission should be check: {}", self.check_permission);
-        if self.check_permission {
+        // TODO There are three option about permission
+        if (*conf).check_options.permission {
             check_permission(
-                &self.state.group_accounts,
-                &self.state.account_permissions,
+                &conf.group_accounts,
+                &conf.account_permissions,
                 t,
-                options,
+                (*conf).check_options,
             )?;
         }
-
         // FIXME: Need to check the gas required for go vm.
         let base_gas_required = U256::from(21_000);
 

@@ -117,21 +117,15 @@ impl FSM for Executor {
     }
 
     fn fsm_execute(&self, mut executed_block: ExecutedBlock, index: usize) -> StatusOfFSM {
-        let conf = self.sys_config.clone();
-        let check_options = conf.check_options;
+        let conf = self.sys_config.block_sys_config.clone();
         let mut transaction = executed_block.body().transactions[index - 1].clone();
         let quota_price = conf.quota_price;
-        let economical_model: EconomicalModel = *self.economical_model.read();
+        let economical_model: EconomicalModel = conf.economical_model;
         if economical_model == EconomicalModel::Charge {
             transaction.gas_price = quota_price;
         }
 
-        executed_block.apply_transaction(
-            &*self.engine,
-            &transaction,
-            *self.economical_model.read(),
-            &check_options,
-        );
+        executed_block.apply_transaction(&*self.engine, &transaction, &conf);
 
         StatusOfFSM::Pause(executed_block, index)
     }
@@ -143,7 +137,7 @@ impl FSM for Executor {
             .commit()
             .expect("failed to commit state trie");
 
-        let closed_block = executed_block.close(*self.economical_model.read());
+        let closed_block = executed_block.close(&(self.sys_config.block_sys_config));
         let executed_result = self.make_executed_result(&closed_block);
         (closed_block, executed_result)
     }
