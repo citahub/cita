@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -74,6 +74,8 @@ extern crate num;
 extern crate rand;
 
 pub mod account_db;
+#[cfg(test)]
+pub mod benches;
 pub mod builtin;
 pub mod executed;
 pub mod executive;
