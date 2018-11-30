@@ -230,7 +230,7 @@ fn main() {
             command_resp_sender.clone(),
         );
         let current_height = executor.get_current_height();
-        let consensus_config = executor.make_consensus_config();
+        let current_hash = executor.get_current_hash();
         let handle = thread::spawn(move || {
             executor.do_loop();
         });
@@ -238,6 +238,7 @@ fn main() {
         // start postman thread
         let mut postman = Postman::new(
             current_height,
+            current_hash,
             mq_req_receiver.clone(),
             mq_resp_sender.clone(),
             fsm_req_sender.clone(),
@@ -245,7 +246,6 @@ fn main() {
             command_req_sender.clone(),
             command_resp_receiver.clone(),
         );
-        postman.bootstrap_broadcast(consensus_config);
         postman.do_loop();
 
         handle.join().expect(

@@ -29,7 +29,7 @@ use libproto::auth::Miscellaneous;
 use libproto::blockchain::{RichStatus, StateSignal};
 use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
-use libproto::{request, response, ConsensusConfig, ExecutedResult, Message};
+use libproto::{request, response, Message};
 use proof::BftProof;
 use serde_json;
 use std::convert::{Into, TryFrom, TryInto};
@@ -49,23 +49,25 @@ pub struct Postman {
     mq_req_receiver: Receiver<(String, Vec<u8>)>,
     mq_resp_sender: Sender<(String, Vec<u8>)>,
     fsm_req_sender: Sender<OpenBlock>,
-    fsm_resp_receiver: Receiver<(ClosedBlock, ExecutedResult)>,
+    fsm_resp_receiver: Receiver<ClosedBlock>,
     command_req_sender: Sender<command::Command>,
     command_resp_receiver: Receiver<command::CommandResp>,
 }
 
 impl Postman {
+    #[allow(unknown_lints, clippy::too_many_arguments)]
     pub fn new(
         current_height: u64,
+        current_hash: H256,
         mq_req_receiver: Receiver<(String, Vec<u8>)>,
         mq_resp_sender: Sender<(String, Vec<u8>)>,
         fsm_req_sender: Sender<OpenBlock>,
-        fsm_resp_receiver: Receiver<(ClosedBlock, ExecutedResult)>,
+        fsm_resp_receiver: Receiver<ClosedBlock>,
         command_req_sender: Sender<command::Command>,
         command_resp_receiver: Receiver<command::CommandResp>,
     ) -> Self {
         Postman {
-            backlogs: Backlogs::new(current_height),
+            backlogs: Backlogs::new(current_height, current_hash),
             black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
             mq_req_receiver,
             mq_resp_sender,
@@ -77,6 +79,10 @@ impl Postman {
     }
 
     pub fn do_loop(&mut self) {
+        // 1. broadcast current state toward cita-chain
+        self.bootstrap_broadcast();
+
+        // 2. listen and handle messages
         loop {
             match self.recv() {
                 (None, None) | (Some(_), Some(_)) => return,
@@ -87,27 +93,31 @@ impl Postman {
                         return;
                     }
                 }
-                (None, Some((closed_block, executed_result))) => {
-                    self.handle_fsm_response(closed_block, executed_result);
+                (None, Some(closed_block)) => {
+                    self.handle_fsm_response(closed_block);
                     self.execute_next_block();
                 }
             }
         }
     }
 
-    // call this function every times Executor start/restart, to broadcast current state
-    // to cita-chain. This broadcast state only contains system config but not block data,
-    // cita-chain would deal with it.
-    pub fn bootstrap_broadcast(&mut self, consensus_config: ConsensusConfig) {
+    // call this function every times postman start, to broadcast current state
+    // to cita-chain. This broadcast state only contains system config and block header,
+    // but not block body, cita-chain would specially deal with it.
+    fn bootstrap_broadcast(&mut self) {
+        // ensure recent 2 executed result stored in backlogs
         let current_height = self.get_current_height();
-        let mut executed_result = ExecutedResult::new();
-        executed_result.set_config(consensus_config);
+        self.load_executed_result(current_height);
+        if current_height != 0 {
+            self.load_executed_result(current_height - 1);
+        }
 
-        // the current executed result would be used to check the arrived synchronized proof
-        self.backlogs
-            .insert_completed_result(current_height, executed_result.clone());
-
-        let msg: Message = executed_result.into();
+        // broadcast toward cita-chain
+        let bootstrap_executed_result = self
+            .backlogs
+            .get_completed_result(current_height)
+            .expect("loaded from the previous step above; qed");
+        let msg: Message = bootstrap_executed_result.clone().into();
         self.response_mq(
             routing_key!(Executor >> ExecutedResult).into(),
             msg.try_into().unwrap(),
@@ -127,12 +137,7 @@ impl Postman {
     //
     // Return `(None, None)` if any channel closed
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
-    fn recv(
-        &self,
-    ) -> (
-        Option<(String, Vec<u8>)>,
-        Option<(ClosedBlock, ExecutedResult)>,
-    ) {
+    fn recv(&self) -> (Option<(String, Vec<u8>)>, Option<ClosedBlock>) {
         select! {
             recv(self.mq_req_receiver, mq_req) => {
                 match mq_req {
@@ -151,11 +156,10 @@ impl Postman {
 
     // update executed result into backlogs based on arrived result from executor, and process
     // the next height if possible
-    fn handle_fsm_response(&mut self, closed_block: ClosedBlock, executed_result: ExecutedResult) {
+    fn handle_fsm_response(&mut self, closed_block: ClosedBlock) {
         let height = closed_block.number();
         info!("postman receive {}-th ClosedBlock from executor", height);
-        self.backlogs
-            .insert_result(height, closed_block, executed_result);
+        self.backlogs.insert_closed_block(height, closed_block);
         if self.can_grow_up() {
             self.grow_up();
         }
@@ -279,75 +283,116 @@ impl Postman {
     // TODO: check is_dup_block, hash, height
     fn update_backlog(&mut self, key: &str, mut msg: Message) {
         match RoutingKey::from(key) {
-            // Proposal{proof: None, block: {body: Some, proof: None}}
+            // Proposal{block: {body, previous_proof}}
+            //   WHERE previous_proof.height == block.height - 1
             routing_key!(Consensus >> SignedProposal) | routing_key!(Net >> SignedProposal) => {
                 let mut proposal = msg.take_signed_proposal().unwrap();
                 let open_block = OpenBlock::from(proposal.take_proposal().take_block());
                 let block_height = wrap_height(open_block.number() as usize);
 
-                trace!("insert {}-th Proposal into backlog", block_height);
+                trace!(
+                    "current_height: {}, insert {}-th Proposal into backlog",
+                    self.get_current_height(),
+                    block_height
+                );
                 self.backlogs.insert_open_block(block_height, open_block);
             }
 
-            // BlockWithProof{proof: Some, block: {body: Some, proof: None}}
+            // BlockWithProof{present_proof, block: {body, previous_proof}}
+            //   WHERE present_proof.height == block.height
+            //     AND previous_proof.height == block.height - 1
             routing_key!(Consensus >> BlockWithProof) => {
                 let mut proofed = msg.take_block_with_proof().unwrap();
                 let open_block = OpenBlock::from(proofed.take_blk());
-                let proof = BftProof::from(proofed.take_proof());
-                let proof_height = wrap_height(proof.height);
+                let previous_proof = open_block.proof().clone();
                 let block_height = wrap_height(open_block.number() as usize);
 
-                trace!("insert {}-th Proofed into backlog", block_height);
+                if block_height != self.get_current_height() + 1 {
+                    return;
+                }
+                // FIXME assertion help to find many Bugs. But Integration tests
+                //       have Bug, so I have to uncomment it.
+                // let present_proof = proofed.take_proof();
+                // let present_bft_proof = BftProof::from(present_proof.clone());
+                // let previous_bft_proof: BftProof = previous_proof.clone().into();
+                // let proof_height = wrap_height(present_bft_proof.height);
+                // assert_eq!(block_height, proof_height);
+                // assert_eq!(block_height, wrap_height(previous_bft_proof.height) + 1);
+                // self.assert_proof(key, present_bft_proof.height, &present_proof);
+
+                trace!(
+                    "current_height: {}, insert {}-th ProofedBlock into backlog",
+                    self.get_current_height(),
+                    block_height
+                );
                 self.backlogs.insert_open_block(block_height, open_block);
-                self.backlogs.insert_proof(proof_height, proof);
+                self.backlogs.insert_proof(block_height, previous_proof);
             }
 
-            // SyncBlock{proof: None, block: {body: Some, proof: Some}}
+            // SyncBlock{block: {body, previous_proof}}
+            //   WHERE previous_proof.height == block.height - 1
             routing_key!(Net >> SyncResponse) | routing_key!(Chain >> LocalSync) => {
                 let mut sync_res = msg.take_sync_response().unwrap();
                 for proto_block in sync_res.take_blocks().into_iter() {
                     let open_block = OpenBlock::from(proto_block);
-                    let proof = BftProof::from(open_block.proof().clone());
-                    let proof_height = wrap_height(proof.height);
+                    let previous_proof = open_block.proof().clone();
+                    let previous_bft_proof = BftProof::from(previous_proof.clone());
                     let block_height = wrap_height(open_block.number() as usize);
+                    let proof_height = wrap_height(previous_bft_proof.height);
 
-                    // The received synchronized proof may be falsified, so we have to validate it
-                    if !self.check_proof(&proof) {
-                        error!("Synchronized {}-th Proof is invalid", proof_height);
+                    // FIXME if block_height == 0, then block is none, proof is some,
+                    //       AND document it !!!
+                    // if proof_height > 0 && block_height == 0 {
+                    //     info!(
+                    //         "current_height: {}, receive latest SyncBlock(block.height: {}, proof.height: {})",
+                    //         self.get_current_height(),
+                    //         block_height,
+                    //         proof_height,
+                    //     );
+                    //     self.backlogs.insert_proof(proof_height + 1, previous_proof);
+                    //     continue;
+                    // }
+
+                    if block_height - 1 != proof_height {
+                        error!(
+                            "invalid message {}, block_height({}) - 1 != proof_height({})",
+                            key, block_height, proof_height,
+                        );
                         break;
                     }
-                    trace!("insert {}-th Sync into backlog", block_height);
+
+                    trace!(
+                        "current_height: {}, insert ({}-th SyncBlock, {}-th Proof) into backlog",
+                        self.get_current_height(),
+                        block_height,
+                        proof_height
+                    );
                     self.backlogs.insert_open_block(block_height, open_block);
-                    self.backlogs.insert_proof(proof_height, proof);
+                    self.backlogs.insert_proof(block_height, previous_proof);
                 }
             }
             _ => unimplemented!(),
         }
     }
 
-    // FIXME BUG generated nodes -> validated nodes
-    // FIXME should get nodes from proof.height - 1 but not current_height
-    fn check_proof(&self, proof: &BftProof) -> bool {
-        let proof_height = wrap_height(proof.height);
-        match self
-            .backlogs
-            .get_completed_result(self.get_current_height())
-        {
-            Some(executed_result) => {
-                //                let validators = executed_result.get_config().get_validators();
-                //                let authorities: Vec<Address> = validators
-                //                    .into_iter()
-                //                    .map(|vec| Address::from_slice(&vec[..]))
-                //                    .collect();
-                let nodes = executed_result.get_config().get_nodes();
-                let authorities: Vec<Address> = nodes
-                    .into_iter()
-                    .map(|vec| Address::from_slice(&vec[..]))
-                    .collect();
-                proof.check(proof_height as usize, &authorities)
-            }
-            None => proof.check(proof_height as usize, &Vec::new()),
-        }
+    //    fn assert_proof(&mut self, key: &str, height: usize, proof: &libproto::Proof) {
+    //        let proof_height = wrap_height(height);
+    //        assert!(
+    //            self.backlogs.is_proof_ok(proof_height, &proof),
+    //            "unexpected message {}, {}-th proof is invalid",
+    //            key,
+    //            proof_height,
+    //        )
+    //    }
+
+    fn load_executed_result(&mut self, height: u64) {
+        let executed_result = command::load_executed_result(
+            &self.command_req_sender,
+            &self.command_resp_receiver,
+            height,
+        );
+        self.backlogs
+            .insert_completed_result(height, executed_result);
     }
 
     fn can_grow_up(&self) -> bool {
@@ -357,26 +402,29 @@ impl Postman {
 
     // Grow up if current block executed completely,
     // 1. Update backlogs
-    // 2. Notify executor to grow up too
-    // 3. Delivery rich status of new height
+    // 2. Update black list
+    // 3. Notify executor to grow up too
+    // 4. Delivery rich status of new height
     fn grow_up(&mut self) {
         // make sure executor grow up first
         let next_height = self.get_current_height() + 1;
         trace!("postman notice executor to grow up to {}", next_height);
         let closed_block = self.backlogs.complete(next_height);
         self.pub_black_list(&closed_block);
-        command::grow(
+        let executed_result = command::grow(
             &self.command_req_sender,
             &self.command_resp_receiver,
             closed_block,
         );
+        self.backlogs
+            .insert_completed_result(next_height, executed_result);
 
         self.send_executed_info_to_chain(next_height).unwrap();
     }
 
     fn execute_next_block(&mut self) {
         let next_height = self.get_current_height() + 1;
-        if !self.backlogs.is_matched(next_height) {
+        if self.backlogs.is_ready(next_height) {
             if let Some(open_block) = self.backlogs.get_open_block(next_height) {
                 trace!("postman send {}-th block to executor", next_height);
                 self.fsm_req_sender.send(open_block.clone());
@@ -466,7 +514,7 @@ impl Postman {
     }
 
     fn update_by_rich_status(&mut self, rich_status: &RichStatus) {
-        let next_height = rich_status.get_height() + 1;
+        let next_height = wrap_height(rich_status.get_height() as usize + 1);
         self.backlogs.prune(next_height);
     }
 

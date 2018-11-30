@@ -58,7 +58,7 @@ pub struct Executor {
     pub engine: Box<Engine>,
 
     pub fsm_req_receiver: Receiver<OpenBlock>,
-    pub fsm_resp_sender: Sender<(ClosedBlock, ExecutedResult)>,
+    pub fsm_resp_sender: Sender<ClosedBlock>,
     pub command_req_receiver: Receiver<Command>,
     pub command_resp_sender: Sender<CommandResp>,
 }
@@ -71,7 +71,7 @@ impl Executor {
         statedb_cache_size: usize,
         data_path: String,
         fsm_req_receiver: Receiver<OpenBlock>,
-        fsm_resp_sender: Sender<(ClosedBlock, ExecutedResult)>,
+        fsm_resp_sender: Sender<ClosedBlock>,
         command_req_receiver: Receiver<Command>,
         command_resp_sender: Sender<CommandResp>,
     ) -> Executor {
@@ -93,6 +93,7 @@ impl Executor {
         let current_header = match get_current_header(&*database) {
             Some(header) => header,
             None => {
+                warn!("Not found exist block within database. Loading genesis block...");
                 genesis
                     .lazy_execute(&state_db, &factories)
                     .expect("failed to load genesis");
@@ -327,46 +328,28 @@ impl Executor {
         last_hashes
     }
 
-    pub fn make_consensus_config(&self) -> ConsensusConfig {
-        let sys_config = self.sys_config.clone();
-        let block_quota_limit = sys_config.block_quota_limit as u64;
-        let account_quota_limit = sys_config.block_sys_config.account_quota_limit.into();
-        let node_list = sys_config
-            .nodes
-            .into_iter()
-            .map(|address| address.to_vec())
-            .collect();
-        let validators = sys_config
-            .validators
-            .into_iter()
-            .map(|address| address.to_vec())
-            .collect();
-        let mut consensus_config = ConsensusConfig::new();
-        consensus_config.set_block_quota_limit(block_quota_limit);
-        consensus_config.set_account_quota_limit(account_quota_limit);
-        consensus_config.set_nodes(node_list);
-        consensus_config.set_validators(validators);
-        consensus_config.set_check_quota(sys_config.block_sys_config.check_options.quota);
-        consensus_config.set_block_interval(sys_config.block_interval);
-        consensus_config.set_version(sys_config.chain_version);
-        if sys_config.emergency_brake {
-            let super_admin_account = sys_config
-                .block_sys_config
-                .super_admin_account
-                .unwrap()
-                .to_vec();
-            consensus_config.set_admin_address(super_admin_account);
-        }
-
-        consensus_config
-    }
-
-    pub fn make_executed_result(&self, closed_block: &ClosedBlock) -> ExecutedResult {
-        let consensus_config = self.make_consensus_config();
-        let executed_info = closed_block.protobuf();
+    // `executed_result_by_height` returns ExecutedResult which only contains system configs,
+    // but not block data (like receipts).
+    //
+    // Q: So what is its called-scenario?
+    // A: `executed_result_by_height` would only be called via `command::load_executed_result`;
+    //    `command::load_executed_result` would only be called by Postman when it is at
+    //    `bootstrap_broadcast` initializing phase;
+    //    Postman do it to acquire recent 2 blocks' ExecutedResult and save them into backlogs,
+    //    which be used to validate arrived Proof (ExecutedResult has "validators" config)
+    pub fn executed_result_by_height(&self, height: u64) -> ExecutedResult {
+        let block_id = BlockId::Number(height);
+        let sys_config = GlobalSysConfig::load(&self, block_id);
+        let consensus_config = make_consensus_config(sys_config);
+        let executed_header = self
+            .block_header(block_id)
+            .unwrap()
+            .generate_executed_header();
         let mut executed_result = ExecutedResult::new();
         executed_result.set_config(consensus_config);
-        executed_result.set_executed_info(executed_info);
+        executed_result
+            .mut_executed_info()
+            .set_header(executed_header);
         executed_result
     }
 
@@ -436,7 +419,6 @@ pub fn get_current_header(db: &KeyValueDB) -> Option<Header> {
     if let Some(hash) = h {
         db.read(db::COL_HEADERS, &hash)
     } else {
-        warn!("Failed to get current_header from DB.");
         None
     }
 }
@@ -447,6 +429,38 @@ fn open_state_db(data_path: String) -> Database {
     Database::open(&database_config, &nosql_path).unwrap()
 }
 
+pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
+    let block_quota_limit = sys_config.block_quota_limit as u64;
+    let account_quota_limit = sys_config.block_sys_config.account_quota_limit.into();
+    let node_list = sys_config
+        .nodes
+        .into_iter()
+        .map(|address| address.to_vec())
+        .collect();
+    let validators = sys_config
+        .validators
+        .into_iter()
+        .map(|address| address.to_vec())
+        .collect();
+    let mut consensus_config = ConsensusConfig::new();
+    consensus_config.set_block_quota_limit(block_quota_limit);
+    consensus_config.set_account_quota_limit(account_quota_limit);
+    consensus_config.set_nodes(node_list);
+    consensus_config.set_validators(validators);
+    consensus_config.set_check_quota(sys_config.block_sys_config.check_options.quota);
+    consensus_config.set_block_interval(sys_config.block_interval);
+    consensus_config.set_version(sys_config.chain_version);
+    if sys_config.emergency_brake {
+        let super_admin_account = sys_config
+            .block_sys_config
+            .super_admin_account
+            .unwrap()
+            .to_vec();
+        consensus_config.set_admin_address(super_admin_account);
+    }
+
+    consensus_config
+}
 #[cfg(test)]
 mod tests {
     extern crate logger;
@@ -481,8 +495,8 @@ mod tests {
         let hash = txs[0].hash();
         let h = executor.get_current_height() + 1;
 
-        let resp = executor.into_fsm(block.clone());
-        let (_closed_block, executed_result) = resp;
+        let closed_block = executor.into_fsm(block.clone());
+        let executed_result = executor.grow(closed_block);
         inchain.set_block_body(h, &block);
         inchain.set_db_result(&executed_result, &block);
 
@@ -535,8 +549,8 @@ mod tests {
         let code = data.from_hex().unwrap();
         let block = helpers::create_block(&executor, to, &code, (0, 1), &privkey);
 
-        let (closed_block, _executed_result) = executor.into_fsm(block);
-        executor.grow(closed_block);
+        let closed_block = executor.into_fsm(block);
+        let _executed_result = executor.grow(closed_block);
 
         let chain_name_latest = SysConfig::new(&executor)
             .chain_name(BlockId::Latest)
@@ -559,7 +573,7 @@ mod tests {
         let data = generate_contract();
         for _i in 0..5 {
             let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
-            let (closed_block, _executed_result) = executor.into_fsm(block.clone());
+            let closed_block = executor.into_fsm(block.clone());
             executor.grow(closed_block);
         }
 
@@ -588,7 +602,7 @@ mod tests {
 
         let data = generate_contract();
         let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
-        let (closed_block, _executed_result) = executor.into_fsm(block.clone());
+        let closed_block = executor.into_fsm(block.clone());
         let closed_block_height = closed_block.number();
         let closed_block_hash = closed_block.hash();
         executor.grow(closed_block);

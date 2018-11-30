@@ -98,10 +98,12 @@ fn build_block(
     let transaction_root = body.transactions_root().to_vec();
     let mut proof_blk = BlockWithProof::new();
 
+    let mut previous_proof = proof.clone();
+    previous_proof.height = height as usize - 1;
     block.mut_header().set_timestamp(time_stamp);
     block.mut_header().set_height(height);
     block.mut_header().set_prevhash(pre_block_hash.0.to_vec());
-    block.mut_header().set_proof(proof.clone().into());
+    block.mut_header().set_proof(previous_proof.into());
     block.mut_header().set_transactions_root(transaction_root);
     block.set_body(body.clone());
 
