@@ -51,7 +51,6 @@ If container is already created by root user, running `./env.sh` without any arg
 
 ```shell
 $ ./env.sh
-  docker container cita_run_cita_secp256k1_sha3 is already running
   error: failed switching to "user": unable to find user user: no matching entries in passwd file
 ```
 We should keep same user all the time.

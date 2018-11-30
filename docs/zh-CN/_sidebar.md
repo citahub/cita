@@ -1,5 +1,5 @@
 - [首页](index.md)
-- [快速入门](configuration/getting_started.md)
+- [快速入门](getting_started.md)
 - [配置](configuration/config_overview.md)
     - [链级配置](configuration/chain_config.md)
     - [微服务配置](configuration/service_config.md)
