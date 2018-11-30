@@ -61,8 +61,11 @@ impl Backlog {
         closed_block.is_equivalent(open_block)
     }
 
-    pub fn is_block_ok(&self, current_hash: &cita_types::H256) -> bool {
-        let parent_hash = self.open_block.as_ref().unwrap().parent_hash();
+    pub fn is_block_ok(&self, current_hash: &cita_types::H256, current_height: u64) -> bool {
+        let (parent_hash, height) = {
+            let open_block = self.open_block.as_ref().unwrap();
+            (open_block.parent_hash(), open_block.number())
+        };
         if parent_hash != current_hash {
             trace!(
                 "invalid open_block, open_block.parent_hash({:?}) != current_hash({:?})",
@@ -70,7 +73,7 @@ impl Backlog {
                 current_hash,
             );
         }
-        parent_hash == current_hash
+        parent_hash == current_hash && height == current_height + 1
     }
 
     // Mark this Backlog as completed.
@@ -128,13 +131,6 @@ impl Backlogs {
         &self.current_hash
     }
 
-    pub fn get_open_block(&self, height: u64) -> Option<&OpenBlock> {
-        match self.backlogs.get(&height) {
-            Some(ref backlog) => backlog.get_open_block(),
-            None => None,
-        }
-    }
-
     pub fn get_completed_result(&self, height: u64) -> Option<&ExecutedResult> {
         self.completed.get(&height)
     }
@@ -173,46 +169,54 @@ impl Backlogs {
         true
     }
 
-    pub fn is_completed(&self, height: u64) -> bool {
+    pub fn check_completed(&self, height: u64) -> Result<(), String> {
         assert_eq!(self.get_current_height(), height - 1);
-        if self.backlogs.get(&height).is_none() {
-            trace!(
-                "{}-th is not completed cause backlog.open_block = None",
-                height
-            );
-            return false;
-        }
 
+        if self.backlogs.get(&height).is_none() {
+            return Err(format!(
+                "{}-th is not completed cause backlog.open_block is None",
+                height
+            ));
+        }
         let backlog = &self.backlogs[&height];
         if !backlog.is_completed() {
-            trace!(
-                "{}-th is not completed cause backlog.is_completed = false",
-                height
-            );
-            return false;
+            return Err(format!(
+                "{}-th is not completed cause backlog.is_completed is false",
+                height,
+            ));
         }
         if backlog.get_proof().is_none() {
-            trace!("{}-th is not completed cause backlog.proof = None", height);
-            return false;
+            return Err(format!(
+                "{}-th is not completed cause backlog.proof is None",
+                height
+            ));
         }
-
         let proof = backlog.get_proof().unwrap();
         if !self.is_proof_ok(height - 1, proof) {
-            trace!(
+            return Err(format!(
                 "{}-th is not completed cause backlog.proof is invalid",
                 height
-            );
-            return false;
+            ));
         }
 
-        true
+        Ok(())
     }
 
-    pub fn is_ready(&self, height: u64) -> bool {
+    pub fn ready(&self, height: u64) -> Result<&OpenBlock, String> {
         assert_eq!(self.get_current_height(), height - 1);
         match self.backlogs.get(&height) {
-            Some(backlog) => backlog.is_block_ok(self.get_current_hash()) && !backlog.is_matched(),
-            None => false,
+            None => Err(format!("{}-th OpenBlock not found", height)),
+            Some(backlog) => {
+                let current_hash = self.get_current_hash();
+                let current_height = self.get_current_height();
+                if !backlog.is_block_ok(current_hash, current_height) {
+                    return Err(format!("{}-th OpenBlock is invalid", height));
+                }
+                if backlog.is_matched() {
+                    return Err(format!("{}-th OpenBlock has already been executed", height));
+                }
+                Ok(backlog.get_open_block().unwrap())
+            }
         }
     }
 
@@ -257,16 +261,18 @@ impl Backlogs {
         true
     }
 
-    // move "front of backlogs" into "back of completed"
-    pub fn complete(&mut self, height: u64) -> ClosedBlock {
+    pub fn complete(&mut self, height: u64) -> Result<ClosedBlock, String> {
+        if let Err(reason) = self.check_completed(height) {
+            return Err(reason);
+        }
+
         let backlog = self.backlogs.remove(&height).unwrap();
         let closed_block = backlog.complete();
-
         self.current_height += 1;
         self.current_hash = closed_block
             .hash()
             .expect("already rehash at backlog.complete below");
-        closed_block
+        Ok(closed_block)
     }
 
     pub fn completed_keys(&self) -> ::std::vec::Vec<&u64> {
@@ -344,6 +350,13 @@ mod tests {
         let journaldb_type = journaldb::Algorithm::Archive;
         let journal_db = journaldb::new(Arc::clone(&database), journaldb_type, None);
         StateDB::new(journal_db, 5 * 1024 * 1024)
+    }
+
+    fn get_open_block(backlogs: &Backlogs, height: u64) -> Option<&OpenBlock> {
+        backlogs
+            .backlogs
+            .get(&height)
+            .and_then(|backlog| backlog.get_open_block())
     }
 
     #[test]
@@ -475,7 +488,7 @@ mod tests {
             backlogs.insert_closed_block(2, closed_block),
             "insert staled result should return false",
         );
-        assert!(backlogs.get_open_block(2).is_none());
+        assert!(get_open_block(&backlogs, 2).is_none());
 
         // insert height 3 should be ok
         let closed_block = generate_closed_block(open_block.clone());
@@ -486,14 +499,14 @@ mod tests {
             backlogs.insert_closed_block(3, closed_block),
             "insert current result should return true",
         );
-        assert!(backlogs.get_open_block(3).is_some());
+        assert!(get_open_block(&backlogs, 3).is_some());
 
         // complete height 3
-        assert!(backlogs.is_completed(3));
+        assert!(backlogs.check_completed(3).is_ok());
         let _backlog = backlogs.complete(3);
         assert!(backlogs.get_completed_result(2).is_some());
 
-        assert!(backlogs.get_open_block(3).is_none());
+        assert!(get_open_block(&backlogs, 3).is_none());
         assert_eq!(
             false,
             backlogs.insert_open_block(3, open_block.clone()),

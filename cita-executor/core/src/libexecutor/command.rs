@@ -31,7 +31,7 @@ use jsonrpc_types::rpctypes::{
 };
 
 use super::economical_model::EconomicalModel;
-use super::executor::*;
+use super::executor::{make_consensus_config, Executor};
 use super::sys_config::GlobalSysConfig;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};

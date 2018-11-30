@@ -160,9 +160,7 @@ impl Postman {
         let height = closed_block.number();
         info!("postman receive {}-th ClosedBlock from executor", height);
         self.backlogs.insert_closed_block(height, closed_block);
-        if self.can_grow_up() {
-            self.grow_up();
-        }
+        self.grow_up();
     }
 
     fn handle_mq_message(&mut self, key: &str, msg_vec: Vec<u8>) -> Result<(), BlockId> {
@@ -196,9 +194,7 @@ impl Postman {
             | routing_key!(Net >> SyncResponse)
             | routing_key!(Chain >> LocalSync) => {
                 self.update_backlog(key, msg);
-                if self.can_grow_up() {
-                    self.grow_up();
-                }
+                self.grow_up();
                 self.execute_next_block();
             }
 
@@ -395,40 +391,38 @@ impl Postman {
             .insert_completed_result(height, executed_result);
     }
 
-    fn can_grow_up(&self) -> bool {
-        let next_height = self.get_current_height() + 1;
-        self.backlogs.is_completed(next_height)
-    }
-
     // Grow up if current block executed completely,
     // 1. Update backlogs
     // 2. Update black list
     // 3. Notify executor to grow up too
     // 4. Delivery rich status of new height
     fn grow_up(&mut self) {
-        // make sure executor grow up first
         let next_height = self.get_current_height() + 1;
-        trace!("postman notice executor to grow up to {}", next_height);
-        let closed_block = self.backlogs.complete(next_height);
-        self.pub_black_list(&closed_block);
-        let executed_result = command::grow(
-            &self.command_req_sender,
-            &self.command_resp_receiver,
-            closed_block,
-        );
-        self.backlogs
-            .insert_completed_result(next_height, executed_result);
-
-        self.send_executed_info_to_chain(next_height).unwrap();
+        match self.backlogs.complete(next_height) {
+            Ok(closed_block) => {
+                trace!("postman notice executor to grow up to {}", next_height);
+                self.pub_black_list(&closed_block);
+                let executed_result = command::grow(
+                    &self.command_req_sender,
+                    &self.command_resp_receiver,
+                    closed_block,
+                );
+                self.backlogs
+                    .insert_completed_result(next_height, executed_result);
+                self.send_executed_info_to_chain(next_height).unwrap();
+            }
+            Err(reason) => trace!("{}", reason),
+        }
     }
 
     fn execute_next_block(&mut self) {
         let next_height = self.get_current_height() + 1;
-        if self.backlogs.is_ready(next_height) {
-            if let Some(open_block) = self.backlogs.get_open_block(next_height) {
+        match self.backlogs.ready(next_height) {
+            Ok(open_block) => {
                 trace!("postman send {}-th block to executor", next_height);
                 self.fsm_req_sender.send(open_block.clone());
             }
+            Err(reason) => trace!("{}", reason),
         }
     }
 
