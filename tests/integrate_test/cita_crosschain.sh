@@ -498,7 +498,6 @@ function main () {
     done
     local side_auths=$(ls address[0-4] | sort | xargs -I {} cat {} \
         | tr '\n' ',' | rev | cut -c 2- | rev)
-    rm address[0-4]
     local main_auths=$(cat mainchain/template/authorities.list \
         | xargs -I {} printf "%s," "{}" | rev | cut -c 2- | rev)
     ./scripts/create_cita_config.py create --chain_name sidechain \
@@ -524,9 +523,10 @@ function main () {
     for ((id=0;id<4;id++)); do
         ./scripts/create_cita_config.py append \
             --chain_name sidechain \
-            --node "127.0.0.1:$((24000+${id}))" \
-            --signer "$(cat secret${id})"
-        rm -f secret${id}
+            --node "127.0.0.1:$((24000+${id}))"
+        cat "address${id}" > "sidechain/${id}/address"
+        cat "secret${id}" > "sidechain/${id}/privkey"
+        rm -f "secret${id}" "address${id}"
     done
 
     start_chain side 4
