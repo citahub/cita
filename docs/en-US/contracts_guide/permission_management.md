@@ -21,11 +21,11 @@
 
 * Parameters
 
-    `bytes32 name` - The permission name
+    `bytes32` - The permission name
 
-    `address[] conts`- The contracts of resource
+    `address[]`- The contracts of resource
 
-    `bytes4[] funcs` - The function signature of the resource
+    `bytes4[]` - The function signature of the resource
 
 * Returns
 
@@ -41,8 +41,13 @@ $ scm PermissionManagement newPermission \
         --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6\
 ```
 
-```json
+```shell
 $ rpc getTransactionReceipt --hash 0x2bf039eeeefbfb0724fcdebdcbc74de0f3b61e0212279981b548c9884f018b8f
+```
+
+output:
+
+```json
 {
   "id": 1,
   "jsonrpc": "2.0",
@@ -99,7 +104,7 @@ $ rpc getTransactionReceipt --hash 0x2bf039eeeefbfb0724fcdebdcbc74de0f3b61e02122
 
 * Parameters
 
-    `address permission` - The permission address
+    `address` - The permission address
 
 * Returns
 
@@ -113,9 +118,9 @@ $ rpc getTransactionReceipt --hash 0x2bf039eeeefbfb0724fcdebdcbc74de0f3b61e02122
 
 * Parameters
 
-    `address permission` - The permission address
+    `address` - The permission address
 
-    `bytes32 name`  - The permission name
+    `bytes32`  - The permission name
 
 * Returns
 
@@ -136,11 +141,11 @@ $ rpc getTransactionReceipt --hash 0x2bf039eeeefbfb0724fcdebdcbc74de0f3b61e02122
 
 * Parameters
 
-    `address permission` - The permission address
+    `address` - The permission address
 
-    `address[] contracts` - The contracts of resource
+    `address[]` - The contracts of resource
 
-    `bytes4[] function-hashes` - The function signature of resource
+    `bytes4[]` - The function signature of resource
 * Returns
 
     `bool` - True, if successfully, otherwise false.
@@ -161,11 +166,11 @@ $ scm PermissionManagement addResources \
 
 * Parameters
 
-    `address permission` - The permission address
+    `address` - The permission address
 
-    `address[] contracts` - The contracts of resource
+    `address[]` - The contracts of resource
 
-    `bytes4[] function-hashes` - The function signature of resource
+    `bytes4[]` - The function signature of resource
 
 * Returns
 
@@ -187,9 +192,9 @@ $ scm PermissionManagement deleteResources \
 
 * Parameters
 
-    `address account` - The account to be setted
+    `address` - The account to be setted
 
-    `address[] permissions` - The permissions to be setted
+    `address[]` - The permissions to be setted
 
 * Returns
 
@@ -210,9 +215,9 @@ $ scm PermissionManagement setAuthorizations \
 
 * Parameters
 
-    `address account` - The account to be setted
+    `address` - The account to be setted
 
-    `address permission` - The permission to be setted
+    `address` - The permission to be setted
 
 * Returns
 
@@ -233,9 +238,9 @@ $ scm PermissionManagement setAuthorization \
 
 * Parameters
 
-    `address account` - The account address
+    `address` - The account address
 
-    `address[] permissions` - The permissions to be canceled
+    `address[]` - The permissions to be canceled
 
 * Returns
 
@@ -256,9 +261,9 @@ $ scm PermissionManagement cancelAuthorizations \
 
 * Parameters
 
-    `address account` - The account address
+    `address` - The account address
 
-    `address permission` - The permission to be canceled
+    `address` - The permission to be canceled
 
 * Returns
 
@@ -279,7 +284,7 @@ $ scm PermissionManagement cancelAuthorization \
 
 * Parameters
 
-    `address account` - The account's address
+    `address` - The account's address
 
 * Returns
 

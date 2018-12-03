@@ -29,6 +29,8 @@
     - [授权管理合约接口](contracts_guide/auth.md)
     - [权限合约接口](contracts_guide/permission.md)
     - [角色管理合约接口](contracts_guide/role_management.md)
+    - [角色授权合约接口](contracts_guide/role_auth.md)
+    - [角色合约接口](contracts_guide/role.md)
     - [用户管理合约接口](contracts_guide/group_management.md)
     - [组合约接口](contracts_guide/group.md)
     - [所有组合约接口](contracts_guide/all_groups.md)

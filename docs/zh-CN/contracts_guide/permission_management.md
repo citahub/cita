@@ -19,19 +19,19 @@
 
 创建新权限。
 
-* Parameters
+* 参数
 
-    `bytes32 name` - The permission name
+    `bytes32` - The permission name
 
-    `address[] conts`- The contracts of resource
+    `address[]`- The contracts of resource
 
-    `bytes4[] funcs` - The function signature of the resource
+    `bytes4[]` - The function signature of the resource
 
-* Returns
+* 返回值
 
     `address` - New permission's address.
 
-* Example
+* 示例
 
 ```shell
 $ scm PermissionManagement newPermission \
@@ -41,8 +41,15 @@ $ scm PermissionManagement newPermission \
         --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6\
 ```
 
-```json
+获取回执：
+
+```shell
 $ rpc getTransactionReceipt --hash 0x2bf039eeeefbfb0724fcdebdcbc74de0f3b61e0212279981b548c9884f018b8f
+```
+
+输出：
+
+```json
 {
   "id": 1,
   "jsonrpc": "2.0",
@@ -97,192 +104,190 @@ $ rpc getTransactionReceipt --hash 0x2bf039eeeefbfb0724fcdebdcbc74de0f3b61e02122
 
 删除权限。
 
-* Parameters
+* 参数
 
-    `address permission` - The permission address
+    `address` - The permission address
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ### updatePermissionName
 
 更新权限名称。
 
-* Parameters
+* 参数
 
-    `address permission` - The permission address
+    `address` - The permission address
 
-    `bytes32 name`  - The permission name
+    `bytes32`  - The permission name
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
  $ scm PermissionManagement updatePermissionName \
         --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dcee \
         --name 0000000000000000000000000000000000000000000000000000000060fe47b2 \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### addResources
 
 添加资源。
 
-* Parameters
+* 参数
 
-    `address permission` - The permission address
+    `address` - The permission address
 
-    `address[] contracts` - The contracts of resource
+    `address[]` - The contracts of resource
 
-    `bytes4[] function-hashes` - The function signature of resource
-* Returns
+    `bytes4[]` - The function signature of resource
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
 $ scm PermissionManagement addResources \
         --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dcee \
         --contracts '[1e041ec9a18590924d84a1f011eb0749c03fc41a]' \
         --function-hashes '[60fe47b1]' \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### deleteResources
 
 删除资源。
 
-* Parameters
+* 参数
 
-    `address permission` - The permission address
+    `address` - The permission address
 
-    `address[] contracts` - The contracts of resource
+    `address[]` - The contracts of resource
 
-    `bytes4[] function-hashes` - The function signature of resource
+    `bytes4[]` - The function signature of resource
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
 $ scm PermissionManagement deleteResources \
         --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dcee \
         --contracts '[1e041ec9a18590924d84a1f011eb0749c03fc41a]' \
         --function-hashes '[60fe47b1]' \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### setAuthorizations
 
 多次授权。
 
-* Parameters
+* 参数
 
-    `address account` - The account to be setted
+    `address` - The account to be setted
 
-    `address[] permissions` - The permissions to be setted
+    `address[]` - The permissions to be setted
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
 $ scm PermissionManagement setAuthorizations \
     --permissions '[ffffffffffffffffffffffffffffffffff021000,ffffffffffffffffffffffffffffffffff021001]' \
     --account 0x37d1c7449bfe76fe9c445e626da06265e9377601 \
-    --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+    --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### setAuthorization
 
 授权。
 
-* Parameters
+* 参数
 
-    `address account` - The account to be setted
+    `address` - The account to be setted
 
-    `address permission` - The permission to be setted
+    `address` - The permission to be setted
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
 $ scm PermissionManagement setAuthorization \
         --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dcee \
         --account 0x37d1c7449bfe76fe9c445e626da06265e9377601 \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### cancelAuthorizations
 
 取消多次授权。
 
-* Parameters
+* 参数
 
-    `address account` - The account address
+    `address` - The account address
 
-    `address[] permissions` - The permissions to be canceled
+    `address[]` - The permissions to be canceled
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
 $ scm PermissionManagement cancelAuthorizations \
     --permissions '[ffffffffffffffffffffffffffffffffff021000,ffffffffffffffffffffffffffffffffff021001]' \
     --account 0x37d1c7449bfe76fe9c445e626da06265e9377601 \
-    --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+    --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### cancelAuthorization
 
 取消授权
 
-* Parameters
+* 参数
 
-    `address account` - The account address
+    `address` - The account address
 
-    `address permission` - The permission to be canceled
+    `address` - The permission to be canceled
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
 $ scm PermissionManagement cancelAuthorization \
         --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dcee \
         --account 0x37d1c7449bfe76fe9c445e626da06265e9377601 \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### clearAuthorization
 
 取消账户的所有授权。
 
-* Parameters
+* 参数
 
-    `address account` - The account's address
+    `address` - The account's address
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
-
-* Example

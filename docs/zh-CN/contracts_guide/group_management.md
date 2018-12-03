@@ -16,19 +16,19 @@
 
 创建一个用户组。
 
-* Parameters
+* 参数
 
-    `address origin` - The sender's origin group
+    `address` - The sender's origin group
 
-    `bytes32 name` -  The name of group
+    `bytes32` -  The name of group
 
-    `address[] accounts` - The accounts of group
+    `address[]` - The accounts of group
 
-* Returns
+* 返回值
 
     `address` - The group address
 
-* Example
+* 示例
 
 ```shell
 $ scm GroupManagement newGroup \
@@ -110,17 +110,17 @@ $ scm GroupManagement newGroup \
 
 删除用户组。
 
-* Parameters
+* 参数
 
-    `address origin` - The sender's orgin group
+    `address` - The sender's orgin group
 
-    `address target` -  The target group to be deleted
+    `address` -  The target group to be deleted
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
 $ scm GroupManagement deleteGroup \
@@ -133,19 +133,19 @@ $ scm GroupManagement deleteGroup \
 
 更新用户组名称。
 
-* Parameters
+* 参数
 
-    `address origin` - The sender's orgin group
+    `address` - The sender's orgin group
 
-    `address target` -  The target group to be deleted
+    `address` -  The target group to be deleted
 
-    `bytes32 name` - The new name to be updated
+    `bytes32` - The new name to be updated
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
 $ scm GroupManagement updateGroupName \
@@ -158,19 +158,19 @@ $ scm GroupManagement updateGroupName \
 
 添加用户。
 
-* Parameters
+* 参数
 
-    `address origin` - The sender's orgin group
+    `address` - The sender's orgin group
 
-    `address target` -  The target group to be deleted
+    `address` -  The target group to be deleted
 
-    `address[] accounts` - The accounts to be added
+    `address[]` - The accounts to be added
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Examplee
+* 示例e
 
 ```shell
  $ scm GroupManagement addAccounts \
@@ -183,19 +183,19 @@ $ scm GroupManagement updateGroupName \
 
 删除用户。
 
-* Parameters
+* 参数
 
-    `address origin` - The sender's orgin group
+    `address` - The sender's orgin group
 
-    `address target` -  The target group to be deleted
+    `address` -  The target group to be deleted
 
-    `address[] accounts` - The accounts to be added
+    `address[]` - The accounts to be added
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
 $ scm GroupManagement deleteAccounts \
@@ -207,17 +207,17 @@ $ scm GroupManagement deleteAccounts \
 
 ### checkScope
 
-* Parameters
+* 参数
 
-    `address origin` - The sender's orgin group
+    `address` - The sender's orgin group
 
-    `address target` -  The target group to be deleted
+    `address` -  The target group to be deleted
 
-* Returns
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
 $ scm GroupManagement checkScope \
@@ -229,15 +229,15 @@ $ scm GroupManagement checkScope \
 
 查询所有组。
 
-* Parameters
+* 参数
 
-    `None`
+    空
 
-* Returns
+* 返回值
 
     `address[]` - All groups address
 
-* Example
+* 示例
 
 ```shell
 $ scm GroupManagement queryGroups

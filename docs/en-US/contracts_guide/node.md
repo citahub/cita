@@ -18,18 +18,18 @@
 
 * Parameters
 
-    `address node` - The new node address
+    `address` - The new node address
 
 * Returns
 
-    `bool` - True, if successfully, otherwise false.
+    `bool` - True, if successfully, otherwise false
 
 * Example
 
 ```shell
 $ scm NodeManager approveNode \
         --address 0x59a316df602568957f47973332f1f85ae1e2e75e \
-        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### deleteNode
@@ -38,18 +38,18 @@ $ scm NodeManager approveNode \
 
 * Parameters
 
-    `address node` - The node address
+    `address` - The node address
 
 * Returns
 
-    `bool` - True, if successfully, otherwise false.
+    `bool` - True, if successfully, otherwise false
 
 * Example
 
 ```shell
 $ scm NodeManager deleteNode \
         --address 0x59a316df602568957f47973332f1f85ae1e2e75e \
-        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### listNode
@@ -76,11 +76,12 @@ $ scm NodeManager listNode
 
 * Parameters
 
-    `address node , uint64 stake` - The node address and stake to be setted.
+    `address` - The node address to be setted
+    `uint64` - The stake to be setted
 
 * Returns
 
-    `bool` - True, if successfully, otherwise false.
+    `bool` - True, if successfully, otherwise false
 
 * Example
 
@@ -88,7 +89,7 @@ $ scm NodeManager listNode
 $ scm NodeManager setStake \
         --address 0xae0f69a2d95146d104365e0502a0d521717ced7f \
         --stake 0000000000000000000000000000000000000000000000000000000000000002 \
-        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### getStatus
@@ -115,11 +116,11 @@ $ scm NodeManager getStatus --address 0xae0f69a2d95146d104365e0502a0d521717ced7f
 
 * Parameters
 
-    `height(Optional)`
+    None
 
 * Returns
 
-    `uint64[] stakes` - The node stakes list
+    `uint64[]` - The node stakes list
 
 * Example
 
@@ -137,7 +138,7 @@ $ scm NodeManager listStake
 
 * Returns
 
-    `uint64` - The node stake permillage.
+    `uint64` - The node stake permillage
 
 * Example
 

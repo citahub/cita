@@ -11,15 +11,15 @@
 
 设置 `quota price`，默认为 1。
 
-* Parameters
+* 参数
 
-    `uint price` - The setting quota price
+    `uint` - The setting quota price
 
-* Returns
+* 返回值
 
-    `Boolean` - True if success,other false.
+    `bool` - True if success,other false.
 
-* Example
+* 示例
 
 ```shell
 $ cita-cli scm PriceManager setQuotaPrice \
@@ -31,22 +31,23 @@ $ cita-cli scm PriceManager setQuotaPrice \
 
 查询当前链 quota price。
 
-* Parameters
+* 参数
 
-    `None`
+    空
 
-* Returns
+* 返回值
 
     `uint` - The quota price
 
-* Example
+* 示例
 
 ```shell
 $ cita-cli scm PriceManager getQuotaPrice
 ```
 
+输出：
+
 ```json
-// Result
 {
   "id": 1,
   "jsonrpc": "2.0",

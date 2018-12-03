@@ -15,9 +15,9 @@
 
 * Parameters
 
-    `address contract` - The contract address of the resource
+    `address` - The contract address of the resource
 
-    `bytes4 function-hash` -  The function signature of the resource
+    `bytes4` -  The function signature of the resource
 
 * Returns
 
@@ -44,7 +44,7 @@ $ scm Permission inPermission \
 
 * Parameters
 
-    `address permission` - The permission address
+    None
 
 * Returns
 
@@ -72,11 +72,11 @@ $ scm Permission queryInfo --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dc
 
 * Parameters
 
-    `address permission` - The permission address
+    None
 
 * Returns
 
-    `bytes32 name` - The permission name
+    `bytes32` - The permission name
 
 * Example
 
@@ -96,7 +96,7 @@ $ scm Permission queryName --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dc
 
 * Parameters
 
-    `address permission` - The permission address
+    None
 
 * Returns
 

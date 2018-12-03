@@ -10,32 +10,32 @@
 
 注册自动执行合约，只能管理员调用，新注册的地址会覆盖旧地址。
 
-* Parameters
+* 参数
 
-    `address contAddr` - The address to be setted
+    `address` - 待注册的自动执行合约地址
 
-* Returns
+* 返回值
 
-    None
+    空
 
 ### autoExec
 
 仅供底层调用的接口，不对用户开放。
 
-* Parameters
+* 参数
 
-    None
+    空
 
-* Returns
+* 返回值
 
-    None
+    空
 
 ### contAddr
 
-* Parameters
+* 参数
 
-    None
+    空
 
-* Returns
+* 返回值
 
-    `address contAddr` - The address of the registerd contract
+    `address` - 已注册的自动执行合约地址

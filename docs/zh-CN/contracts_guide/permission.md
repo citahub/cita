@@ -11,19 +11,19 @@
 
 ### inPermission
 
-检查资源是否在 permission 中。
+检查资源是否在权限中
 
-* Parameters
+* 参数
 
-    `address contract` - The contract address of the resource
+    `address` - 资源的合约地址
 
-    `bytes4 function-hash` -  The function signature of the resource
+    `bytes4` -  资源的函数签名
 
-* Returns
+* 返回值
 
-    `bool` - True, if successfully, otherwise false.
+    `bool` - 成功返回为真，反之则反
 
-* Example
+* 示例
 
 ```shell
 $ scm Permission inPermission \
@@ -31,6 +31,8 @@ $ scm Permission inPermission \
         --function-hash 0x60fe47b1 \
         --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dcee \
 ```
+
+输出：
 
 ```json
 {
@@ -42,23 +44,27 @@ $ scm Permission inPermission \
 
 ### queryInfo
 
-* Parameters
+查询权限信息，包括权限名称及包含的资源列表
 
-    `address permission` - The permission address
+* 参数
 
-* Returns
+    空
 
-    `bytes32 permission` - The permission name
+* 返回值
 
-    `address[] cont` - The contract address of the resource
+    `bytes32` - 权限名称
 
-    `bytes4[] func` - The function signature of the resource
+    `address[]` - 所包含资源的合约地址列表
 
-* Example
+    `bytes4[]` - 所包含资源的函数签名列表
+
+* 示例
 
 ```shell
 $ scm Permission queryInfo --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dcee
 ```
+
+输出：
 
 ```json
 {
@@ -70,19 +76,23 @@ $ scm Permission queryInfo --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dc
 
 ### queryName
 
-* Parameters
+查询权限的名称
 
-    `address permission` - The permission address
+* 参数
 
-* Returns
+    空
 
-    `bytes32 name` - The permission name
+* 返回值
 
-* Example
+    `bytes32` - 权限名称
+
+* 示例
 
 ```shell
 $ scm Permission queryName --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dcee
 ```
+
+输出：
 
 ```json
 {
@@ -94,19 +104,27 @@ $ scm Permission queryName --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dc
 
 ### queryResource
 
-* Parameters
+查询权限的资源
 
-    `address permission` - The permission address
+* 参数
 
-* Returns
+    空
+
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+    `address[]` - 所包含资源的合约地址列表
+
+    `bytes4[]` - 所包含资源的函数签名列表
+
+* 示例
 
 ```shell
 $ scm Permission queryResource --permission 0xca645d2b0d2e4c451a2dd546dbd7ab8c29c3dcee
 ```
+
+输出：
 
 ```json
 {

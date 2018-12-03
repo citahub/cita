@@ -29,6 +29,8 @@
     - [Authorization Management Contract Interface](contracts_guide/auth.md)
     - [Permission Contract Interface](contracts_guide/permission.md)
     - [Role Management Contract Interface](contracts_guide/role_management.md)
+    - [Role Authorization Contract Interface](contracts_guide/role_auth.md)
+    - [Role Contract Interface](contracts_guide/role.md)
     - [User Management Contract Interface](contracts_guide/group_management.md)
     - [Group Contract Contract Interface](contracts_guide/group.md)
     - [All Group Contract Contract Interface](contracts_guide/all_groups.md)

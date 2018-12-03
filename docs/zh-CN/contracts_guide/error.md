@@ -27,7 +27,7 @@ event ErrorLog(ErrorType indexed errorType, string msg);
  | 7         | NotStart        | node does not start                              |
  | 8         | NotReady        | node does not start (deprecation)                |
 
-## 错误示例
+## 示例
 
 <h2 class="hover-list">ErrorType</h2>
 
@@ -218,7 +218,7 @@ event ErrorLog(ErrorType indexed errorType, string msg);
 
 ### NoParentChain
 
-**deprecation**
+!> 废弃
 
 ### NoSideChain
 
@@ -280,7 +280,7 @@ event ErrorLog(ErrorType indexed errorType, string msg);
 
 ### NotOneOperate
 
-**deprecation**
+!> 废弃
 
 ### NotClose
 
@@ -399,4 +399,4 @@ event ErrorLog(ErrorType indexed errorType, string msg);
 
 ### NotReady
 
-**deprecation**
+!> 废弃

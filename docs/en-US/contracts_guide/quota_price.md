@@ -13,11 +13,11 @@
 
 * Parameters
 
-    `uint price` - The setting quota price
+    `uint` - The setting quota price
 
 * Returns
 
-    `Boolean` - True if success,other false.
+    `bool` - True if success,other false.
 
 * Example
 
@@ -33,7 +33,7 @@ $ cita-cli scm PriceManager setQuotaPrice \
 
 * Parameters
 
-    `None`
+    None
 
 * Returns
 
@@ -45,12 +45,12 @@ $ cita-cli scm PriceManager setQuotaPrice \
 $ cita-cli scm PriceManager getQuotaPrice
 ```
 
+output:
+
 ```json
-// Result
 {
   "id": 1,
   "jsonrpc": "2.0",
   "result": "0x0000000000000000000000000000000000000000000000000000000000000002"
 }
-
 ```
