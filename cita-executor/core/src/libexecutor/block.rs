@@ -203,7 +203,7 @@ impl ExecutedBlock {
 }
 
 // Block that prepared to commit to db.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ClosedBlock {
     /// Protobuf Block
     pub block: Block,
