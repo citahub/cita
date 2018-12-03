@@ -48,7 +48,7 @@ pub trait Drain {
     fn drain(self) -> StateDB;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ExecutedBlock {
     pub block: OpenBlock,
     pub receipts: Vec<Receipt>,

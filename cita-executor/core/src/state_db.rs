@@ -212,21 +212,6 @@ impl StateDB {
         self.db.mark_canonical(batch, now, id)
     }
 
-    /// Clone the database.
-    pub fn boxed_clone(&self) -> StateDB {
-        StateDB {
-            db: self.db.boxed_clone(),
-            account_cache: self.account_cache.clone(),
-            code_cache: self.code_cache.clone(),
-            local_account_cache: Vec::new(),
-            account_bloom: self.account_bloom.clone(),
-            cache_size: self.cache_size,
-            parent_hash: None,
-            commit_hash: None,
-            commit_number: None,
-        }
-    }
-
     /// Clone the database for a canonical state.
     pub fn boxed_clone_canon(&self, parent: &H256) -> StateDB {
         StateDB {

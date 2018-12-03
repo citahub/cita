@@ -47,7 +47,6 @@ pub mod backend;
 
 pub use self::account::Account;
 use self::backend::*;
-use state_db::*;
 pub use substate::Substate;
 
 /// Used to return information about an `State::apply` operation.
@@ -104,17 +103,6 @@ impl AccountEntry {
 
     fn exists_and_is_null(&self) -> bool {
         self.account.as_ref().map_or(false, |a| a.is_null())
-    }
-
-    /// Clone dirty data into new `AccountEntry`. This includes
-    /// basic account data and modified storage keys.
-    /// Returns None if clean.
-    fn clone_if_dirty(&self) -> Option<AccountEntry> {
-        if self.is_dirty() {
-            Some(self.clone_dirty())
-        } else {
-            None
-        }
     }
 
     /// Clone dirty data into new `AccountEntry`. This includes
@@ -1216,32 +1204,6 @@ impl<B: Backend> fmt::Debug for State<B> {
     }
 }
 
-// TODO: cloning for `State` shouldn't be possible in general; Remove this and use
-// checkpoints where possible.
-impl Clone for State<StateDB> {
-    fn clone(&self) -> State<StateDB> {
-        let cache = {
-            let mut cache: HashMap<Address, AccountEntry> = HashMap::new();
-            for (key, val) in self.cache.borrow().iter() {
-                if let Some(entry) = val.clone_if_dirty() {
-                    cache.insert(*key, entry);
-                }
-            }
-            cache
-        };
-
-        State {
-            db: self.db.boxed_clone(),
-            root: self.root,
-            cache: RefCell::new(cache),
-            checkpoints: RefCell::new(Vec::new()),
-            account_start_nonce: self.account_start_nonce,
-            factories: self.factories.clone(),
-            super_admin_account: self.super_admin_account,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     extern crate libproto;
@@ -1359,22 +1321,6 @@ mod tests {
             state.abi(&contract_address).unwrap().unwrap(),
             Arc::new(vec![])
         );
-    }
-
-    #[test]
-    fn should_work_when_cloned() {
-        let a = Address::zero();
-
-        let mut state = {
-            let mut state = get_temp_state();
-            assert_eq!(state.exists(&a).unwrap(), false);
-            state.inc_nonce(&a).unwrap();
-            state.commit().unwrap();
-            state.clone()
-        };
-
-        state.inc_nonce(&a).unwrap();
-        state.commit().unwrap();
     }
 
     #[test]
@@ -1676,19 +1622,4 @@ mod tests {
 
         assert_eq!(state.root().lower_hex(), expected);
     }
-
-    #[test]
-    fn should_not_panic_on_state_diff_with_storage() {
-        let mut state = get_temp_state();
-
-        let a: Address = 0xa.into();
-        state.init_code(&a, b"abcdefg".to_vec()).unwrap();;
-        state.set_storage(&a, 0xb.into(), 0xc.into()).unwrap();
-
-        let mut new_state = state.clone();
-        new_state.set_storage(&a, 0xb.into(), 0xd.into()).unwrap();
-
-        // new_state.diff_from(state).unwrap();
-    }
-
 }
