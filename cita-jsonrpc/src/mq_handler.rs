@@ -32,36 +32,51 @@ impl MqHandler {
         MqHandler { responses }
     }
 
-    pub fn handle(&mut self, key: &str, body: &[u8]) {
-        let mut msg = Message::try_from(body).unwrap();
-        trace!("get msg from routint_key {}", key);
+    pub fn handle(&mut self, key: &str, body: &[u8]) -> Result<(), ()> {
+        trace!("get msg from routing_key {}", key);
+
+        let mut msg = Message::try_from(body).map_err(|e| {
+            error!("try_from: {:?}", e);
+        })?;
 
         match RoutingKey::from(key) {
             routing_key!(Auth >> Response)
             | routing_key!(Chain >> Response)
             | routing_key!(Executor >> Response)
             | routing_key!(Net >> Response) => {
-                let content = msg.take_response().unwrap();
-                trace!("from response request_id {:?}", content.request_id);
-                let value = { self.responses.lock().remove(&content.request_id) };
-                if let Some(val) = value {
-                    match val {
-                        TransferType::HTTP((req_info, sender)) => {
-                            let _ = sender.send(Output::from(content, req_info));
-                        }
-                        TransferType::WEBSOCKET((req_info, sender)) => {
-                            let _ = sender.send(
-                                serde_json::to_string(&Output::from(content, req_info)).unwrap(),
-                            );
-                        }
+                let content = msg.take_response().ok_or_else(|| {
+                    error!("empty response message");
+                })?;
+
+                let resp = {
+                    let request_id = &content.request_id;
+                    trace!("from response request_id {:?}", request_id);
+                    self.responses.lock().remove(request_id).ok_or_else(|| {
+                        warn!("receive lost request_id {:?}", request_id);
+                    })?
+                };
+
+                match resp {
+                    TransferType::HTTP((req_info, sender)) => {
+                        sender.send(Output::from(content, req_info)).map_err(|e| {
+                            error!("http: {:?}", e);
+                        })?;
                     }
-                } else {
-                    warn!("receive lost request_id {:?}", content.request_id);
-                }
+                    TransferType::WEBSOCKET((req_info, sender)) => {
+                        let json_body = serde_json::to_string(&Output::from(content, req_info))
+                            .map_err(|e| {
+                                error!("ws: {:?}", e);
+                            })?;
+                        sender.send(json_body).map_err(|e| {
+                            error!("ws: {:?}", e);
+                        })?;
+                    }
+                };
             }
             _ => {
                 warn!("receive unexpect key {}", key);
             }
-        }
+        };
+        Ok(())
     }
 }

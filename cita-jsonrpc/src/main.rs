@@ -54,6 +54,7 @@
 
 #![feature(try_from)]
 #![feature(tool_lints)]
+#![feature(never_type)]
 
 extern crate bytes;
 extern crate clap;
@@ -89,11 +90,14 @@ extern crate uuid;
 extern crate ws;
 
 mod config;
+mod extractor;
 mod fdlimit;
 mod helper;
 mod http_server;
 mod mq_handler;
+mod mq_publisher;
 mod response;
+mod service_error;
 mod ws_handler;
 
 use clap::App;
@@ -246,7 +250,7 @@ fn main() {
 
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
-        mq_handle.handle(&key, &msg);
+        let _ = mq_handle.handle(&key, &msg);
     }
 }
 

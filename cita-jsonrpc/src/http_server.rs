@@ -15,28 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use error::ErrorCode;
-use futures::future::{Either, Future};
-use futures::stream::FuturesOrdered;
-use futures::sync::oneshot;
-use futures::{self, Stream};
-use helper::{select_topic, ReqSender, RpcMap, TransferType};
+use futures::future::{Future, FutureResult};
+use helper::{ReqSender, RpcMap};
 use hyper::header::{
     AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin,
     AccessControlMaxAge, ContentType, Headers, UserAgent,
 };
 use hyper::server::{Http, NewService, Request, Response, Service};
 use hyper::{self, Method, StatusCode};
-use jsonrpc_types::{
-    request::{PartialRequest, Request as FullRequest, RpcRequest},
-    response::RpcFailure,
-    rpctypes::Id as RpcId,
-    Error,
-};
+use jsonrpc_types::{request::RpcRequest as JsonrpcRequest, rpctypes::Id as RpcId};
 use libproto::request::Request as ProtoRequest;
 use net2;
-use response::{BatchFutureResponse, SingleFutureResponse};
-use serde_json;
 use std::io;
 use std::net::SocketAddr;
 use std::sync::{mpsc, Arc};
@@ -45,6 +34,11 @@ use tokio_core::net::TcpListener;
 use tokio_core::reactor::{Core, Handle, Timeout};
 use unicase::Ascii;
 use util::Mutex;
+
+use crate::extractor::FutExtractor;
+use crate::mq_publisher::{AccessLog as MQAccessLog, MQRequest, Publisher, TimeoutPublisher};
+use crate::response::IntoResponse;
+use crate::service_error::ServiceError;
 
 const TCP_BACKLOG: i32 = 1024;
 const CORS_CACHE: u32 = 86_400u32;
@@ -99,6 +93,37 @@ struct BatchRpcAccessLog {
     count: Option<usize>,
 }
 
+impl From<MQAccessLog> for RpcAccessLog {
+    fn from(mq_log: MQAccessLog) -> Self {
+        match mq_log {
+            MQAccessLog::Single { id, method } => {
+                RpcAccessLog::Single(SingleRpcAccessLog { id, method })
+            }
+            MQAccessLog::Batch { count } => RpcAccessLog::Batch(BatchRpcAccessLog { count }),
+        }
+    }
+}
+
+impl AccessLog {
+    pub fn new(http_method: &Method, http_path: &str, http_headers: &Headers) -> Self {
+        let user_agent = http_headers
+            .get::<UserAgent>()
+            .map(ToString::to_string)
+            .unwrap_or_else(|| String::from("unknown"));
+
+        Self {
+            user_agent,
+            http_method: http_method.clone(),
+            http_path: http_path.to_owned(),
+            rpc_info: None,
+        }
+    }
+
+    pub fn set_rpc_info(&mut self, rpc_acc_log: RpcAccessLog) {
+        self.rpc_info = Some(rpc_acc_log);
+    }
+}
+
 impl ::std::fmt::Display for AccessLog {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         write!(f, "user-agent={}", self.user_agent)?;
@@ -136,178 +161,49 @@ impl Service for Server {
     fn call(&self, http_req: Request) -> Self::Future {
         let sender = { self.inner.tx.lock().clone() };
         let responses = Arc::clone(&self.inner.responses);
-        let timeout_responses = Arc::clone(&self.inner.responses);
         let timeout = self.inner.timeout;
         let reactor_handle = self.inner.reactor_handle.clone();
         let http_headers = self.inner.http_headers.clone();
 
-        let mut access_log = {
-            let user_agent = http_headers
-                .get::<UserAgent>()
-                .map(|ua| format!("{}", ua))
-                .unwrap_or_else(|| "unknown".to_owned());
-            let http_method = http_req.method().clone();
-            let http_path = http_req.path().to_owned();
-            AccessLog {
-                user_agent,
-                http_method,
-                http_path,
-                rpc_info: None,
-            }
-        };
+        let mut access_log = AccessLog::new(http_req.method(), http_req.path(), &http_headers);
 
         match (http_req.method(), http_req.path()) {
             (&Method::Post, "/") => {
-                let mapping = http_req.body().concat2().and_then(move |chunk| {
-                    if let Ok(rpc) = serde_json::from_slice::<RpcRequest>(&chunk) {
-                        match rpc {
-                            RpcRequest::Single(part_req) => {
-                                let mut single_rpc_log = SingleRpcAccessLog {
-                                    id: part_req.id.clone(),
-                                    method: None,
-                                };
-                                let future_resp = match read_single(part_req, &http_headers) {
-                                    Ok((full_req, rpc_req)) => {
-                                        single_rpc_log.method =
-                                            Some(full_req.get_method().to_owned());
-                                        if let Ok(timeout) = Timeout::new(timeout, &reactor_handle)
-                                        {
-                                            let req_info = full_req.get_info();
-                                            let request_id = rpc_req.request_id.clone();
-                                            let mq_resp = handle_single(
-                                                &full_req,
-                                                rpc_req,
-                                                &responses,
-                                                &sender,
-                                                &http_headers,
-                                            );
+                let fut_resp = FutExtractor::<JsonrpcRequest>::extract_from(http_req)
+                    .and_then(FutExtractor::<MQRequest>::extract_from)
+                    .and_then({
+                        let headers = http_headers.clone();
 
-                                            let resp =
-                                                mq_resp.select2(timeout).then(
-                                                    move |res| match res {
-                                                        Ok(Either::A((got, _timeout))) => Ok(got),
-                                                        Ok(Either::B((_timeout_error, _get))) => {
-                                                            {
-                                                                timeout_responses
-                                                                    .lock()
-                                                                    .remove(&request_id);
-                                                            }
-                                                            let failure = RpcFailure::from_options(
-                                                            req_info,
-                                                            Error::server_error(
-                                                                ErrorCode::time_out_error(),
-                                                                "System time out, please resend",
-                                                            ),
-                                                        );
-                                                            let resp_body = serde_json::to_string(
-                                                                &failure,
-                                                            )
-                                                            .expect(
-                                                                "should be serialize by serde_json",
-                                                            );
-                                                            Ok(Response::new()
-                                                                .with_headers(http_headers)
-                                                                .with_body(resp_body))
-                                                        }
-                                                        Err(Either::A((get_error, _timeout))) => {
-                                                            Err(get_error)
-                                                        }
-                                                        Err(Either::B((timeout_error, _get))) => {
-                                                            Err(From::from(timeout_error))
-                                                        }
-                                                    },
-                                                );
-                                            Either::A(Either::A(resp))
-                                        } else {
-                                            Either::B(futures::future::ok(
-                                                Response::new()
-                                                    .with_headers(http_headers)
-                                                    .with_status(StatusCode::InternalServerError),
-                                            ))
-                                        }
-                                    }
-                                    Err(resp) => Either::B(futures::future::ok(resp)),
-                                };
-                                access_log.rpc_info = Some(RpcAccessLog::Single(single_rpc_log));
-                                info!("{}", access_log);
-                                future_resp
-                            }
-                            RpcRequest::Batch(part_reqs) => {
-                                let mut batch_rpc_log = BatchRpcAccessLog { count: None };
-                                let future_resp = match read_batch(part_reqs, &http_headers) {
-                                    Ok(reqs) => {
-                                        batch_rpc_log.count = Some(reqs.len());
-                                        let request_ids: Vec<Vec<u8>> = reqs.iter()
-                                        .map(|&(_, ref rpc_req)| rpc_req.request_id.clone())
-                                        .collect();
+                        let timeout = Timeout::new(timeout, &reactor_handle.clone()).map_err(|e| {
+                            error!("error create timeout: {}", e);
+                            ServiceError::InternalServerError
+                        });
+                        let fut_timeout: FutureResult<
+                            Timeout,
+                            ServiceError,
+                        > = timeout.into();
 
-                                        let mq_resp =
-                                            handle_batch(reqs, &responses, &sender, &http_headers);
+                        move |mq_req| {
+                            // logging
+                            access_log.set_rpc_info(RpcAccessLog::from(mq_req.access_log()));
+                            info!("{}", access_log);
 
-                                        if let Ok(timeout) = Timeout::new(timeout, &reactor_handle)
-                                        {
-                                            let resp =
-                                                mq_resp.select2(timeout).then(
-                                                    move |res| match res {
-                                                        Ok(Either::A((got, _timeout))) => Ok(got),
-                                                        Ok(Either::B((_timeout_error, _get))) => {
-                                                            {
-                                                                let mut guard =
-                                                                    timeout_responses.lock();
-                                                                for request_id in request_ids {
-                                                                    guard.remove(&request_id);
-                                                                }
-                                                            }
-                                                            let failure =
-                                                            RpcFailure::from(Error::server_error(
-                                                                ErrorCode::time_out_error(),
-                                                                "System time out, please resend",
-                                                            ));
-                                                            let resp_body = serde_json::to_string(
-                                                                &failure,
-                                                            )
-                                                            .expect(
-                                                                "should be serialize by serde_json",
-                                                            );
-                                                            Ok(Response::new()
-                                                                .with_headers(http_headers)
-                                                                .with_body(resp_body))
-                                                        }
-                                                        Err(Either::A((get_error, _timeout))) => {
-                                                            Err(get_error)
-                                                        }
-                                                        Err(Either::B((timeout_error, _get))) => {
-                                                            Err(From::from(timeout_error))
-                                                        }
-                                                    },
-                                                );
-                                            Either::A(Either::B(resp))
-                                        } else {
-                                            Either::B(futures::future::ok(
-                                                Response::new()
-                                                    .with_headers(http_headers)
-                                                    .with_status(StatusCode::InternalServerError),
-                                            ))
-                                        }
-                                    }
-                                    Err(resp) => Either::B(futures::future::ok(resp)),
-                                };
-                                access_log.rpc_info = Some(RpcAccessLog::Batch(batch_rpc_log));
-                                info!("{}", access_log);
-                                future_resp
-                            }
+                            fut_timeout.and_then(|timeout| {
+                                let timeout_responses = Arc::clone(&responses);
+                                let pulibsher = Publisher::new(responses, sender, headers);
+                                let pulibsher =
+                                    TimeoutPublisher::new(pulibsher, timeout, timeout_responses);
+
+                                pulibsher.publish(mq_req)
+                            })
                         }
-                    } else {
-                        Either::B(futures::future::ok(
-                            Response::new()
-                                .with_headers(http_headers)
-                                .with_status(StatusCode::BadRequest),
-                        ))
-                    }
-                });
-                let resp: Box<Future<Error = hyper::Error, Item = hyper::Response>> =
-                    Box::new(mapping);
-                resp
+                    })
+                    .then(move |resp| match resp {
+                        Ok(resp) => Ok(resp),
+                        Err(err) => Ok(err.into_response(http_headers.clone())),
+                    });
+
+                Box::new(fut_resp)
             }
             (&Method::Options, "/") => {
                 info!("{}", access_log);
@@ -341,86 +237,6 @@ fn handle_preflighted(mut headers: Headers) -> Box<Future<Item = Response, Error
     ]));
     headers.set(AccessControlMaxAge(CORS_CACHE));
     Box::new(futures::future::ok(Response::new().with_headers(headers)))
-}
-
-fn read_single(
-    part_req: PartialRequest,
-    headers: &Headers,
-) -> Result<(FullRequest, ProtoRequest), Response> {
-    let req_info = part_req.get_info();
-    part_req.complete_and_into_proto().map_err(|err| {
-        let resp_body = serde_json::to_vec(&RpcFailure::from_options(req_info, err))
-            .expect("should be serialize by serde_json");
-        Response::new()
-            .with_headers(headers.clone())
-            .with_body(resp_body)
-    })
-}
-
-fn handle_single(
-    full_req: &FullRequest,
-    req: ProtoRequest,
-    responses: &RpcMap,
-    sender: &mpsc::Sender<(String, ProtoRequest)>,
-    headers: &Headers,
-) -> SingleFutureResponse {
-    let request_id = req.request_id.clone();
-    let (tx, rx) = oneshot::channel();
-    let topic = select_topic(full_req.get_method());
-    {
-        responses
-            .lock()
-            .insert(request_id, TransferType::HTTP((full_req.get_info(), tx)));
-    }
-    let _ = sender.send((topic, req));
-    let headers = headers.clone();
-
-    SingleFutureResponse::new(rx, headers)
-}
-
-fn read_batch(
-    part_reqs: Vec<PartialRequest>,
-    headers: &Headers,
-) -> Result<Vec<(FullRequest, ProtoRequest)>, Response> {
-    let mut reqs = Vec::with_capacity(part_reqs.len());
-    for part_req in part_reqs {
-        match part_req.complete_and_into_proto() {
-            Ok(ret) => {
-                reqs.push(ret);
-            }
-            Err(_) => {
-                return Err(Response::new()
-                    .with_headers(headers.clone())
-                    .with_status(StatusCode::BadRequest))
-            }
-        }
-    }
-    Ok(reqs)
-}
-
-fn handle_batch(
-    reqs: Vec<(FullRequest, ProtoRequest)>,
-    responses: &RpcMap,
-    sender: &mpsc::Sender<(String, ProtoRequest)>,
-    headers: &Headers,
-) -> BatchFutureResponse {
-    use std::iter::FromIterator;
-    let mut rxs = Vec::with_capacity(reqs.len());
-    for (full_req, req) in reqs {
-        let request_id = req.request_id.clone();
-        let topic = select_topic(full_req.get_method());
-        let (tx, rx) = oneshot::channel();
-        {
-            responses
-                .lock()
-                .insert(request_id, TransferType::HTTP((full_req.get_info(), tx)));
-        }
-        let _ = sender.send((topic, req));
-        rxs.push(rx);
-    }
-    let headers = headers.clone();
-
-    BatchFutureResponse::new(FuturesOrdered::from_iter(rxs).collect(), headers)
 }
 
 impl Server {
@@ -518,9 +334,13 @@ mod integration_test {
     use uuid::Uuid;
 
     use super::*;
+    use futures::{sync::oneshot, Stream};
     use jsonrpc_types;
     use jsonrpc_types::response::Output;
     use libproto::protos;
+    use serde_json;
+
+    use helper::TransferType;
 
     struct Serve {
         pub addr: SocketAddr,
@@ -691,7 +511,7 @@ mod integration_test {
         }"#;
         let rpcreq =
             serde_json::from_str::<jsonrpc_types::request::PartialRequest>(request_str).unwrap();
-        let data = serde_json::to_string(&RpcRequest::Single(rpcreq)).unwrap();
+        let data = serde_json::to_string(&JsonrpcRequest::Single(rpcreq)).unwrap();
         let mut req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());
         req.set_body(data);
         let work_method_not_found = client.request(req).and_then(|resp| {

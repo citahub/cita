@@ -23,8 +23,54 @@ use hyper;
 use hyper::header::Headers;
 use hyper::server::Response;
 use jsonrpc_types::response::Output;
-use jsonrpc_types::response::RpcResponse;
 use serde_json;
+
+use crate::service_error::ServiceError;
+
+pub trait IntoResponse {
+    fn into_response(self, Headers) -> Response;
+}
+
+pub trait FutureResponse
+where
+    <<Self as FutureResponse>::Output as Future>::Error: std::fmt::Display,
+    <<Self as FutureResponse>::Output as Future>::Item: serde::Serialize,
+{
+    type Output: Future;
+
+    fn inner_output(&mut self) -> &mut Self::Output;
+    fn headers(&mut self) -> &mut Option<Headers>;
+    fn response_type() -> &'static str;
+
+    fn poll_response(&mut self) -> Poll<Response, ServiceError> {
+        let response_type = <Self as FutureResponse>::response_type();
+
+        let resp = match self.inner_output().poll() {
+            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Ok(Async::Ready(resp)) => Ok(resp),
+            Err(e) => {
+                error!("pool {} response: {}", response_type, e);
+                Err(ServiceError::MQResponsePollIncompleteError(
+                    hyper::Error::Incomplete,
+                ))
+            }
+        }?;
+
+        let headers = self.headers().take().ok_or_else(|| {
+            error!("pull {} future response twice", response_type);
+            ServiceError::InternalServerError
+        })?;
+
+        let json_resp = serde_json::to_vec(&resp).map_err(|err| {
+            error!("json serde {} response: {}", response_type, err);
+            ServiceError::InternalServerError
+        })?;
+
+        Ok(Async::Ready(
+            Response::new().with_headers(headers).with_body(json_resp),
+        ))
+    }
+}
 
 pub struct SingleFutureResponse {
     output: oneshot::Receiver<Output>,
@@ -40,28 +86,28 @@ impl SingleFutureResponse {
     }
 }
 
+impl FutureResponse for SingleFutureResponse {
+    type Output = oneshot::Receiver<Output>;
+
+    fn inner_output(&mut self) -> &mut Self::Output {
+        &mut self.output
+    }
+
+    fn headers(&mut self) -> &mut Option<Headers> {
+        &mut self.headers
+    }
+
+    fn response_type() -> &'static str {
+        "single"
+    }
+}
+
 impl Future for SingleFutureResponse {
     type Item = Response;
-    type Error = hyper::Error;
+    type Error = ServiceError;
 
-    fn poll(&mut self) -> Poll<Response, hyper::Error> {
-        let e = match self.output.poll() {
-            Ok(Async::NotReady) => return Ok(Async::NotReady),
-            Ok(Async::Ready(e)) => Ok(e),
-            Err(e) => Err(e),
-        };
-
-        e.map(|resp_body| {
-            Response::new()
-                .with_headers(
-                    self.headers
-                        .take()
-                        .expect("cannot poll SingleFutureResponse twice"),
-                )
-                .with_body(serde_json::to_vec(&resp_body).unwrap())
-        })
-        .map_err(|_| hyper::Error::Incomplete)
-        .map(Async::Ready)
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        self.poll_response()
     }
 }
 
@@ -81,27 +127,44 @@ impl BatchFutureResponse {
     }
 }
 
+impl FutureResponse for BatchFutureResponse {
+    type Output = BatchOutput;
+
+    fn inner_output(&mut self) -> &mut Self::Output {
+        &mut self.output
+    }
+
+    fn headers(&mut self) -> &mut Option<Headers> {
+        &mut self.headers
+    }
+
+    fn response_type() -> &'static str {
+        "batch"
+    }
+}
+
 impl Future for BatchFutureResponse {
     type Item = Response;
-    type Error = hyper::Error;
+    type Error = ServiceError;
 
-    fn poll(&mut self) -> Poll<Response, hyper::Error> {
-        let e = match self.output.poll() {
-            Ok(Async::NotReady) => return Ok(Async::NotReady),
-            Ok(Async::Ready(e)) => Ok(e),
-            Err(e) => Err(e),
-        };
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        self.poll_response()
+    }
+}
 
-        e.map(|resp_body| {
-            Response::new()
-                .with_headers(
-                    self.headers
-                        .take()
-                        .expect("cannot poll BatchFutureResponse twice"),
-                )
-                .with_body(serde_json::to_vec(&RpcResponse::Batch(resp_body)).unwrap())
-        })
-        .map_err(|_| hyper::Error::Incomplete)
-        .map(Async::Ready)
+pub enum PublishFutResponse {
+    Single(SingleFutureResponse),
+    Batch(BatchFutureResponse),
+}
+
+impl Future for PublishFutResponse {
+    type Item = Response;
+    type Error = ServiceError;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        match self {
+            PublishFutResponse::Single(resp) => resp.poll(),
+            PublishFutResponse::Batch(resp) => resp.poll(),
+        }
     }
 }
