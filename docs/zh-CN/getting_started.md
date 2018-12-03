@@ -84,7 +84,6 @@ $ ./env.sh make release
 >
 >   ```shell
 >   $ ./env.sh
->   docker container cita_run_cita_secp256k1_sha3 is already running
 >   error: failed switching to "user": unable to find user user: no matching entries in passwd file
 >   ``` 
 >   因此要保证操作使用的始终是同一个系统用户。
