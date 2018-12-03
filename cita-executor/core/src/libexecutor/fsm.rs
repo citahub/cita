@@ -176,24 +176,34 @@ mod tests {
         let executor = helpers::init_executor(vec![]);
         let open_block = generate_block();
 
-        let executed_block = executor.to_executed_block(open_block.clone());
-        let status_after_init = executor.fsm_initialize(open_block.clone());
-        assert_eq!(
-            format!("{}", StatusOfFSM::Pause(executed_block.clone(), 0)),
-            format!("{}", status_after_init)
-        );
+        {
+            let executed_block = executor.to_executed_block(open_block.clone());
+            let status_after_init = executor.fsm_initialize(open_block.clone());
+            assert_eq!(
+                format!("{}", StatusOfFSM::Pause(executed_block, 0)),
+                format!("{}", status_after_init)
+            );
+        }
 
-        let status_after_pause_2 = executor.fsm_pause(executed_block.clone(), 2);
-        assert_eq!(
-            format!("{}", StatusOfFSM::Execute(executed_block.clone(), 2 + 1)),
-            format!("{}", status_after_pause_2)
-        );
+        {
+            let executed_block = executor.to_executed_block(open_block.clone());
+            let executed_block_clone = executor.to_executed_block(open_block.clone());
+            let status_after_pause_2 = executor.fsm_pause(executed_block, 2);
+            assert_eq!(
+                format!("{}", StatusOfFSM::Execute(executed_block_clone, 2 + 1)),
+                format!("{}", status_after_pause_2)
+            );
+        }
 
-        let status_after_pause_200 = executor.fsm_pause(executed_block.clone(), 200);
-        assert_eq!(
-            format!("{}", StatusOfFSM::Finalize(executed_block.clone())),
-            format!("{}", status_after_pause_200)
-        );
+        {
+            let executed_block = executor.to_executed_block(open_block.clone());
+            let executed_block_clone = executor.to_executed_block(open_block.clone());
+            let status_after_pause_200 = executor.fsm_pause(executed_block, 200);
+            assert_eq!(
+                format!("{}", StatusOfFSM::Finalize(executed_block_clone)),
+                format!("{}", status_after_pause_200)
+            );
+        }
     }
 
     #[test]
@@ -219,7 +229,7 @@ mod tests {
             fsm_req_sender.send(new_open_block);
         });
         ::std::thread::sleep(Duration::new(2, 0));
-        let status_after_pause_2 = executor.fsm_pause(executed_block.clone(), 2);
+        let status_after_pause_2 = executor.fsm_pause(executed_block, 2);
 
         open_block.header.set_timestamp(2);
 
@@ -244,6 +254,7 @@ mod tests {
         );
         let open_block = generate_block();
         let executed_block = executor.to_executed_block(open_block.clone());
+        let executed_block_clone = executor.to_executed_block(open_block.clone());
 
         thread::spawn(move || {
             let new_open_block = generate_block();
@@ -251,10 +262,10 @@ mod tests {
             fsm_req_sender.send(new_open_block);
         });
         ::std::thread::sleep(Duration::new(2, 0));
-        let status_after_pause_2 = executor.fsm_pause(executed_block.clone(), 2);
+        let status_after_pause_2 = executor.fsm_pause(executed_block, 2);
 
         assert_eq!(
-            format!("{}", StatusOfFSM::Pause(executed_block, 2)),
+            format!("{}", StatusOfFSM::Pause(executed_block_clone, 2)),
             format!("{}", status_after_pause_2)
         );
     }
