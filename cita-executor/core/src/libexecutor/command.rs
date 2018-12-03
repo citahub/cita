@@ -405,7 +405,7 @@ impl Commander for Executor {
 
     fn grow(&mut self, closed_block: ClosedBlock) -> ExecutedResult {
         info!(
-            "executor grow according to ClosedBlock(height: {}, hash: {:?}, parent_hash: {:?},\
+            "executor grow according to ClosedBlock(height: {}, hash: {:?}, parent_hash: {:?}, \
              timestamp: {}, state_root: {:?}, transaction_root: {:?}, proposer: {:?})",
             closed_block.number(),
             closed_block.hash().unwrap(),

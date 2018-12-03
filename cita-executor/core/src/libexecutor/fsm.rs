@@ -39,25 +39,28 @@ impl std::fmt::Display for StatusOfFSM {
             ),
             StatusOfFSM::Pause(ref executed_block, index) => write!(
                 f,
-                "StatusOfFSM::Pause(height: {}, parent_hash: {:?}, timestamp: {}, index: {})",
+                "StatusOfFSM::Pause(height: {}, parent_hash: {:?}, state_root: {:?}, timestamp: {}, index: {})",
                 executed_block.number(),
                 executed_block.parent_hash(),
+                executed_block.state.root(),
                 executed_block.timestamp(),
                 index,
             ),
             StatusOfFSM::Execute(ref executed_block, index) => write!(
                 f,
-                "StatusOfFSM::Execute(height: {}, parent_hash: {:?}, timestamp: {}, index: {})",
+                "StatusOfFSM::Execute(height: {}, parent_hash: {:?}, state_root: {:?}, timestamp: {}, index: {})",
                 executed_block.number(),
                 executed_block.parent_hash(),
+                executed_block.state.root(),
                 executed_block.timestamp(),
                 index,
             ),
             StatusOfFSM::Finalize(ref executed_block) => write!(
                 f,
-                "StatusOfFSM::Finalize(height: {}, parent_hash: {:?}, timestamp: {})",
+                "StatusOfFSM::Finalize(height: {}, parent_hash: {:?}, state_root: {:?}, timestamp: {})",
                 executed_block.number(),
                 executed_block.parent_hash(),
+                executed_block.state.root(),
                 executed_block.timestamp(),
             ),
         }
@@ -141,7 +144,10 @@ impl FSM for Executor {
 
 #[cfg(test)]
 mod tests {
-
+    use super::ExecutedBlock;
+    use cita_crypto::{CreateKey, KeyPair};
+    use cita_types::Address;
+    use libexecutor::executor::Executor;
     use libexecutor::fsm::{StatusOfFSM, FSM};
     use std::thread;
     use std::time::Duration;
@@ -161,7 +167,7 @@ mod tests {
         OpenHeader::default()
     }
 
-    fn generate_block() -> OpenBlock {
+    fn generate_empty_block() -> OpenBlock {
         let block_body = generate_block_body();
         let mut block_header = generate_block_header();
         block_header.set_number(1);
@@ -171,10 +177,61 @@ mod tests {
         }
     }
 
+    fn generate_block(executor: &Executor, txs: u32) -> OpenBlock {
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let data = helpers::generate_contract();
+        helpers::create_block(&executor, Address::from(0), &data, (0, txs), &privkey)
+    }
+
+    // transit and commit state root
+    fn transit(executor: &mut Executor, status: StatusOfFSM) -> StatusOfFSM {
+        let new_status = match status {
+            StatusOfFSM::Initialize(open_block) => executor.fsm_initialize(open_block),
+            StatusOfFSM::Pause(executed_block, iter) => executor.fsm_pause(executed_block, iter),
+            StatusOfFSM::Execute(executed_block, iter) => {
+                executor.fsm_execute(executed_block, iter)
+            }
+            StatusOfFSM::Finalize(_executed_block) => unimplemented!(),
+        };
+        match new_status {
+            StatusOfFSM::Initialize(open_block) => StatusOfFSM::Initialize(open_block),
+            StatusOfFSM::Pause(mut executed_block, iter) => {
+                executed_block.state.commit().expect("commit state");
+                StatusOfFSM::Pause(executed_block, iter)
+            }
+            StatusOfFSM::Execute(mut executed_block, iter) => {
+                executed_block.state.commit().expect("commit state");
+                StatusOfFSM::Execute(executed_block, iter)
+            }
+            StatusOfFSM::Finalize(mut executed_block) => {
+                executed_block.state.commit().expect("commit state");
+                StatusOfFSM::Finalize(executed_block)
+            }
+        }
+    }
+
+    fn transit_and_assert(
+        executor: &mut Executor,
+        status_from: StatusOfFSM,
+        expect_to: StatusOfFSM,
+    ) -> (StatusOfFSM, ExecutedBlock) {
+        let status_to = transit(executor, status_from);
+        assert_eq!(format!("{}", expect_to), format!("{}", status_to),);
+
+        let executed_block = match expect_to {
+            StatusOfFSM::Initialize(_open_block) => unimplemented!(),
+            StatusOfFSM::Pause(executed_block, _iter) => executed_block,
+            StatusOfFSM::Execute(executed_block, _iter) => executed_block,
+            StatusOfFSM::Finalize(executed_block) => executed_block,
+        };
+        (status_to, executed_block)
+    }
+
     #[test]
     fn test_fsm_initialize() {
         let executor = helpers::init_executor(vec![]);
-        let open_block = generate_block();
+        let open_block = generate_empty_block();
 
         let executed_block = executor.to_executed_block(open_block.clone());
         let status_after_init = executor.fsm_initialize(open_block.clone());
@@ -197,7 +254,7 @@ mod tests {
     }
 
     #[test]
-    fn test_fsm_pause_recv_diff_block() {
+    fn test_fsm_pause_recv_diff_empty_block() {
         let (fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
         let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
         let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
@@ -209,11 +266,11 @@ mod tests {
             command_req_receiver,
             command_resp_sender,
         );
-        let mut open_block = generate_block();
+        let mut open_block = generate_empty_block();
         let executed_block = executor.to_executed_block(open_block.clone());
 
         thread::spawn(move || {
-            let mut new_open_block = generate_block();
+            let mut new_open_block = generate_empty_block();
             new_open_block.header.set_timestamp(2);
             // new_open_block is different from outside open_block
             fsm_req_sender.send(new_open_block);
@@ -230,7 +287,7 @@ mod tests {
     }
 
     #[test]
-    fn test_fsm_pause_recv_same_block() {
+    fn test_fsm_pause_recv_same_empty_block() {
         let (fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
         let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
         let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
@@ -242,11 +299,11 @@ mod tests {
             command_req_receiver,
             command_resp_sender,
         );
-        let open_block = generate_block();
+        let open_block = generate_empty_block();
         let executed_block = executor.to_executed_block(open_block.clone());
 
         thread::spawn(move || {
-            let new_open_block = generate_block();
+            let new_open_block = generate_empty_block();
             // new_open_block the same as outside open_block
             fsm_req_sender.send(new_open_block);
         });
@@ -257,5 +314,136 @@ mod tests {
             format!("{}", StatusOfFSM::Pause(executed_block, 2)),
             format!("{}", status_after_pause_2)
         );
+    }
+
+    #[test]
+    fn test_fsm_pause_recv_same_block() {
+        let (fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
+        let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
+        let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
+        let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
+        let mut executor = helpers::init_executor2(
+            vec![],
+            fsm_req_receiver.clone(),
+            fsm_resp_sender,
+            command_req_receiver,
+            command_resp_sender,
+        );
+        let open_block = generate_block(&executor, 2);
+
+        // 1. init -> pause(0) -> execute(1) -> pause(1)
+        let status_of_initialize = StatusOfFSM::Initialize(open_block.clone());
+        let executed_block = executor.to_executed_block(open_block.clone());
+        let (status_of_pause, executed_block) = transit_and_assert(
+            &mut executor,
+            status_of_initialize,
+            StatusOfFSM::Pause(executed_block, 0),
+        );
+        let (status_of_execute_1th, mut executed_block) = transit_and_assert(
+            &mut executor,
+            status_of_pause,
+            StatusOfFSM::Execute(executed_block, 1),
+        );
+
+        // 2. execute 1th transaction
+        let transaction = executed_block.body().transactions[0].clone();
+        executed_block.apply_transaction(
+            &*executor.engine,
+            &transaction,
+            &executor.sys_config.block_sys_config.clone(),
+        );
+        executed_block
+            .state
+            .commit()
+            .expect("commit state to re-calculate state root");
+        let (status_of_pause_1th, mut executed_block) = transit_and_assert(
+            &mut executor,
+            status_of_execute_1th,
+            StatusOfFSM::Pause(executed_block, 1),
+        );
+
+        // 3. send an equivalent OpenBlock into fsm_req channel
+        let new_open_block = open_block.clone();
+        fsm_req_sender.send(new_open_block);
+
+        // 4. continue until finalize
+        let transaction = executed_block.body().transactions[1].clone();
+        executed_block.apply_transaction(
+            &*executor.engine,
+            &transaction,
+            &executor.sys_config.block_sys_config.clone(),
+        );
+        executed_block
+            .state
+            .commit()
+            .expect("commit state to re-calculate state root");
+        let mut status = status_of_pause_1th;
+        loop {
+            status = match status {
+                StatusOfFSM::Finalize(_) => {
+                    assert_eq!(
+                        format!("{}", status),
+                        format!("{}", StatusOfFSM::Finalize(executed_block)),
+                    );
+                    break;
+                }
+                _ => transit(&mut executor, status),
+            };
+        }
+    }
+
+    #[test]
+    fn test_fsm_pause_recv_diff_block() {
+        let (fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
+        let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
+        let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
+        let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
+        let mut executor = helpers::init_executor2(
+            vec![],
+            fsm_req_receiver.clone(),
+            fsm_resp_sender,
+            command_req_receiver,
+            command_resp_sender,
+        );
+        let open_block = generate_block(&executor, 2);
+
+        // 1. init -> pause(0) -> execute(1) -> pause(1)
+        let status_of_initialize = StatusOfFSM::Initialize(open_block.clone());
+        let status_of_pause = transit(&mut executor, status_of_initialize);
+        let status_of_execute = transit(&mut executor, status_of_pause);
+        let status_of_pause = transit(&mut executor, status_of_execute);
+
+        // 3. send an un-equivalent OpenBlock into fsm_req channel
+        let new_open_block = generate_block(&executor, 10);
+        fsm_req_sender.send(new_open_block.clone());
+
+        // 4. continue until finalize
+        let mut executed_block = executor.to_executed_block(new_open_block);
+        let mut transactions = { executed_block.body.transactions.clone() };
+        for transaction in transactions.iter_mut() {
+            // let mut t = transaction.clone();
+            executed_block.apply_transaction(
+                &*executor.engine,
+                &transaction,
+                &executor.sys_config.block_sys_config.clone(),
+            );
+        }
+        executed_block
+            .state
+            .commit()
+            .expect("commit state to re-calculate state root");
+        let mut status = status_of_pause;
+        loop {
+            status = match status {
+                StatusOfFSM::Finalize(_) => {
+                    assert_eq!(
+                        format!("{}", status),
+                        format!("{}", StatusOfFSM::Finalize(executed_block)),
+                    );
+                    break;
+                }
+                _ => transit(&mut executor, status),
+            };
+        }
     }
 }
