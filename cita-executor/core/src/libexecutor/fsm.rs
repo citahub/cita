@@ -107,10 +107,7 @@ impl FSM for Executor {
             }
             Some(open_block) => {
                 if executed_block.header().is_equivalent(&open_block.header()) {
-                    let new_executed_block = self.to_executed_block(open_block);
-                    let status = StatusOfFSM::Pause(new_executed_block, index);
-                    trace!("executor receive equivalent block: {}", status);
-                    status
+                    StatusOfFSM::Pause(executed_block, index)
                 } else {
                     StatusOfFSM::Initialize(open_block)
                 }
