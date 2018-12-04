@@ -41,7 +41,7 @@ CITA（ Cryptape Inter-enterprise Trust Automation ）是一个面向企业级�
 
   CITA上支持使用 Solidity，Go 语言，Rust 开发智能合约，同时也支持以太坊的所有开发工具（Truffle，Zeppeling，Remix 等）。
 
-- **链间互动**
+- **跨链**
 
   在区块链世界里，各种各样的链在不断的涌现出来。这些链如何互相配合形成区块链网络？
   CITA 目前提供了一个简单的跨链协议来支持主链与侧链之间的通信。我们也正对跨链通信做更多的探索，旨在扩大在各种链上运行的应用程序的价值。
@@ -67,8 +67,8 @@ CITA 支持 JSON-RPC 和 WebSocket (experimental) API/v1。
 对于 CITA 的 API/v1，你可以使用任意的 HTTP 代理，或者下面的 SDK：
 
 * [Java](https://github.com/cryptape/nervosj)
-* [Rust](https://github.com/cryptape/rust-web3)
 * [JavaScript](https://github.com/cryptape/nervos.js)
+* [Swift](https://github.com/cryptape/appchain-swift)
 
 ## 社区贡献
 
