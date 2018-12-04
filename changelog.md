@@ -36,6 +36,8 @@ All notable changes to this project will be documented in this file. And this pr
 
 ### Doc
 
+- [Doc] Complete the doc of system contract interface. [@kaikai]
+
 [Unreleased]: https://github.com/cryptape/cita/compare/v0.20...HEAD
 
 [@driftluo]: https://github.com/driftluo

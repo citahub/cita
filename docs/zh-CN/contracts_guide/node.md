@@ -16,55 +16,55 @@
 
 确认共识节点。
 
-* Parameters
+* 参数
 
-    `address node` - The new node address
+    `address` - The new node address
 
-* Returns
+* 返回值
 
-    `bool` - True, if successfully, otherwise false.
+    `bool` - True, if successfully, otherwise false
 
-* Example
+* 示例
 
 ```shell
 $ scm NodeManager approveNode \
         --address 0x59a316df602568957f47973332f1f85ae1e2e75e \
-        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### deleteNode
 
 删除共识节点。
 
-* Parameters
+* 参数
 
-    `address node` - The node address
+    `address` - The node address
 
-* Returns
+* 返回值
 
-    `bool` - True, if successfully, otherwise false.
+    `bool` - True, if successfully, otherwise false
 
-* Example
+* 示例
 
 ```shell
 $ scm NodeManager deleteNode \
         --address 0x59a316df602568957f47973332f1f85ae1e2e75e \
-        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### listNode
 
 共识节点列表。
 
-* Parameters
+* 参数
 
-    `None`
+    空
 
-* Returns
+* 返回值
 
     `address[]` - The consensus nodes
 
-* Example
+* 示例
 
 ```shell
 $ scm NodeManager listNode
@@ -74,36 +74,38 @@ $ scm NodeManager listNode
 
 设置共识节点 stake 。
 
-* Parameters
+* 参数
 
-    `address node , uint64 stake` - The node address and stake to be setted.
+    `address` - The node address to be setted.
 
-* Returns
+    `uint64` - The stake to be setted.
+
+* 返回值
 
     `bool` - True, if successfully, otherwise false.
 
-* Example
+* 示例
 
 ```shell
 $ scm NodeManager setStake \
         --address 0xae0f69a2d95146d104365e0502a0d521717ced7f \
         --stake 0000000000000000000000000000000000000000000000000000000000000002 \
-        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### getStatus
 
 获取共识节点状态。
 
-* Parameters
+* 参数
 
     `address` - The node address
 
-* Returns
+* 返回值
 
     `uint8` - 0: closed, 1: started
 
-* Example
+* 示例
 
 ```shell
 $ scm NodeManager getStatus --address 0xae0f69a2d95146d104365e0502a0d521717ced7f
@@ -113,15 +115,15 @@ $ scm NodeManager getStatus --address 0xae0f69a2d95146d104365e0502a0d521717ced7f
 
 共识节点 stake 列表。
 
-* Parameters
+* 参数
 
-    `height(Optional)`
+    空
 
-* Returns
+* 返回值
 
-    `uint64[] stakes` - The node stakes list
+    `uint64[]` - The node stakes list
 
-* Example
+* 示例
 
 ```shell
 $ scm NodeManager listStake
@@ -131,15 +133,15 @@ $ scm NodeManager listStake
 
 共识节点出块权重千分比。
 
-* Parameters
+* 参数
 
     `address` - The node address
 
-* Returns
+* 返回值
 
-    `uint64` - The node stake permillage.
+    `uint64` - The node stake permillage
 
-* Example
+* 示例
 
 ```shell
 $ scm NodeManager stakePermillage --address 0xae0f69a2d95146d104365e0502a0d521717ced7f

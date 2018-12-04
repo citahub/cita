@@ -10,15 +10,15 @@
 
 开启紧急制动模式。
 
-* Parameters
+* 参数
 
-    `bool state` - state
+    `bool` - 制动模式状态
 
-* Returns
+* 返回值
 
-    `None`
+    空
 
-* Example
+* 示例
 
 ```shell
 $ cita-cli scm EmergencyBrake setState \

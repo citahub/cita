@@ -18,15 +18,15 @@
 
 设置链名称。
 
-* Parameters
+* 参数
 
-    `String chainName` - The Chain name
+    `String` - 待设置的链的名称
 
-* Returns
+* 返回值
 
-    `None`
+    空
 
-* Example
+* 示例
 
 ```shell
 $ scm SysConfig setChainName \
@@ -36,17 +36,17 @@ $ scm SysConfig setChainName \
 
 ### setOperator
 
-设置运营方。
+设置运营方名称。
 
-* Parameters
+* 参数
 
-    `String operator` - The Chain operator
+    `String` - 链运营方名称
 
-* Returns
+* 返回值
 
-    `None`
+    空
 
-* Example
+* 实例
 
 ```shell
  $ scm SysConfig setOperator \
@@ -56,17 +56,17 @@ $ scm SysConfig setChainName \
 
 ### setWebsite
 
-设置运营方地址。
+设置运营方网站。
 
-* Parameters
+* 参数
 
-    `String website` - The Operator website
+    `String` - 运营方网站
 
-* Returns
+* 返回值
 
-    `None`
+    空
 
-* Example
+* 示例
 
 ```shell
 $ scm SysConfig setWebsite \
@@ -76,17 +76,17 @@ $ scm SysConfig setWebsite \
 
 ### getPermissionCheck
 
-查询调用合约权限是否开启， 默认关闭。
+查询调用合约权限检查是否开启， 默认关闭。
 
-* Parameters
+* 参数
 
-    `height(Optional)`
+    空
 
-* Returns
+* 返回值
 
-    `bool` - True, if permission check, otherwise false.
+    `bool` - 如果开启返回真，反之则反
 
-* Example
+* 示例
 
 ```shell
 $ scm SysConfig getPermissionCheck
@@ -94,17 +94,17 @@ $ scm SysConfig getPermissionCheck
 
 ### getSendTxPermissionCheck
 
-查询发送交易权限是否开启, 默认关闭。
+查询发送交易权限检查是否开启, 默认关闭。
 
-* Parameters
+* 参数
 
-    `height(Optional)`
+    空
 
-* Returns
+* 返回值
 
-    `bool` - True, if permission check, otherwise false.
+    `bool` - 如果开启返回真，反之则反
 
-* Example
+* 示例
 
 ```shell
 $ scm SysConfig getSendTxPermissionCheck
@@ -112,17 +112,17 @@ $ scm SysConfig getSendTxPermissionCheck
 
 ### getCreateContractPermissionCheck
 
-查询创建合约权限是否开启, 默认关闭。
+查询创建合约权限检查是否开启, 默认关闭。
 
-* Parameters
+* 参数
 
-    `height(Optional)`
+    空
 
-* Returns
+* 返回值
 
-    `bool` - True, if permission check, otherwise false.
+    `bool` - 如果开启返回真，反之则反
 
-* Example
+* 示例
 
 ```shell
 $ scm SysConfig getCreateContractPermissionCheck
@@ -130,17 +130,17 @@ $ scm SysConfig getCreateContractPermissionCheck
 
 ### getQuotaCheck
 
-查询 quota 检查是否开启， 默认关闭。
+查询配额检查是否开启， 默认关闭。
 
-* Parameters
+* 参数
 
-    `height(Optional)`
+    空
 
-* Returns
+* 返回值
 
-    `bool` - True, if permission check, otherwise false.
+    `bool` - 如果开启返回真，反之则反
 
-* Example
+* 示例
 
 ```shell
 $ scm SysConfig getQuotaCheck
@@ -150,15 +150,15 @@ $ scm SysConfig getQuotaCheck
 
 查询出块激励返回开关是否开启， 默认关闭。
 
-* Parameters
+* 参数
 
-    `height(Optional)`
+    空
 
-* Returns
+* 返回值
 
-    `bool` - True, if permission check, otherwise false.
+    `bool` - 如果开启返回真，反之则反
 
-* Example
+* 示例
 
 ```shell
 $ scm SysConfig getFeeBackPlatformCheck
@@ -168,15 +168,15 @@ $ scm SysConfig getFeeBackPlatformCheck
 
 查询链的持有者地址。
 
-* Parameters
+* 参数
 
-    `height(Optional)`
+    空
 
-* Returns
+* 返回值
 
-    `address` - The chain owner's address
+    `address` - 链运营方地址
 
-* Example
+* 示例
 
 ```shell
 $ scm SysConfig getChainOwner

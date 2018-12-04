@@ -4,17 +4,11 @@
 
 * [newRole](#newRole)
 * [updateRoleName](#updateRoleName)
-* [queryName](#queryName)
 * [addPermissions](#addPermissions)
 * [deletePermissions](#deletePermissions)
-* [queryPermissions](#queryPermissions)
-* [lengthOfPermissions](#lengthOfPermissions)
-* [inPermissions](#inPermissions)
 * [setRole](#setRole)
 * [cancelRole](#cancelRole)
 * [clearRole](#clearRole)
-* [queryRoles](#queryRoles)
-* [queryAccounts](#queryAccounts)
 * [deleteRole](#deleteRole)
 
 ***
@@ -23,26 +17,27 @@
 
 新建角色。
 
-* Parameters
+* 参数
 
-    `bytes32 name` - The role name
+    `bytes32` - The role name
 
-    `address[] permissions` - The permissions
+    `address[]` - The permissions
 
-* Returns
+* 返回值
 
-    `address role` - The role address
+    `address` - The role address
 
-* Example
+* 示例
 
 ```shell
 $ scm RoleManagement newRole \
         --name 73747564656e7400000000000000000000000000000000000000000000000000 \
         --permissions '[ca645d2b0d2e4c451a2dd546dbd7ab8c29c3dcee, 1acec7eaba22b46ba5d2a7c0bfc94a7741dfd32b]' \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 回执输出：
+
 ```json
 {
   "id": 1,
@@ -100,319 +95,153 @@ $ scm RoleManagement newRole \
 
 更新角色名称。
 
-* Parameters
+* 参数
 
-    `bytes32 name` - The role name
+    `bytes32` - The role name
 
-    `address role` - The role address
+    `address` - The role address
 
-* Returns
+* 返回值
 
     `bool`
 
-* Example
+* 示例
 
 ```shell
 $ scm RoleManagement updateRoleName \
         --name 0000000000000000000000000000000000000000000000000000000060fe47b1 \
         --address 0x558c280233cee856fb53931eb18747a40e688a43 \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
-```
-
-### queryName
-
-查询角色名称。
-
-* Parameters
-
-    `address role` - The role address
-
-* Returns
-
-    `bytes32 roleName`
-
-* Example
-
-```shell
-$ scm Role queryName --address 0x558c280233cee856fb53931eb18747a40e688a43
-```
-
-回执输出：
-
-```json
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "result": "0x0000000000000000000000000000000000000000000000000000000060fe47b1"
-}
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### addPermissions
 
 为角色添加权限。
 
-* Parameters
+* 参数
 
-    `address role` - The role address
+    `address` - The role address
 
-    `address[] permissions` - The role permissions
+    `address[]` - The role permissions
 
-* Returns
+* 返回值
 
     `bool`
 
-* Example
+* 示例
 
 ```shell
 $ scm RoleManagement addPermissions \
         --address 0x558c280233cee856fb53931eb18747a40e688a43 \
         --permissions '[558c280233cee856fb53931eb18747a40e688a43]' \ 
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
-```
-
-### queryPermissions
-
-查询角色所有权限。
-
-* Parameters
-
-    `address role` - The role address
-
-* Returns
-
-    `address[] permissions`
-
-* Example
-
-```shell
-$ scm Role queryPermissions --address 0x558c280233cee856fb53931eb18747a40e688a43
-```
-
-回执输出：
-```json
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "result": "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000ca645d2b0d2e4c451a2dd546dbd7ab8c29c3dcee0000000000000000000000001acec7eaba22b46ba5d2a7c0bfc94a7741dfd32b000000000000000000000000558c280233cee856fb53931eb18747a40e688a43"
-}
-```
-
-### lengthOfPermissions
-
-查询角色拥有权限数。
-
-* Parameters
-
-    `address role` - The role address
-
-* Returns
-
-    `uint numbers` - The numbers of permissions
-
-* Example
-
-```shell
-$ scm Role lengthOfPermissions --address 0x558c280233cee856fb53931eb18747a40e688a43
-```
-
-回执输出：
-```json
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "result": "0x0000000000000000000000000000000000000000000000000000000000000002"
-}
-
-```
-
-### inPermissions
-
-判断权限是否存在
-
-* Parameters
-
-    `address permission` - The permission address
-
-* Returns
-
-    `bool`
-
-* Example
-
-```shell
-$  scm Role inPermissions \
-        --address 0x558c280233cee856fb53931eb18747a40e688a43 \
-        --permission 0x1acec7eaba22b46ba5d2a7c0bfc94a7741dfd32b \
-```
-
-回执输出：
-```json
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
-}
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### deletePermissions
 
 删除权限。
 
-* Parameters
+* 参数
 
-    `address role` - The role address
+    `address` - The role address
 
-    `address[] permissions` - The permissions
+    `address[]` - The permissions
 
-* Returns
+* 返回值
 
     `bool`
 
-* Example
+* 示例
 
 ```shell
 $ scm RoleManagement deletePermissions \ 
         --address 0x558c280233cee856fb53931eb18747a40e688a43 \
         --permissions '[558c280233cee856fb53931eb18747a40e688a43]' \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e66 \
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e66
 ```
 
 ### setRole
 
 为某一个账户设置角色。
 
-* Parameters
+* 参数
 
-    `address account` - The account address
+    `address` - The account address
 
-    `address role` - The role address
+    `address` - The role address
 
-* Returns
+* 返回值
 
     `bool`
 
-* Example
+* 示例
 
 ```shell
 $ scm RoleManagement setRole \
         --account 0x101e99e1a654a99308175042aff4833a6528be74 \
         --address 0x558c280233cee856fb53931eb18747a40e688a43 \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
-```
-
-### queryRoles
-
-查询某一账户的所有角色。
-
-* Parameters
-
-    `address account` - The account address
-
-* Returns
-
-    `address[] roles`
-
-* Example
-
-```shell
-$ scm RoleManagement queryRoles --account 0x101e99e1a654a99308175042aff4833a6528be74
-```
-
-回执输出：
-```json
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "result": "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000558c280233cee856fb53931eb18747a40e688a430000000000000000000000001be912bdfe6ae5d28f7e9d2f1a5329788e5a4fe6"
-}
-```
-
-### queryAccounts
-
-查询某一角色下的所有账户。
-
-* Parameters
-
-    `address role` - The role address
-
-* Returns
-
-    `address[] accounts` - The accounts address
-
-* Example
-
-```shell
-$ scm RoleManagement queryAccounts --address 0x558c280233cee856fb53931eb18747a40e688a43
-```
-
-回执输出：
-```json
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "result": "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000101e99e1a654a99308175042aff4833a6528be74"
-}
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### cancelRole
 
 清除某个账户的指定权限
 
-* Parameters
+* 参数
 
-    `address account` - The account address
+    `address` - The account address
 
-    `address role` - The role address
+    `address` - The role address
 
-* Returns
+* 返回值
 
     `bool`
 
-* Example
+* 示例
 
 ```shell
 $ scm RoleManagement cancelRole \
         --account 0x101e99e1a654a99308175042aff4833a6528be74 \
         --address 0x558c280233cee856fb53931eb18747a40e688a43 \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e \
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e
 ```
 
 ### clearRole
 
 清除某个账户的所有权限。
 
-* Parameters
+* 参数
 
-    `address account` - The account address
+    `address` - The account address
 
-* Returns
+* 返回值
 
     `bool`
 
-* Example
+* 示例
 
 ```shell
 $ scm RoleManagement clearRole \
         --account 0x101e99e1a654a99308175042aff4833a6528be74 \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```
 
 ### deleteRole
 
 删除角色。
 
-* Parameters
+* 参数
 
-    `address role` - The role address
+    `address` - The role address
 
-* Returns
+* 返回值
 
     `bool`
 
-* Example
+* 示例
 
 ```shell
 $ scm RoleManagement deleteRole \
         --address 0x558c280233cee856fb53931eb18747a40e688a43 \
-        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
+        --private-key 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6
 ```

@@ -18,11 +18,11 @@
 
 * Parameters
 
-    `address origin` - The sender's origin group
+    `address` - The sender's origin group
 
-    `bytes32 name` -  The name of group
+    `bytes32` -  The name of group
 
-    `address[] accounts` - The accounts of group
+    `address[]` - The accounts of group
 
 * Returns
 
@@ -112,9 +112,9 @@ $ scm GroupManagement newGroup \
 
 * Parameters
 
-    `address origin` - The sender's orgin group
+    `address` - The sender's orgin group
 
-    `address target` -  The target group to be deleted
+    `address` -  The target group to be deleted
 
 * Returns
 
@@ -135,11 +135,11 @@ $ scm GroupManagement deleteGroup \
 
 * Parameters
 
-    `address origin` - The sender's orgin group
+    `address` - The sender's orgin group
 
-    `address target` -  The target group to be deleted
+    `address` -  The target group to be deleted
 
-    `bytes32 name` - The new name to be updated
+    `bytes32` - The new name to be updated
 
 * Returns
 
@@ -160,11 +160,11 @@ $ scm GroupManagement updateGroupName \
 
 * Parameters
 
-    `address origin` - The sender's orgin group
+    `address` - The sender's orgin group
 
-    `address target` -  The target group to be deleted
+    `address` -  The target group to be deleted
 
-    `address[] accounts` - The accounts to be added
+    `address[]` - The accounts to be added
 
 * Returns
 
@@ -185,11 +185,11 @@ $ scm GroupManagement updateGroupName \
 
 * Parameters
 
-    `address origin` - The sender's orgin group
+    `address` - The sender's orgin group
 
-    `address target` -  The target group to be deleted
+    `address` -  The target group to be deleted
 
-    `address[] accounts` - The accounts to be added
+    `address[]` - The accounts to be added
 
 * Returns
 
@@ -209,9 +209,9 @@ $ scm GroupManagement deleteAccounts \
 
 * Parameters
 
-    `address origin` - The sender's orgin group
+    `address` - The sender's orgin group
 
-    `address target` -  The target group to be deleted
+    `address` -  The target group to be deleted
 
 * Returns
 

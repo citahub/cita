@@ -12,7 +12,7 @@
 
 * Parameters
 
-    `address contAddr` - The address to be setted
+    `address` - The address to be setted
 
 * Returns
 
@@ -38,4 +38,4 @@
 
 * Returns
 
-    `address contAddr` - The address of the registerd contract
+    `address` - The address of the registerd contract

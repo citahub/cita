@@ -18,7 +18,7 @@
 
 * Parameters
 
-    `uint value` - The value to be setted
+    `uint` - The value to be setted
 
 * Returns
 
@@ -38,11 +38,11 @@ $ scm QuotaManager setBQL \
 
 * Parameters
 
-    `None`
+    None
 
 * Returns
 
-    `uint value` - The value
+    `uint` - The value
 
 * Example
 
@@ -58,7 +58,7 @@ $ scm QuotaManager setDefaultAQL \
 
 * Parameters
 
-    `uint value` - The value to be setted
+    `uint` - The value to be setted
 
 * Returns
 
@@ -67,7 +67,9 @@ $ scm QuotaManager setDefaultAQL \
 * Example
 
 ```shell
-$ scm QuotaManager getAQL --address 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523
+$ scm QuotaManager setAQL \
+    --quota-limit 0x0000000000000000000000000000000000000000000000000000000020000000 \
+    --admin-private 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
 ```
 
 ### getAccounts
@@ -76,11 +78,11 @@ $ scm QuotaManager getAQL --address 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523
 
 * Parameters
 
-    `None`
+    None
 
 * Returns
 
-    `address[] accounts` - The accounts that have AQL
+    `address[]` - The accounts that have AQL
 
 * Example
 
@@ -94,11 +96,11 @@ $ scm QuotaManager getAccounts
 
 * Parameters
 
-    `None`
+    None
 
 * Returns
 
-    `uint[] value` - The accounts' quotas
+    `uint[]` - The accounts' quotas
 
 * Example
 
@@ -112,11 +114,11 @@ $ scm QuotaManager getQuotas
 
 * Parameters
 
-    `None`
+    None
 
 * Returns
 
-    `uint value` - The value
+    `uint` - The value
 
 * Example
 
@@ -139,11 +141,11 @@ $ scm QuotaManager getBQL
 
 * Parameters
 
-    `None`
+    None
 
 * Returns
 
-    `uint value` - The value
+    `uint` - The value
 
 * Example
 
@@ -165,7 +167,7 @@ $ scm QuotaManager getDefaultAQL
 
 * Parameters
 
-    `address account` - The account address
+    `address` - The account address
 
 * Returns
 
@@ -195,4 +197,4 @@ $ scm QuotaManager getAQL --address 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523
 
 * Returns
 
-    `uint value` - The autoExec quota limit value
+    `uint` - The autoExec quota limit value
