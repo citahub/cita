@@ -26,20 +26,24 @@ All notable changes to this project will be documented in this file. And this pr
 
 - [Optimazation] Change default quotaPrice to 1000000 by [@WPF]
 
+### Scripts
+
+- [Configuration] Store their own address for each node. [@yangby]
+
 ### Test
 
 - [Optimazation] Split large ci jobs by [@u2]
 
 ### Doc
 
-[Unreleased]:https://github.com/cryptape/cita/compare/v0.20...HEAD
+[Unreleased]: https://github.com/cryptape/cita/compare/v0.20...HEAD
 
-[@driftluo]:https://github.com/driftluo
-[@u2]:https://github.com/u2
-[@Buyu Yang]:https://github.com/yangby-cryptape
-[@kaikai]:https://github.com/kaikai1024
-[@WPF]:https://github.com/ouwenkg
-[@zhiwei]:https://github.com/rink1969
-[@zhouyun-zoe]:https://github.com/zhouyun-zoe
-[@lhf]:https://github.com/EighteenZi
-[@keroro520]:https://github.com/keroro520
+[@driftluo]: https://github.com/driftluo
+[@u2]: https://github.com/u2
+[@yangby]: https://github.com/yangby-cryptape
+[@kaikai]: https://github.com/kaikai1024
+[@WPF]: https://github.com/ouwenkg
+[@zhiwei]: https://github.com/rink1969
+[@zhouyun-zoe]: https://github.com/zhouyun-zoe
+[@lhf]: https://github.com/EighteenZi
+[@keroro520]: https://github.com/keroro520

@@ -138,7 +138,7 @@ We can find an example configuration file `init_data.yml` in the `test-chain/tem
 * This value can be viewed in genesis.son file after the initialization.
 
 ### `--resource_dir` specify the resource directory
-* In addition to the arrays in the Genesis block, the chain sometimes needs to carry some additional data (such as zero-knowledge proof). But because the data is too large to fit into the Genesis block, you can specify a separate resource directory by passing parameters here. 
+* In addition to the arrays in the Genesis block, the chain sometimes needs to carry some additional data (such as zero-knowledge proof). But because the data is too large to fit into the Genesis block, you can specify a separate resource directory by passing parameters here.
 * After specifying this parameter, one more resource directory will be generated. The files in the user-specified directory will be copied in. Then, the configuration tool will calculate the hash value of all files in the directory as the prevhash field in `genesis.json`. The prevhash default is all 0.
 
 ### `--grpc_port`、`jsonrpc_port`、`ws_port` specify the starting port number
@@ -149,7 +149,7 @@ We can find an example configuration file `init_data.yml` in the `test-chain/tem
   * Default `jsonrpc` port: 1337 to 1337 + N
   * Default `websocket` port: 4337 to 4337+N
   * Default `rabbitmq` port: 4369(epmd)/25672(Erlang distribution)/5671,5672(AMQP)/15672(management plugin)
-  
+
 ###  `--enable_tls` whether to enable communication encryption
 * Specifies whether the data transferred between nodes is encrypted using TLS (Transport Layer Security). Without this option, the default is unencrypted transmission.
 * Adding this option when creating a chain will add `enable = true` to the network.toml and `common_name = ${chain_name}.cita` in each peer. Otherwise the configuration items are not generated in `network.toml`.
@@ -176,16 +176,18 @@ The above command generates one chain with four nodes. The port defaults to 4000
 The directory structure for creating four consensus nodes by `create` is as follows:
 
 ```bash
-$ ls test—chain/
-  0 1 2 3 template
+$ ls test-chain/
+0 1 2 3 template
 $ ls 0
-  Auth.toml executor.toml jsonrpc.toml chain.toml forever.toml logs
-  Consensus.toml network.toml genesis.json privkey data
+address     consensus.toml  forever.toml       logs
+auth.toml   data            genesis.json       network.toml
+chain.toml  executor.toml   jsonrpc.toml       privkey
 ```
 
 According to the given parameters, 4 nodes are generated. `test-chain/*` contains the configuration file of the nodes, as follows:
 
 * `privkey` : stores private key
+* `address` : stores address
 * `*.toml` : microservice configuration file, please refer to the microservice description for details.
 * `genesis.json` : genesis block file, in which, `timestamp` is in seconds; `prevhash` refers to the previous block hash, here is the default value; and `alloc` refers to the contract content deployed to the Genesis block;
 * The `test-chain/template` ：template files, including the consensus node address in `test-chain/template/authorities.list`, and the system contract generation parameter in `test-chain/template/init_data.yml`, node Port address in `test-chain/template/nodes.list` and other information

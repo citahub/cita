@@ -145,7 +145,7 @@ usage: create_cita_config.py create [-h]
   * 默认的 `jsonrpc` 端口：1337 到 1337 + N
   * 默认的 `websocket` 端口：4337 到 4337+N
   * 默认的 `rabbitmq` 端口：4369(epmd)/25672(Erlang distribution)/5671，5672(AMQP)/15672(management plugin)
-  
+
 ###  `--enable_tls` 是否开通节点间通讯加密
 * 指定节点间数据是否使用 TLS (Transport Layer Security) 加密传输，不加此选项默认为不加密传输。
 * 创建链时加上此选项，会在 `test-chain/*/network.toml` 配置文件中增加 `enable = true` 和每个 peer 中 `common_name = ${chain_name}.cita` 的配置项。
@@ -172,16 +172,18 @@ $ ./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d
 采用 `create` 默认创建 4 个共识节点的目录结构如下:
 
 ```bash
-$ ls test—chain/
-  0  1  2  3  template
+$ ls test-chain/
+0 1 2 3 template
 $ ls 0
-  auth.toml executor.toml jsonrpc.toml chain.toml forever.toml logs
-  consensus.toml network.toml genesis.json privkey data
+address     consensus.toml  forever.toml       logs
+auth.toml   data            genesis.json       network.toml
+chain.toml  executor.toml   jsonrpc.toml       privkey
 ```
 
 相对应给出的参数，生成 4 个节点，`test-chain/*` 里面包含节点的配置文件，具体如下：
 
 * `privkey` : 存放私钥
+* `address` : 存放地址
 * `*.toml` :  各个微服务配置文件，详细说明见微服务说明
 * `genesis.json` ： 生成 genesis 块文件， 其中 timestamp 为时间戳，秒为单位；prevhash 指前一个块哈希，这里是默认值；而 alloc 指部署到创世块的合约内容；
 * `test-chain/template` 目录下是模板文件，包括这个链的共识节点地址 `test-chain/template/authorities.list`，系统参数 `test-chain/template/init_data.yml`, 节点端口地址 `test-chain/template/nodes.list` 等信息
