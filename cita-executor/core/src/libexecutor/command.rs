@@ -277,11 +277,14 @@ impl Commander for Executor {
         // that's just a copy of the state.
         let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
 
-        // Never check permission and quota
         let options = TransactOptions {
             tracing: analytics.transaction_tracing,
             vm_tracing: analytics.vm_tracing,
         };
+
+        // Never check permission and quota
+        let mut conf = self.sys_config.block_sys_config.clone();
+        conf.exempt_checking();
 
         Executive::new(
             &mut state,
@@ -292,7 +295,7 @@ impl Commander for Executor {
             false,
             EconomicalModel::Quota,
         )
-        .transact(t, options, &self.sys_config.block_sys_config)
+        .transact(t, options, &conf)
         .map_err(Into::into)
     }
 

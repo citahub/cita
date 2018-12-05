@@ -147,7 +147,7 @@ impl GlobalSysConfig {
 
         let price_management = PriceManagement::new(executor);
         conf.block_sys_config.quota_price = price_management
-            .quota_price(BlockId::Pending)
+            .quota_price(block_id)
             .unwrap_or_else(PriceManagement::default_quota_price);
 
         conf
@@ -191,5 +191,11 @@ impl Default for BlockSysConfig {
             check_options: CheckOptions::default(),
             economical_model: EconomicalModel::Quota,
         }
+    }
+}
+
+impl BlockSysConfig {
+    pub fn exempt_checking(&mut self) {
+        self.check_options = CheckOptions::default();
     }
 }

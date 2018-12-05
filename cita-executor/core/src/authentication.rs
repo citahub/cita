@@ -33,6 +33,11 @@ pub fn check_permission(
     options: CheckOptions,
 ) -> Result<(), ExecutionError> {
     let sender = *t.sender();
+    // It's eth_call when the account is zero.
+    // No need to check the options in case that the option is tree.
+    if sender == Address::zero() {
+        return Ok(());
+    }
 
     if options.send_tx_permission {
         check_send_tx(group_accounts, account_permissions, &sender)?;
@@ -109,7 +114,7 @@ fn check_send_tx(
 
     trace!("has send tx permission: {:?}", has_permission);
 
-    if *account != Address::zero() && !has_permission {
+    if !has_permission {
         return Err(ExecutionError::NoTransactionPermission);
     }
 
@@ -134,7 +139,7 @@ fn check_create_contract(
 
     trace!("has create contract permission: {:?}", has_permission);
 
-    if *account != Address::zero() && !has_permission {
+    if !has_permission {
         return Err(ExecutionError::NoContractPermission);
     }
 
