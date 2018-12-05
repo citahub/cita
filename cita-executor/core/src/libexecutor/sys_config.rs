@@ -147,7 +147,7 @@ impl GlobalSysConfig {
 
         let price_management = PriceManagement::new(executor);
         conf.block_sys_config.quota_price = price_management
-            .quota_price(BlockId::Pending)
+            .quota_price(block_id)
             .unwrap_or_else(PriceManagement::default_quota_price);
 
         conf
