@@ -193,3 +193,9 @@ impl Default for BlockSysConfig {
         }
     }
 }
+
+impl BlockSysConfig {
+    pub fn exempt_checking(&mut self) {
+        self.check_options = CheckOptions::default();
+    }
+}
