@@ -44,7 +44,7 @@ Explain it one by one:
 * If you don't pass the `chain_name` parameter, the default chain name would be `test-chain`.
 
 ### `--nodes` specify the IP and the port of each node
-Each node needs to provide IP and port, so to connect to others. When passing the parameter, IP and port are separated by a colon, and different nodes are separated by commas. Finally, a corresponding number of consensus nodes will be generated according to how many network addresses are passed in this parameter. The node numbers will start from 0 and then increment according to the order of the network addresses in the parameters.
+Each node needs to provide IP and port, so to connect to others. When passing the parameter, IP and port are separated by a colon, and different nodes are separated by commas. Finally, a corresponding number of consensus nodes will be generated according to how many network addresses are passed in this parameter (the maximum limit is 256). The node numbers will start from 0 and then increment according to the order of the network addresses in the parameters.
 
 ### `--super_admin` specify the address of the super administrator
 This account has the highest authority to manage the running status of the entire chain. Users ** must ** set up the super administrator by self.

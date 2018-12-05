@@ -496,6 +496,9 @@ def parse_arguments():
 
     # Check arguments
     if args.subcmd == SUBCMD_CREATE:
+        if len(args.nodes) > 256:
+            logging.critical('The number of nodes exceeds the maximum limit(256).')
+            sys.exit(1)
         if not args.super_admin:
             logging.critical('--super_admin is empty, it\'s required'
                              ' to continue.'
@@ -508,6 +511,9 @@ def parse_arguments():
             authorities, privkeys = generate_keypairs(len(args.nodes))
             args.nodes.add_privkeys(privkeys)
             setattr(args, 'authorities', authorities)
+        elif len(args.nodes) != len(args.authorities):
+            logging.critical('The number of nodes is not equal to the number of authorities.')
+            sys.exit(1)
         args.nodes.add_addresses(args.authorities)
         for val in (('authorities', 'NodeManager', 'nodes'),
                     ('chain_name', 'SysConfig', 'chainName')):
