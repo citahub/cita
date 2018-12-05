@@ -45,8 +45,8 @@ CITA supports JSON-RPC and WebSocket (experimental) API/v1.
 For CITA API/v1, You can use any HTTP client, or following SDKs:
 
 * [Java](https://github.com/cryptape/nervosj)
-* [Rust](https://github.com/cryptape/rust-web3)
 * [JavaScript](https://github.com/cryptape/nervos.js)
+* [Swift](https://github.com/cryptape/appchain-swift)
 
 ## Contributing
 
