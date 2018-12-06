@@ -34,7 +34,7 @@ pub fn check_permission(
 ) -> Result<(), ExecutionError> {
     let sender = *t.sender();
     // It's eth_call when the account is zero.
-    // No need to check the options in case that the option is tree.
+    // No need to check the options in case that the option is true.
     if sender == Address::zero() {
         return Ok(());
     }

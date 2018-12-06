@@ -472,9 +472,12 @@ mod tests {
     use contracts::solc::sys_config::SysConfig;
     use core::receipt::ReceiptError;
     use libexecutor::command::Commander;
+    use libexecutor::command::{Command, CommandResp};
     use libexecutor::fsm::FSM;
     use rustc_hex::FromHex;
     use std::str::FromStr;
+    use std::thread;
+    use std::time::Duration;
     use tests::helpers;
     use types::ids::BlockId;
     use types::reserved_addresses;
@@ -590,10 +593,6 @@ mod tests {
         assert_eq!(closed_block_hash, current_hash);
     }
 
-    use std::thread;
-    use libexecutor::command::{Command,CommandResp};
-    use std::time::Duration;
-
     #[test]
     fn test_executor_exit() {
         let (_fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
@@ -613,14 +612,13 @@ mod tests {
         });
         // send Command, this cause executor exit
         command_req_sender.send(Command::Exit(BlockId::Number(0)));
-        // command_req_sender.send(Command::ChainID);
 
         ::std::thread::sleep(Duration::new(2, 0));
         let resp: CommandResp = command_resp_receiver.recv().unwrap();
-        assert_eq!(format!("{}",resp), format!("{}",CommandResp::Exit));
+        assert_eq!(format!("{}", resp), format!("{}", CommandResp::Exit));
 
         handle.join().expect("
-            We send command exit and expect executor thread died, so this test execute successfully.
+            We send command exit and expect executor thread return, so this test execute successfully.
             If executor did not died, this test will run in loop endless.
         ");
     }

@@ -94,6 +94,7 @@ impl Postman {
                 }
                 (None, Some(closed_block)) => {
                     self.handle_fsm_response(closed_block);
+                    self.grow_up();
                     self.execute_next_block();
                 }
             }
@@ -933,5 +934,88 @@ mod tests {
             open_block.timestamp(),
             "block timestamp should be equal to BlockWithProof-A"
         );
+    fn generate_block_body() -> BlockBody {
+        let mut stx = SignedTransaction::default();
+        use types::transaction::SignedTransaction;
+        stx.data = vec![1; 200];
+        let transactions = vec![stx; 200];
+        BlockBody { transactions }
+    }
+
+    fn generate_block_header() -> OpenHeader {
+        OpenHeader::default()
+    }
+
+    fn generate_block() -> OpenBlock {
+        let block_body = generate_block_body();
+        let mut block_header = generate_block_header();
+        block_header.set_number(1);
+        OpenBlock {
+            body: block_body,
+            header: block_header,
+        }
+    }
+
+    fn generate_state_db() -> StateDB {
+        let database = in_memory(7);
+        let database: Arc<KeyValueDB> = Arc::new(database);
+        let journaldb_type = journaldb::Algorithm::Archive;
+        let journal_db = journaldb::new(Arc::clone(&database), journaldb_type, None);
+        StateDB::new(journal_db, 5 * 1024 * 1024)
+    }
+
+    fn generate_closed_block(open_block: OpenBlock) -> ClosedBlock {
+        let state_db = generate_state_db();
+        let exec_block = ExecutedBlock::new(
+            Default::default(),
+            &BlockSysConfig::default(),
+            false,
+            open_block.clone(),
+            state_db,
+            util::hashable::HASH_NULL_RLP,
+            Arc::new(Vec::new()),
+        )
+        .unwrap();
+        exec_block.close(&BlockSysConfig::default())
+    }
+
+    use core::header::OpenHeader;
+    use core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
+    use core::libexecutor::sys_config::BlockSysConfig;
+    use core::state_db::StateDB;
+    use std::sync::Arc;
+    use util::journaldb;
+    use util::kvdb::{in_memory, KeyValueDB};
+
+    #[test]
+    fn test_handle_fsm_response() {
+        let (_mq_req_sender, mq_req_receiver) = crossbeam_channel::unbounded();
+        let (mq_resp_sender, _mq_resp_receiver) = crossbeam_channel::unbounded();
+        let (fsm_req_sender, _fsm_req_receiver) = crossbeam_channel::unbounded();
+        let (_fsm_resp_sender, fsm_resp_receiver) = crossbeam_channel::unbounded();
+        let (command_req_sender, _command_req_receiver) = crossbeam_channel::bounded(0);
+        let (_command_resp_sender, command_resp_receiver) = crossbeam_channel::bounded(0);
+        let mut postman = Postman::new(
+            0,
+            Default::default(),
+            mq_req_receiver,
+            mq_resp_sender,
+            fsm_req_sender,
+            fsm_resp_receiver,
+            command_req_sender,
+            command_resp_receiver,
+        );
+
+        // 构造 closedBlock
+        let open_block = generate_block();
+        let closed_block = generate_closed_block(open_block.clone());
+
+        // 从executor接收到closeBlock, 更新 backlogs
+        postman.handle_fsm_response(closed_block);
+
+        // 然后我从backlog里查更新就好了
+        let back_log = postman.backlogs.get_back_log(1).unwrap();
+        let closed_block_in_backlogs = back_log.get_closed_block().unwrap();
+        assert!(closed_block_in_backlogs.is_equivalent(&open_block));
     }
 }
