@@ -17,7 +17,6 @@
 
 extern crate bincode;
 extern crate cita_crypto;
-extern crate cita_ed25519;
 extern crate cita_types;
 extern crate crossbeam_channel;
 extern crate libproto;
@@ -29,6 +28,11 @@ use postman::Postman;
 use std::str::FromStr;
 use util::Hashable;
 
+#[cfg(feature = "secp256k1")]
+const PRIVATE_KEY: &str = "ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a";
+#[cfg(feature = "ed25519")]
+const PRIVATE_KEY: &str = "7c34da71aa179b9906dd5ab6713715aa86c10b8e0486168c336b20cae70d8ec07c34da71aa179b9906dd5ab6713715aa86c10b8e0486168c336b20cae70d8ec0";
+#[cfg(feature = "sm2")]
 const PRIVATE_KEY: &str = "ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a";
 const PROOF_ROUND: usize = 0;
 const PROOF_STEP: usize = 0;

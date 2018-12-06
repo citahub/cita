@@ -765,4 +765,173 @@ mod tests {
             RoutingKey::from(key)
         );
     }
+
+    #[test]
+    fn test_priority_equal() {
+        let current_height = 3;
+        let parent_hash = H256::from(0);
+        let current_hash = H256::from(0);
+        let mut postman = helpers::generate_postman(current_height, current_hash);
+
+        // generate 2 equal BlockWithProof but with different timestamp
+        let mut block_with_proof =
+            helpers::generate_block_with_proof(current_height + 1, parent_hash);
+        block_with_proof.mut_blk().mut_header().set_timestamp(1);
+        let message_a: Message = block_with_proof.clone().into();
+        let message_b: Message = {
+            block_with_proof.mut_blk().mut_header().set_timestamp(2);
+            block_with_proof.into()
+        };
+        let routing_key = routing_key!(Consensus >> BlockWithProof).to_string();
+
+        // give 2 BlockWithProof one by one
+        assert_eq!(
+            true,
+            postman.update_backlog(&routing_key, message_a,),
+            "handle first {} should be ok cause previous is None",
+            routing_key,
+        );
+        assert_eq!(
+            true,
+            postman.update_backlog(&routing_key, message_b,),
+            "handle second {} should be ok cause previous.priority = present.priority",
+            routing_key,
+        );
+
+        let open_block = postman
+            .backlogs
+            .ready(current_height + 1)
+            .expect("should return OpenBlock within BlockWithProof-B");
+        assert_eq!(
+            2,
+            open_block.timestamp(),
+            "block timestamp should be equal to BlockWithProof-B"
+        );
+    }
+
+    #[test]
+    fn test_priority_lower_then_higher() {
+        let current_height = 3;
+        let parent_hash = H256::from(0);
+        let current_hash = H256::from(0);
+        let mut postman = helpers::generate_postman(current_height, current_hash);
+
+        // generate SignedProposal
+        let mut signed_proposal =
+            helpers::generate_signed_proposal(current_height + 1, parent_hash.clone());
+        signed_proposal
+            .mut_proposal()
+            .mut_block()
+            .mut_header()
+            .set_timestamp(1);
+        let message_a: Message = signed_proposal.into();
+        let routing_key = routing_key!(Consensus >> SignedProposal).to_string();
+
+        // give SignedProposal
+        assert_eq!(
+            true,
+            postman.update_backlog(&routing_key, message_a,),
+            "handle first {} should be ok cause previous is None",
+            routing_key,
+        );
+        {
+            let open_block = postman
+                .backlogs
+                .ready(current_height + 1)
+                .expect("should return OpenBlock within SignedProposal-A");
+            assert_eq!(
+                1,
+                open_block.timestamp(),
+                "block timestamp should be equal to SignedProposal-A"
+            );
+        }
+
+        // generate BlockWithProof
+        let mut block_with_proof =
+            helpers::generate_block_with_proof(current_height + 1, parent_hash);
+        block_with_proof.mut_blk().mut_header().set_timestamp(2);
+        let message_b: Message = block_with_proof.into();
+        let routing_key = routing_key!(Consensus >> BlockWithProof).to_string();
+
+        // give BlockWithProof
+        assert_eq!(
+            true,
+            postman.update_backlog(&routing_key, message_b,),
+            "handle second {} should be ok cause previous.priority < present.priority",
+            routing_key,
+        );
+
+        let open_block = postman
+            .backlogs
+            .ready(current_height + 1)
+            .expect("should return OpenBlock within BlockWithProof-B");
+        assert_eq!(
+            2,
+            open_block.timestamp(),
+            "block timestamp should be equal to BlockWithProof-B"
+        );
+    }
+
+    #[test]
+    fn test_priority_higher_then_lower() {
+        let current_height = 3;
+        let parent_hash = H256::from(0);
+        let current_hash = H256::from(0);
+        let mut postman = helpers::generate_postman(current_height, current_hash);
+
+        // generate BlockWithProof
+        let mut block_with_proof =
+            helpers::generate_block_with_proof(current_height + 1, parent_hash);
+        block_with_proof.mut_blk().mut_header().set_timestamp(1);
+        let message_a: Message = block_with_proof.into();
+        let routing_key = routing_key!(Consensus >> BlockWithProof).to_string();
+
+        // give BlockWithProof
+        assert_eq!(
+            true,
+            postman.update_backlog(&routing_key, message_a,),
+            "handle first {} should be ok cause previous is None",
+            routing_key,
+        );
+
+        {
+            let open_block = postman
+                .backlogs
+                .ready(current_height + 1)
+                .expect("should return OpenBlock within BlockWithProof-A");
+            assert_eq!(
+                1,
+                open_block.timestamp(),
+                "block timestamp should be equal to BlockWithProof-A"
+            );
+        }
+
+        // generate SignedProposal
+        let mut signed_proposal =
+            helpers::generate_signed_proposal(current_height + 1, parent_hash.clone());
+        signed_proposal
+            .mut_proposal()
+            .mut_block()
+            .mut_header()
+            .set_timestamp(2);
+        let message_b: Message = signed_proposal.into();
+        let routing_key = routing_key!(Consensus >> SignedProposal).to_string();
+
+        // give SignedProposal
+        assert_eq!(
+            false,
+            postman.update_backlog(&routing_key, message_b,),
+            "raise error cause lower priority",
+        );
+
+        let open_block = postman
+            .backlogs
+            .ready(current_height + 1)
+            .expect("should return OpenBlock within BlockWithProof-A");
+        assert_eq!(
+            1,
+            open_block.timestamp(),
+            "block timestamp should be equal to BlockWithProof-A"
+        );
+    }
 }
