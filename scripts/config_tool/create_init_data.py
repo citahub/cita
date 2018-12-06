@@ -10,7 +10,7 @@ DEFAULT_CONFIG = '''
 Contracts:
 - SysConfig:
   - delayBlockNumber: 1
-  - checkPermission: false
+  - checkCallPermission: false
   - checkSendTxPermission: false
   - checkCreateContractPermission: false
   - checkQuota: false

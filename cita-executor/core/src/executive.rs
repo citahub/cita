@@ -300,8 +300,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         self.state.inc_nonce(&sender)?;
 
         trace!(
-            "permission should be check: {}",
-            (*conf).check_options.permission
+            "call contract permission should be check: {}",
+            (*conf).check_options.call_permission
         );
 
         check_permission(

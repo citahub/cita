@@ -181,7 +181,7 @@ class GenesisData(object):
         """Compile normal contracts from files and construct by arguments.
         """
         flags = [
-            'checkPermission',
+            'checkCallPermission',
             'checkSendTxPermission',
             'checkCreateContractPermission',
             'checkQuota',

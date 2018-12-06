@@ -32,7 +32,8 @@ use types::reserved_addresses;
 
 lazy_static! {
     static ref DELAY_BLOCK_NUMBER: Vec<u8> = method_tools::encode_to_vec(b"getDelayBlockNumber()");
-    static ref PERMISSION_CHECK: Vec<u8> = method_tools::encode_to_vec(b"getPermissionCheck()");
+    static ref CALL_PERMISSION_CHECK: Vec<u8> =
+        method_tools::encode_to_vec(b"getPermissionCheck()");
     static ref PERMISSION_SEND_TX_CHECK: Vec<u8> =
         method_tools::encode_to_vec(b"getSendTxPermissionCheck()");
     static ref PERMISSION_CREATE_CONTRACT_CHECK: Vec<u8> =
@@ -106,14 +107,18 @@ impl<'a> SysConfig<'a> {
         1
     }
 
-    /// Whether check permission or not
-    pub fn permission_check(&self, block_id: BlockId) -> Option<bool> {
-        self.get_value(&[ParamType::Bool], PERMISSION_CHECK.as_slice(), block_id)
-            .ok()
-            .and_then(|mut x| x.remove(0).to_bool())
+    /// Whether check call permission or not
+    pub fn call_permission_check(&self, block_id: BlockId) -> Option<bool> {
+        self.get_value(
+            &[ParamType::Bool],
+            CALL_PERMISSION_CHECK.as_slice(),
+            block_id,
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_bool())
     }
 
-    pub fn default_permission_check() -> bool {
+    pub fn default_call_permission_check() -> bool {
         error!("Use default permission check.");
         false
     }
@@ -355,7 +360,7 @@ mod tests {
     fn test_delay_block_number() {
         let executor = init_executor(vec![
             ("SysConfig.delayBlockNumber", "2"),
-            ("SysConfig.checkPermission", "false"),
+            ("SysConfig.checkCallPermission", "false"),
             ("SysConfig.checkSendTxPermission", "false"),
             ("SysConfig.checkCreateContractPermission", "false"),
             ("SysConfig.checkQuota", "true"),
@@ -381,9 +386,9 @@ mod tests {
         let number = config.delay_block_number(BlockId::Pending).unwrap();
         assert_eq!(number, 2);
 
-        // Test permission_check
-        let check_permission = config.permission_check(BlockId::Pending).unwrap();
-        assert_eq!(check_permission, false);
+        // Test call permission_check
+        let check_call_permission = config.call_permission_check(BlockId::Pending).unwrap();
+        assert_eq!(check_call_permission, false);
 
         // Test send_tx_permission_check
         let check_send_tx_permission = config.send_tx_permission_check(BlockId::Pending).unwrap();
