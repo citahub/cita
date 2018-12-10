@@ -110,6 +110,8 @@ extern crate util;
 
 mod backlogs;
 mod postman;
+#[cfg(test)]
+mod tests;
 
 use clap::App;
 use core::contracts::grpc::grpc_vm_adapter;

@@ -30,7 +30,6 @@ use libproto::blockchain::{RichStatus, StateSignal};
 use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{request, response, Message};
-use proof::BftProof;
 use serde_json;
 use std::convert::{Into, TryFrom, TryInto};
 use std::sync::RwLock;
@@ -41,7 +40,7 @@ use core::libexecutor::command;
 use core::libexecutor::lru_cache::LRUCache;
 use evm::Schedule;
 
-use super::backlogs::Backlogs;
+use super::backlogs::{wrap_height, Backlogs};
 
 pub struct Postman {
     backlogs: Backlogs,
@@ -159,7 +158,7 @@ impl Postman {
     fn handle_fsm_response(&mut self, closed_block: ClosedBlock) {
         let height = closed_block.number();
         info!("postman receive {}-th ClosedBlock from executor", height);
-        self.backlogs.insert_closed_block(height, closed_block);
+        self.backlogs.insert_closed(height, closed_block);
         self.grow_up();
     }
 
@@ -276,22 +275,14 @@ impl Postman {
         Ok(())
     }
 
-    // TODO: check is_dup_block, hash, height
-    fn update_backlog(&mut self, key: &str, mut msg: Message) {
+    fn update_backlog(&mut self, key: &str, mut msg: Message) -> bool {
         match RoutingKey::from(key) {
             // Proposal{block: {body, previous_proof}}
             //   WHERE previous_proof.height == block.height - 1
             routing_key!(Consensus >> SignedProposal) | routing_key!(Net >> SignedProposal) => {
                 let mut proposal = msg.take_signed_proposal().unwrap();
                 let open_block = OpenBlock::from(proposal.take_proposal().take_block());
-                let block_height = wrap_height(open_block.number() as usize);
-
-                trace!(
-                    "current_height: {}, insert {}-th Proposal into backlog",
-                    self.get_current_height(),
-                    block_height
-                );
-                self.backlogs.insert_open_block(block_height, open_block);
+                self.backlogs.insert_proposal(open_block)
             }
 
             // BlockWithProof{present_proof, block: {body, previous_proof}}
@@ -300,29 +291,7 @@ impl Postman {
             routing_key!(Consensus >> BlockWithProof) => {
                 let mut proofed = msg.take_block_with_proof().unwrap();
                 let open_block = OpenBlock::from(proofed.take_blk());
-                let previous_proof = open_block.proof().clone();
-                let block_height = wrap_height(open_block.number() as usize);
-
-                if block_height != self.get_current_height() + 1 {
-                    return;
-                }
-                // FIXME assertion help to find many Bugs. But Integration tests
-                //       have Bug, so I have to uncomment it.
-                // let present_proof = proofed.take_proof();
-                // let present_bft_proof = BftProof::from(present_proof.clone());
-                // let previous_bft_proof: BftProof = previous_proof.clone().into();
-                // let proof_height = wrap_height(present_bft_proof.height);
-                // assert_eq!(block_height, proof_height);
-                // assert_eq!(block_height, wrap_height(previous_bft_proof.height) + 1);
-                // self.assert_proof(key, present_bft_proof.height, &present_proof);
-
-                trace!(
-                    "current_height: {}, insert {}-th ProofedBlock into backlog",
-                    self.get_current_height(),
-                    block_height
-                );
-                self.backlogs.insert_open_block(block_height, open_block);
-                self.backlogs.insert_proof(block_height, previous_proof);
+                self.backlogs.insert_block_with_proof(open_block)
             }
 
             // SyncBlock{block: {body, previous_proof}}
@@ -331,55 +300,15 @@ impl Postman {
                 let mut sync_res = msg.take_sync_response().unwrap();
                 for proto_block in sync_res.take_blocks().into_iter() {
                     let open_block = OpenBlock::from(proto_block);
-                    let previous_proof = open_block.proof().clone();
-                    let previous_bft_proof = BftProof::from(previous_proof.clone());
-                    let block_height = wrap_height(open_block.number() as usize);
-                    let proof_height = wrap_height(previous_bft_proof.height);
-
-                    // FIXME if block_height == 0, then block is none, proof is some,
-                    //       AND document it !!!
-                    // if proof_height > 0 && block_height == 0 {
-                    //     info!(
-                    //         "current_height: {}, receive latest SyncBlock(block.height: {}, proof.height: {})",
-                    //         self.get_current_height(),
-                    //         block_height,
-                    //         proof_height,
-                    //     );
-                    //     self.backlogs.insert_proof(proof_height + 1, previous_proof);
-                    //     continue;
-                    // }
-
-                    if block_height - 1 != proof_height {
-                        error!(
-                            "invalid message {}, block_height({}) - 1 != proof_height({})",
-                            key, block_height, proof_height,
-                        );
-                        break;
+                    if !self.backlogs.insert_synchronized(open_block) {
+                        return false;
                     }
-
-                    trace!(
-                        "current_height: {}, insert ({}-th SyncBlock, {}-th Proof) into backlog",
-                        self.get_current_height(),
-                        block_height,
-                        proof_height
-                    );
-                    self.backlogs.insert_open_block(block_height, open_block);
-                    self.backlogs.insert_proof(block_height, previous_proof);
                 }
+                true
             }
             _ => unimplemented!(),
         }
     }
-
-    //    fn assert_proof(&mut self, key: &str, height: usize, proof: &libproto::Proof) {
-    //        let proof_height = wrap_height(height);
-    //        assert!(
-    //            self.backlogs.is_proof_ok(proof_height, &proof),
-    //            "unexpected message {}, {}-th proof is invalid",
-    //            key,
-    //            proof_height,
-    //        )
-    //    }
 
     fn load_executed_result(&mut self, height: u64) {
         let executed_result = command::load_executed_result(
@@ -758,47 +687,21 @@ impl Postman {
     }
 }
 
-// System Convention: 0-th block's proof is `::std::usize::MAX`
-// Ok, I know it is tricky, but ... just keep it in mind, it is tricky ...
-fn wrap_height(height: usize) -> u64 {
-    match height {
-        ::std::usize::MAX => 0,
-        _ => height as u64,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_wrap_height() {
-        assert_eq!(0, wrap_height(::std::usize::MAX));
-        assert_eq!(
-            ::std::usize::MAX as u64 - 1,
-            wrap_height(::std::usize::MAX - 1)
-        );
-        assert_eq!(2, wrap_height(2));
-    }
+    use libproto::Message;
+    use tests::helpers;
 
     #[test]
     fn test_bootstrap_broadcast_at_0th() {
-        let (_mq_req_sender, mq_req_receiver) = crossbeam_channel::unbounded();
+        let mut postman = helpers::generate_postman(0, H256::from(0));
         let (mq_resp_sender, mq_resp_receiver) = crossbeam_channel::unbounded();
-        let (fsm_req_sender, _fsm_req_receiver) = crossbeam_channel::unbounded();
-        let (_fsm_resp_sender, fsm_resp_receiver) = crossbeam_channel::unbounded();
         let (command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
         let (command_resp_sender, command_resp_receiver) = crossbeam_channel::bounded(0);
-        let mut postman = Postman::new(
-            0,
-            Default::default(),
-            mq_req_receiver,
-            mq_resp_sender,
-            fsm_req_sender,
-            fsm_resp_receiver,
-            command_req_sender,
-            command_resp_receiver,
-        );
+        postman.mq_resp_sender = mq_resp_sender;
+        postman.command_req_sender = command_req_sender;
+        postman.command_resp_receiver = command_resp_receiver;
 
         ::std::thread::spawn(move || {
             let command = command_req_receiver.recv().unwrap();
@@ -824,22 +727,13 @@ mod tests {
 
     #[test]
     fn test_bootstrap_broadcast_at_3th() {
-        let (_mq_req_sender, mq_req_receiver) = crossbeam_channel::unbounded();
+        let mut postman = helpers::generate_postman(3, H256::from(0));
         let (mq_resp_sender, mq_resp_receiver) = crossbeam_channel::unbounded();
-        let (fsm_req_sender, _fsm_req_receiver) = crossbeam_channel::unbounded();
-        let (_fsm_resp_sender, fsm_resp_receiver) = crossbeam_channel::unbounded();
         let (command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
         let (command_resp_sender, command_resp_receiver) = crossbeam_channel::bounded(0);
-        let mut postman = Postman::new(
-            3,
-            Default::default(),
-            mq_req_receiver,
-            mq_resp_sender,
-            fsm_req_sender,
-            fsm_resp_receiver,
-            command_req_sender,
-            command_resp_receiver,
-        );
+        postman.mq_resp_sender = mq_resp_sender;
+        postman.command_req_sender = command_req_sender;
+        postman.command_resp_receiver = command_resp_receiver;
 
         ::std::thread::spawn(move || {
             let command = command_req_receiver.recv().unwrap();
@@ -869,6 +763,175 @@ mod tests {
         assert_eq!(
             routing_key!(Executor >> ExecutedResult),
             RoutingKey::from(key)
+        );
+    }
+
+    #[test]
+    fn test_priority_equal() {
+        let current_height = 3;
+        let parent_hash = H256::from(0);
+        let current_hash = H256::from(0);
+        let mut postman = helpers::generate_postman(current_height, current_hash);
+
+        // generate 2 equal BlockWithProof but with different timestamp
+        let mut block_with_proof =
+            helpers::generate_block_with_proof(current_height + 1, parent_hash);
+        block_with_proof.mut_blk().mut_header().set_timestamp(1);
+        let message_a: Message = block_with_proof.clone().into();
+        let message_b: Message = {
+            block_with_proof.mut_blk().mut_header().set_timestamp(2);
+            block_with_proof.into()
+        };
+        let routing_key = routing_key!(Consensus >> BlockWithProof).to_string();
+
+        // give 2 BlockWithProof one by one
+        assert_eq!(
+            true,
+            postman.update_backlog(&routing_key, message_a,),
+            "handle first {} should be ok cause previous is None",
+            routing_key,
+        );
+        assert_eq!(
+            true,
+            postman.update_backlog(&routing_key, message_b,),
+            "handle second {} should be ok cause previous.priority = present.priority",
+            routing_key,
+        );
+
+        let open_block = postman
+            .backlogs
+            .ready(current_height + 1)
+            .expect("should return OpenBlock within BlockWithProof-B");
+        assert_eq!(
+            2,
+            open_block.timestamp(),
+            "block timestamp should be equal to BlockWithProof-B"
+        );
+    }
+
+    #[test]
+    fn test_priority_lower_then_higher() {
+        let current_height = 3;
+        let parent_hash = H256::from(0);
+        let current_hash = H256::from(0);
+        let mut postman = helpers::generate_postman(current_height, current_hash);
+
+        // generate SignedProposal
+        let mut signed_proposal =
+            helpers::generate_signed_proposal(current_height + 1, parent_hash.clone());
+        signed_proposal
+            .mut_proposal()
+            .mut_block()
+            .mut_header()
+            .set_timestamp(1);
+        let message_a: Message = signed_proposal.into();
+        let routing_key = routing_key!(Consensus >> SignedProposal).to_string();
+
+        // give SignedProposal
+        assert_eq!(
+            true,
+            postman.update_backlog(&routing_key, message_a,),
+            "handle first {} should be ok cause previous is None",
+            routing_key,
+        );
+        {
+            let open_block = postman
+                .backlogs
+                .ready(current_height + 1)
+                .expect("should return OpenBlock within SignedProposal-A");
+            assert_eq!(
+                1,
+                open_block.timestamp(),
+                "block timestamp should be equal to SignedProposal-A"
+            );
+        }
+
+        // generate BlockWithProof
+        let mut block_with_proof =
+            helpers::generate_block_with_proof(current_height + 1, parent_hash);
+        block_with_proof.mut_blk().mut_header().set_timestamp(2);
+        let message_b: Message = block_with_proof.into();
+        let routing_key = routing_key!(Consensus >> BlockWithProof).to_string();
+
+        // give BlockWithProof
+        assert_eq!(
+            true,
+            postman.update_backlog(&routing_key, message_b,),
+            "handle second {} should be ok cause previous.priority < present.priority",
+            routing_key,
+        );
+
+        let open_block = postman
+            .backlogs
+            .ready(current_height + 1)
+            .expect("should return OpenBlock within BlockWithProof-B");
+        assert_eq!(
+            2,
+            open_block.timestamp(),
+            "block timestamp should be equal to BlockWithProof-B"
+        );
+    }
+
+    #[test]
+    fn test_priority_higher_then_lower() {
+        let current_height = 3;
+        let parent_hash = H256::from(0);
+        let current_hash = H256::from(0);
+        let mut postman = helpers::generate_postman(current_height, current_hash);
+
+        // generate BlockWithProof
+        let mut block_with_proof =
+            helpers::generate_block_with_proof(current_height + 1, parent_hash);
+        block_with_proof.mut_blk().mut_header().set_timestamp(1);
+        let message_a: Message = block_with_proof.into();
+        let routing_key = routing_key!(Consensus >> BlockWithProof).to_string();
+
+        // give BlockWithProof
+        assert_eq!(
+            true,
+            postman.update_backlog(&routing_key, message_a,),
+            "handle first {} should be ok cause previous is None",
+            routing_key,
+        );
+
+        {
+            let open_block = postman
+                .backlogs
+                .ready(current_height + 1)
+                .expect("should return OpenBlock within BlockWithProof-A");
+            assert_eq!(
+                1,
+                open_block.timestamp(),
+                "block timestamp should be equal to BlockWithProof-A"
+            );
+        }
+
+        // generate SignedProposal
+        let mut signed_proposal =
+            helpers::generate_signed_proposal(current_height + 1, parent_hash.clone());
+        signed_proposal
+            .mut_proposal()
+            .mut_block()
+            .mut_header()
+            .set_timestamp(2);
+        let message_b: Message = signed_proposal.into();
+        let routing_key = routing_key!(Consensus >> SignedProposal).to_string();
+
+        // give SignedProposal
+        assert_eq!(
+            false,
+            postman.update_backlog(&routing_key, message_b,),
+            "raise error cause lower priority",
+        );
+
+        let open_block = postman
+            .backlogs
+            .ready(current_height + 1)
+            .expect("should return OpenBlock within BlockWithProof-A");
+        assert_eq!(
+            1,
+            open_block.timestamp(),
+            "block timestamp should be equal to BlockWithProof-A"
         );
     }
 }

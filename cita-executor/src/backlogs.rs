@@ -16,15 +16,22 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::core::libexecutor::block::{ClosedBlock, OpenBlock};
-use libproto::ExecutedResult;
-use libproto::Proof;
+use libproto::{ExecutedResult, Proof};
 use std::collections::BTreeMap;
 use util::Itertools;
+
+#[derive(Debug, Copy, Clone)]
+pub enum Priority {
+    Proposal = 1,
+    Synchronized = 2,
+    BlockWithProof = 3,
+}
 
 pub struct Backlog {
     open_block: Option<OpenBlock>,
     proof: Option<Proof>,
     closed_block: Option<ClosedBlock>,
+    priority: Option<Priority>,
 }
 
 impl Default for Backlog {
@@ -33,6 +40,7 @@ impl Default for Backlog {
             open_block: None,
             proof: None,
             closed_block: None,
+            priority: None,
         }
     }
 }
@@ -90,6 +98,46 @@ impl Backlog {
         closed_block
     }
 
+    pub fn insert_open(
+        &mut self,
+        height: u64,
+        priority: Priority,
+        open_block: OpenBlock,
+        proof: Option<Proof>,
+    ) -> bool {
+        // check priority
+        if let Some(ref present_priority) = self.priority {
+            if *present_priority as u8 > priority as u8 {
+                trace!(
+                    "arrived {}-th OpenBlock with priority({:?}) < present.priority({:?})",
+                    height,
+                    priority,
+                    present_priority,
+                );
+                return false;
+            }
+        }
+
+        // check proof.height
+        if let Some(ref proof) = proof {
+            let bft_proof = proof::BftProof::from(proof.clone());
+            let proof_height = wrap_height(bft_proof.height);
+            if proof_height + 1 != height {
+                trace!(
+                    "arrived {}-th OpenBlock with invalid proof.height({})",
+                    height,
+                    proof_height,
+                );
+                return false;
+            }
+        }
+
+        self.priority = Some(priority);
+        self.open_block = Some(open_block);
+        self.proof = proof;
+        true
+    }
+
     pub fn get_open_block(&self) -> Option<&OpenBlock> {
         self.open_block.as_ref()
     }
@@ -139,31 +187,81 @@ impl Backlogs {
         self.completed.insert(height, executed_result);
     }
 
-    pub fn insert_open_block(&mut self, height: u64, open_block: OpenBlock) -> bool {
-        if !self.assert_height(height) {
-            return false;
-        }
-
-        let backlog = self.backlogs.entry(height).or_default();
-        backlog.open_block = Some(open_block);
-        true
+    pub fn insert_proposal(&mut self, open_block: OpenBlock) -> bool {
+        let height = wrap_height(open_block.number() as usize);
+        self.insert_open(height, Priority::Proposal, open_block, None)
     }
 
-    pub fn insert_proof(&mut self, height: u64, proof: Proof) -> bool {
-        if !self.assert_height(height) {
-            return false;
-        }
+    pub fn insert_synchronized(&mut self, open_block: OpenBlock) -> bool {
+        let height = wrap_height(open_block.number() as usize);
+        let proof = open_block.proof().clone();
+        self.insert_open(height, Priority::Synchronized, open_block, Some(proof))
 
-        let backlog = self.backlogs.entry(height).or_default();
-        backlog.proof = Some(proof);
-        true
+        // FIXME if block_height == 0, then block is none, proof is some,
+        //       AND document it !!!
+        // let previous_bft_proof = BftProof::from(previous_proof.clone());
+        // let proof_height = wrap_height(previous_bft_proof.height);
+        // if proof_height > 0 && block_height == 0 {
+        //     info!(
+        //         "current_height: {}, receive latest SyncBlock(block.height: {}, proof.height: {})",
+        //         self.get_current_height(),
+        //         block_height,
+        //         proof_height,
+        //     );
+        //     self.backlogs.insert_proof(proof_height + 1, previous_proof);
+        //     continue;
+        // }
     }
 
-    pub fn insert_closed_block(&mut self, height: u64, closed_block: ClosedBlock) -> bool {
-        if !self.assert_height(height) {
+    pub fn insert_block_with_proof(&mut self, open_block: OpenBlock) -> bool {
+        let height = wrap_height(open_block.number() as usize);
+        let proof = open_block.proof().clone();
+        assert_eq!(height, self.get_current_height() + 1);
+        self.insert_open(height, Priority::BlockWithProof, open_block, Some(proof))
+
+        // FIXME assertion help to find many Bugs. But Integration tests
+        // let previous_proof = open_block.proof().clone();
+        //       have Bug, so I have to uncomment it.
+        // let present_proof = proofed.take_proof();
+        // let present_bft_proof = BftProof::from(present_proof.clone());
+        // let previous_bft_proof: BftProof = previous_proof.clone().into();
+        // let proof_height = wrap_height(present_bft_proof.height);
+        // assert_eq!(block_height, proof_height);
+        // assert_eq!(block_height, wrap_height(previous_bft_proof.height) + 1);
+        // self.assert_proof(key, present_bft_proof.height, &present_proof);
+        //
+        //    fn assert_proof(&mut self, key: &str, height: usize, proof: &libproto::Proof) {
+        //        let proof_height = wrap_height(height);
+        //        assert!(
+        //            self.backlogs.is_proof_ok(proof_height, &proof),
+        //            "unexpected message {}, {}-th proof is invalid",
+        //            key,
+        //            proof_height,
+        //        )
+        //    }
+    }
+
+    fn insert_open(
+        &mut self,
+        height: u64,
+        priority: Priority,
+        open_block: OpenBlock,
+        proof: Option<Proof>,
+    ) -> bool {
+        // discard staled
+        if height <= self.get_current_height() {
             return false;
         }
+        self.backlogs
+            .entry(height)
+            .or_default()
+            .insert_open(height, priority, open_block, proof)
+    }
 
+    pub fn insert_closed(&mut self, height: u64, closed_block: ClosedBlock) -> bool {
+        if self.get_current_height() >= height {
+            return false;
+        }
         let backlog = self.backlogs.entry(height).or_default();
         backlog.closed_block = Some(closed_block);
         true
@@ -287,23 +385,20 @@ impl Backlogs {
             self.completed = self.completed.split_off(&height);
         }
     }
+}
 
-    fn assert_height(&self, height: u64) -> bool {
-        if self.current_height >= height {
-            error!(
-                "unexpected height, current height({}) >= arrived height({})",
-                self.current_height, height,
-            );
-            return false;
-        }
-        true
+// System Convention: 0-th block's proof is `::std::usize::MAX`
+// Ok, I know it is tricky, but ... just keep it in mind, it is tricky ...
+pub fn wrap_height(height: usize) -> u64 {
+    match height {
+        ::std::usize::MAX => 0,
+        _ => height as u64,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Backlog;
-    use super::Backlogs;
+    use super::{wrap_height, Backlog, Backlogs, Priority};
     use core::header::OpenHeader;
     use core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
     use core::libexecutor::sys_config::BlockSysConfig;
@@ -324,19 +419,20 @@ mod tests {
         OpenHeader::default()
     }
 
-    fn generate_block() -> OpenBlock {
+    fn generate_block(height: u64) -> OpenBlock {
         let block_body = generate_block_body();
-        let block_header = generate_block_header();
+        let mut block_header = generate_block_header();
+        block_header.set_number(height);
         OpenBlock {
             body: block_body,
             header: block_header,
         }
     }
 
-    fn generate_proof() -> libproto::Proof {
+    fn generate_proof(height: u64) -> libproto::Proof {
         let mut commits = ::std::collections::HashMap::new();
         commits.insert(Default::default(), Default::default());
-        let bft_proof = proof::BftProof::new(0, 1, Default::default(), commits);
+        let bft_proof = proof::BftProof::new(height as usize, 1, Default::default(), commits);
         bft_proof.into()
     }
 
@@ -381,19 +477,22 @@ mod tests {
 
     #[test]
     fn test_backlog_is_completed_with_none() {
+        let height = 9;
         {
             let backlog = Backlog {
+                priority: Some(Priority::BlockWithProof),
                 open_block: None,
-                proof: Some(generate_proof()),
-                closed_block: Some(generate_closed_block(generate_block())),
+                proof: Some(generate_proof(height - 1)),
+                closed_block: Some(generate_closed_block(generate_block(height))),
             };
             assert_eq!(false, backlog.is_completed(), "block is none");
         }
 
         {
-            let block = generate_block();
+            let block = generate_block(height);
             let closed_block = generate_closed_block(block.clone());
             let backlog = Backlog {
+                priority: Some(Priority::BlockWithProof),
                 open_block: Some(block),
                 proof: None,
                 closed_block: Some(closed_block),
@@ -402,9 +501,11 @@ mod tests {
         }
 
         {
+            let open_block = generate_block(height);
             let backlog = Backlog {
-                open_block: Some(generate_block()),
-                proof: Some(generate_proof()),
+                priority: Some(Priority::BlockWithProof),
+                open_block: Some(open_block),
+                proof: Some(generate_proof(height - 1)),
                 closed_block: None,
             };
             assert_eq!(false, backlog.is_completed(), "closed_block is none");
@@ -413,13 +514,15 @@ mod tests {
 
     #[test]
     fn test_is_completed_with_unequal_block() {
+        let height = 9;
         {
-            let mut block = generate_block();
+            let mut block = generate_block(height);
             let closed_block = generate_closed_block(block.clone());
             block.header.set_timestamp(1);
             let backlog = Backlog {
+                priority: Some(Priority::BlockWithProof),
                 open_block: Some(block),
-                proof: Some(generate_proof()),
+                proof: Some(generate_proof(height - 1)),
                 closed_block: Some(closed_block),
             };
             assert_eq!(
@@ -430,11 +533,12 @@ mod tests {
         }
 
         {
-            let block = generate_block();
+            let block = generate_block(height);
             let closed_block = generate_closed_block(block.clone());
             let backlog = Backlog {
+                priority: Some(Priority::BlockWithProof),
                 open_block: Some(block),
-                proof: Some(generate_proof()),
+                proof: Some(generate_proof(height - 1)),
                 closed_block: Some(closed_block),
             };
             assert!(backlog.is_completed());
@@ -444,10 +548,12 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_complete_but_is_completed_false() {
-        let open_block = generate_block();
+        let height = 9;
+        let open_block = generate_block(height);
         let closed_block = generate_closed_block(open_block.clone());
 
         let backlog = Backlog {
+            priority: Some(Priority::BlockWithProof),
             open_block: Some(open_block),
             proof: None,
             closed_block: Some(closed_block),
@@ -460,12 +566,14 @@ mod tests {
 
     #[test]
     fn test_complete_normal() {
-        let open_block = generate_block();
+        let height = 9;
+        let open_block = generate_block(height);
         let closed_block = generate_closed_block(open_block.clone());
 
         let backlog = Backlog {
+            priority: Some(Priority::BlockWithProof),
             open_block: Some(open_block),
-            proof: Some(generate_proof()),
+            proof: Some(generate_proof(height - 1)),
             closed_block: Some(closed_block),
         };
         assert!(backlog.is_completed());
@@ -474,29 +582,45 @@ mod tests {
 
     #[test]
     fn test_backlogs_whole_flow() {
-        let open_block = generate_block();
+        let open_block = generate_block(2);
         let closed_block = generate_closed_block(open_block.clone());
 
         // insert height 2 should be always failed
         let mut backlogs = Backlogs::new(2, Default::default());
         backlogs.insert_completed_result(1, generate_executed_result());
         backlogs.insert_completed_result(2, generate_executed_result());
-        assert_eq!(false, backlogs.insert_open_block(2, open_block.clone()));
-        assert_eq!(false, backlogs.insert_proof(2, generate_proof()));
         assert_eq!(
             false,
-            backlogs.insert_closed_block(2, closed_block),
+            backlogs.insert_open(
+                2,
+                Priority::Proposal,
+                open_block.clone(),
+                Some(generate_proof(1)),
+            ),
+            "insert staled block should return false"
+        );
+        assert_eq!(
+            false,
+            backlogs.insert_closed(2, closed_block),
             "insert staled result should return false",
         );
         assert!(get_open_block(&backlogs, 2).is_none());
 
         // insert height 3 should be ok
+        let open_block = generate_block(3);
         let closed_block = generate_closed_block(open_block.clone());
-        assert_eq!(true, backlogs.insert_open_block(3, open_block.clone()));
-        assert_eq!(true, backlogs.insert_proof(3, generate_proof()));
         assert_eq!(
             true,
-            backlogs.insert_closed_block(3, closed_block),
+            backlogs.insert_open(
+                3,
+                Priority::BlockWithProof,
+                open_block.clone(),
+                Some(generate_proof(2)),
+            ),
+        );
+        assert_eq!(
+            true,
+            backlogs.insert_closed(3, closed_block),
             "insert current result should return true",
         );
         assert!(get_open_block(&backlogs, 3).is_some());
@@ -509,9 +633,23 @@ mod tests {
         assert!(get_open_block(&backlogs, 3).is_none());
         assert_eq!(
             false,
-            backlogs.insert_open_block(3, open_block.clone()),
+            backlogs.insert_open(
+                3,
+                Priority::Proposal,
+                open_block.clone(),
+                Some(generate_proof(2)),
+            ),
             "insert staled open_block should return false",
         );
-        assert_eq!(false, backlogs.insert_proof(3, generate_proof()),);
+    }
+
+    #[test]
+    fn test_wrap_height() {
+        assert_eq!(0, wrap_height(::std::usize::MAX));
+        assert_eq!(
+            ::std::usize::MAX as u64 - 1,
+            wrap_height(::std::usize::MAX - 1)
+        );
+        assert_eq!(2, wrap_height(2));
     }
 }
