@@ -145,10 +145,6 @@ impl Backlog {
     pub fn get_proof(&self) -> Option<&Proof> {
         self.proof.as_ref()
     }
-
-    pub fn get_closed_block(&self) -> Option<&ClosedBlock> {
-        self.closed_block.as_ref()
-    }
 }
 
 pub struct Backlogs {
@@ -185,10 +181,6 @@ impl Backlogs {
 
     pub fn get_completed_result(&self, height: u64) -> Option<&ExecutedResult> {
         self.completed.get(&height)
-    }
-
-    pub fn get_back_log(&self, height: u64) -> Option<&Backlog> {
-        self.backlogs.get(&height)
     }
 
     pub fn insert_completed_result(&mut self, height: u64, executed_result: ExecutedResult) {
