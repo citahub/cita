@@ -979,6 +979,10 @@ mod tests {
         exec_block.close(&BlockSysConfig::default())
     }
 
+    fn generate_executed_result() -> libproto::ExecutedResult {
+        libproto::ExecutedResult::new()
+    }
+
     use core::header::OpenHeader;
     use core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
     use core::libexecutor::sys_config::BlockSysConfig;
@@ -1016,6 +1020,99 @@ mod tests {
         // 然后我从backlog里查更新就好了
         let back_log = postman.backlogs.get_back_log(1).unwrap();
         let closed_block_in_backlogs = back_log.get_closed_block().unwrap();
-        assert!(closed_block_in_backlogs.is_equivalent(&open_block));
+        assert_eq!(true, closed_block_in_backlogs.is_equivalent(&open_block));
     }
+
+    #[test]
+    fn test_reply_rich_status_chain_higher_executor() {
+        let (_mq_req_sender, mq_req_receiver) = crossbeam_channel::unbounded();
+        let (mq_resp_sender, mq_resp_receiver) = crossbeam_channel::unbounded();
+        let (fsm_req_sender, _fsm_req_receiver) = crossbeam_channel::unbounded();
+        let (_fsm_resp_sender, fsm_resp_receiver) = crossbeam_channel::unbounded();
+        let (command_req_sender, _command_req_receiver) = crossbeam_channel::bounded(0);
+        let (_command_resp_sender, command_resp_receiver) = crossbeam_channel::bounded(0);
+        let postman = Postman::new(
+            2,
+            Default::default(),
+            mq_req_receiver,
+            mq_resp_sender,
+            fsm_req_sender,
+            fsm_resp_receiver,
+            command_req_sender,
+            command_resp_receiver,
+        );
+
+        // chain height = 5 >  executor height = 2
+        let mut state_signal = StateSignal::new();
+        state_signal.set_height(5);
+        // mock the state signal chain send to executor
+        postman.reply_chain_state_signal(&state_signal);
+
+        let (key, msg_vec) = mq_resp_receiver.recv().unwrap();
+        assert_eq!(routing_key!(Executor >> StateSignal), RoutingKey::from(key));
+        let mut msg = Message::try_from(msg_vec).unwrap();
+        let chain_state_signal: StateSignal = msg.take_state_signal().unwrap();
+        let chain_height = chain_state_signal.get_height();
+        // chain will rececive executor's height, then sync local
+        assert_eq!(chain_height, 2);
+    }
+
+    #[test]
+    fn test_reply_rich_status_chain_lower_executor() {
+        let (mq_req_sender, mq_req_receiver) = crossbeam_channel::unbounded();
+        let (mq_resp_sender, mq_resp_receiver) = crossbeam_channel::unbounded();
+        let (fsm_req_sender, _fsm_req_receiver) = crossbeam_channel::unbounded();
+        let (_fsm_resp_sender, fsm_resp_receiver) = crossbeam_channel::unbounded();
+        let (command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
+        let (command_resp_sender, command_resp_receiver) = crossbeam_channel::bounded(0);
+        let mut postman = Postman::new(
+            5,
+            Default::default(),
+            mq_req_receiver,
+            mq_resp_sender,
+            fsm_req_sender,
+            fsm_resp_receiver,
+            command_req_sender,
+            command_resp_receiver,
+        );
+        postman
+            .backlogs
+            .insert_completed_result(3, generate_executed_result());
+        postman
+            .backlogs
+            .insert_completed_result(4, generate_executed_result());
+        postman
+            .backlogs
+            .insert_completed_result(5, generate_executed_result());
+
+        // chain 比 executor 高
+        let mut state_signal = StateSignal::new();
+        state_signal.set_height(2);
+        postman.reply_chain_state_signal(&state_signal);
+        println!("current_height: {}", postman.get_current_height());
+
+        // let (key, msg_vec) = mq_resp_receiver.recv().unwrap();
+        // assert_eq!(routing_key!(Executor >> StateSignal), RoutingKey::from(key));
+        // let mut msg = Message::try_from(msg_vec).unwrap();
+        // let chain_state_signal: StateSignal = msg.take_state_signal().unwrap();
+        // let chain_height = chain_state_signal.get_height();
+        // assert_eq!(chain_height, 2);
+
+        // chain 比 executor 低， 有缓存
+        let (key, msg_vec) = mq_resp_receiver.recv().unwrap();
+        assert_eq!(
+            routing_key!(Executor >> ExecutedResult),
+            RoutingKey::from(key)
+        );
+        let mut msg = Message::try_from(msg_vec).unwrap();
+        let execute_result: libproto::ExecutedResult = msg.take_executed_result().unwrap();
+        assert_eq!(execute_result, generate_executed_result());
+        // chain 比 executor 低，无缓存
+    }
+
+    #[test]
+    fn test_send_executed_info_to_chain() {
+        unimplemented!();
+    }
+
 }

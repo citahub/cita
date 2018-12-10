@@ -291,12 +291,6 @@ impl Backlogs {
                 height,
             ));
         }
-        if backlog.get_proof().is_none() {
-            return Err(format!(
-                "{}-th is not completed cause backlog.proof is None",
-                height
-            ));
-        }
         let proof = backlog.get_proof().unwrap();
         if !self.is_proof_ok(height - 1, proof) {
             return Err(format!(
