@@ -12,3 +12,6 @@
 [submodule "scripts/contracts/tests/abi"]
 	path = scripts/contracts/tests/abi
 	url = https://github.com/cryptape/cita-sys-abi.git
+[submodule "scripts/contracts/tests/contracts"]
+	path = scripts/contracts/tests/contracts
+	url = https://github.com/cryptape/test-contracts.git
