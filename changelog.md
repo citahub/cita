@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file. And this pr
 ### Scripts
 
 - [Configuration] Store their own address for each node. [@yangby]
+- [Configuration] Rename checkPermission to checkCallPermission. [@kaikai]
 
 ### Test
 

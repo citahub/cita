@@ -83,9 +83,9 @@ impl GlobalSysConfig {
             .delay_block_number(block_id)
             .unwrap_or_else(SysConfig::default_delay_block_number)
             as usize;
-        conf.block_sys_config.check_options.permission = sys_config
-            .permission_check(block_id)
-            .unwrap_or_else(SysConfig::default_permission_check);
+        conf.block_sys_config.check_options.call_permission = sys_config
+            .call_permission_check(block_id)
+            .unwrap_or_else(SysConfig::default_call_permission_check);
         conf.block_sys_config.check_options.send_tx_permission = sys_config
             .send_tx_permission_check(block_id)
             .unwrap_or_else(SysConfig::default_send_tx_permission_check);
@@ -156,7 +156,7 @@ impl GlobalSysConfig {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default, Copy)]
 pub struct CheckOptions {
-    pub permission: bool,
+    pub call_permission: bool,
     pub quota: bool,
     pub fee_back_platform: bool,
     pub send_tx_permission: bool,

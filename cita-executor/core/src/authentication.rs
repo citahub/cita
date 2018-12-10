@@ -50,7 +50,7 @@ pub fn check_permission(
             }
         }
         Action::Call(address) => {
-            if options.permission {
+            if options.call_permission {
                 let group_management_addr =
                     Address::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
                 trace!("t.data {:?}", t.data);

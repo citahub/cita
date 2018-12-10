@@ -24,7 +24,7 @@ Permission is defined in this system as a collection of multiple resources, wher
 
 Users can customize permissions. The system has several permissions built in (disabled to delete it), as shown below:
 
-* `sendTx`: the permission to send transaction 
+* `sendTx`: the permission to send transaction
 * `createContract`: the permission to creat contract
 * `newPermission`: the permission to creat a new permission
 * `deletePermission`: the permission to delete permission
@@ -43,9 +43,9 @@ Users can customize permissions. The system has several permissions built in (di
 * `deleteNode`: the permission to delete node permissions
 * `updateNode`: the permission to update node permissions
 * `accountQuota`: the permission to set account quota
-* `blockQuota`:  the permission to set block quota 
+* `blockQuota`:  the permission to set block quota
 * `batchTx`: bulk transaction permission
-* `ermergencyBrake`: emergency braking permission 
+* `ermergencyBrake`: emergency braking permission
 * `quotaPrice`: the permission to set quotaPrice
 * `version`: the permission to set protocal version number
 
@@ -61,12 +61,12 @@ Generate a configuration file (open the permission switch) with the following co
 $ ./env.sh ./scripts/create_cita_config.py create \
     --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" \
     --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
-	--contract_arguments SysConfig.checkPermission=true SysConfig.checkSendTxPermission=true SysConfig.checkCreateContractPermission=true
+	--contract_arguments SysConfig.checkCallPermission=true SysConfig.checkSendTxPermission=true SysConfig.checkCreateContractPermission=true
 ```
 
-Where `checkPermission`, `checkSendTxPermission`, `checkCreateContractPermission` are the switches for calling the contract, sending the transaction, and creating the contract.
+Where `checkCallPermission`, `checkSendTxPermission`, `checkCreateContractPermission` are the switches for calling the contract, sending the transaction, and creating the contract.
 
-And then you can set up the nodes and start it. Please refer to [getting started](./chain/getting_started) for more detail. 
+And then you can set up the nodes and start it. Please refer to [getting started](./chain/getting_started) for more detail.
 ### Generate an external account
 
 ```bash
@@ -537,8 +537,8 @@ It can be seen that the result is 1.
 On top of the permissions, a layer of roles that are closer to real life is encapsulated. A certain role can have multiple permissions. A user can be assigned a role, then it would have all the permissions within this role.
 
 * Related operations such as adding, deleting, and changing roles are independent of permission management. The operation requires permission management to give the corresponding permissions, and will not cause changes in the permission management.
-* Authorization operation in role management: The authorization interface would be called When authorizing the role with related permission. So the authorization operation will cause the change of the permission management. 
-*** It is recommended to choose one between the role authorization and the permission authorization when operating, avoiding using these two at the same time. *** 
+* Authorization operation in role management: The authorization interface would be called When authorizing the role with related permission. So the authorization operation will cause the change of the permission management.
+*** It is recommended to choose one between the role authorization and the permission authorization when operating, avoiding using these two at the same time. ***
 * About the role authentication: Authentication is the operation at the back-end, and there is no concept of role. So authentication and authority management are unified at the back-end .
 
 Users can customize the role.

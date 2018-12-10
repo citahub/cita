@@ -56,7 +56,7 @@ We can find an example configuration file `init_data.yml` in the `test-chain/tem
 -Contracts:
  -SysConfig:
    delayBlockNumber: 1
-   checkPermission: false
+   checkCallPermission: false
    checkSendTxPermission: false
    checkCreateContractPermission: false
    checkQuota: false
@@ -96,7 +96,7 @@ We can find an example configuration file `init_data.yml` in the `test-chain/tem
 
 * `SysConfig` : initialize some system information
   - `delayBlockNumber` : indicates that the system contract takes effect after several blocks. The default is 1 block. Deprecation now.
-  - `checkPermission` : contract call permission switch
+  - `checkCallPermission` : contract call permission switch
   - `checkSendTxPermission` : send transaction permission switch
   - `checkCreateContractPermission` : contract create permission switch
   - `checkQuota` : quota switch
@@ -165,7 +165,7 @@ $ ./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d
 The following command is to generate a chain with quite advanced configurations:
 
 ```shell
-$ ./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" --contract_arguments SysConfig.checkSendTxPermission=true SysConfig.checkPermission=true SysConfig.economicalModel=1 SysConfig.checkFeeBackPlatform=true SysConfig.chainOwner=0x9a6bd7272edb238f13002911d8c93dd6bb646d15
+$ ./env.sh ./scripts/create_cita_config.py create --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" --contract_arguments SysConfig.checkSendTxPermission=true SysConfig.checkCallPermission=true SysConfig.economicalModel=1 SysConfig.checkFeeBackPlatform=true SysConfig.chainOwner=0x9a6bd7272edb238f13002911d8c93dd6bb646d15
 ```
 
 The above command generates one chain with four nodes. The port defaults to 4000, 4001, 4002, 4003. The super administrator address is `0xab159a4817542585c93f01cfce9cfe6cd4cbd26a`. The operator address is

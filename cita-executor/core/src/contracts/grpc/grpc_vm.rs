@@ -134,7 +134,7 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
         let nonce = self.state.nonce(&sender).map_err(|err| *err)?;
         self.state.inc_nonce(&sender).map_err(|err| *err)?;
         // TODO There are three option about permission
-        if (*conf).check_options.permission {
+        if (*conf).check_options.call_permission {
             check_permission(
                 &conf.group_accounts,
                 &conf.account_permissions,
