@@ -26,6 +26,7 @@ bytes = "0.4"
 time = "0.1"
 tokio-core = "0.1"
 tokio-io = "0.1"
+tokio-timer = "0.2"
 ws = "0.7"
 hyper = { git = "https://github.com/cryptape/hyper.git", branch = "reuse_port" }
 net2 = "0.2"

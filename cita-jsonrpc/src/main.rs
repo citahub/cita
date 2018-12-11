@@ -83,6 +83,7 @@ extern crate threadpool;
 extern crate time;
 extern crate tokio_core;
 extern crate tokio_io;
+extern crate tokio_timer;
 extern crate unicase;
 #[macro_use]
 extern crate util;

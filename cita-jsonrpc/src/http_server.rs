@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use futures::future::{Future, FutureResult};
+use futures::future::Future;
 use helper::{ReqSender, RpcMap};
 use hyper::header::{
     AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin,
@@ -31,14 +31,13 @@ use std::net::SocketAddr;
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
 use tokio_core::net::TcpListener;
-use tokio_core::reactor::{Core, Handle, Timeout};
+use tokio_core::reactor::{Core, Handle};
 use unicase::Ascii;
 use util::Mutex;
 
 use crate::extractor::FutExtractor;
 use crate::mq_publisher::{AccessLog as MQAccessLog, MQRequest, Publisher, TimeoutPublisher};
 use crate::response::IntoResponse;
-use crate::service_error::ServiceError;
 
 const TCP_BACKLOG: i32 = 1024;
 const CORS_CACHE: u32 = 86_400u32;
@@ -47,7 +46,6 @@ struct Inner {
     pub tx: ReqSender,
     pub responses: RpcMap,
     pub timeout: Duration,
-    pub reactor_handle: Handle,
     pub http_headers: Headers,
 }
 
@@ -162,7 +160,6 @@ impl Service for Server {
         let sender = { self.inner.tx.lock().clone() };
         let responses = Arc::clone(&self.inner.responses);
         let timeout = self.inner.timeout;
-        let reactor_handle = self.inner.reactor_handle.clone();
         let http_headers = self.inner.http_headers.clone();
 
         let mut access_log = AccessLog::new(http_req.method(), http_req.path(), &http_headers);
@@ -174,28 +171,17 @@ impl Service for Server {
                     .and_then({
                         let headers = http_headers.clone();
 
-                        let timeout = Timeout::new(timeout, &reactor_handle.clone()).map_err(|e| {
-                            error!("error create timeout: {}", e);
-                            ServiceError::InternalServerError
-                        });
-                        let fut_timeout: FutureResult<
-                            Timeout,
-                            ServiceError,
-                        > = timeout.into();
-
                         move |mq_req| {
                             // logging
                             access_log.set_rpc_info(RpcAccessLog::from(mq_req.access_log()));
                             info!("{}", access_log);
 
-                            fut_timeout.and_then(|timeout| {
-                                let timeout_responses = Arc::clone(&responses);
-                                let pulibsher = Publisher::new(responses, sender, headers);
-                                let pulibsher =
-                                    TimeoutPublisher::new(pulibsher, timeout, timeout_responses);
+                            let timeout_responses = Arc::clone(&responses);
+                            let pulibsher = Publisher::new(responses, sender, headers);
+                            let pulibsher =
+                                TimeoutPublisher::new(pulibsher, timeout, timeout_responses);
 
-                                pulibsher.publish(mq_req)
-                            })
+                            pulibsher.publish(mq_req)
                         }
                     })
                     .then(move |resp| match resp {
@@ -258,7 +244,6 @@ impl Server {
                 tx: Mutex::new(tx),
                 responses,
                 timeout,
-                reactor_handle: core.handle(),
                 http_headers: headers,
             }),
         };
@@ -387,7 +372,6 @@ mod integration_test {
                         tx: Mutex::new(tx),
                         responses,
                         timeout,
-                        reactor_handle: core.handle(),
                         http_headers: headers,
                     }),
                 };

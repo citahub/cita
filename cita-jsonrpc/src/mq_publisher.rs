@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::sync::mpsc;
+use std::time::Duration;
 
 use futures::{future::Future, stream::FuturesOrdered, sync::oneshot};
 use hyper::{header::Headers, server::Response as HyperResponse};
@@ -23,7 +24,7 @@ use jsonrpc_types::{
     request::Request as JsonRequest, response::Output as JsonrpcResponse, rpctypes::Id as JsonrpcId,
 };
 use libproto::request::Request as ProtoRequest;
-use tokio_core::reactor::Timeout;
+use tokio_timer::{clock, Delay};
 
 use crate::helper::{select_topic, RpcMap, TransferType};
 use crate::response::{BatchFutureResponse, PublishFutResponse, SingleFutureResponse};
@@ -127,12 +128,12 @@ impl Publisher {
 
 pub struct TimeoutPublisher {
     publisher: Publisher,
-    timeout: Timeout,
+    timeout: Duration,
     timeout_responses: RpcMap,
 }
 
 impl TimeoutPublisher {
-    pub fn new(publisher: Publisher, timeout: Timeout, timeout_responses: RpcMap) -> Self {
+    pub fn new(publisher: Publisher, timeout: Duration, timeout_responses: RpcMap) -> Self {
         Self {
             publisher,
             timeout,
@@ -147,6 +148,7 @@ impl TimeoutPublisher {
         use futures::future::Either;
         use std::sync::Arc;
 
+        let timeout = Delay::new(clock::now() + self.timeout);
         let timeout_responses = Arc::clone(&self.timeout_responses);
         let (req_info, req_ids) = match req {
             MQRequest::Single(ref hybrid_req) => (
@@ -162,24 +164,24 @@ impl TimeoutPublisher {
             ),
         };
 
-        let fut_resp =
-            self.publisher
-                .publish(req)
-                .select2(self.timeout)
-                .then(move |res| match res {
-                    Ok(Either::A((mq_resp, _timeout))) => Ok(mq_resp),
-                    Ok(Either::B((_reach_timeout, _no_resp))) => {
-                        let mut guard = timeout_responses.lock();
-                        for id in req_ids {
-                            guard.remove(&id);
-                        }
-                        Err(ServiceError::MQRpcTimeout(req_info))
+        let fut_resp = self
+            .publisher
+            .publish(req)
+            .select2(timeout)
+            .then(move |res| match res {
+                Ok(Either::A((mq_resp, _timeout))) => Ok(mq_resp),
+                Ok(Either::B((_reach_timeout, _no_resp))) => {
+                    let mut guard = timeout_responses.lock();
+                    for id in req_ids {
+                        guard.remove(&id);
                     }
-                    Err(Either::A((mq_rpc_err, _timeout))) => Err(mq_rpc_err),
-                    Err(Either::B((_timeout_err, _mq_rpc_err))) => {
-                        Err(ServiceError::InternalServerError)
-                    }
-                });
+                    Err(ServiceError::MQRpcTimeout(req_info))
+                }
+                Err(Either::A((mq_rpc_err, _timeout))) => Err(mq_rpc_err),
+                Err(Either::B((_timeout_err, _mq_rpc_err))) => {
+                    Err(ServiceError::InternalServerError)
+                }
+            });
 
         Box::new(fut_resp)
     }
