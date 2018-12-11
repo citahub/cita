@@ -115,6 +115,7 @@ extern crate util;
 
 mod backlogs;
 mod postman;
+mod snapshot;
 #[cfg(test)]
 mod tests;
 
