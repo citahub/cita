@@ -9,7 +9,7 @@ sudo(){
     set +o noglob
 }
 
-# 失败后不需要清理,保留现场;成功后清理现场.
+# Clean up only when it successes
 cleanup() {
     for pid in cita-forever cita-jsonrpc cita-auth cita-chain cita-network cita-bft trans_evm cita-executor; do
         ps ax | grep ${pid} | grep -v grep | awk '{print $1}' | xargs -n 1 -I %  kill -9 % 2>&1 >/dev/null ||true
