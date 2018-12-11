@@ -27,6 +27,7 @@ use account_db::{AccountDB, AccountDBMut};
 use cita_types::{Address, H256, U256};
 use db::{Writable, COL_EXTRA, COL_HEADERS, COL_STATE};
 use hashable::Hashable;
+use hashable::{HASH_EMPTY, HASH_NULL_RLP};
 use libexecutor::executor::Executor;
 use rlp::{DecoderError, Encodable, RlpStream, UntrustedRlp};
 use snappy;
@@ -38,8 +39,8 @@ use util::hashdb::DBValue;
 use util::journaldb::JournalDB;
 use util::journaldb::{self, Algorithm};
 use util::kvdb::{DBTransaction, Database, KeyValueDB};
-use util::{Bytes, HashDB, Mutex, HASH_NULL_RLP};
-use util::{Trie, TrieDB, TrieDBMut, TrieMut, HASH_EMPTY};
+use util::{Bytes, HashDB, Mutex};
+use util::{Trie, TrieDB, TrieDBMut, TrieMut};
 
 pub mod account;
 pub mod error;
@@ -615,7 +616,7 @@ impl StateRebuilder {
     pub fn finalize(mut self, era: u64, id: H256) -> Result<Box<JournalDB>, ::error::Error> {
         /*let missing = self.missing_code.values().cloned().collect::<Vec<_>>();
         if !missing.is_empty() { return Err(Error::MissingCode(missing).into()) }
-
+        
         let missing = self.missing_abi.values().cloned().collect::<Vec<_>>();
         if !missing.is_empty() { return Err(Error::MissingAbi(missing).into()) }*/
 
@@ -853,7 +854,7 @@ impl BlockRebuilder {
 
         /*for (first_num, first_hash) in self.disconnected.drain(..) {
             let parent_num = first_num - 1;
-
+        
             // check if the parent is even in the chain.
             // since we don't restore every single block in the chain,
             // the first block of the first chunks has nothing to connect to.

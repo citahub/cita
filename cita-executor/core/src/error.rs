@@ -22,8 +22,8 @@ use cita_types::{H256, U256};
 
 pub use executed::{CallError, ExecutionError};
 use header::BlockNumber;
-use snapshot::Error as SnapshotError;
 use snappy;
+use snapshot::Error as SnapshotError;
 use std::fmt;
 use util::*;
 
