@@ -94,6 +94,7 @@ impl Postman {
                 }
                 (None, Some(closed_block)) => {
                     self.handle_fsm_response(closed_block);
+                    self.grow_up();
                     self.execute_next_block();
                 }
             }
@@ -153,13 +154,11 @@ impl Postman {
         }
     }
 
-    // update executed result into backlogs based on arrived result from executor, and process
-    // the next height if possible
+    // update executed result into backlogs based on arrived result from executor
     fn handle_fsm_response(&mut self, closed_block: ClosedBlock) {
         let height = closed_block.number();
         info!("postman receive {}-th ClosedBlock from executor", height);
         self.backlogs.insert_closed(height, closed_block);
-        self.grow_up();
     }
 
     fn handle_mq_message(&mut self, key: &str, msg_vec: Vec<u8>) -> Result<(), BlockId> {
@@ -689,6 +688,7 @@ impl Postman {
 
 #[cfg(test)]
 mod tests {
+    use self::helpers::generate_executed_result;
     use super::*;
     use libproto::Message;
     use tests::helpers;
@@ -933,5 +933,159 @@ mod tests {
             open_block.timestamp(),
             "block timestamp should be equal to BlockWithProof-A"
         );
+    }
+
+    #[test]
+    fn test_state_signal_chain_higher_executor() {
+        let (mq_resp_sender, mq_resp_receiver) = crossbeam_channel::unbounded();
+        let mut postman = helpers::generate_postman(2, Default::default());
+        postman.mq_resp_sender = mq_resp_sender;
+
+        // chain height = 5 >  executor height = 2
+        let mut state_signal = StateSignal::new();
+        state_signal.set_height(5);
+        // mock the state signal chain send to executor
+        let _ = postman.reply_chain_state_signal(&state_signal);
+
+        let (key, msg_vec) = mq_resp_receiver.recv().unwrap();
+        assert_eq!(routing_key!(Executor >> StateSignal), RoutingKey::from(key));
+        let mut msg = Message::try_from(msg_vec).unwrap();
+        let chain_state_signal: StateSignal = msg.take_state_signal().unwrap();
+        let chain_height = chain_state_signal.get_height();
+        assert_eq!(
+            chain_height, 2,
+            "mock chain will rececive executor's height, then sync local"
+        );
+    }
+
+    #[test]
+    fn test_state_signal_chain_lower_executor() {
+        // Consider a situation:
+        // q: when chain height < executor height, what executor should do?
+        // ans: Executor will send the executed result of the corresponding higher height in backlog via (Executor >> ExecutedResult)
+        let (mq_resp_sender, mq_resp_receiver) = crossbeam_channel::unbounded();
+        let mut postman = helpers::generate_postman(5, Default::default());
+        postman.mq_resp_sender = mq_resp_sender;
+
+        let execute_result_3 = generate_executed_result(3);
+        let execute_result_4 = generate_executed_result(4);
+        let execute_result_5 = generate_executed_result(5);
+
+        postman
+            .backlogs
+            .insert_completed_result(3, execute_result_3);
+        postman
+            .backlogs
+            .insert_completed_result(4, execute_result_4);
+        postman
+            .backlogs
+            .insert_completed_result(5, execute_result_5);
+
+        // chain height = 2 < executor height = 5
+        let mut state_signal = StateSignal::new();
+        state_signal.set_height(2);
+        let _ = postman.reply_chain_state_signal(&state_signal);
+
+        // chain is lower than executor and have cached 3, 4, 5 executed result
+        for i in 3..6 {
+            let (key, msg_vec) = mq_resp_receiver.recv().unwrap();
+            assert_eq!(
+                routing_key!(Executor >> ExecutedResult),
+                RoutingKey::from(key)
+            );
+            let mut msg = Message::try_from(msg_vec).unwrap();
+            let execute_result: libproto::ExecutedResult = msg.take_executed_result().unwrap();
+            assert_eq!(
+                execute_result.get_executed_info().get_header().get_height(),
+                i
+            );
+        }
+    }
+
+    #[test]
+    fn test_state_signal_chain_lower_executor_without_cache() {
+        // Consider another situation:
+        // q: when chain height > executor height, it indicate executor has lose pace. how executor handle this situation?
+        // ans: Executor will roll back to the chain height and restart work.
+        let postman = helpers::generate_postman(5, Default::default());
+
+        // chain height = 2 < executor height = 5, postman will roll back to chain height
+        // just a uint test, more test about rolling back in other tests.
+        let mut state_signal = StateSignal::new();
+        state_signal.set_height(2);
+        let res = postman.reply_chain_state_signal(&state_signal);
+
+        assert_eq!(
+            res.err(),
+            Some(BlockId::Number(2)),
+            "no executed result, executed should roll back"
+        );
+    }
+
+    #[test]
+    fn test_update_rich_status_with_prune() {
+        let mut postman = helpers::generate_postman(6, Default::default());
+
+        let execute_result_1 = generate_executed_result(1);
+        let execute_result_2 = generate_executed_result(2);
+        let execute_result_3 = generate_executed_result(3);
+        let execute_result_4 = generate_executed_result(4);
+
+        postman
+            .backlogs
+            .insert_completed_result(1, execute_result_1);
+        postman
+            .backlogs
+            .insert_completed_result(2, execute_result_2);
+        postman
+            .backlogs
+            .insert_completed_result(3, execute_result_3);
+        postman
+            .backlogs
+            .insert_completed_result(4, execute_result_4);
+
+        let mut rich_status = RichStatus::new();
+        rich_status.set_height(2);
+        // chain height = 2, executor height = 6
+        // 3 + 2 < 6, executor backlogs will prune executed result which height <= 2
+        postman.update_by_rich_status(&rich_status);
+
+        assert!(postman.backlogs.get_completed_result(1).is_none());
+        assert!(postman.backlogs.get_completed_result(2).is_none());
+        assert!(postman.backlogs.get_completed_result(3).is_some());
+        assert!(postman.backlogs.get_completed_result(4).is_some());
+    }
+
+    #[test]
+    fn test_update_rich_status_without_prune() {
+        let mut postman = helpers::generate_postman(5, Default::default());
+
+        let execute_result_1 = generate_executed_result(1);
+        let execute_result_2 = generate_executed_result(2);
+        let execute_result_3 = generate_executed_result(3);
+        let execute_result_4 = generate_executed_result(4);
+
+        postman
+            .backlogs
+            .insert_completed_result(1, execute_result_1);
+        postman
+            .backlogs
+            .insert_completed_result(2, execute_result_2);
+        postman
+            .backlogs
+            .insert_completed_result(3, execute_result_3);
+        postman
+            .backlogs
+            .insert_completed_result(4, execute_result_4);
+
+        let mut rich_status = RichStatus::new();
+        rich_status.set_height(2);
+        // chain height = 2, executor height = 5
+        // 3 + 2 = 5, not < 5, so executor backlogs will not prune
+        postman.update_by_rich_status(&rich_status);
+
+        assert!(postman.backlogs.get_completed_result(1).is_some());
+        assert!(postman.backlogs.get_completed_result(2).is_some());
+        assert!(postman.backlogs.get_completed_result(3).is_some());
     }
 }

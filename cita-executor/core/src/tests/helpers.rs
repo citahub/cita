@@ -44,6 +44,7 @@ use std::path::Path;
 use std::process::{Command, Output};
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
+use types::header::OpenHeader;
 use types::transaction::SignedTransaction;
 use util::kvdb::{Database, DatabaseConfig};
 use util::AsMillis;
@@ -276,4 +277,25 @@ pub fn generate_contract() -> Vec<u8> {
         "#;
     let (data, _) = solc("ConstructSol", source);
     data
+}
+
+pub fn generate_block_header() -> OpenHeader {
+    OpenHeader::default()
+}
+
+pub fn generate_block_body() -> BlockBody {
+    let mut stx = SignedTransaction::default();
+    use types::transaction::SignedTransaction;
+    stx.data = vec![1; 200];
+    let transactions = vec![stx; 200];
+    BlockBody { transactions }
+}
+
+pub fn generate_default_block() -> OpenBlock {
+    let block_body = generate_block_body();
+    let block_header = generate_block_header();
+    OpenBlock {
+        body: block_body,
+        header: block_header,
+    }
 }

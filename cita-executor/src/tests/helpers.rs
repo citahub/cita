@@ -62,6 +62,15 @@ pub fn generate_signer() -> Signer {
     signer
 }
 
+pub fn generate_executed_result(height: u64) -> libproto::ExecutedResult {
+    let mut executed_result = libproto::ExecutedResult::new();
+    executed_result
+        .mut_executed_info()
+        .mut_header()
+        .set_height(height);
+    executed_result
+}
+
 pub fn generate_proof(signer: Signer, height: u64, proposal: H256) -> libproto::Proof {
     let serialized = bincode::serialize(
         &(

@@ -65,6 +65,7 @@ fn test_block_with_50000_tx(b: &mut Bencher) {
 }
 
 #[bench]
+#[ignore]
 fn test_block_with_10000_tx_write_db(b: &mut Bencher) {
     // One block with 10000 tx bench test takes 1551.8ms
     let mut executor = helpers::init_executor(vec![]);

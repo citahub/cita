@@ -144,25 +144,15 @@ mod tests {
     use super::ExecutedBlock;
     use cita_crypto::{CreateKey, KeyPair};
     use cita_types::Address;
+    use libexecutor::block::OpenBlock;
     use libexecutor::executor::Executor;
     use libexecutor::fsm::{StatusOfFSM, FSM};
     use std::thread;
     use std::time::Duration;
-    use tests::helpers;
-    use types::block::{BlockBody, OpenBlock};
-    use types::header::OpenHeader;
-    use types::transaction::SignedTransaction;
-
-    fn generate_block_body() -> BlockBody {
-        let mut stx = SignedTransaction::default();
-        stx.data = vec![1; 200];
-        let transactions = vec![stx; 200];
-        BlockBody { transactions }
-    }
-
-    fn generate_block_header() -> OpenHeader {
-        OpenHeader::default()
-    }
+    use tests::helpers::{
+        create_block, generate_block_body, generate_block_header, generate_contract, init_executor,
+        init_executor2,
+    };
 
     fn generate_empty_block() -> OpenBlock {
         let block_body = generate_block_body();
@@ -177,8 +167,8 @@ mod tests {
     fn generate_block(executor: &Executor, txs: u32) -> OpenBlock {
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let data = helpers::generate_contract();
-        helpers::create_block(&executor, Address::from(0), &data, (0, txs), &privkey)
+        let data = generate_contract();
+        create_block(&executor, Address::from(0), &data, (0, txs), &privkey)
     }
 
     // transit and commit state root
@@ -227,7 +217,7 @@ mod tests {
 
     #[test]
     fn test_fsm_initialize() {
-        let executor = helpers::init_executor(vec![]);
+        let executor = init_executor(vec![]);
         let open_block = generate_empty_block();
 
         {
@@ -266,7 +256,7 @@ mod tests {
         let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
         let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
         let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
-        let executor = helpers::init_executor2(
+        let executor = init_executor2(
             vec![],
             fsm_req_receiver.clone(),
             fsm_resp_sender,
@@ -299,7 +289,7 @@ mod tests {
         let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
         let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
         let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
-        let executor = helpers::init_executor2(
+        let executor = init_executor2(
             vec![],
             fsm_req_receiver.clone(),
             fsm_resp_sender,
@@ -330,7 +320,7 @@ mod tests {
         let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
         let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
         let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
-        let mut executor = helpers::init_executor2(
+        let mut executor = init_executor2(
             vec![],
             fsm_req_receiver.clone(),
             fsm_resp_sender,
@@ -406,7 +396,7 @@ mod tests {
         let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
         let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
         let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
-        let mut executor = helpers::init_executor2(
+        let mut executor = init_executor2(
             vec![],
             fsm_req_receiver.clone(),
             fsm_resp_sender,
