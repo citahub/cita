@@ -32,6 +32,7 @@ util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop"
 bincode = "0.8.0"
 cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+tempdir = "0.3.7"
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
