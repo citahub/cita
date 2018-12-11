@@ -259,7 +259,7 @@ impl Executor {
     }
 
     /// Get block header by height
-    fn block_header_by_height(&self, number: BlockNumber) -> Option<Header> {
+    pub fn block_header_by_height(&self, number: BlockNumber) -> Option<Header> {
         {
             let header = self.current_header.read();
             if header.number() == number {
@@ -271,7 +271,7 @@ impl Executor {
     }
 
     /// Get block header by hash
-    fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
+    pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
         {
             let header = self.current_header.read();
             if header.hash().unwrap() == hash {
