@@ -28,7 +28,7 @@ tokio-core = "0.1"
 tokio-io = "0.1"
 tokio-timer = "0.2"
 ws = "0.7"
-hyper = { git = "https://github.com/cryptape/hyper.git", branch = "reuse_port" }
+hyper = "0.12"
 net2 = "0.2"
 unicase = "2.1.0"
 libc = "0.2"
