@@ -208,7 +208,9 @@ docker-compose --version
 ##### 准备发布件
 
 ```
-wget https://github.com/cryptape/cita/releases/download/v0.20/cita_secp256k1_sha3.tar.gz
+latest_release_tag=$(curl --silent "https://api.github.com/repos/cryptape/cita/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+echo "latest release tag: $latest_release_tag"
+wget https://github.com/cryptape/cita/releases/download/$latest_release_tag/cita_secp256k1_sha3.tar.gz
 tar zxvf cita_secp256k1_sha3.tar.gz
 cp -r cita_secp256k1_sha3 cita_secp256k1_sha3_node0
 cp -r cita_secp256k1_sha3 cita_secp256k1_sha3_node1
