@@ -20,6 +20,9 @@ All notable changes to this project will be documented in this file. And this pr
 
 ### Consensus
 
+- [Optimazation] Add a min-heap timer. [@KaoImin]
+- [Optimazation] Optimize wait time for proposal, prevote and precommit. [@jerry-yu]
+
 ### RPC
 
 ### System Contract
@@ -41,12 +44,14 @@ All notable changes to this project will be documented in this file. And this pr
 
 [Unreleased]: https://github.com/cryptape/cita/compare/v0.20...HEAD
 
+[@KaoImin]: https://github.com/KaoImin
+[@WPF]: https://github.com/ouwenkg
 [@driftluo]: https://github.com/driftluo
+[@jerry-yu]: https://github.com/jerry-yu
+[@kaikai]: https://github.com/kaikai1024
+[@keroro520]: https://github.com/keroro520
+[@lhf]: https://github.com/EighteenZi
 [@u2]: https://github.com/u2
 [@yangby]: https://github.com/yangby-cryptape
-[@kaikai]: https://github.com/kaikai1024
-[@WPF]: https://github.com/ouwenkg
 [@zhiwei]: https://github.com/rink1969
 [@zhouyun-zoe]: https://github.com/zhouyun-zoe
-[@lhf]: https://github.com/EighteenZi
-[@keroro520]: https://github.com/keroro520
