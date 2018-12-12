@@ -48,15 +48,13 @@ var common = {
     plugins: [
         function (hook, vm) {
             hook.afterEach(function (html, next) {
-                if (versionIsSupported) {
-                    var url = github_url + language + '/' + version + '/' + vm.route.file
-                } else {
-                    var url = github_url + language + '/' + vm.route.file
+                if (window.localStorage.getItem('version') === 'develop') {
+                    const lng = window.localStorage.getItem('lng') || 'zh-CN'
+                    const url = `https://github.com/cryptape/cita/blob/develop/docs/${lng}${vm.route.file}`
+                    var editHtml = `<hr> If you find any mistakes on this page, feel free to <a target='_blank' href="${url}">edit this document on GitHub</a>`
+                    next(html + editHtml)
                 }
-
-                var editHtml = `<hr> If you find any mistakes on this page, feel free to <a target='_blank' href="${url}">edit this document on GitHub</a>`
-
-                next(html + editHtml)
+                next(html)
             })
         }
     ]
