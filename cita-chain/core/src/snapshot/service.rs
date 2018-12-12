@@ -31,8 +31,8 @@ use super::{BlockRebuilder, ManifestData, RestorationStatus};
 use cita_types::H256;
 use error::Error;
 
+use snappy;
 use util::kvdb::{Database, DatabaseConfig};
-use util::snappy;
 use util::Bytes;
 use util::UtilError;
 use util::{Mutex, RwLock, RwLockReadGuard};

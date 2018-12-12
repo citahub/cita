@@ -37,10 +37,12 @@ use types::extras::*;
 
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
+use hashable::Hashable;
 use header::Header;
 use libproto::executor::ExecutedResult;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{BlockTxHashes, FullTransaction, Message};
+use merklehash;
 use proof::BftProof;
 use receipt::{LocalizedReceipt, Receipt};
 use rlp::{self, Encodable};
@@ -55,8 +57,6 @@ use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
 use types::transaction::{Action, SignedTransaction};
 use util::kvdb::*;
-use util::merklehash;
-use util::Hashable;
 use util::HeapSizeOf;
 use util::{Mutex, RwLock};
 

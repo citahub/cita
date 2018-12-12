@@ -39,6 +39,7 @@ use evm::env_info::EnvInfo;
 use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
 pub use executed::{Executed, ExecutionResult};
 use externalities::*;
+use hashable::{Hashable, HASH_EMPTY};
 use libexecutor::economical_model::EconomicalModel;
 use libexecutor::sys_config::BlockSysConfig;
 use state::backend::Backend as StateBackend;

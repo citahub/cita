@@ -18,6 +18,7 @@
 #![feature(tool_lints)]
 extern crate cita_crypto as crypto;
 extern crate cita_types;
+extern crate hashable;
 extern crate jsonrpc_types;
 extern crate libproto;
 extern crate rlp;

@@ -11,7 +11,6 @@ extern crate pubsub;
 extern crate rlp;
 extern crate rustc_serialize;
 extern crate serde_yaml;
-extern crate util;
 
 use std::convert::{From, TryFrom};
 use std::convert::{Into, TryInto};

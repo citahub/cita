@@ -74,6 +74,7 @@
 #![feature(tool_lints)]
 
 extern crate cita_crypto as crypto;
+extern crate cita_directories;
 extern crate cita_types;
 extern crate clap;
 extern crate core as chain_core;

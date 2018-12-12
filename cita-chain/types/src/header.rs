@@ -29,7 +29,8 @@ use std::cmp;
 use std::ops::{Deref, DerefMut};
 use time::get_time;
 
-use util::{Bytes, Hashable, HeapSizeOf, HASH_NULL_RLP};
+use hashable::{Hashable, HASH_NULL_RLP};
+use util::{Bytes, HeapSizeOf};
 pub use BlockNumber;
 
 #[derive(Debug, Clone, Eq)]

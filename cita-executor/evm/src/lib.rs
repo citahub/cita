@@ -21,6 +21,7 @@
 extern crate bit_set;
 extern crate cita_types;
 extern crate common_types as types;
+extern crate hashable;
 #[cfg_attr(feature = "evm-debug", macro_use)]
 extern crate logger;
 extern crate rlp;

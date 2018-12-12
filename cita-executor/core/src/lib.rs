@@ -22,7 +22,9 @@
 
 extern crate bincode;
 extern crate byteorder;
+extern crate cita_crypto_trait;
 extern crate libproto;
+extern crate snappy;
 #[macro_use]
 extern crate logger;
 extern crate lru_cache;
@@ -30,6 +32,8 @@ extern crate proof;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
+extern crate hashable;
+extern crate merklehash;
 #[cfg_attr(test, macro_use)]
 extern crate serde_json;
 extern crate util;

@@ -43,10 +43,10 @@ use std::time::Duration;
 use types::filter::Filter;
 use types::ids::BlockId;
 
+use cita_directories::DataPath;
 use core::db;
 use std::fs::File;
 use std::path::Path;
-use util::datapath::DataPath;
 use util::kvdb::DatabaseConfig;
 
 use core::snapshot;

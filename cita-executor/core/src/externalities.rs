@@ -18,22 +18,26 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+use cita_types::{Address, H256, U256};
 use contracts::native::factory::Factory as NativeFactory;
-use evm::action_params::{ActionParams, ActionValue};
 use engines::Engine;
-use evm::env_info::EnvInfo;
-use evm::{self, MessageCallResult, Schedule, Factory, ReturnData, ContractCreateResult, FinalizationResult};
+use evm::action_params::{ActionParams, ActionValue};
 use evm::call_type::CallType;
+use evm::env_info::EnvInfo;
+use evm::{
+    self, ContractCreateResult, Factory, FinalizationResult, MessageCallResult, ReturnData,
+    Schedule,
+};
 use executive::*;
-use state::State;
+use hashable::Hashable;
+use libexecutor::economical_model::EconomicalModel;
 use state::backend::Backend as StateBackend;
+use state::State;
 use std::cmp;
 use std::sync::Arc;
 use substate::Substate;
 use trace::{Tracer, VMTracer};
 use util::*;
-use cita_types::{Address, H256, U256};
-use libexecutor::economical_model::EconomicalModel;
 
 /// Policy for handling output data on `RETURN` opcode.
 pub enum OutputPolicy<'a, 'b> {
@@ -60,8 +64,7 @@ impl OriginInfo {
             origin: params.origin,
             gas_price: params.gas_price,
             value: match params.value {
-                ActionValue::Transfer(val) |
-                ActionValue::Apparent(val) => val,
+                ActionValue::Transfer(val) | ActionValue::Apparent(val) => val,
             },
         }
     }
@@ -90,7 +93,6 @@ where
     economical_model: EconomicalModel,
 }
 
-
 impl<'a, T: 'a, V: 'a, B: 'a> Externalities<'a, T, V, B>
 where
     T: Tracer,
@@ -99,7 +101,21 @@ where
 {
     /// Basic `Externalities` constructor.
     #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
-    pub fn new(state: &'a mut State<B>, env_info: &'a EnvInfo, engine: &'a Engine, vm_factory: &'a Factory, native_factory: &'a NativeFactory, depth: usize, origin_info: OriginInfo, substate: &'a mut Substate, output: OutputPolicy<'a, 'a>, tracer: &'a mut T, vm_tracer: &'a mut V, static_flag: bool, economical_model: EconomicalModel) -> Self {
+    pub fn new(
+        state: &'a mut State<B>,
+        env_info: &'a EnvInfo,
+        engine: &'a Engine,
+        vm_factory: &'a Factory,
+        native_factory: &'a NativeFactory,
+        depth: usize,
+        origin_info: OriginInfo,
+        substate: &'a mut Substate,
+        output: OutputPolicy<'a, 'a>,
+        tracer: &'a mut T,
+        vm_tracer: &'a mut V,
+        static_flag: bool,
+        economical_model: EconomicalModel,
+    ) -> Self {
         Externalities {
             state,
             env_info,
@@ -126,20 +142,24 @@ where
     B: StateBackend,
 {
     fn storage_at(&self, key: &H256) -> evm::Result<H256> {
-        self.state.storage_at(&self.origin_info.address, key).map_err(Into::into)
+        self.state
+            .storage_at(&self.origin_info.address, key)
+            .map_err(Into::into)
     }
 
     fn set_storage(&mut self, key: H256, value: H256) -> evm::Result<()> {
         if self.static_flag {
             Err(evm::Error::MutableCallInStaticContext)
         } else {
-            self.state.set_storage(&self.origin_info.address, key, value).map_err(Into::into)
+            self.state
+                .set_storage(&self.origin_info.address, key, value)
+                .map_err(Into::into)
         }
     }
 
     fn is_static(&self) -> bool {
-         self.static_flag
-     }
+        self.static_flag
+    }
 
     fn exists(&self, address: &Address) -> evm::Result<bool> {
         self.state.exists(address).map_err(Into::into)
@@ -159,14 +179,31 @@ where
 
     fn blockhash(&self, number: &U256) -> H256 {
         // TODO: comment out what this function expects from env_info, since it will produce panics if the latter is inconsistent
-        if *number < U256::from(self.env_info.number) && number.low_u64() >= cmp::max(256, self.env_info.number) - 256 {
+        if *number < U256::from(self.env_info.number)
+            && number.low_u64() >= cmp::max(256, self.env_info.number) - 256
+        {
             let index = self.env_info.number - number.low_u64() - 1;
-            assert!(index < self.env_info.last_hashes.len() as u64, format!("Inconsistent env_info, should contain at least {:?} last hashes", index + 1));
+            assert!(
+                index < self.env_info.last_hashes.len() as u64,
+                format!(
+                    "Inconsistent env_info, should contain at least {:?} last hashes",
+                    index + 1
+                )
+            );
             let r = self.env_info.last_hashes[index as usize];
-            trace!("ext: blockhash({}) -> {} self.env_info.number={}\n", number, r, self.env_info.number);
+            trace!(
+                "ext: blockhash({}) -> {} self.env_info.number={}\n",
+                number,
+                r,
+                self.env_info.number
+            );
             r
         } else {
-            trace!("ext: blockhash({}) -> null self.env_info.number={}\n", number, self.env_info.number);
+            trace!(
+                "ext: blockhash({}) -> null self.env_info.number={}\n",
+                number,
+                self.env_info.number
+            );
             H256::zero()
         }
     }
@@ -202,28 +239,54 @@ where
                 return evm::ContractCreateResult::Failed;
             }
         }
-        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag, self.economical_model);
+        let mut ex = Executive::from_parent(
+            self.state,
+            self.env_info,
+            self.engine,
+            self.vm_factory,
+            self.native_factory,
+            self.depth,
+            self.static_flag,
+            self.economical_model,
+        );
 
         // TODO: handle internal error separately
         match ex.create(&params, self.substate, self.tracer, self.vm_tracer) {
-            Ok(FinalizationResult{ gas_left, apply_state: true, .. }) => {
+            Ok(FinalizationResult {
+                gas_left,
+                apply_state: true,
+                ..
+            }) => {
                 self.substate.contracts_created.push(address);
                 evm::ContractCreateResult::Created(address, gas_left)
             }
-            Ok(FinalizationResult{ gas_left, apply_state: false, return_data }) => {
-                ContractCreateResult::Reverted(gas_left, return_data)
-            },
+            Ok(FinalizationResult {
+                gas_left,
+                apply_state: false,
+                return_data,
+            }) => ContractCreateResult::Reverted(gas_left, return_data),
             Err(evm::Error::MutableCallInStaticContext) => ContractCreateResult::FailedInStaticCall,
             _ => ContractCreateResult::Failed,
         }
     }
 
-    fn call(&mut self, gas: &U256, sender_address: &Address, receive_address: &Address, value: Option<U256>, data: &[u8], code_address: &Address, output: &mut [u8], call_type: CallType) -> MessageCallResult {
+    fn call(
+        &mut self,
+        gas: &U256,
+        sender_address: &Address,
+        receive_address: &Address,
+        value: Option<U256>,
+        data: &[u8],
+        code_address: &Address,
+        output: &mut [u8],
+        call_type: CallType,
+    ) -> MessageCallResult {
         trace!(target: "externalities", "call");
 
-        let code_res = self.state
-                           .code(code_address)
-                           .and_then(|code| self.state.code_hash(code_address).map(|hash| (code, hash)));
+        let code_res = self
+            .state
+            .code(code_address)
+            .and_then(|code| self.state.code_hash(code_address).map(|hash| (code, hash)));
 
         let (code, code_hash) = match code_res {
             Ok((code, hash)) => (code, hash),
@@ -248,17 +311,43 @@ where
             params.value = ActionValue::Transfer(value);
         }
 
-        let mut ex = Executive::from_parent(self.state, self.env_info, self.engine, self.vm_factory, self.native_factory, self.depth, self.static_flag, self.economical_model);
+        let mut ex = Executive::from_parent(
+            self.state,
+            self.env_info,
+            self.engine,
+            self.vm_factory,
+            self.native_factory,
+            self.depth,
+            self.static_flag,
+            self.economical_model,
+        );
 
-        match ex.call(&params, self.substate, BytesRef::Fixed(output), self.tracer, self.vm_tracer) {
-            Ok(FinalizationResult{ gas_left, return_data, apply_state: true }) => MessageCallResult::Success(gas_left, return_data),
-             Ok(FinalizationResult{ gas_left, return_data, apply_state: false }) => MessageCallResult::Reverted(gas_left, return_data),
+        match ex.call(
+            &params,
+            self.substate,
+            BytesRef::Fixed(output),
+            self.tracer,
+            self.vm_tracer,
+        ) {
+            Ok(FinalizationResult {
+                gas_left,
+                return_data,
+                apply_state: true,
+            }) => MessageCallResult::Success(gas_left, return_data),
+            Ok(FinalizationResult {
+                gas_left,
+                return_data,
+                apply_state: false,
+            }) => MessageCallResult::Reverted(gas_left, return_data),
             _ => MessageCallResult::Failed,
         }
     }
 
     fn extcode(&self, address: &Address) -> evm::Result<Arc<Bytes>> {
-        Ok(self.state.code(address)?.unwrap_or_else(|| Arc::new(vec![])))
+        Ok(self
+            .state
+            .code(address)?
+            .unwrap_or_else(|| Arc::new(vec![])))
     }
 
     fn extcodesize(&self, address: &Address) -> evm::Result<usize> {
@@ -269,7 +358,11 @@ where
     where
         Self: Sized,
     {
-        let handle_copy = |to: &mut Option<&mut Bytes>| { if let Some(b) = to.as_mut() { **b = data.to_vec(); } };
+        let handle_copy = |to: &mut Option<&mut Bytes>| {
+            if let Some(b) = to.as_mut() {
+                **b = data.to_vec();
+            }
+        };
         match self.output {
             OutputPolicy::Return(BytesRef::Fixed(ref mut slice), ref mut copy) => {
                 handle_copy(copy);
@@ -286,19 +379,19 @@ where
                 Ok(*gas)
             }
             OutputPolicy::InitContract(ref mut copy) if apply_state => {
-                let return_cost = U256::from(data.len()) * U256::from(self.schedule.create_data_gas);
+                let return_cost =
+                    U256::from(data.len()) * U256::from(self.schedule.create_data_gas);
                 if return_cost > *gas || data.len() > self.schedule.create_data_limit {
                     return Err(evm::Error::OutOfGas);
                 }
 
                 handle_copy(copy);
 
-                self.state.init_code(&self.origin_info.address, data.to_vec())?;
+                self.state
+                    .init_code(&self.origin_info.address, data.to_vec())?;
                 Ok(*gas - return_cost)
             }
-            OutputPolicy::InitContract(_) => {
-                Ok(*gas)
-            }
+            OutputPolicy::InitContract(_) => Ok(*gas),
         }
     }
 
@@ -306,23 +399,22 @@ where
         use log_entry::LogEntry;
 
         if self.static_flag {
-             return Err(evm::Error::MutableCallInStaticContext);
-         }
+            return Err(evm::Error::MutableCallInStaticContext);
+        }
 
         let address = self.origin_info.address;
         self.substate.logs.push(LogEntry {
-                                    address,
-                                    topics,
-                                    data: data.to_vec(),
-                                });
+            address,
+            topics,
+            data: data.to_vec(),
+        });
         Ok(())
     }
 
     fn suicide(&mut self, refund_address: &Address) -> evm::Result<()> {
-
         if self.static_flag {
-             return Err(evm::Error::MutableCallInStaticContext);
-         }
+            return Err(evm::Error::MutableCallInStaticContext);
+        }
 
         let address = self.origin_info.address;
         let balance = self.balance(&address)?;
@@ -361,10 +453,18 @@ where
     }
 
     fn trace_prepare_execute(&mut self, pc: usize, instruction: u8, gas_cost: &U256) -> bool {
-        self.vm_tracer.trace_prepare_execute(pc, instruction, gas_cost)
+        self.vm_tracer
+            .trace_prepare_execute(pc, instruction, gas_cost)
     }
 
-    fn trace_executed(&mut self, gas_used: U256, stack_push: &[U256], mem_diff: Option<(usize, &[u8])>, store_diff: Option<(U256, U256)>) {
-        self.vm_tracer.trace_executed(gas_used, stack_push, mem_diff, store_diff)
+    fn trace_executed(
+        &mut self,
+        gas_used: U256,
+        stack_push: &[U256],
+        mem_diff: Option<(usize, &[u8])>,
+        store_diff: Option<(U256, U256)>,
+    ) {
+        self.vm_tracer
+            .trace_executed(gas_used, stack_push, mem_diff, store_diff)
     }
 }

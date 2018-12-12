@@ -33,9 +33,9 @@ use cita_types::H256;
 use libexecutor::executor::{get_current_header, Executor};
 use state_db::StateDB;
 
+use snappy;
 use util::journaldb::{self, Algorithm};
 use util::kvdb::{Database, DatabaseConfig, KeyValueDB};
-use util::snappy;
 use util::Bytes;
 use util::UtilError;
 use util::{Mutex, RwLock, RwLockReadGuard};

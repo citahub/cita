@@ -22,7 +22,7 @@ use types::ids::BlockId;
 
 use cita_types::H256;
 use rlp::DecoderError;
-use util::snappy::SnappyError;
+use snappy::SnappyError;
 use util::trie::TrieError;
 
 /// Snapshot-related errors.

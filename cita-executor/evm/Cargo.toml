@@ -5,6 +5,7 @@ authors = ["Parity Technologies <admin@parity.io>", "Cryptape Technologies <cont
 
 [dependencies]
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 lazy_static = "0.2"
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 bit-set = "0.4"
