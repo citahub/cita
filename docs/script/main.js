@@ -3,11 +3,11 @@ const lngs = {
     'en-US': 'English'
 }
 var initDocsify = function () {
-    var configs = [common, customization]
-    var docsify = {}
-    configs.forEach(function (conf) {
-        _.assign(docsify, conf)
-    })
+
+    var docsify = { ...common,
+        ...customization
+    }
+
     loadTags()
     handleSSRRouter()
 
@@ -17,7 +17,7 @@ var initDocsify = function () {
     if (search && search !== '#/' && URLSearchParams) {
         const urlP = new URLSearchParams(search)
         ver = urlP.get("version")
-        lng = urlP.get("language")
+        lng = urlP.get("lng")
     }
     ver = ver || window.localStorage.getItem("version") || 'develop'
     lng = lng || window.localStorage.getItem('lng') || 'zh-CN'
@@ -33,9 +33,8 @@ var initDocsify = function () {
     }
     setTimeout(() => {
         formatURLtoSSRRouter(lng, ver)
-    }, 500)
+    }, 1000)
     window.$docsify = docsify
-
 }
 
 var main = function () {

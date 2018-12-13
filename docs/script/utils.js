@@ -38,10 +38,8 @@ const handleSSRRouter = () => {
   }
   const params = window.location.hash.replace('#/', '').split('/')
   if (Object.keys(lngs).indexOf(params[0]) > -1) {
-    const lng = lngs[params[0]] || window.location.getItem('lng')
-    const ver = params[1] || window.location.getItem('version')
-    // ssr path
-    const newPath = `${window.location.hostname === 'localhost' ? '' : '/cita'}/#/` + params.slice(2).join('/') + `?version=${ver}&language=${lng}`
+    const fileRouter = !params[2] ? '' : params.slice(2).join('/')
+    const newPath = `${window.location.hostname === 'localhost' ? '' : '/cita'}/#/` + fileRouter
     window.location.replace(newPath)
   }
 }
@@ -55,3 +53,4 @@ const formatURLtoSSRRouter = (lng, ver) => {
   const newPath = `${window.location.hostname === 'localhost' ? '' : '/cita'}/#/${lngs[lng]}/${ver}/${path}`
   window.history.replaceState("", "", newPath)
 }
+window.handleSSRRouter = handleSSRRouter
