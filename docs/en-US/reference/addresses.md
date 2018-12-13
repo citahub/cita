@@ -58,6 +58,7 @@
 | 0xffffffffffffffffffffffffffffffffff020010 | QuotaPrice管理                   |
 | 0xffffffffffffffffffffffffffffffffff020011 | 协议版本号管理                   |
 | 0xffffffffffffffffffffffffffffffffff020012 | 所有组                           |
+| 0xffffffffffffffffffffffffffffffffff020013 | 自动执行合约                      |
 | 0xffffffffffffffffffffffffffffffffff021000 | 发送交易                         |
 | 0xffffffffffffffffffffffffffffffffff021001 | 新建合约                         |
 | 0xffffffffffffffffffffffffffffffffff021010 | 新增权限                         |
