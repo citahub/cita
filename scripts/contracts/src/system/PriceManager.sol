@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 import "../common/Admin.sol";
 import "../common/ReservedAddrPublic.sol";
-import "../interfaces/IPriceManager.sol";
+import "../../interaction/interface/IPriceManager.sol";
 
 /// @title Quota Price Manager
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

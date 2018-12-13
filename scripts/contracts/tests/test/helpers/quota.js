@@ -6,7 +6,7 @@ const { genContract, genTxParams } = util;
 
 const { superAdmin } = config;
 const { quota } = config.contract;
-const abi = JSON.parse(fs.readFileSync('abi/QuotaManager.abi'));
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/QuotaManager.abi'));
 
 const contract = genContract(abi, quota);
 

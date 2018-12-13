@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "../common/ReservedAddrPublic.sol";
-import "../interfaces/IPermission.sol";
+import "../../interaction/interface/IPermission.sol";
 
 /// @title Permission contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

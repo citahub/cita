@@ -97,7 +97,7 @@ class GenesisData(object):
         self.contracts_docs_dir = contracts_docs_dir
         self.contracts_common_dir = os.path.join(self.contracts_dir, 'common')
         self.contracts_lib_dir = os.path.join(self.contracts_dir, 'lib')
-        self.contracts_interfaces_dir = os.path.join(self.contracts_dir, 'interfaces')
+        self.contracts_interaction_dir = os.path.join(contracts_dir, 'interaction')
         contracts_list_file = os.path.join(contracts_dir, 'contracts.yml')
         self.load_contracts_list(contracts_list_file)
         self.load_contracts_args(init_data_file)
@@ -143,10 +143,10 @@ class GenesisData(object):
         compiled = solidity.compile_file(
             path,
             combined='bin,abi,userdoc,devdoc,hashes',
-            extra_args='common={} lib={} interfaces={}'.format(
+            extra_args='common={} lib={} interaction={}'.format(
                 self.contracts_common_dir,
                 self.contracts_lib_dir,
-                self.contracts_interfaces_dir))
+                self.contracts_interaction_dir))
         data = solidity.solidity_get_contract_data(compiled, path, name)
         if not data['bin']:
             logging.critical('The bin of contract %r is empty. Please check it!', name)

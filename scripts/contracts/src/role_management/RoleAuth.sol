@@ -1,10 +1,10 @@
 pragma solidity ^0.4.24;
 
 import "./RoleCreator.sol";
-import "../interfaces/IAuthorization.sol";
+import "../../interaction/interface/IAuthorization.sol";
 import "../lib/ContractCheck.sol";
 import "../lib/AddressArray.sol";
-import "../interfaces/IRoleAuth.sol";
+import "../interaction/interface/IRoleAuth.sol";
 
 /// @title Authorization about role and account
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

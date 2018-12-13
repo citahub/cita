@@ -6,8 +6,8 @@ import "../common/Error.sol";
 import "../common/Admin.sol";
 import "../common/Check.sol";
 import "../common/EconomicalType.sol";
-import "../interfaces/INodeManager.sol";
-import "../interfaces/ISysConfig.sol";
+import "../../interaction/interface/INodeManager.sol";
+import "../../interaction/interface/ISysConfig.sol";
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

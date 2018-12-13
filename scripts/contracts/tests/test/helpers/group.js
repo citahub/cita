@@ -5,7 +5,7 @@ const config = require('../config');
 const { genContract } = util;
 
 const { group } = config.contract;
-const abi = JSON.parse(fs.readFileSync('abi/Group.abi'));
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/Group.abi'));
 
 const contract = genContract(abi, group);
 

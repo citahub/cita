@@ -6,7 +6,7 @@ const { genContract, genTxParams } = util;
 
 const sender = config.superAdmin;
 const { permissionManagement } = config.contract;
-const abi = JSON.parse(fs.readFileSync('abi/PermissionManagement.abi'));
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/PermissionManagement.abi'));
 
 const contract = genContract(abi, permissionManagement);
 

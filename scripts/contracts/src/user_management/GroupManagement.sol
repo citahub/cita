@@ -3,9 +3,9 @@ pragma solidity ^0.4.24;
 import "./GroupCreator.sol";
 import "../lib/AddressArray.sol";
 import "../common/ReservedAddrPublic.sol";
-import "../interfaces/IAuthorization.sol";
-import "../interfaces/IGroupManagement.sol";
-import "../interfaces/IAllGroups.sol";
+import "../../interaction/interface/IAuthorization.sol";
+import "../../interaction/interface/IGroupManagement.sol";
+import "../../interaction/interface/IAllGroups.sol";
 
 /// @title User management using group struct
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

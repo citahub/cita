@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "../common/EconomicalType.sol";
 import "../common/Admin.sol";
 import "../common/ReservedAddrPublic.sol";
-import "../interfaces/ISysConfig.sol";
+import "../../interaction/interface/ISysConfig.sol";
 
 /// @title System config contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

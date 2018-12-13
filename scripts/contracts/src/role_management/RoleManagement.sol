@@ -2,8 +2,8 @@ pragma solidity ^0.4.24;
 
 import "./RoleCreator.sol";
 import "../common/Check.sol";
-import "../interfaces/IRoleAuth.sol";
-import "../interfaces/IRoleManagement.sol";
+import "../../interaction/interface/IRoleAuth.sol";
+import "../../interaction/interface/IRoleManagement.sol";
 
 /// @title Role management contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
