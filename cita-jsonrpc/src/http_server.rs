@@ -31,7 +31,7 @@ use util::Mutex;
 
 use crate::extractor::FutExtractor;
 use crate::helper::{ReqSender, RpcMap};
-use crate::http_header::{CONTENT_TYPE_JSON_STR, CONTENT_TYPE_PLAIN_TEXT_STR};
+use crate::http_header::{Origin, CONTENT_TYPE_JSON_STR, CONTENT_TYPE_PLAIN_TEXT_STR};
 use crate::mq_publisher::{AccessLog as MQAccessLog, MQRequest, Publisher, TimeoutPublisher};
 use crate::response::{HyperResponseExt, IntoResponse};
 
@@ -45,24 +45,24 @@ struct Inner {
     pub http_headers: Headers,
 }
 
-pub struct Server {
+pub struct Jsonrpc {
     inner: Arc<Inner>,
 }
 
-pub struct NewServer {
+pub struct JsonrpcMakeService {
     inner: Arc<Inner>,
 }
 
-impl<Ctx> MakeService<Ctx> for NewServer {
+impl<Ctx> MakeService<Ctx> for JsonrpcMakeService {
     type ReqBody = Body;
     type ResBody = Body;
     type Error = hyper::Error;
-    type Service = Server;
+    type Service = Jsonrpc;
     type Future = Box<dyn Future<Item = Self::Service, Error = Self::Error> + Send>;
     type MakeError = hyper::Error;
 
     fn make_service(&mut self, _: Ctx) -> Self::Future {
-        Box::new(future::ok(Server {
+        Box::new(future::ok(Jsonrpc {
             inner: Arc::clone(&self.inner),
         }))
     }
@@ -149,7 +149,7 @@ impl ::std::fmt::Display for AccessLog {
     }
 }
 
-impl Service for Server {
+impl Service for Jsonrpc {
     type ReqBody = Body;
     type ResBody = Body;
     type Error = hyper::Error;
@@ -226,39 +226,58 @@ fn handle_preflighted(mut headers: Headers) -> Headers {
     headers
 }
 
+pub type JsonrpcServer = hyper::Server<hyper::server::conn::AddrIncoming, JsonrpcMakeService>;
+pub struct Server {
+    addr: SocketAddr,
+    jsonrpc: JsonrpcServer,
+}
+
 impl Server {
-    pub fn start(
-        listener: TcpListener,
+    pub fn new(
+        addr: &SocketAddr,
         tx: mpsc::Sender<(String, ProtoRequest)>,
         responses: RpcMap,
-        timeout: Duration,
-        allow_origin: HeaderValue,
-    ) {
+        timeout: u64,
+        allow_origin: &Option<String>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let listener = listener_from_socket_addr(&addr)?;
+        let addr = listener.local_addr()?;
+        let timeout = Duration::from_secs(timeout);
         let json = HeaderValue::from_static(CONTENT_TYPE_JSON_STR);
-        let mut headers = Headers::new();
-        headers.insert(CONTENT_TYPE, json);
-        headers.insert(ORIGIN, allow_origin);
+        let allow_origin = Origin::from_config(allow_origin)?;
 
-        let new_service = NewServer {
+        let mut http_headers = Headers::new();
+        http_headers.insert(CONTENT_TYPE, json);
+        http_headers.insert(ORIGIN, allow_origin);
+
+        let make_jsonrpc_svc = JsonrpcMakeService {
             inner: Arc::new(Inner {
                 tx: Mutex::new(tx),
                 responses,
                 timeout,
-                http_headers: headers,
+                http_headers,
             }),
         };
-        // NOTE: sleep_on_errors is turned on by default
-        let server = hyper::Server::from_tcp(listener)
-            .unwrap()
-            .http1_keepalive(true)
-            .serve(new_service)
-            .map_err(|err| eprintln!("server error: {}", err));
 
-        hyper::rt::run(server);
+        // NOTE: sleep_on_errors is turned on by default
+        hyper::Server::from_tcp(listener)
+            .map(|builder| builder.http1_keepalive(true).serve(make_jsonrpc_svc))
+            .map(|jsonrpc| Self { addr, jsonrpc })
+            .map_err(Box::from)
+    }
+
+    // used in test code
+    #[allow(dead_code)]
+    pub fn local_addr(&self) -> SocketAddr {
+        self.addr
+    }
+
+    pub fn jsonrpc(self) -> JsonrpcServer {
+        self.jsonrpc
     }
 }
 
-pub fn listener(addr: &SocketAddr) -> io::Result<TcpListener> {
+pub fn listener_from_socket_addr(addr: &SocketAddr) -> std::io::Result<TcpListener> {
     use net2::unix::UnixTcpBuilderExt;
 
     let listener = match *addr {
@@ -288,7 +307,6 @@ mod integration_test {
     use serde_json;
     use tokio_core::reactor::Core;
 
-    use crate::http_header::Origin;
     use helper::TransferType;
 
     struct Serve {
@@ -313,40 +331,21 @@ mod integration_test {
         let addr = "127.0.0.1:0".parse().unwrap();
         let tx = tx.clone();
 
-        let timeout = Duration::from_secs(timeout);
         let (addr_tx, addr_rx) = ::std::sync::mpsc::channel();
         let thread_handle = thread::Builder::new()
             .name(format!("test-server-{}", Uuid::new_v4()))
             .spawn(move || {
-                let listener = listener(&addr).unwrap();
-                let addr = listener.local_addr().unwrap().clone();
                 let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
+                let server = Server::new(&addr, tx, responses, timeout, &allow_origin).unwrap();
+
+                let addr = server.local_addr();
                 addr_tx.send((addr, shutdown_tx)).unwrap();
 
-                let mut headers = Headers::new();
-                let origin = Origin::from_config(&allow_origin).unwrap();
-                headers.insert(
-                    CONTENT_TYPE,
-                    HeaderValue::from_static(CONTENT_TYPE_JSON_STR),
-                );
-                headers.insert(ORIGIN, origin);
-                let new_service = NewServer {
-                    inner: Arc::new(Inner {
-                        tx: Mutex::new(tx),
-                        responses,
-                        timeout,
-                        http_headers: headers,
-                    }),
-                };
-
-                let server = hyper::Server::from_tcp(listener)
-                    .unwrap()
-                    .http1_keepalive(true)
-                    .serve(new_service)
+                let jsonrpc_server = server
+                    .jsonrpc()
                     .with_graceful_shutdown(shutdown_rx)
-                    .map_err(|err| eprintln!("server error: {}", err));
-
-                hyper::rt::run(server);
+                    .map_err(|err| eprintln!("server err {}", err));
+                hyper::rt::run(jsonrpc_server);
             })
             .unwrap();
         let (addr, shutdown_tx) = addr_rx.recv().unwrap();

@@ -106,7 +106,7 @@ use clap::App;
 use config::{NewTxFlowConfig, ProfileConfig};
 use cpuprofiler::PROFILER;
 use fdlimit::set_fd_limit;
-use http_header::Origin;
+use futures::Future;
 use http_server::Server;
 use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -236,13 +236,17 @@ fn main() {
             let tx = tx_relay.clone();
             let timeout = http_config.timeout;
             let http_responses = Arc::clone(&http_responses);
-            let allow_origin = Origin::from_config(&http_config.allow_origin).unwrap();
+            let allow_origin = http_config.allow_origin.clone();
             let _ = thread::Builder::new()
                 .name(format!("worker{}", i))
                 .spawn(move || {
-                    let timeout = Duration::from_secs(timeout);
-                    let listener = http_server::listener(&addr).unwrap();
-                    Server::start(listener, tx, http_responses, timeout, allow_origin);
+                    let server =
+                        Server::new(&addr, tx, http_responses, timeout, &allow_origin).unwrap();
+                    let jsonrpc_server = server
+                        .jsonrpc()
+                        .map_err(|err| eprintln!("server err {}", err));
+
+                    hyper::rt::run(jsonrpc_server)
                 })
                 .unwrap();
         }
