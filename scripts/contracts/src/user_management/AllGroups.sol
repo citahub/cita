@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 import "../lib/AddressArray.sol";
 import "../common/ReservedAddrConstant.sol";
-import "../interfaces/IAllGroups.sol";
+import "../../interaction/interface/IAllGroups.sol";
 
 /// @title User management using group struct
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

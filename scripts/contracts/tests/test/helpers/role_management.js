@@ -6,7 +6,7 @@ const { genContract, genTxParams } = util;
 
 const { superAdmin } = config;
 const { roleManagement } = config.contract;
-const abi = JSON.parse(fs.readFileSync('abi/RoleManagement.abi'));
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/RoleManagement.abi'));
 
 const contract = genContract(abi, roleManagement);
 

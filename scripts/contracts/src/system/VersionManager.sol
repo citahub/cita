@@ -2,8 +2,8 @@ pragma solidity ^0.4.24;
 
 import "../common/Admin.sol";
 import "../common/ReservedAddrPublic.sol";
-import "../interfaces/IVersionManager.sol";
-import "../interfaces/ISysConfig.sol";
+import "../../interaction/interface/IVersionManager.sol";
+import "../../interaction/interface/ISysConfig.sol";
 
 contract VersionManager is IVersionManager, ReservedAddrPublic {
     uint32 public version;

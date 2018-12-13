@@ -1,8 +1,8 @@
 pragma solidity ^0.4.24;
 
-import "../interfaces/IAuthorization.sol";
-import "../interfaces/IAllGroups.sol";
-import "../interfaces/IGroup.sol";
+import "../../interaction/interface/IAuthorization.sol";
+import "../../interaction/interface/IAllGroups.sol";
+import "../../interaction/interface/IGroup.sol";
 import "./ReservedAddrPublic.sol";
 
 /// @title The modifier for checking permission

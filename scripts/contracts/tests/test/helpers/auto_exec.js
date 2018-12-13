@@ -6,7 +6,7 @@ const { genContract, genTxParams } = util;
 
 const { superAdmin } = config;
 const { autoExecAddr } = config.contract;
-const abi = JSON.parse(fs.readFileSync('abi/AutoExec.abi'));
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/AutoExec.abi'));
 const contract = genContract(abi, autoExecAddr);
 
 // register

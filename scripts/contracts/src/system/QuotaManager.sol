@@ -4,8 +4,8 @@ import "../common/Error.sol";
 import "../lib/AddressArray.sol";
 import "../common/Admin.sol";
 import "../common/Check.sol";
-import "../interfaces/IQuotaManager.sol";
-import "../interfaces/IAuthorization.sol";
+import "../../interaction/interface/IQuotaManager.sol";
+import "../../interaction/interface/IAuthorization.sol";
 
 /// @title Node manager contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

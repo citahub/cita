@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 import "../lib/AddressArray.sol";
 import "../common/ReservedAddrPublic.sol";
-import "../interfaces/IRole.sol";
+import "../../interaction/interface/IRole.sol";
 
 /// @title Role contract
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]
