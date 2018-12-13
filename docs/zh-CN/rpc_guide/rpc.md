@@ -822,12 +822,12 @@ $ cita-cli rpc getAbi \
 
 * Parameters
 
-    1. `Data` - address.
+    1. `Data20` - address.
     2. `BlockNumber` - `BlockNumber`
 
 * Returns
 
-    `Data` - the balance from the given address.
+    `Quantity` - the balance from the given address.
 
 * Example
 
@@ -1048,7 +1048,7 @@ params: [
 
 * Returns
     * `chainId`, `Integer` - Deal with transaction replay attack
-    * `chainIdV1`, `Integer` - ChainId in version 1
+    * `chainIdV1`, `Quantity` - ChainId in version 1
     * `chainName`, `String` - Chain name
     * `operator`, `String` - Chain operator
     * `genesisTimestamp`, `Integer` - Genesis timestamp
@@ -1072,7 +1072,7 @@ params: [
         "result": {
             "blockInterval": 3000,
             "chainId": 0,
-            "chainIdV1": "1",
+            "chainIdV1": "0x1",
             "chainName": "test-chain",
             "economicalModel": 1,
             "genesisTimestamp": 1541058686340,

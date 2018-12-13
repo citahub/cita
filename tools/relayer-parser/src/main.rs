@@ -47,7 +47,6 @@ use core::libchain::chain::{RelayInfo, TxProof};
 use libproto::blockchain::UnverifiedTransaction;
 
 use arguments::{build_commandline, parse_arguments};
-use cita_types::traits::LowerHex;
 use configuration::{parse_configfile, UpStream};
 
 fn main() {
@@ -123,7 +122,7 @@ fn construct_transaction(
     communication::cita_get_metadata(upstream)
         .ok()
         .and_then(|metadata| {
-            if metadata.chain_id_v1 == relay_info.to_chain_id.lower_hex() {
+            if metadata.chain_id_v1 == relay_info.to_chain_id.into() {
                 Some(relay_info.to_chain_id)
             } else {
                 error!(

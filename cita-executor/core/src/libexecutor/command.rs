@@ -311,7 +311,7 @@ impl Commander for Executor {
             (self.sys_config.block_sys_config.economical_model).into();
         let mut metadata = MetaData {
             chain_id: 0,
-            chain_id_v1: U256::from(0).lower_hex(),
+            chain_id_v1: U256::from(0).into(),
             chain_name: "".to_owned(),
             operator: "".to_owned(),
             website: "".to_owned(),
@@ -363,7 +363,10 @@ impl Commander for Executor {
                     .ok_or_else(|| "Query genesis_timestamp failed".to_owned())?;
                 self.node_manager()
                     .shuffled_stake_nodes(block_id)
-                    .map(|validators| metadata.validators = validators)
+                    .map(|validators| {
+                        metadata.validators =
+                            validators.into_iter().map(|x| x.into()).collect::<Vec<_>>()
+                    })
                     .ok_or_else(|| "Query validators failed".to_owned())?;
                 sys_config
                     .block_interval(block_id)
@@ -387,7 +390,7 @@ impl Commander for Executor {
                     .deal_chain_id_version(&version_manager)
                     .map(|chain_id| match chain_id {
                         ChainId::V0(v0) => metadata.chain_id = v0,
-                        ChainId::V1(v1) => metadata.chain_id_v1 = v1.lower_hex(),
+                        ChainId::V1(v1) => metadata.chain_id_v1 = v1.into(),
                     })
                     .ok_or_else(|| "Query chain id failed".to_owned())?;
                 Ok(())

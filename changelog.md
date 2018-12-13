@@ -25,6 +25,8 @@ All notable changes to this project will be documented in this file. And this pr
 
 ### RPC
 
+- [Fix] The 'chainIdV1' in the response of getMetaData is hex string, so it should has 0x-prefix. [@yangby]
+
 ### System Contract
 
 - [Optimazation] Change default quotaPrice to 1000000 by [@WPF]
