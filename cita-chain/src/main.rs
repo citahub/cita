@@ -86,11 +86,13 @@ extern crate pubsub;
 extern crate serde_json;
 #[macro_use]
 extern crate util;
+extern crate cita_directories;
 
 mod block_processor;
 mod forward;
 
 use block_processor::BlockProcessor;
+use cita_directories::DataPath;
 use clap::App;
 use core::db;
 use core::libchain;
@@ -102,7 +104,6 @@ use std::sync::Arc;
 use std::thread;
 use std::time;
 use std::time::Duration;
-use util::datapath::DataPath;
 use util::kvdb::{Database, DatabaseConfig};
 use util::set_panic_handler;
 

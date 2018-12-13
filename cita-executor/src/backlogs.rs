@@ -397,6 +397,7 @@ mod tests {
     use core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
     use core::libexecutor::sys_config::BlockSysConfig;
     use core::state_db::StateDB;
+    use hashable::HASH_NULL_RLP;
     use std::sync::Arc;
     use util::journaldb;
     use util::kvdb::{in_memory, KeyValueDB};
@@ -462,7 +463,7 @@ mod tests {
             false,
             open_block.clone(),
             state_db,
-            util::hashable::HASH_NULL_RLP,
+            HASH_NULL_RLP,
             Arc::new(Vec::new()),
         )
         .unwrap();

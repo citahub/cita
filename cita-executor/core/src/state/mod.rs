@@ -27,6 +27,7 @@ use evm::Error as EvmError;
 use evm::Schedule;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
+use hashable::HASH_EMPTY;
 use libexecutor::economical_model::EconomicalModel;
 use libexecutor::sys_config::BlockSysConfig;
 use receipt::{Receipt, ReceiptError};
@@ -1215,6 +1216,7 @@ mod tests {
     use self::rustc_hex::FromHex;
     use super::*;
     use cita_crypto::KeyPair;
+    use cita_crypto_trait::CreateKey;
     use cita_types::traits::LowerHex;
     use cita_types::{Address, H256};
     use engines::NullEngine;
@@ -1222,7 +1224,6 @@ mod tests {
     use libexecutor::sys_config::BlockSysConfig;
     use std::sync::Arc;
     use tests::helpers::*;
-    use util::crypto::CreateKey;
 
     #[test]
     #[ignore]

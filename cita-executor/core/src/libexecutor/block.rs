@@ -24,6 +24,7 @@ use factory::Factories;
 use libexecutor::auto_exec::auto_exec;
 use libexecutor::sys_config::BlockSysConfig;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
+use merklehash;
 use receipt::Receipt;
 use rlp::*;
 use state::State;
@@ -34,7 +35,6 @@ use std::sync::Arc;
 use trace::FlatTrace;
 pub use types::block::{Block, BlockBody, OpenBlock};
 use types::transaction::SignedTransaction;
-use util::merklehash;
 
 lazy_static! {
     /// Block Reward

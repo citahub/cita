@@ -11,6 +11,7 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

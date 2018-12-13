@@ -18,13 +18,13 @@
 use bincode::{serialize, Infinite};
 use cita_types::{Address, H256, U256};
 use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
+use hashable::Hashable;
 use libproto::{Block, BlockWithProof, Message, SignedTransaction, Transaction};
 use proof::BftProof;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
 use std::convert::{Into, TryInto};
 use std::time::Duration;
-use util::Hashable;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Step {

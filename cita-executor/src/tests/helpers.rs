@@ -15,18 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate bincode;
-extern crate cita_crypto;
-extern crate cita_types;
-extern crate crossbeam_channel;
-extern crate libproto;
-extern crate util;
-
-use self::cita_crypto::{CreateKey, PrivKey, Sign, Signature, Signer};
+use cita_crypto::{CreateKey, PrivKey, Sign, Signature, Signer};
 use cita_types::{traits::LowerHex, Address, H256, U256};
+use hashable::Hashable;
 use postman::Postman;
 use std::str::FromStr;
-use util::Hashable;
 
 #[cfg(feature = "secp256k1")]
 const PRIVATE_KEY: &str = "ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a";

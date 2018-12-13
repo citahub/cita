@@ -22,6 +22,7 @@ use cita_types::{H256, U256};
 
 pub use executed::{CallError, ExecutionError};
 use header::BlockNumber;
+use snappy;
 use std::fmt;
 use util::*;
 
@@ -241,7 +242,7 @@ pub enum Error {
     /// Standard io error.
     StdIo(::std::io::Error),
     /// Snappy error.
-    Snappy(::util::snappy::SnappyError),
+    Snappy(snappy::SnappyError),
     /// Ethkey error.
     Ethkey(EthkeyError),
 }

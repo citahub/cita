@@ -7,7 +7,6 @@ extern crate pubsub;
 extern crate rlp;
 extern crate rustc_serialize;
 extern crate serde_yaml;
-extern crate util;
 
 use crypto::PrivKey;
 use std::collections::HashMap;

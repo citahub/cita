@@ -23,9 +23,12 @@ extern crate byteorder;
 extern crate libproto;
 #[macro_use]
 extern crate logger;
+extern crate hashable;
 extern crate lru_cache;
+extern crate merklehash;
 extern crate proof;
 extern crate rlp;
+extern crate snappy;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]

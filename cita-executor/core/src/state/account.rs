@@ -21,6 +21,7 @@
 
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
+use hashable::{Hashable, HASH_EMPTY, HASH_NULL_RLP};
 use lru_cache::LruCache;
 use pod_account::*;
 use rlp::*;

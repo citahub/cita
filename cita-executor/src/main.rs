@@ -87,6 +87,9 @@
 
 #[macro_use]
 extern crate crossbeam_channel;
+#[cfg(test)]
+extern crate cita_crypto;
+extern crate cita_directories;
 extern crate cita_types;
 extern crate clap;
 extern crate common_types as types;
@@ -95,6 +98,8 @@ extern crate dotenv;
 extern crate error;
 extern crate evm;
 extern crate grpc;
+#[cfg(test)]
+extern crate hashable;
 extern crate jsonrpc_types;
 #[macro_use]
 extern crate libproto;
@@ -113,6 +118,7 @@ mod postman;
 #[cfg(test)]
 mod tests;
 
+use cita_directories::DataPath;
 use clap::App;
 use core::contracts::grpc::grpc_vm_adapter;
 use core::libexecutor::executor::Executor;
@@ -121,7 +127,6 @@ use postman::Postman;
 use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
-use util::datapath::DataPath;
 use util::set_panic_handler;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));

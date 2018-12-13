@@ -30,12 +30,13 @@ extern crate pubsub;
 #[macro_use]
 extern crate serde_derive;
 extern crate cita_types as types;
+extern crate hashable;
 extern crate serde_yaml;
-extern crate util;
 
 use bincode::{serialize, Infinite};
 use clap::App;
 use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
+use hashable::Hashable;
 use libproto::blockchain::{Block, BlockBody, BlockTxs, BlockWithProof};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
@@ -47,7 +48,6 @@ use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use types::{Address, H256};
-use util::Hashable;
 
 pub type PubType = (String, Vec<u8>);
 

@@ -39,8 +39,10 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
+use hashable::Hashable;
+use snappy;
 use util::kvdb::{DBTransaction, KeyValueDB};
-use util::{snappy, Bytes, Hashable, Mutex, BLOCKLIMIT};
+use util::{Bytes, Mutex, BLOCKLIMIT};
 
 use basic_types::{LogBloom, LogBloomGroup};
 use bloomchain::group::BloomGroupChain;
@@ -497,7 +499,6 @@ impl BlockRebuilder {
 
             // TODO: abridged_block
             /*let receipts_root = ordered_trie_root(pair.at(1)?.iter().map(|r| r.as_raw()));
-            
             let block = abridged_block.to_block(parent_hash, cur_number, receipts_root)?;
             let block_bytes = block.rlp_bytes();*/
 
@@ -654,7 +655,6 @@ impl BlockRebuilder {
         info: &BlockInfo,
     ) -> HashMap<H256, TransactionAddress> {
         let transaction_hashes = block.body().transaction_hashes();
-    
         transaction_hashes
             .into_iter()
             .enumerate()
@@ -747,7 +747,6 @@ impl BlockRebuilder {
 
         /*for (first_num, first_hash) in self.disconnected.drain(..) {
             let parent_num = first_num - 1;
-        
             // check if the parent is even in the chain.
             // since we don't restore every single block in the chain,
             // the first block of the first chunks has nothing to connect to.

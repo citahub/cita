@@ -18,6 +18,7 @@
 use bincode::{serialize, Infinite};
 use cita_types::H256;
 use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
+use hashable::Hashable;
 use libproto::{
     Block, BlockWithProof, Message, Proposal, SignedProposal, SignedTransaction, Transaction,
 };
@@ -26,7 +27,6 @@ use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
 use std::convert::{Into, TryInto};
 use std::time::Duration;
-use util::Hashable;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Step {
