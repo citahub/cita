@@ -206,4 +206,3 @@ Include:
 # Other directory
 
 * `contracts` is some contracts used for test
-* `doc` is some docs about test using `txtool`

@@ -34,10 +34,9 @@
   "author": "Cryptape Technologies <contact@cryptape.com>",
   "license": "GPL-3.0+",
   "dependencies": {
-    "@nervos/chain": "^0.18.0",
+    "@appchain/base": "^0.20.3",
     "chai": "^4.1.2",
     "log4js": "^2.7.0",
-    "mocha": "^5.2.0",
-    "web3": "^1.0.0-beta.34"
+    "mocha": "^5.2.0"
   }
 }

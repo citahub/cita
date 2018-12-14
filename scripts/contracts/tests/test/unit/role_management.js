@@ -11,10 +11,10 @@ const { expect } = chai;
 
 // util
 const {
-  web3, getTxReceipt, logger, genContract,
+  getTxReceipt, logger, genContract, appchain,
 } = util;
 
-const roleAbi = JSON.parse(fs.readFileSync('abi/Role.abi'));
+const roleAbi = JSON.parse(fs.readFileSync('../interaction/abi/Role.abi'));
 const {
   deleteRole, clearRole,
   cancelRole, setRole, deletePermissions, addPermissions, updateRoleName, newRole,
@@ -38,10 +38,10 @@ let hash;
 let roleInstance;
 
 // test data
-const name = web3.utils.utf8ToHex('testNewRole');
-const newName = web3.utils.utf8ToHex('testNewRoleName');
-const name2 = web3.utils.utf8ToHex('testNewRole2');
-const permName = web3.utils.utf8ToHex('testPermission');
+const name = appchain.utils.utf8ToHex('testNewRole');
+const newName = appchain.utils.utf8ToHex('testNewRoleName');
+const name2 = appchain.utils.utf8ToHex('testNewRole2');
+const permName = appchain.utils.utf8ToHex('testPermission');
 const { testAddr, testFunc, permissions } = config;
 const addr = testAddr[0];
 const addr2 = testAddr[1];
