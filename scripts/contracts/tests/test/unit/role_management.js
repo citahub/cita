@@ -14,7 +14,7 @@ const {
   web3, getTxReceipt, logger, genContract,
 } = util;
 
-const roleAbi = JSON.parse(fs.readFileSync('abi/Role.abi'));
+const roleAbi = JSON.parse(fs.readFileSync('../interaction/abi/Role.abi'));
 const {
   deleteRole, clearRole,
   cancelRole, setRole, deletePermissions, addPermissions, updateRoleName, newRole,
