@@ -5,7 +5,7 @@ const chai = require('chai');
 
 const { expect } = chai;
 
-const { web3, logger } = util;
+const { appchain, logger } = util;
 
 const {
   queryInfo, queryAccounts, queryParent, inGroup,
@@ -13,7 +13,7 @@ const {
 
 // test data
 const { address } = config.superAdmin;
-const name = web3.utils.utf8ToHex('rootGroup');
+const name = appchain.utils.utf8ToHex('rootGroup');
 const nul = '0x0000000000000000000000000000000000000000';
 
 describe('test group contract', () => {
