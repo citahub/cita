@@ -290,7 +290,9 @@ impl Postman {
             routing_key!(Consensus >> BlockWithProof) => {
                 let mut proofed = msg.take_block_with_proof().unwrap();
                 let open_block = OpenBlock::from(proofed.take_blk());
-                self.backlogs.insert_block_with_proof(open_block)
+                let present_proof = proofed.take_proof();
+                self.backlogs
+                    .insert_block_with_proof(open_block, &present_proof)
             }
 
             // SyncBlock{block: {body, previous_proof}}
@@ -773,6 +775,11 @@ mod tests {
         let current_hash = H256::from(0);
         let mut postman = helpers::generate_postman(current_height, current_hash);
 
+        let completed_result_3 = helpers::generate_executed_result(3);
+        postman
+            .backlogs
+            .insert_completed_result(3, completed_result_3);
+
         // generate 2 equal BlockWithProof but with different timestamp
         let mut block_with_proof =
             helpers::generate_block_with_proof(current_height + 1, parent_hash);
@@ -815,6 +822,11 @@ mod tests {
         let parent_hash = H256::from(0);
         let current_hash = H256::from(0);
         let mut postman = helpers::generate_postman(current_height, current_hash);
+
+        let completed_result_3 = helpers::generate_executed_result(3);
+        postman
+            .backlogs
+            .insert_completed_result(3, completed_result_3);
 
         // generate SignedProposal
         let mut signed_proposal =
@@ -878,6 +890,11 @@ mod tests {
         let parent_hash = H256::from(0);
         let current_hash = H256::from(0);
         let mut postman = helpers::generate_postman(current_height, current_hash);
+
+        let completed_result_3 = helpers::generate_executed_result(3);
+        postman
+            .backlogs
+            .insert_completed_result(3, completed_result_3);
 
         // generate BlockWithProof
         let mut block_with_proof =

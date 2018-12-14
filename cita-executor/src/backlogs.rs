@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::core::libexecutor::block::{ClosedBlock, OpenBlock};
+use cita_types::Address;
 use libproto::{ExecutedResult, Proof};
 use std::collections::BTreeMap;
 use util::Itertools;
@@ -55,6 +56,12 @@ impl Backlog {
     }
 
     fn all_exist(&self) -> bool {
+        trace!(
+            "open_block: {}, proof: {}, closed_block: {}",
+            self.open_block.is_some(),
+            self.proof.is_some(),
+            self.closed_block.is_some()
+        );
         self.open_block.is_some() && self.proof.is_some() && self.closed_block.is_some()
     }
 
@@ -213,32 +220,46 @@ impl Backlogs {
         // }
     }
 
-    pub fn insert_block_with_proof(&mut self, open_block: OpenBlock) -> bool {
-        let height = wrap_height(open_block.number() as usize);
-        let proof = open_block.proof().clone();
-        assert_eq!(height, self.get_current_height() + 1);
-        self.insert_open(height, Priority::BlockWithProof, open_block, Some(proof))
+    pub fn insert_block_with_proof(
+        &mut self,
+        open_block: OpenBlock,
+        present_proof: &Proof,
+    ) -> bool {
+        let block_height = wrap_height(open_block.number() as usize);
+        if block_height != (self.get_current_height() + 1) {
+            warn!("executor had received {}=th blockWithProof", block_height);
+        }
+        let previous_proof = open_block.proof().clone();
+        let previous_bft_proof: proof::BftProof = previous_proof.clone().into();
+        assert_eq!(
+            block_height - 1,
+            wrap_height(previous_bft_proof.height),
+            "{}-th block's height != {}-th previous_proof.height",
+            block_height - 1,
+            wrap_height(previous_bft_proof.height)
+        );
 
-        // FIXME assertion help to find many Bugs. But Integration tests
-        // let previous_proof = open_block.proof().clone();
-        //       have Bug, so I have to uncomment it.
-        // let present_proof = proofed.take_proof();
-        // let present_bft_proof = BftProof::from(present_proof.clone());
-        // let previous_bft_proof: BftProof = previous_proof.clone().into();
-        // let proof_height = wrap_height(present_bft_proof.height);
-        // assert_eq!(block_height, proof_height);
-        // assert_eq!(block_height, wrap_height(previous_bft_proof.height) + 1);
-        // self.assert_proof(key, present_bft_proof.height, &present_proof);
-        //
-        //    fn assert_proof(&mut self, key: &str, height: usize, proof: &libproto::Proof) {
-        //        let proof_height = wrap_height(height);
-        //        assert!(
-        //            self.backlogs.is_proof_ok(proof_height, &proof),
-        //            "unexpected message {}, {}-th proof is invalid",
-        //            key,
-        //            proof_height,
-        //        )
-        //    }
+        let present_bft_proof: proof::BftProof = present_proof.clone().into();
+        let present_bft_height = present_bft_proof.height;
+        assert_eq!(
+            block_height,
+            wrap_height(present_bft_height),
+            "{}-th block's height != {}-th present_proof.height",
+            block_height,
+            wrap_height(present_bft_height)
+        );
+
+        assert!(
+            self.is_proof_ok(present_bft_proof.height as u64, &present_proof),
+            "{}-th present bft proof is invalid",
+            wrap_height(present_bft_proof.height)
+        );
+        self.insert_open(
+            block_height,
+            Priority::BlockWithProof,
+            open_block,
+            Some(previous_proof),
+        )
     }
 
     fn insert_open(
@@ -324,29 +345,23 @@ impl Backlogs {
             .completed
             .get(&prev_height)
             .unwrap_or_else(|| panic!("{}-th ExecutedResult exist by outside", prev_height));
-        //        // FIXME BUG generated nodes -> validated nodes
-        //        // let validators = executed_result.get_config().get_validators();
-        //        // let authorities: Vec<Address> = validators
-        //        //     .into_iter()
-        //        //     .map(|vec| Address::from_slice(&vec[..]))
-        //        //     .collect();
-        let authorities: Vec<cita_types::Address> = executed_result
-            .get_config()
-            .get_nodes()
+
+        let validators = executed_result.get_config().get_validators();
+        let proof_checkers: Vec<Address> = validators
             .into_iter()
-            .map(|vec| cita_types::Address::from_slice(&vec[..]))
+            .map(|vec| Address::from_slice(&vec[..]))
             .collect();
 
         // FIXME for unit tests only. Should be remove latter
-        if authorities.is_empty() {
+        if proof_checkers.is_empty() {
             return true;
         }
         let bft_proof = proof::BftProof::from(proof.clone());
         // FIXME check proof. Integration tests have bug, uncomment it latter
-        if !bft_proof.check(height as usize, &authorities) {
+        if !bft_proof.check(height as usize, &proof_checkers) {
             trace!(
-                "bft_proof is invalid, authorities: {:?}, bft_proof: {:?}",
-                authorities,
+                "bft_proof is invalid, proof_checkers: {:?}, bft_proof: {:?}",
+                proof_checkers,
                 bft_proof
             );
         }
