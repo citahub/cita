@@ -94,6 +94,7 @@ mod config;
 mod extractor;
 mod fdlimit;
 mod helper;
+mod http_header;
 mod http_server;
 mod mq_handler;
 mod mq_publisher;
@@ -105,6 +106,7 @@ use clap::App;
 use config::{NewTxFlowConfig, ProfileConfig};
 use cpuprofiler::PROFILER;
 use fdlimit::set_fd_limit;
+use http_header::Origin;
 use http_server::Server;
 use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -116,7 +118,6 @@ use std::sync::mpsc::{channel, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};
-use tokio_core::reactor::Core;
 use util::{set_panic_handler, Mutex};
 use uuid::Uuid;
 use ws_handler::WsFactory;
@@ -235,15 +236,13 @@ fn main() {
             let tx = tx_relay.clone();
             let timeout = http_config.timeout;
             let http_responses = Arc::clone(&http_responses);
-            let allow_origin = http_config.allow_origin.clone();
+            let allow_origin = Origin::from_config(&http_config.allow_origin).unwrap();
             let _ = thread::Builder::new()
                 .name(format!("worker{}", i))
                 .spawn(move || {
-                    let core = Core::new().unwrap();
-                    let handle = core.handle();
                     let timeout = Duration::from_secs(timeout);
-                    let listener = http_server::listener(&addr, &handle).unwrap();
-                    Server::start(core, listener, tx, http_responses, timeout, &allow_origin);
+                    let listener = http_server::listener(&addr).unwrap();
+                    Server::start(listener, tx, http_responses, timeout, allow_origin);
                 })
                 .unwrap();
         }

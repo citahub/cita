@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use futures::future::{Future, FutureResult};
-use hyper::Request as HttpRequest;
 use jsonrpc_types::request::{
     PartialRequest, Request as JsonRequest, RpcRequest as JsonrpcRequest,
 };
@@ -40,7 +39,7 @@ pub trait Extractor<T> {
 
 pub type ExtractFuture<T, E> = Box<dyn Future<Item = T, Error = E> + Send + 'static>;
 
-impl FutExtractor<JsonrpcRequest> for HttpRequest {
+impl FutExtractor<JsonrpcRequest> for hyper::Request<hyper::Body> {
     type Error = ServiceError;
     type Fut = ExtractFuture<JsonrpcRequest, Self::Error>;
 
@@ -48,7 +47,7 @@ impl FutExtractor<JsonrpcRequest> for HttpRequest {
         use futures::Stream;
 
         let fut_resp = self
-            .body()
+            .into_body()
             .concat2()
             .map_err(ServiceError::BodyConcatError)
             .and_then(|chunk| {
