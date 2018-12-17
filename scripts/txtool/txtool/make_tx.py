@@ -89,10 +89,10 @@ def get_chainid_v1():
         chainid = response['chainIdV1']
         logger.debug(response)
     except:
-        chainid = "0"
+        chainid = "0x0"
 
     # padding to 32 bytes
-    chainid = int(chainid)
+    chainid = int(chainid, 16)
     logger.debug("final chainId is {}".format(chainid))
     return chainid
 
