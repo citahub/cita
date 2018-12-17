@@ -99,6 +99,7 @@ pub mod substate;
 pub mod authentication;
 pub mod contracts;
 pub mod libexecutor;
+pub mod snapshot;
 
 mod spec;
 

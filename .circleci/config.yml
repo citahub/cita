@@ -250,6 +250,9 @@ jobs:
       - run:
           name: Test Executor Process SignProposal/BlockWithProof
           command: ./tests/integrate_test/box_executor_test.sh
+      - run:
+          name: Test Snapshot Taking And Restoring
+          command: ./tests/integrate_test/cita_snapshot_test.sh
 
   "Byzantine Test in Quota Mode":
     <<: *job-default

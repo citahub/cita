@@ -29,6 +29,7 @@ use libproto::auth::Miscellaneous;
 use libproto::blockchain::{RichStatus, StateSignal};
 use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::snapshot::{Cmd as SnapshotCommand, SnapshotReq};
 use libproto::{request, response, Message};
 use serde_json;
 use std::convert::{Into, TryFrom, TryInto};
@@ -41,6 +42,7 @@ use core::libexecutor::lru_cache::LRUCache;
 use evm::Schedule;
 
 use super::backlogs::{wrap_height, Backlogs};
+use super::snapshot;
 
 pub struct Postman {
     backlogs: Backlogs,
@@ -126,11 +128,13 @@ impl Postman {
 
     // make sure executor exit also
     fn close(&self, rollback_id: BlockId) {
-        command::exit(
-            &self.command_req_sender,
-            &self.command_resp_receiver,
-            rollback_id,
-        );
+        if rollback_id != BlockId::Number(::std::usize::MAX as u64) {
+            command::exit(
+                &self.command_req_sender,
+                &self.command_resp_receiver,
+                rollback_id,
+            );
+        }
     }
 
     // listen messages from RabbitMQ and Executor.
@@ -184,6 +188,11 @@ impl Postman {
                 if let Some(state_signal) = msg.take_state_signal() {
                     self.reply_chain_state_signal(&state_signal)?;
                 }
+            }
+
+            routing_key!(Snapshot >> SnapshotReq) => {
+                let snapshot_req = msg.take_snapshot_req().unwrap();
+                self.deal_snapshot(snapshot_req)?;
             }
 
             routing_key!(Consensus >> SignedProposal)
@@ -685,6 +694,73 @@ impl Postman {
     fn response_mq(&self, key: String, message: Vec<u8>) {
         trace!("send {} into RabbitMQ", key);
         self.mq_resp_sender.send((key, message));
+    }
+
+    fn deal_snapshot(&self, req: SnapshotReq) -> Result<(), BlockId> {
+        match req.cmd {
+            SnapshotCommand::Snapshot => {
+                let highest_height = snapshot::handle_snapshot_height(
+                    req.get_end_height(),
+                    self.get_current_height(),
+                );
+                let filename = snapshot::handle_snapshot_filename(req.file);
+                let _ = snapshot::spawn_take_snapshot(
+                    filename,
+                    highest_height,
+                    &self.command_req_sender,
+                    &self.command_resp_receiver,
+                    &self.mq_resp_sender,
+                );
+                Ok(())
+            }
+            SnapshotCommand::Begin => {
+                snapshot::response(
+                    &self.mq_resp_sender,
+                    libproto::snapshot::Resp::BeginAck,
+                    Ok(()),
+                );
+                Ok(())
+            }
+            SnapshotCommand::Restore => {
+                let filename = snapshot::handle_snapshot_filename(req.file);
+                let _ = snapshot::spawn_restore_snapshot(
+                    &filename,
+                    &self.command_req_sender,
+                    &self.command_resp_receiver,
+                    &self.mq_resp_sender,
+                );
+                Ok(())
+            }
+            SnapshotCommand::Clear => {
+                // We change Executor's DB with snapshot's DB when receive `SnapshotCommand::Clear`
+
+                //   1. Ensure Executor stopped
+                command::exit(
+                    &self.command_req_sender,
+                    &self.command_resp_receiver,
+                    BlockId::Number(self.get_current_height()),
+                );
+
+                //   2. Move snapshot's DB to replace Executor's DB
+                let origin_db = cita_directories::DataPath::root_node_path() + "/statedb";
+                let restoration_db =
+                    cita_directories::DataPath::root_node_path() + "/snapshot_executor";
+                snapshot::change_database(&self.mq_resp_sender, origin_db, restoration_db);
+
+                // TODO: This is a dirty trick, for close Postman without noticing Executor.
+                //       Hope refactor it with more graceful way
+                //   3. Postman exit too so that main() would restart them
+                Err(BlockId::Number(::std::usize::MAX as u64))
+            }
+            SnapshotCommand::End => {
+                snapshot::response(
+                    &self.mq_resp_sender,
+                    libproto::snapshot::Resp::EndAck,
+                    Ok(()),
+                );
+                Ok(())
+            }
+        }
     }
 }
 

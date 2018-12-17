@@ -18,6 +18,7 @@
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
 use contracts::solc::{sys_config::ChainId, PermissionManagement, SysConfig, VersionManager};
+use engines::NullEngine;
 use error::CallError;
 use evm::env_info::EnvInfo;
 use executive::{Executed, Executive, TransactOptions};
@@ -25,6 +26,7 @@ pub use libexecutor::block::*;
 use libexecutor::call_request::CallRequest;
 use serde_json;
 use std::fmt;
+use util::RwLock;
 
 use jsonrpc_types::rpctypes::{
     BlockNumber, BlockTag, EconomicalModel as RpcEconomicalModel, MetaData,
@@ -61,6 +63,7 @@ pub enum Command {
     LoadExecutedResult(u64),
     Grow(ClosedBlock),
     Exit(BlockId),
+    CloneExecutorReader,
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]
@@ -80,6 +83,7 @@ pub enum CommandResp {
     LoadExecutedResult(ExecutedResult),
     Grow(ExecutedResult),
     Exit,
+    CloneExecutorReader(Executor),
 }
 
 impl fmt::Display for Command {
@@ -100,6 +104,7 @@ impl fmt::Display for Command {
             Command::LoadExecutedResult(_) => write!(f, "Command::LoadExecutedResult"),
             Command::Grow(_) => write!(f, "Command::Grow"),
             Command::Exit(_) => write!(f, "Command::Exit"),
+            Command::CloneExecutorReader => write!(f, "Command::CloneExecutorReader"),
         }
     }
 }
@@ -122,6 +127,7 @@ impl fmt::Display for CommandResp {
             CommandResp::LoadExecutedResult(_) => write!(f, "CommandResp::LoadExecutedResult"),
             CommandResp::Grow(_) => write!(f, "CommandResp::Grow"),
             CommandResp::Exit => write!(f, "CommandResp::Exit"),
+            CommandResp::CloneExecutorReader(_) => write!(f, "CommandResp::CloneExecurorReader"),
         }
     }
 }
@@ -148,6 +154,7 @@ pub trait Commander {
     fn load_executed_result(&self, height: u64) -> ExecutedResult;
     fn grow(&mut self, closed_block: ClosedBlock) -> ExecutedResult;
     fn exit(&mut self, rollback_id: BlockId);
+    fn clone_executor_reader(&mut self) -> Self;
 }
 
 impl Commander for Executor {
@@ -186,6 +193,9 @@ impl Commander for Executor {
             Command::Exit(rollback_id) => {
                 self.exit(rollback_id);
                 CommandResp::Exit
+            }
+            Command::CloneExecutorReader => {
+                CommandResp::CloneExecutorReader(self.clone_executor_reader())
             }
         }
     }
@@ -454,6 +464,32 @@ impl Commander for Executor {
         self.rollback_current_height(rollback_id);
         self.close();
     }
+
+    fn clone_executor_reader(&mut self) -> Self {
+        let current_header = self.current_header.read().clone();
+        let db = self.db.read().clone();
+        let fake_parent_hash: H256 = Default::default();
+        let state_db = self.state_db.read().boxed_clone_canon(&fake_parent_hash);
+        let factories = self.factories.clone();
+        let sys_config = self.sys_config.clone();
+        let engine = Box::new(NullEngine::cita());
+        let fsm_req_receiver = self.fsm_req_receiver.clone();
+        let fsm_resp_sender = self.fsm_resp_sender.clone();
+        let command_req_receiver = self.command_req_receiver.clone();
+        let command_resp_sender = self.command_resp_sender.clone();
+        Executor {
+            current_header: RwLock::new(current_header),
+            db: RwLock::new(db),
+            state_db: RwLock::new(state_db),
+            factories,
+            sys_config,
+            engine,
+            fsm_req_receiver,
+            fsm_resp_sender,
+            command_req_receiver,
+            command_resp_sender,
+        }
+    }
 }
 
 // TODO hope someone refactor these public function via macro
@@ -640,6 +676,17 @@ pub fn exit(
     command_req_sender.send(Command::Exit(rollback_id));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::Exit => (),
+        _ => unimplemented!(),
+    }
+}
+
+pub fn clone_executor_reader(
+    command_req_sender: &Sender<Command>,
+    command_resp_receiver: &Receiver<CommandResp>,
+) -> Executor {
+    command_req_sender.send(Command::CloneExecutorReader);
+    match command_resp_receiver.recv().unwrap() {
+        CommandResp::CloneExecutorReader(r) => r,
         _ => unimplemented!(),
     }
 }
