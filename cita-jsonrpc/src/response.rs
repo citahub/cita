@@ -15,17 +15,38 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use futures::future::Future;
 use futures::stream::{Collect, FuturesOrdered};
-use futures::sync::oneshot;
-use futures::{Async, Poll};
-use hyper;
-use hyper::header::Headers;
-use hyper::server::Response;
+use futures::{future::Future, sync::oneshot, Async, Poll};
+use hyper::{HeaderMap as Headers, Response as HyperResponse, StatusCode};
 use jsonrpc_types::response::Output;
 use serde_json;
 
 use crate::service_error::ServiceError;
+
+pub type Response = HyperResponse<hyper::Body>;
+
+// bring back hyper 0.11 api for easy of use
+pub trait HyperResponseExt<T> {
+    fn with_headers(self, headers: Headers) -> Self;
+    fn with_body(self, body: T) -> Self;
+    fn with_status(self, code: StatusCode) -> Self;
+}
+
+impl<T> HyperResponseExt<T> for HyperResponse<T> {
+    fn with_headers(mut self, headers: Headers) -> Self {
+        self.headers_mut().extend(headers);
+        self
+    }
+
+    fn with_body(self, body: T) -> Self {
+        self.map(|_| body)
+    }
+
+    fn with_status(mut self, code: StatusCode) -> Self {
+        *self.status_mut() = code;
+        self
+    }
+}
 
 pub trait IntoResponse {
     fn into_response(self, Headers) -> Response;
@@ -50,9 +71,7 @@ where
             Ok(Async::Ready(resp)) => Ok(resp),
             Err(e) => {
                 error!("pool {} response: {}", response_type, e);
-                Err(ServiceError::MQResponsePollIncompleteError(
-                    hyper::Error::Incomplete,
-                ))
+                Err(ServiceError::MQResponsePollIncompleteError)
             }
         }?;
 
@@ -61,14 +80,15 @@ where
             ServiceError::InternalServerError
         })?;
 
-        let json_resp = serde_json::to_vec(&resp).map_err(|err| {
+        let json_body = serde_json::to_vec(&resp).map_err(|err| {
             error!("json serde {} response: {}", response_type, err);
             ServiceError::InternalServerError
         })?;
 
-        Ok(Async::Ready(
-            Response::new().with_headers(headers).with_body(json_resp),
-        ))
+        let resp = Response::default()
+            .with_headers(headers)
+            .with_body(hyper::Body::from(json_body));
+        Ok(Async::Ready(resp))
     }
 }
 
@@ -166,5 +186,59 @@ impl Future for PublishFutResponse {
             PublishFutResponse::Single(resp) => resp.poll(),
             PublishFutResponse::Batch(resp) => resp.poll(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hyper_response_with_headers() {
+        use http_header::HeaderMapExt;
+        use hyper::{header::*, Method};
+
+        let mut headers = HeaderMap::new();
+        let mut ext_headers = HeaderMap::new();
+        let mut resp = Response::default();
+
+        headers.insert(HOST, HeaderValue::from_static("cryptape.com"));
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+
+        ext_headers.insert_vec(
+            ACCESS_CONTROL_ALLOW_METHODS,
+            vec![Method::POST, Method::OPTIONS],
+        );
+        ext_headers.insert(CONTENT_TYPE, HeaderValue::from_static("text/plain"));
+
+        resp = resp.with_headers(headers.clone());
+        assert_eq!(resp.headers(), &headers);
+
+        resp = resp.with_headers(ext_headers.clone());
+        headers.extend(ext_headers);
+        assert_eq!(resp.headers().len(), 3);
+        assert_eq!(resp.headers(), &headers);
+        assert_eq!(
+            resp.headers().get(CONTENT_TYPE),
+            Some(&HeaderValue::from_static("text/plain"))
+        );
+    }
+
+    #[test]
+    fn test_hyper_response_with_body() {
+        let mut resp = HyperResponse::new("");
+        assert_eq!(resp.body(), &"");
+
+        resp = resp.with_body("cryptape");
+        assert_eq!(resp.body(), &"cryptape");
+    }
+
+    #[test]
+    fn test_hyper_response_with_status() {
+        let mut resp = Response::default();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        resp = resp.with_status(StatusCode::NOT_FOUND);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 }

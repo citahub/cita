@@ -15,11 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use hyper::{header::Headers, server::Response, StatusCode};
+use hyper::{Body, HeaderMap as Headers, Response, StatusCode};
 use jsonrpc_types::{request::RequestInfo, response::RpcFailure};
 use serde_json;
 
-use crate::response::IntoResponse;
+use crate::response::{HyperResponseExt, IntoResponse};
 
 const MSG_TIMEOUT_RESEND: &str = r#"{"err": "System timeout, please resend."}"#;
 const MSG_INCOMPLETE_REQUEST: &str = r#"{"err": "Incomplete request, please resend."}"#;
@@ -30,14 +30,14 @@ pub enum ServiceError {
     JsonrpcSerdeError(serde_json::Error),
     JsonrpcPartCompleteError(RequestInfo, jsonrpc_types::Error),
     MQRpcTimeout(Option<RequestInfo>),
-    MQResponsePollIncompleteError(hyper::Error),
+    MQResponsePollIncompleteError,
     InternalServerError,
 }
 
 impl IntoResponse for ServiceError {
-    fn into_response(self, http_headers: Headers) -> Response {
-        let new_response = |status_code: Option<StatusCode>, body: Option<Vec<u8>>| {
-            let resp = Response::new().with_headers(http_headers);
+    fn into_response(self, http_headers: Headers) -> Response<Body> {
+        let new_response = |status_code: Option<StatusCode>, body: Option<Body>| {
+            let resp = Response::default().with_headers(http_headers);
 
             match (status_code, body) {
                 (Some(code), Some(body)) => resp.with_status(code).with_body(body),
@@ -48,10 +48,8 @@ impl IntoResponse for ServiceError {
         };
 
         match self {
-            ServiceError::BodyConcatError(e) | ServiceError::MQResponsePollIncompleteError(e) => {
-                new_response(None, Some(e.to_string().into_bytes()))
-            }
-            ServiceError::JsonrpcSerdeError(_) => new_response(Some(StatusCode::BadRequest), None),
+            ServiceError::BodyConcatError(e) => new_response(None, Some(Body::from(e.to_string()))),
+            ServiceError::JsonrpcSerdeError(_) => new_response(Some(StatusCode::BAD_REQUEST), None),
             ServiceError::JsonrpcPartCompleteError(req_info, err) => {
                 let failure = RpcFailure::from_options(req_info, err);
                 let resp_body = serde_json::to_vec(&failure).unwrap_or_else(|e| {
@@ -59,7 +57,7 @@ impl IntoResponse for ServiceError {
                     MSG_INCOMPLETE_REQUEST.as_bytes().to_vec()
                 });
 
-                new_response(None, Some(resp_body))
+                new_response(None, Some(Body::from(resp_body)))
             }
             ServiceError::MQRpcTimeout(req_info) => {
                 let timeout_err = jsonrpc_types::Error::server_error(
@@ -75,10 +73,10 @@ impl IntoResponse for ServiceError {
                     MSG_TIMEOUT_RESEND.as_bytes().to_vec()
                 });
 
-                new_response(None, Some(resp_body))
+                new_response(None, Some(Body::from(resp_body)))
             }
-            ServiceError::InternalServerError => {
-                new_response(Some(StatusCode::InternalServerError), None)
+            ServiceError::InternalServerError | ServiceError::MQResponsePollIncompleteError => {
+                new_response(Some(StatusCode::INTERNAL_SERVER_ERROR), None)
             }
         }
     }

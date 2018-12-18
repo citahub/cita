@@ -83,6 +83,7 @@ extern crate threadpool;
 extern crate time;
 extern crate tokio_core;
 extern crate tokio_io;
+extern crate tokio_timer;
 extern crate unicase;
 #[macro_use]
 extern crate util;
@@ -93,6 +94,7 @@ mod config;
 mod extractor;
 mod fdlimit;
 mod helper;
+mod http_header;
 mod http_server;
 mod mq_handler;
 mod mq_publisher;
@@ -104,6 +106,7 @@ use clap::App;
 use config::{NewTxFlowConfig, ProfileConfig};
 use cpuprofiler::PROFILER;
 use fdlimit::set_fd_limit;
+use futures::Future;
 use http_server::Server;
 use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -115,7 +118,6 @@ use std::sync::mpsc::{channel, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};
-use tokio_core::reactor::Core;
 use util::{set_panic_handler, Mutex};
 use uuid::Uuid;
 use ws_handler::WsFactory;
@@ -238,11 +240,13 @@ fn main() {
             let _ = thread::Builder::new()
                 .name(format!("worker{}", i))
                 .spawn(move || {
-                    let core = Core::new().unwrap();
-                    let handle = core.handle();
-                    let timeout = Duration::from_secs(timeout);
-                    let listener = http_server::listener(&addr, &handle).unwrap();
-                    Server::start(core, listener, tx, http_responses, timeout, &allow_origin);
+                    let server =
+                        Server::new(&addr, tx, http_responses, timeout, &allow_origin).unwrap();
+                    let jsonrpc_server = server
+                        .jsonrpc()
+                        .map_err(|err| eprintln!("server err {}", err));
+
+                    hyper::rt::run(jsonrpc_server)
                 })
                 .unwrap();
         }
