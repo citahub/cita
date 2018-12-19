@@ -1065,7 +1065,7 @@ params: [
     curl -X POST --data '{"jsonrpc":"2.0","method":"getMetaData","params":["0xff"],"id":1}' 127.0.0.1:1337
     ```
 
-      ```json
+    ```json
     {
         "id": 1,
         "jsonrpc": "2.0",
