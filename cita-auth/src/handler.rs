@@ -438,7 +438,7 @@ impl MsgHandler {
         Ret::OK
     }
 
-    // verify chain id, nonce, valid_until_block, dup, quota and black list
+    // verify chain id, nonce, value, valid_until_block, dup, quota and black list
     fn verify_tx_req(&self, req: &VerifyTxReq) -> Ret {
         let ret = self.verify_tx_req_chain_id(req);
         if ret != Ret::OK {

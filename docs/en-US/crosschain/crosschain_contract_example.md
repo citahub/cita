@@ -2,7 +2,7 @@
 
 ## How to write cross-chain contract ?
 
-Let's illustrate it with a [contract sample](https://github.com/cryptape/cita/blob/develop/scripts/contracts/tests/contracts/MyToken.sol).
+Let's illustrate it with a [contract sample](https://github.com/cryptape/test-contracts/blob/master/MyToken.sol).
 
 This is a token contract used to transfer tokens cross chains and need to be deployed in both sidechain and mainchain.
 
