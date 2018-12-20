@@ -88,6 +88,9 @@ extern crate libproto;
 extern crate logger;
 extern crate lru;
 extern crate pubsub;
+#[cfg(test)]
+#[macro_use]
+extern crate quickcheck;
 extern crate rayon;
 #[macro_use]
 extern crate serde_derive;
@@ -99,14 +102,6 @@ extern crate tx_pool;
 extern crate util;
 extern crate uuid;
 
-pub mod batch_forward;
-pub mod block_txn;
-pub mod block_verify;
-pub mod config;
-pub mod dispatcher;
-pub mod handler;
-pub mod history;
-pub mod txwal;
 use batch_forward::BatchForward;
 use clap::App;
 use config::Config;
@@ -118,6 +113,15 @@ use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
 use util::set_panic_handler;
+
+pub mod batch_forward;
+pub mod block_txn;
+pub mod block_verify;
+pub mod config;
+pub mod dispatcher;
+pub mod handler;
+pub mod history;
+pub mod txwal;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
