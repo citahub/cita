@@ -162,3 +162,50 @@ mod history_heights_tests {
         assert_eq!(h.next_height(), 102);
     }
 }
+
+#[cfg(test)]
+mod history_heights_quick_check {
+    use super::HistoryHeights;
+    use quickcheck::Arbitrary;
+    use quickcheck::Gen;
+
+    #[derive(Clone, Debug)]
+    struct HistoryHeightsArgs {
+        history_heights: Vec<u64>,
+    }
+
+    impl Arbitrary for HistoryHeightsArgs {
+        fn arbitrary<G: Gen>(g: &mut G) -> Self {
+            let mut heights_ranges: Vec<u64> = vec![];
+            for i in 0..201 {
+                heights_ranges.push(i);
+            }
+            let mut history_heights: Vec<u64> = vec![];
+            for _ in 0..200 {
+                let index = g.next_u64() as usize % heights_ranges.len();
+                history_heights.push(heights_ranges.remove(index));
+            }
+
+            HistoryHeightsArgs { history_heights }
+        }
+    }
+
+    quickcheck! {
+          fn prop(args: HistoryHeightsArgs) -> bool {
+              let mut h = HistoryHeights::new();
+              for i in args.history_heights {
+                h.update_height(i);
+              }
+              let min = h.min_height();
+              let mut sum: u64 = 0;
+              for j in &h.heights {
+                  sum += j - min + 1;
+              }
+              if h.is_init() {
+                  sum == 101 * 50
+              } else {
+                  sum != 101 * 50
+              }
+          }
+    }
+}
