@@ -64,7 +64,9 @@ impl BatchForward {
             } else {
                 thread::sleep(Duration::new(0, self.check_duration * 1_000_000));
                 let now = AsMillis::as_millis(&unix_now());
-                if (now - self.last_timestamp) > self.timeout && !self.request_buffer.is_empty() {
+                if now.saturating_sub(self.last_timestamp) > self.timeout
+                    && !self.request_buffer.is_empty()
+                {
                     self.batch_forward();
                 }
             }
