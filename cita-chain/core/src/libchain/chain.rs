@@ -77,7 +77,7 @@ pub struct RelayInfo {
 pub struct TxProof {
     tx: SignedTransaction,
     receipt: Receipt,
-    receipt_proof: merklehash::MerkleProof,
+    receipt_proof: merklehash::Proof,
     block_header: Header,
     next_proposal_header: Header,
     proposal_proof: ProtoProof,
@@ -97,9 +97,8 @@ impl TxProof {
             return false;
         };
         // Use receipt_proof and receipt_root to prove the receipt in the block.
-        if merklehash::verify_proof(
+        if self.receipt_proof.verify(
             *self.block_header.receipts_root(),
-            &self.receipt_proof,
             self.receipt.clone().rlp_bytes().into_vec().crypt_hash(),
         ) {
         } else {
@@ -889,7 +888,7 @@ impl Chain {
                         }
                     })
                     .and_then(|receipt| {
-                        merklehash::MerkleTree::from_bytes(
+                        merklehash::Tree::from_bytes(
                             receipts.receipts.iter().map(|r| r.rlp_bytes().into_vec()),
                         )
                         .get_proof_by_input_index(index)

@@ -173,10 +173,9 @@ impl ExecutedBlock {
         let mut block = Block::new(self.block);
         let state_root = *self.state.root();
         block.set_state_root(state_root);
-        let receipts_root = merklehash::MerkleTree::from_bytes(
-            self.receipts.iter().map(|r| r.rlp_bytes().to_vec()),
-        )
-        .get_root_hash();
+        let receipts_root =
+            merklehash::Tree::from_bytes(self.receipts.iter().map(|r| r.rlp_bytes().to_vec()))
+                .get_root_hash();
 
         block.set_receipts_root(receipts_root);
         block.set_quota_used(self.current_quota_used);
