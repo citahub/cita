@@ -42,7 +42,7 @@ Now we have completed the token transfer cross chains.
 
 ### Create, register，and launch sidechains
 
-Currently, sidechains are managed using the [ChainManager](https://github.com/cryptape/cita/blob/develop/scripts/contracts/system/chain_manager.sol).
+Currently, sidechains are managed using the [ChainManager](https://github.com/cryptape/cita/blob/develop/scripts/contracts/src/system/ChainManager.sol).
 
 * Generate the private key and address of sidechain verification node, then call `newSideChain` in mainchain to create a sidechain ID using the sidechain address. 
 * Call `enableSideChain` in mainchain to enable the sidechain with specified Id.
