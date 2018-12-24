@@ -24,29 +24,29 @@
 //!
 //! 1. Subscribe channel
 //!
-//!     |       Queue       | PubModule | Message Type   |
-//!     | ----------------- | --------- | -------------- |
-//!     | network_tx        | Auth      | Request        |
-//!     | network_consensus | Consensus | SignedProposal |
-//!     | network_consensus | Consensus | RawBytes       |
-//!     | network           | Chain     | Status         |
-//!     | network           | Chain     | SyncResponse   |
-//!     | network           | Jonsonrpc | RequestNet     |
-//!     | network           | Auth      | GetBlockTxn    |
-//!     | network           | Auth      | BlockTxn       |
+//!     |       Queue       | PubModule | Message Type          |
+//!     | ----------------- | --------- | --------------------- |
+//!     | network_tx        | Auth      | Request               |
+//!     | network_consensus | Consensus | CompactSignedProposal |
+//!     | network_consensus | Consensus | RawBytes              |
+//!     | network           | Chain     | Status                |
+//!     | network           | Chain     | SyncResponse          |
+//!     | network           | Jonsonrpc | RequestNet            |
+//!     | network           | Auth      | GetBlockTxn           |
+//!     | network           | Auth      | BlockTxn              |
 //!
 //! 2. Publish channel
 //!
-//!     |       Queue       | PubModule | SubModule           | Message Type   |
-//!     | ----------------- | --------- | ------------------- | -------------- |
-//!     | network           | Net       | Chain, Executor     | SyncResponse   |
-//!     | network           | Net       | Snapshot            | SnapshotResp   |
-//!     | network           | Net       | Jsonrpc             | Response       |
-//!     | network_tx        | Net       | Auth                | Request        |
-//!     | network_consensus | Net       | Executor, Consensus | SignedProposal |
-//!     | network_consensus | Net       | Consensus           | RawBytes       |
-//!     | network           | Net       | Auth                | BlockTxn       |
-//!     | network           | Net       | Auth                | GetBlockTxn    |
+//!     |       Queue       | PubModule | SubModule           | Message Type          |
+//!     | ----------------- | --------- | ------------------- | --------------------- |
+//!     | network           | Net       | Chain, Executor     | SyncResponse          |
+//!     | network           | Net       | Snapshot            | SnapshotResp          |
+//!     | network           | Net       | Jsonrpc             | Response              |
+//!     | network_tx        | Net       | Auth                | Request               |
+//!     | network_consensus | Net       | Consensus           | ComapctSignedProposal |
+//!     | network_consensus | Net       | Consensus           | RawBytes              |
+//!     | network           | Net       | Auth                | BlockTxn              |
+//!     | network           | Net       | Auth                | GetBlockTxn           |
 //!
 //! ### p2p binary protocol
 //! | Start      | Full length | Key length | Key value      | Message value    |
@@ -165,7 +165,7 @@ fn main() {
     let (ctx_pub_consensus, crx_pub_consensus) = channel();
     start_pubsub(
         "network_consensus",
-        routing_key!([Consensus >> SignedProposal, Consensus >> RawBytes]),
+        routing_key!([Consensus >> CompactSignedProposal, Consensus >> RawBytes]),
         ctx_sub_consensus,
         crx_pub_consensus,
     );

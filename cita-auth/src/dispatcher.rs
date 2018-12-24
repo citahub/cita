@@ -138,6 +138,7 @@ impl Dispatcher {
         success
     }
 
+    // TODO: Wal shoud be inside pool
     pub fn add_txs_to_pool(&self, txs: Vec<SignedTransaction>) {
         let txs_pool = &mut self.txs_pool.borrow_mut();
         let added: Vec<SignedTransaction> = txs
@@ -155,6 +156,13 @@ impl Dispatcher {
             .map(|id| pool.get(id).cloned())
             .filter(|tx| tx.is_some())
             .map(|tx| tx.unwrap())
+            .collect()
+    }
+
+    pub fn check_missing(&self, ids: Vec<H256>) -> Vec<H256> {
+        let pool = self.txs_pool.borrow();
+        ids.into_iter()
+            .filter(|id| pool.get(id).is_none())
             .collect()
     }
 

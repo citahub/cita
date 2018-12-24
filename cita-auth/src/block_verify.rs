@@ -16,24 +16,23 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use cita_types::traits::LowerHex;
-use cita_types::{Address, H256};
+use cita_types::Address;
 use crypto::{pubkey_to_address, PubKey};
 use libproto::blockchain::AccountGasLimit;
 use libproto::blockchain::SignedTransaction;
 use std::collections::HashMap;
 
-pub struct Block {
-    pub transaction_root: H256,
-    pub transactions: Vec<SignedTransaction>,
+pub struct BlockVerify<'a> {
+    pub transactions: &'a Vec<SignedTransaction>,
 }
 
-impl Block {
+impl<'a> BlockVerify<'a> {
     pub fn transactions(&self) -> &[SignedTransaction] {
         &self.transactions
     }
 }
 
-impl Block {
+impl<'a> BlockVerify<'a> {
     pub fn verify_quota(
         &self,
         block_quota_limit: u64,
@@ -99,9 +98,8 @@ mod tests {
         raw_tx.quota = 1000;
         let tx = raw_tx.sign(*privkey);
 
-        let block = Block {
-            transaction_root: Default::default(),
-            transactions: vec![tx],
+        let block = BlockVerify {
+            transactions: &vec![tx],
         };
 
         let mut account_quota_limit = AccountGasLimit::new();

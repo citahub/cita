@@ -106,10 +106,10 @@ impl NetWork {
                         .tx_new_tx
                         .send((routing_key!(Net >> Request).into(), data));
                 }
-                routing_key!(Consensus >> SignedProposal) => {
+                routing_key!(Consensus >> CompactSignedProposal) => {
                     let _ = self
                         .tx_consensus
-                        .send((routing_key!(Net >> SignedProposal).into(), data));
+                        .send((routing_key!(Net >> CompactSignedProposal).into(), data));
                 }
                 routing_key!(Consensus >> RawBytes) => {
                     let _ = self
