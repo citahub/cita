@@ -565,6 +565,12 @@ mod integration_test {
         core.run(futures::future::join_all(works)).unwrap();
 
         tx_quit.send(()).unwrap();
+        // explicitly drop Hyper::Client before shutdown test server,
+        // otherwise graceful shutdown maybe blocked then cause deadlock
+        // when we join that server's thread.
+        //
+        // Reference: https://github.com/hyperium/hyper/issues/1668
+        drop(client);
         receiver.join().unwrap();
     }
 }
