@@ -26,7 +26,7 @@
 //! 1. Subscribe channel
 //!
 //!     | Queue | PubModule | Message Type      |
-//!     | ----- | --------- | ----------------- |
+//!     | ----- | --------- | ------------------|
 //!     | auth  | Consensus | VerifyBlockReq    |
 //!     | auth  | Chain     | BlockTxHashes     |
 //!     | auth  | Executor  | BlackList         |
@@ -39,17 +39,17 @@
 //!
 //! 2. Publish channel
 //!
-//!     | Queue | PubModule | SubModule | Message Type      |
-//!     | ----- | --------- | --------- | ----------------- |
-//!     | auth  | Auth      | Chain     | BlockTxHashesReq  |
-//!     | auth  | Auth      | Consensus | VerifyBlockResp   |
-//!     | auth  | Auth      | Jsonrpc   | Response          |
-//!     | auth  | Auth      | Net       | Request           |
-//!     | auth  | Auth      | Consensus | BlockTxs          |
-//!     | auth  | Auth      | Snapshot  | SnapshotResp      |
-//!     | auth  | Auth      | Executor  | MiscellaneousReq  |
-//!     | auth  | Auth      | Net       | GetBlockTxn       |
-//!     | auth  | Auth      | Net       | BlockTxn          |
+//!     | Queue | PubModule | SubModule | Message Type     |
+//!     | ----- | --------- | --------- | ---------------- |
+//!     | auth  | Auth      | Chain     | BlockTxHashesReq |
+//!     | auth  | Auth      | Consensus | VerifyBlockResp  |
+//!     | auth  | Auth      | Jsonrpc   | Response         |
+//!     | auth  | Auth      | Net       | Request          |
+//!     | auth  | Auth      | Consensus | BlockTxs         |
+//!     | auth  | Auth      | Snapshot  | SnapshotResp     |
+//!     | auth  | Auth      | Executor  | MiscellaneousReq |
+//!     | auth  | Auth      | Net       | GetBlockTxn      |
+//!     | auth  | Auth      | Net       | BlockTxn         |
 //!
 //! ### Key behavior
 //!
@@ -100,6 +100,7 @@ extern crate tempfile;
 extern crate tx_pool;
 #[macro_use]
 extern crate util;
+extern crate hashable;
 extern crate uuid;
 
 use batch_forward::BatchForward;
@@ -121,6 +122,7 @@ pub mod config;
 pub mod dispatcher;
 pub mod handler;
 pub mod history;
+mod transaction_verify;
 pub mod txwal;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));

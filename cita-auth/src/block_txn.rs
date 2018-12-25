@@ -17,13 +17,14 @@
 
 use cita_types::H256;
 use handler::verify_tx_sig;
-use libproto::{BlockTxn, GetBlockTxn, Origin};
+use hashable::Hashable;
+use libproto::{BlockTxn, GetBlockTxn, Origin, SignedTransaction};
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+use std::convert::TryInto;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 
-// Origin, GetBlockTxn, SendFlag
-pub type BlockTxnReq = (Origin, GetBlockTxn, bool);
+pub type BlockTxnReq = (Origin, GetBlockTxn);
 
 pub struct BlockTxnMessage {
     pub origin: Origin,
@@ -52,9 +53,6 @@ pub enum Error {
     BadTxSignature,
 }
 
-type Pubkey = Vec<u8>;
-type PubkeyAndHash = (Pubkey, H256);
-
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Error::*;
@@ -72,8 +70,8 @@ impl fmt::Display for Error {
 }
 
 impl BlockTxnMessage {
-    pub fn validate(&mut self, req: &BlockTxnReq) -> Result<Vec<PubkeyAndHash>, Error> {
-        let (expected_origin, expect_block_txn, _) = req;
+    pub fn validate(&mut self, req: &BlockTxnReq) -> Result<Vec<SignedTransaction>, Error> {
+        let (expected_origin, expect_block_txn) = req;
 
         // Validate origin
         let origin = self.origin;
@@ -111,18 +109,24 @@ impl BlockTxnMessage {
         }
 
         // Validate transaction signature
-        let results: Vec<Option<PubkeyAndHash>> = expected_short_ids
+        let results: Vec<Option<SignedTransaction>> = expected_short_ids
             .into_par_iter()
             .zip(transactions.into_par_iter())
             .map(|(short_id, transaction)| {
                 let tx_hash = H256::from_slice(short_id);
-                let result = verify_tx_sig(
-                    transaction.get_crypto(),
-                    &tx_hash,
-                    transaction.get_signature(),
-                );
+                // TODO: move verify tx sig to transaction?
+                let bytes: Vec<u8> = transaction.get_transaction().try_into().unwrap();
+                let hash = bytes.crypt_hash();
+                let result =
+                    verify_tx_sig(transaction.get_crypto(), &hash, transaction.get_signature());
                 match result {
-                    Ok(pubkey) => Some((pubkey, tx_hash)),
+                    Ok(pubkey) => {
+                        let mut signed_tx = SignedTransaction::new();
+                        signed_tx.set_transaction_with_sig(transaction.clone());
+                        signed_tx.set_tx_hash(tx_hash.to_vec());
+                        signed_tx.set_signer(pubkey);
+                        Some(signed_tx)
+                    }
                     Err(_) => None,
                 }
             })
@@ -131,6 +135,7 @@ impl BlockTxnMessage {
         if results.iter().any(|result| result.is_none()) {
             return Err(Error::BadTxSignature);
         };
+
         Ok(results.into_iter().map(|x| x.unwrap()).collect())
     }
 }
@@ -142,7 +147,7 @@ mod tests {
 
     #[test]
     fn validate_origin() {
-        let expected: BlockTxnReq = (1, GetBlockTxn::default(), true);
+        let expected: BlockTxnReq = (1, GetBlockTxn::default());
         let mut block_txn_message = BlockTxnMessage {
             origin: 2,
             block_txn: BlockTxn::default(),
@@ -163,7 +168,7 @@ mod tests {
         let mut b1 = GetBlockTxn::new();
         let h1 = H256::from(1);
         b1.set_block_hash(h1.to_vec());
-        let expected: BlockTxnReq = (1, b1, true);
+        let expected: BlockTxnReq = (1, b1);
 
         let mut b2 = BlockTxn::new();
         let h2 = H256::from(2);
@@ -186,7 +191,7 @@ mod tests {
     #[test]
     fn validate_short_ids_len() {
         let b1 = GetBlockTxn::new();
-        let expected: BlockTxnReq = (1, b1, true);
+        let expected: BlockTxnReq = (1, b1);
 
         let mut b2 = BlockTxn::new();
         b2.set_transactions(vec![UnverifiedTransaction::new()].into());
@@ -204,7 +209,7 @@ mod tests {
         let mut b1 = GetBlockTxn::new();
         let h1 = H256::from(1);
         b1.set_short_ids(vec![h1.to_vec()].into());
-        let expected: BlockTxnReq = (1, b1, true);
+        let expected: BlockTxnReq = (1, b1);
 
         let mut b2 = BlockTxn::new();
         b2.set_transactions(vec![UnverifiedTransaction::new()].into());
@@ -222,7 +227,7 @@ mod tests {
         let mut b1 = GetBlockTxn::new();
         let t1 = UnverifiedTransaction::new();
         b1.set_short_ids(vec![t1.crypt_hash().to_vec()].into());
-        let expected: BlockTxnReq = (1, b1, true);
+        let expected: BlockTxnReq = (1, b1);
 
         let mut b2 = BlockTxn::new();
         b2.set_transactions(vec![t1].into());

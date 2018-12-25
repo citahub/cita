@@ -24,18 +24,18 @@
 //!
 //! 1. Subscribe channel
 //!
-//!     | Queue    | PubModule | Message Type       |
-//!     | -------- | --------- | ------------------ |
-//!     | executor | Chain     | Request            |
-//!     | executor | Chain     | Richstatus         |
-//!     | executor | Chain     | StateSignal        |
-//!     | executor | Chain     | LocalSync          |
-//!     | executor | Consensus | BlockWithProof     |
-//!     | executor | Consensus | SignedProposal     |
-//!     | executor | Consensus | MiscellaneousReq   |
-//!     | executor | Net       | SyncResponse       |
-//!     | executor | Net       | SignedProposal     |
-//!     | executor | Snapshot  | SnapshotReq        |
+//!     | Queue    | PubModule | Message Type               |
+//!     | -------- | --------- | ------------------         |
+//!     | executor | Chain     | Request                    |
+//!     | executor | Chain     | Richstatus                 |
+//!     | executor | Chain     | StateSignal                |
+//!     | executor | Chain     | LocalSync                  |
+//!     | executor | Consensus | BlockWithProof             |
+//!     | executor | Consensus | SignedProposal             |
+//!     | executor | Consensus | MiscellaneousReq           |
+//!     | executor | Net       | SyncResponse               |
+//!     | executor | Net       | SignedProposal             |
+//!     | executor | Snapshot  | SnapshotReq                |
 //!
 //! 2. Publish channel
 //!
@@ -190,7 +190,6 @@ fn main() {
             Consensus >> BlockWithProof,
             Consensus >> SignedProposal,
             Net >> SyncResponse,
-            Net >> SignedProposal,
             Snapshot >> SnapshotReq,
             Auth >> MiscellaneousReq,
         ]),

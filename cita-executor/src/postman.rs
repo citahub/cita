@@ -196,7 +196,6 @@ impl Postman {
             }
 
             routing_key!(Consensus >> SignedProposal)
-            | routing_key!(Net >> SignedProposal)
             | routing_key!(Consensus >> BlockWithProof)
             | routing_key!(Net >> SyncResponse)
             | routing_key!(Chain >> LocalSync) => {
@@ -285,9 +284,8 @@ impl Postman {
 
     fn update_backlog(&mut self, key: &str, mut msg: Message) -> bool {
         match RoutingKey::from(key) {
-            // Proposal{block: {body, previous_proof}}
-            //   WHERE previous_proof.height == block.height - 1
-            routing_key!(Consensus >> SignedProposal) | routing_key!(Net >> SignedProposal) => {
+            // SignedProposal{Proposal { height, ...}, signature}
+            routing_key!(Consensus >> SignedProposal) => {
                 let mut proposal = msg.take_signed_proposal().unwrap();
                 let open_block = OpenBlock::from(proposal.take_proposal().take_block());
                 self.backlogs.insert_proposal(open_block)
