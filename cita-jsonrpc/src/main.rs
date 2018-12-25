@@ -81,7 +81,9 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate threadpool;
 extern crate time;
+extern crate tokio;
 extern crate tokio_core;
+extern crate tokio_executor;
 extern crate tokio_io;
 extern crate tokio_timer;
 extern crate unicase;
@@ -231,25 +233,30 @@ fn main() {
             .thread_number
             .unwrap_or_else(num_cpus::get);
 
-        for i in 0..threads {
-            let addr = addr.clone().parse().unwrap();
-            let tx = tx_relay.clone();
-            let timeout = http_config.timeout;
-            let http_responses = Arc::clone(&http_responses);
-            let allow_origin = http_config.allow_origin.clone();
-            let _ = thread::Builder::new()
-                .name(format!("worker{}", i))
-                .spawn(move || {
-                    let server =
-                        Server::new(&addr, tx, http_responses, timeout, &allow_origin).unwrap();
-                    let jsonrpc_server = server
-                        .jsonrpc()
-                        .map_err(|err| eprintln!("server err {}", err));
+        let addr = addr.parse().unwrap();
+        let timeout = http_config.timeout;
+        let allow_origin = http_config.allow_origin;
+        let _ = thread::Builder::new()
+            .name(String::from("http worker"))
+            .spawn(move || {
+                let server =
+                    Server::new(&addr, tx_relay, http_responses, timeout, &allow_origin).unwrap();
+                let jsonrpc_server = server
+                    .jsonrpc()
+                    .map_err(|err| eprintln!("server err {}", err));
 
-                    hyper::rt::run(jsonrpc_server)
-                })
-                .unwrap();
-        }
+                let mut rt = tokio::runtime::Builder::new()
+                    .core_threads(threads)
+                    .build()
+                    .unwrap();
+                rt.spawn(jsonrpc_server);
+
+                tokio_executor::enter()
+                    .unwrap()
+                    .block_on(rt.shutdown_on_idle())
+                    .unwrap();
+            })
+            .unwrap();
     }
 
     loop {

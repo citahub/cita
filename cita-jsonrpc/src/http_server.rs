@@ -345,7 +345,17 @@ mod integration_test {
                     .jsonrpc()
                     .with_graceful_shutdown(shutdown_rx)
                     .map_err(|err| eprintln!("server err {}", err));
-                hyper::rt::run(jsonrpc_server);
+
+                let mut rt = tokio::runtime::Builder::new()
+                    .core_threads(2)
+                    .build()
+                    .unwrap();
+                rt.spawn(jsonrpc_server);
+
+                tokio_executor::enter()
+                    .unwrap()
+                    .block_on(rt.shutdown_on_idle())
+                    .unwrap();
             })
             .unwrap();
         let (addr, shutdown_tx) = addr_rx.recv().unwrap();
