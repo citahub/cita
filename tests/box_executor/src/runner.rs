@@ -2,7 +2,6 @@ extern crate bincode;
 extern crate cita_crypto as crypto;
 extern crate cita_types;
 extern crate clap;
-extern crate common_types;
 extern crate core;
 extern crate dotenv;
 extern crate logger;

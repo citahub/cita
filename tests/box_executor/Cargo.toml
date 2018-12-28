@@ -20,7 +20,6 @@ proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop
 rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 core = { path = "../../cita-chain/core" }
-common-types = { path = "../../cita-chain/types" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
