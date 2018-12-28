@@ -1,7 +1,6 @@
 # 共识
 
-CITA的共识模块主要是保证多个节点对于交易的顺序和Block的内容达成一致。在众多的分布式算法中，
-我们选择实现了非拜占庭容错的Raft算法和拜占庭容错的的CITA-BFT算法。
+CITA 的共识模块主要是保证多个节点对于交易的顺序和 Block 的内容达成一致。在众多的分布式算法中，我们实现了拜占庭容错的 CITA-BFT 共识算法。CITA-BFT 是一个两阶段投票的拜占庭容错算法。该算法主要在 Tendermint，Paxos 的基础上进行了优化，以更好地与 CITA 的微服务架构融合，利用微服务架构的横向扩展优势提升共识效率。在每个高度上，都有 N 个节点参与当前高度的共识，共识节点经过至少一轮的共识达到最终共识，当出现某些节点掉线或者网络故障等问题时，需要进行多轮共识以达到最终共识。
 
 ## 共识的架构
 
@@ -9,7 +8,7 @@ CITA的共识模块主要是保证多个节点对于交易的顺序和Block的�
 
 ```
    +-------------+       +-------------+       +-----+
-   | MQ通讯模块   |<----->| 算法逻辑模块 |<----> | WAL |
+   | MQ通讯模块   |<----->|  算法逻辑模块  |<---->| WAL |
    +-------------+       +-------------+       +-----+
           ^                ^    ^
           |                |    |
@@ -29,7 +28,6 @@ CITA的共识模块主要是保证多个节点对于交易的顺序和Block的�
 **WAL**： WAL提供预写日志(write ahead log)的服务，持久化各个节点的投票。用来进行节点崩溃后恢复。
 
 **算法逻辑模块**： 分布式算法逻辑的实现模块，接受共识其它模块发送过来的信息，根据自身的算法要求，进行算法逻辑相应的处理。
-例如对于CITA-BFT就需要进行一系列的状态转换。
 
 ## 基本前提
 
@@ -48,68 +46,191 @@ CITA的共识模块主要是保证多个节点对于交易的顺序和Block的�
 - 接收Chain返回的状态信息，作为出块成功的标志。
 - 出块成功后，从交易池删除已经达成共识的交易。
 
-## Raft算法
+## CITA-BFT 共识算法
 
-Raft作为非拜占庭容错的算法，主要是主节点出块。主节点有故障时，从节点会启动重新选主的流程，所以Raft的机制主要分为两部分：选主流程和
-主节点同步信息流程。
+CITA-BFT是一种专为区块链设计的高性能共识算法，基于半同步网络假设（*部分同步网络*：存在一个确定的消息传播时延上限 δ，但是 δ 未知；或者 δ 已知，但是只在某些未知的时间段才有该时延限制），CITA-BFT在保证活性和安全性（Liveness & Safety）的前提下能够容忍 1/3 的拜占庭节点。
+CITA共识节点通过点对点共识消息交换协议对每一个区块交换投票信息，迅速形成多数共识。投票结果最后会被记录在区块里。CITA支持独有的低延迟技术，能够实现毫秒级交易确认延迟。
 
-### 选主流程：
+### 基本约定
 
-1. 每个节点发送提升请求给其他节点。
-2. 收到1/2+的投票的节点，升为主节点。
-3. 如果有冲突，采用随机退避的方式，再次投票。
+1. 规定 H 为当前高度，R 为当前轮次，N 为该轮参与共识的节点数量，B 为当前区块，在每一个高度下，达成共识至少需要一轮；
+2. 一个包含 +2/3 的对应于处在 <H, R> 的特定区块或者 nil（空区块）的预投票的集合，称之为锁变化证明(Proof-of-lock-change)，简称 PoLC。
 
-### 主节点同步信息：
+### 状态
 
-1. 主节点打包交易，出块，把块发送给从节点。
-2. 从节点收到后发送确认信息返回。
-3. 主节点收到1/2+确认后，发送确认信息给从节点。
-4. 主节点持久化和发送Block到Chain进行计算。
+**Propose**：每个节点检查自己是否是 proposer。proposer 广播当前轮次的 proposal
 
-## CITA-BFT算法
+**ProposeWait**：非提议节点对 proposal 进行基本检查并向 Auth 发送验证请求
 
-CITA-BFT是一种专为区块链设计的高性能共识算法，基于半同步网络假设，CITA-BFT在保证活性和安全性（Liveness & Safety）的前提下能够容忍1/3的拜占庭节点。
-CITA共识节点通过点对点共识消息交换协议对每一个区块交换投票信息，迅速形成多数共识。投票结果最后会被记录在区块里。CITA支持独有的低延迟技术，能够实现
-毫秒级交易确认延迟。
+**Prevote**：节点进行预投票
 
-### CITA-BFT状态转换
+**PrevoteWait**：等待其他节点的预投票
 
-CITA-BFT是一种状态机副本复制算法(State Machine Replication)，在实现上包括以下几个状态：
+**PrecommitAuth**：等待 Auth 返回对区块 B 的校验结果
 
-```
-    NewHeight -> (Propose -> Prevote -> Precommit)+ -> Commit -> NewHeight -> ...
-```
+**Precommit**：节点进行预提交
 
-```
-                            +-------------------------------------+
-                            v                                     |(Wait til `CommmitTime+timeoutCommit`)
-                      +-----------+                         +-----+-----+
-         +----------> |  Propose  +--------------+          | NewHeight |
-         |            +-----------+              |          +-----------+
-         |                                       |                ^
-         |(Else, after timeoutPrecommit)         v                |
-   +-----+-----+                           +-----------+          |
-   | Precommit |  <------------------------+  Prevote  |          |
-   +-----+-----+                           +-----------+          |
-         |(When +2/3 Precommits for block found)                  |
-         v                                                        |
-   +--------------------------------------------------------------------+
-   |  Commit                                                            |
-   |                                                                    |
-   |  * Set CommitTime = now;                                           |
-   |  * Wait for block, then stage/save/commit block;                   |
-   +--------------------------------------------------------------------+
-```
+**PrecommitWait**：等待其他节点对特定 proposal 的预提交
 
-CITA-BFT是随着块的高度增长，多种状态的依次循环的过程。在决定某个高度的块的过程中，可能需要一轮或者多轮的投票。
-下面介绍CITA-BFT在块高度H和第R轮上，进行块的共识的主要流程:
+**Commit**：提交区块 B 给 Chain 微服务和 Executor 微服务
 
-1. proposal阶段：proposal节点打包交易池中的交易，WAL记录后，通过MQ通讯模块，发送proposal消息给共识的其它节点，然后进入prevote阶段。而非proposal节点在进行一段时间的超时后，进入prevote投票阶段。
-2. prevote阶段：每个共识节点根据收到的proposal信息，进行prevote投票。校验成功则prevote block.hash，校验失败或者没有收到proposal信息则prevote空票。
-3. prevote等待阶段：等待节点收到2/3节点以上的prevote投票，在必要的超时后，进入precommit阶段。
-4. precommit阶段：节点根据prevote阶段收到的投票进行判断，如果收到相同block.hash的prevote投票，超过2/3，则precommit block.hash，否则precommit空值
-5. precommit等待阶段：等待收到的precommit投票数超过节点数的2/3。如果收到precommit相同block.hash投票超过2/3时，进入commit阶段。否则进入新一轮的proposal的阶段。
-6. commit阶段：共识模块把共识完成的block发送给chain模块后，等待chain模块的计算完成后发送的状态信息，然后进入下一个高度 NewHeight。
+**CommitWait**：等待 Chain 发来的最新状态（rich_status）消息
+
+### 状态转换图
+![state convert](/docs/_image/state_convert.jpg)
+
+### 状态转换描述
+
+#### PROPOSE <H, R> → PROPOSEWAIT <H, R>
+
+新一轮开始时，共识节点处于 Propose<H, R> 状态，共识节点通过计算 (H+R) % N 确定本轮的 proposer<H, R>，接着重置并启动一个计时器 T0 （T0 = 3s） ：
+
+* 如果该共识节点就是本轮的 proposer<H, R>，就广播这一轮的提议 proposal<H, R, B>
+* 如果该共识节点不是本轮的 proposer<H, R>，就重置并启动一个计时器 T1（T1 = T0 * 24 / 30 * (R + 1) ）
+
+共识节点进入 ProposeWait<H, R> 状态。
+
+#### PROPOSEWAIT <H, R> → PREVOTE <H, R>
+
+* 如果共识节点是 proposer<H, R> ，共识节点对自己发出的 proposal<H, R, B> 投 prevote<H, R, B>
+* 如果共识节点不是 proposer<H, R> 且在 T1 内收到 proposal<H, R, B>，共识节点对该 proposal<H, R, B> 做基本检查
+* * 如果 proposal<H, R, B> 通过了基本检查， 则向 Auth 发送请求验证 B 的合法性，共识节点对该  proposal<H, R, B> 投 prevote<H, R, B>
+  * 如果 proposal<H, R, B> 没有通过基本检查，共识节点对 nil<H, R> 投 prevote<H, R, B>
+* 如果共识节点不是 proposer<H, R> 且在 T1 内没有收到 proposer<H, R> 发出的 proposal<H, R, B>，共识节点对 nil<H, R> 投 prevote<H, R, P>
+
+共识节点将 prevote<H, R, B> 投票保存到本地，并进入 Prevote<H, R> 状态。共识节点重置并启动一个计时器 T2 以重新广播 prevote<H, R, P> 投票。
+
+#### PREVOTE<H, R> → PREVOTEWAIT<H, R>
+
+共识节点收到 +2/3 的 prevote<H, R, P> 后, 进入 PrevoteWait<H, R> 状态，同时重置并启动一个计时器 T3（T3 = T0 * 1 / 30 = 0.1s）。
+
+#### PREVOTEWAIT<H, R> → PRECOMMIT<H, R> 或者 PREVOTEWAIT<H, R> → PRECOMMITAUTH<H, R>
+
+* 如果共识节点在 T3 内收到 +2/3 的共识节点对 proposal<H, R, B> 的 prevote<H, R, B>
+* * 如果 Auth 对 B 的验证通过，共识节点对该 proposal<H, R, B> 投 precommit<H, R, B>，共识节点进入 Precommit<H, R> 状态
+  * 如果 Auth 对 B 的验证不通过，共识节点对 nil<H,R> 投 precommit<H, R, B>，共识节点进入 Precommit<H, R> 状态
+  * 如果 Auth 还没有返回对 B 的验证结果，共识节点重置并启动一个 T4（T4 = T0 * 1 / 30 * 15 = 1.5s）计时器，并进入 PrecommitAuth 状态
+* 如果共识节点在 T3 内收到 +2/3 的共识节点对 nil<H, R> 的 prevote<H, R, P>，共识节点对 nil<H,R> 投 precommit<H, R, P>，共识节点进入 Precommit<H, R> 状态
+* 如果共识节点在 T3 内没有满足以上条件，共识节点对 nil<H, R> 投 precommit<H, R, B>，共识节点进入 Precommit<H, R> 状态
+
+如果共识节点投了 precommit<H, R, B>，便重置并启动一个 T5（T5 = T0 * 1 / 30 * 15 = 1.5s）计时器以重发 prevote<H, R, P> 和 precommit<H, R, P>。
+
+#### PRECOMMITAUTH<H, R> → PRECOMMIT<H, R>
+
+ 如果共识节点在 T4 时间内没有收到 Auth 返回，就再次向 Auth 请求验证区块，并一直等待，直到收到 Auth 返回：
+
+* 如果 Auth 对区块的验证通过，共识节点对 proposal<H, R, B> 投 precommit<H, R, P>，共识节点进入 Precommit<H, R> 状态
+* 如果 Auth 对区块的验证不通过，共识节点对 nil<H, R> 投 prevote<H, R, B> 和 precommit<H, R, B>，共识节点进入Precommit<H, R> 状态
+
+PRECOMMIT<H, R> → PRECOMMITWAIT<H, R>
+
+当共识节点收到 +2/3 的 precommit<H, R, B> 后，进入 PrecommitWait<H, R> 状态，同时重置并启动一个计时器 T6（T6 = T0 * 1 / 30 = 0.1s）。
+
+#### PRECOMMITWAIT<H, R> → COMMIT<H, R> 或者 PRECOMMITWAIT<H, R> → PREPARE<H, R + 1>
+
+* 如果共识节点在 T6 内收到 +2/3 的共识节点对特定 proposal<H, R, B> 的 precommit<H, R, B> ，共识节点将区块 B 发送给 Executor 微服务和 Chain 微服务处理
+* 如果共识节点在 T6 内收到 +2/3 的共识节点对 nil<H, R>  的 precommit<H, R, B> ，共识节点进入 Propose<H, R+1> 状态
+* 如果共识节点在 T6 内没有满足以上条件，共识节点进入 Propose<H, R+1> 状态
+
+#### COMMIT<H, R> → COMMITWAIT<H, R>
+
+共识节点收到 Chain 发来的最新共识区块返回的消息 rich_status 后，进入 CommitWait<H, R> 状态。
+
+#### COMMITWAIT<H, R> → PROPOSE<H + 1, 0>
+
+共识节点等待 T0 超时，进入 Propose<H + 1, 0> 状态。
+
+## 处理机制
+
+### 常数
+
+* INIT_HEIGHT ：初始块高度，设置为1
+* INIT_ROUND ：初始轮次，设置为0
+* TIMEOUT_RETRANSE_MULTIPLE ：超时重发常数，设置为15
+* TIMEOUT_LOW_ROUND_MESSAGE_MULTIPLE ：向低轮次广播控制常数，设置为20
+* THREAD_POOL_NUM ：线程池内线程数量，设置为10
+
+### BLOCK 结构
+
+* version ：版本号
+* header ：BlockHeader 结构
+* body ：BlockBody 结构
+
+### BlockHeader 结构
+
+* prevhash ：上一个块的哈希值
+* timestamp ：Unix 时间戳
+* proof ：Proof结构，出块人签名
+* commit ：Commit 结构，Chain处理结果
+* height ：uint64 块号
+
+### BlockBody 结构
+
+* transactions ：交易列表
+
+### Commit 结构
+
+* stateRoot ：状态 root
+* transcationsRoot ：交易列表 root
+* receiptsRoot ：交易回执 root
+
+### BFT 结构
+
+* pub_sender ：发送消息信道
+* pub_recver ：接收消息信道
+* timer_seter ：
+* timer_notify ：
+* params ：BFT 参数
+* height ：当前高度
+* round ：当前轮次
+* step ：当前阶段
+* proof ：投给特定 proposal 的投票的签名
+* pre_hash ：上一个块的哈希
+* votes ：投票集合
+* proposals ：提议集合
+* proposal ：提议的 hash
+* lock_round ：锁定的轮次
+* locked_vote ：锁定的投票
+* locked_block ：锁定的区块
+* wal_log ：日志
+* send_filter ：投票查重
+* last_commit_round ：上一次提交的轮次
+* htime ：新的高度开始的时间
+* auth_manage ：权限管理
+* consensus_power ：是否可以参与共识
+* unverified_message ：交易消息未确认块
+* block_txs ：交易区块
+* block_proof ：上一个高度的共识结果
+* is_snapshot ：是否做了快照
+* is_cleared ：数据是否被清理
+
+### PROPOSER 选择
+
+参与共识的节点通过计算 (H+R) % N 确定本轮的 proposer 。
+
+### PROOF 生成
+
+首先获取当前轮次下 precommit 投票集合并创建名为 commits 的 hashmap 。commits 收集与输入 hash 相同的投票，并计算投票数量。如果数量不满足 +2/3 则返回空，否则返回 proof。proof 的构成如下：
+
+* proof.height ：proof 对应的高度
+* proof.round ：proof 对应的轮次
+* proof.proposal ：proof 对应的提议
+* proof.commits ：投给 proof.proposal 的每一个投票的签名
+
+### 并行处理
+
+proof 是对链上区块合法性的证明，包含了当前高度 H 的区块 +2/3 的 precommit 。为了确保每个节点保存的 proof 一致，同时为了提升效率，CITA-BFT 将 commit 和 proposal 两个阶段做并行处理。当共识节点在 Commit<H - 1, R> 状态收到 Chain 微服务保存最新共识区块返回的消息后，生成 proof<H - 1> 并保存在本地，当共识节点进入 Propose<H, R'> 状态，且共识节点是 proposer<H, R'> 时，共识节点将 auth 提供的区块内容与 proof<H - 1> 一起组成区块放入 proposal 中广播出去。即高度为 H 的 proposer 区块的 proposal 中包含高度为 H - 1 的 proof。当该区块达成最终共识后，前一个区块的 proof 也同时完成了最终的共识。
+
+### LOCK 机制
+
+如果共识节点收到 +2/3 的对 proposal<H, R, B> 投票的 prevote<H, R, P>， 则该共识节点锁定该 proposal 的区块 B。如果该共识节点在同一高度更高轮次 R' 收到 +2/3 的对 proposal<H, R', B'> 投票的 prevote<H, R', P‘>，则该共识节点解锁区块 B，并锁定新的区块 B'。如果该共识节点在同一高度更高轮次 R' 收到 +2/3 的 对 nil<H, R'> 投票的 prevote<H, R', P’>，则该共识节点解锁之前锁定的区块 B。如果共识节点收到 auth 对锁定区块 B 的验证结果为不通过，则该共识节点解除区块 B 的锁定。
+
+如果共识节点处于 Propose<H, R> 状态，且该节点是 proposer<H, R>，若该共识节点已锁定区块 B，则广播 proposal<H, R, B>，若该共识节点未锁定任何区块，则根据 Auth 提供的区块内容与 proof<H - 1> 组成区块 B，之后广播 proposal<H, R, B>。
+如果共识节点已锁定区块 B，即使共识节点收到 proposal<H, R, B'>，仍然只对 B 投 prevote<H, R, P> 。
+
+### 轮次跃迁机制
+
+当共识节点状态低于 Precommit<H, R> 状态时，如果收到 +2/3 的对更高轮次 R' 的 proposal<H, R’, B> 投票的 prevote<H, R‘, P> 且 proposal<H, R’, B> 亦已收到且通过基本检查，则该共识节点锁定区块 B，并且节点的状态跃迁到  PrevoteWait<H, R'> 。
 
 ### CITA-BFT交易池操作流程
 
