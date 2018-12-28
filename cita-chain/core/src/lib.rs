@@ -33,6 +33,7 @@ extern crate snappy;
 extern crate serde_derive;
 #[macro_use]
 extern crate util;
+extern crate db as cita_db;
 
 #[macro_use]
 extern crate rlp_derive;
@@ -64,5 +65,5 @@ pub mod filters;
 pub mod libchain;
 pub mod snapshot;
 
+pub use cita_db::journaldb;
 pub use types::*;
-pub use util::journaldb;

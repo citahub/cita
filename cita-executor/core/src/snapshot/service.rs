@@ -32,9 +32,10 @@ use error::Error;
 use cita_types::H256;
 use libexecutor::executor::Executor;
 
+use cita_db::journaldb::Algorithm;
+use cita_db::kvdb::{Database, DatabaseConfig, KeyValueDB};
+use cita_db::TrieError;
 use snappy;
-use util::journaldb::Algorithm;
-use util::kvdb::{Database, DatabaseConfig, KeyValueDB};
 use util::Bytes;
 use util::UtilError;
 use util::{Mutex, RwLock, RwLockReadGuard};
@@ -134,8 +135,6 @@ impl Restoration {
 
     // finish up restoration.
     fn finalize(self) -> Result<(), Error> {
-        use util::TrieError;
-
         if !self.is_done() {
             return Ok(());
         }

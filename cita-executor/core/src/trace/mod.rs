@@ -40,7 +40,8 @@ pub use self::types::trace::{VMTrace, VMOperation, VMExecutedOperation, MemoryDi
 use evm::action_params::ActionParams;
 use header::BlockNumber;
 use cita_types::{Address, U256, H256};
-use util::{Bytes, DBTransaction};
+use util::Bytes;
+use cita_db::DBTransaction;
 
 /// This trait is used by executive to build traces.
 pub trait Tracer: Send {

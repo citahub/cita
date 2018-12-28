@@ -24,6 +24,10 @@ const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 
 use account_db::{AccountDB, AccountDBMut};
 
+use cita_db::hashdb::DBValue;
+use cita_db::journaldb::{self, Algorithm, JournalDB};
+use cita_db::kvdb::{DBTransaction, Database, KeyValueDB};
+use cita_db::{HashDB, Trie, TrieDB, TrieDBMut, TrieMut};
 use cita_types::{Address, H256, U256};
 use db::{Writable, COL_EXTRA, COL_HEADERS, COL_STATE};
 use hashable::Hashable;
@@ -35,12 +39,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use util::hashdb::DBValue;
-use util::journaldb::JournalDB;
-use util::journaldb::{self, Algorithm};
-use util::kvdb::{DBTransaction, Database, KeyValueDB};
-use util::{Bytes, HashDB, Mutex};
-use util::{Trie, TrieDB, TrieDBMut, TrieMut};
+use util::{Bytes, Mutex};
 
 pub mod account;
 pub mod error;

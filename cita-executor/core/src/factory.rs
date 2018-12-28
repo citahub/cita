@@ -15,9 +15,9 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use account_db::Factory as AccountFactory;
+use cita_db::trie::TrieFactory;
 use contracts::native::factory::Factory as NativeFactory;
 use evm::Factory as EvmFactory;
-use util::trie::TrieFactory;
 
 /// Collection of factories.
 #[derive(Default, Clone)]

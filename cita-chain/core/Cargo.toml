@@ -32,6 +32,7 @@ rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" 
 rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../types" }
+db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [dev-dependencies]
 rand = "0.3"
@@ -44,7 +45,7 @@ default = ["secp256k1", "sha3hash"]
 secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1", "proof/secp256k1", "jsonrpc-types/secp256k1"]
 ed25519 = ["cita-crypto/ed25519", "libproto/ed25519", "proof/ed25519", "jsonrpc-types/ed25519"]
 sm2 = ["cita-crypto/sm2", "libproto/sm2", "proof/sm2", "jsonrpc-types/sm2"]
-sha3hash = ["hashable/sha3hash", "util/sha3hash", "libproto/sha3hash", "proof/sha3hash", "jsonrpc-types/sha3hash"]
-blake2bhash = ["hashable/blake2bhash", "util/blake2bhash", "libproto/blake2bhash", "proof/blake2bhash", "jsonrpc-types/blake2bhash"]
-sm3hash = ["hashable/sm3hash", "util/sm3hash", "libproto/sm3hash", "proof/sm3hash", "jsonrpc-types/sm3hash"]
+sha3hash = ["hashable/sha3hash", "db/sha3hash", "libproto/sha3hash", "proof/sha3hash", "jsonrpc-types/sha3hash"]
+blake2bhash = ["hashable/blake2bhash", "db/blake2bhash", "libproto/blake2bhash", "proof/blake2bhash", "jsonrpc-types/blake2bhash"]
+sm3hash = ["hashable/sm3hash", "db/sm3hash", "libproto/sm3hash", "proof/sm3hash", "jsonrpc-types/sm3hash"]
 evm-debug= []

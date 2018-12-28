@@ -17,6 +17,8 @@
 
 extern crate crossbeam_channel;
 
+use cita_db::journaldb::Algorithm;
+use cita_db::DatabaseConfig;
 use core::db::NUM_COLUMNS;
 use core::libexecutor::command;
 use core::snapshot as CoreSnapshot;
@@ -25,6 +27,7 @@ use crossbeam_channel::{Receiver, Sender};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Resp as Ack, SnapshotResp};
 use std::convert::TryInto;
+use std::sync::Arc;
 
 pub fn handle_snapshot_height(req_height: u64, current_height: u64) -> u64 {
     match req_height {
@@ -76,15 +79,15 @@ pub fn spawn_restore_snapshot(
     mq_resp_sender: &Sender<(String, Vec<u8>)>,
 ) -> ::std::thread::JoinHandle<()> {
     let executor = command::clone_executor_reader(command_req_sender, command_resp_receiver);
-    let db_config = util::kvdb::DatabaseConfig::with_columns(NUM_COLUMNS);
+    let db_config = DatabaseConfig::with_columns(NUM_COLUMNS);
     let data_path = cita_directories::DataPath::root_node_path() + "/snapshot_executor";
     let snapshot_params = CoreSnapshot::service::ServiceParams {
         db_config,
-        pruning: util::journaldb::Algorithm::Archive,
+        pruning: Algorithm::Archive,
         snapshot_root: data_path.into(),
-        executor: ::std::sync::Arc::new(executor),
+        executor: Arc::new(executor),
     };
-    let snapshot_service = ::std::sync::Arc::new(
+    let snapshot_service = Arc::new(
         CoreSnapshot::service::Service::new(snapshot_params).expect("new snapshot service"),
     );
 

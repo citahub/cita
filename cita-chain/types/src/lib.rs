@@ -32,6 +32,7 @@ extern crate lazy_static;
 extern crate time;
 #[macro_use]
 extern crate logger;
+extern crate db as cita_db;
 extern crate proof;
 
 pub extern crate bloomchain;

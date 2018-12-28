@@ -112,6 +112,7 @@ extern crate serde_json;
 extern crate serde_derive;
 #[macro_use]
 extern crate util;
+extern crate db as cita_db;
 
 mod backlogs;
 mod postman;

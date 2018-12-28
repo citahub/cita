@@ -21,6 +21,8 @@ extern crate tempdir;
 use self::rustc_serialize::hex::FromHex;
 use self::tempdir::TempDir;
 use cita_crypto::PrivKey;
+use cita_db::kvdb::{self, Database, DatabaseConfig};
+use cita_db::KeyValueDB;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, U256};
 use core::libchain::chain;
@@ -46,9 +48,7 @@ use std::sync::Arc;
 use std::time::UNIX_EPOCH;
 use types::header::OpenHeader;
 use types::transaction::SignedTransaction;
-use util::kvdb::{Database, DatabaseConfig};
 use util::AsMillis;
-use util::KeyValueDB;
 
 const CHAIN_CONFIG: &str = "chain.toml";
 const SCRIPTS_DIR: &str = "../../scripts";
@@ -59,7 +59,7 @@ pub fn get_temp_state() -> State<StateDB> {
 }
 
 fn new_db() -> Arc<KeyValueDB> {
-    Arc::new(::util::kvdb::in_memory(8))
+    Arc::new(kvdb::in_memory(8))
 }
 
 pub fn get_temp_state_db() -> StateDB {

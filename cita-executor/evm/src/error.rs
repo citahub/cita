@@ -17,7 +17,7 @@
 //! Evm errors
 
 use std::fmt;
-use util::trie;
+use cita_db::trie;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {

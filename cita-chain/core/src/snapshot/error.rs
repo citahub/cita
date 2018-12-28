@@ -20,10 +20,10 @@ use std::fmt;
 
 use types::ids::BlockId;
 
+use cita_db::trie::TrieError;
 use cita_types::H256;
 use rlp::DecoderError;
 use snappy::SnappyError;
-use util::trie::TrieError;
 
 /// Snapshot-related errors.
 #[derive(Debug)]

@@ -25,6 +25,7 @@ use snappy;
 use snapshot::error::Error as SnapshotError;
 use std::fmt;
 use util::*;
+use cita_db::TrieError;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 /// Errors concerning transaction processing.

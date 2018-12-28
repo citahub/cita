@@ -20,7 +20,7 @@ use cita_types::{Address, H256};
 use hashable::{Hashable, HASH_NULL_RLP};
 use rlp::NULL_RLP;
 use std::collections::HashMap;
-use util::*;
+use cita_db::{HashDB, DBValue};
 
 static NULL_RLP_STATIC: [u8; 1] = [0x80; 1];
 

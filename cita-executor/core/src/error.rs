@@ -20,6 +20,7 @@ use basic_types::LogBloom;
 use cita_ed25519::Error as EthkeyError;
 use cita_types::{H256, U256};
 
+use cita_db::TrieError;
 pub use executed::{CallError, ExecutionError};
 use header::BlockNumber;
 use snappy;

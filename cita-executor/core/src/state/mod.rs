@@ -19,6 +19,7 @@
 //! Unconfirmed sub-states are managed with `checkpoint`s which may be canonicalized
 //! or rolled back.
 
+use cita_db::{trie, HashDB, Trie, TrieError};
 use cita_types::{Address, H256, U256};
 use engines::Engine;
 use error::{Error, ExecutionError};
@@ -40,7 +41,6 @@ use std::fmt;
 use std::sync::Arc;
 use trace::FlatTrace;
 use types::transaction::SignedTransaction;
-use util::trie;
 use util::*;
 
 pub mod account;

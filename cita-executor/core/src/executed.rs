@@ -22,7 +22,8 @@ use trace::{VMTrace, FlatTrace};
 use types::log_entry::LogEntry;
 use types::state_diff::StateDiff;
 use cita_types::{U256, Address, U512};
-use util::{Bytes, trie};
+use util::Bytes;
+use cita_db::trie;
 use receipt::ReceiptError;
 
 /// Transaction execution receipt.

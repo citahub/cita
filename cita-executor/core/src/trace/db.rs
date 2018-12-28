@@ -28,7 +28,8 @@ use std::ops::Deref;
 use std::sync::Arc;
 use trace::{LocalizedTrace, Config, Filter, Database as TraceDatabase, ImportRequest, DatabaseExtras};
 use cita_types::{H256, H264};
-use util::{KeyValueDB, DBTransaction, RwLock, HeapSizeOf};
+use cita_db::{KeyValueDB, DBTransaction};
+use util::{RwLock, HeapSizeOf};
 
 const TRACE_DB_VER: &[u8] = b"1.0";
 
@@ -416,7 +417,7 @@ mod tests {
     use trace::flat::{FlatTrace, FlatBlockTraces, FlatTransactionTraces};
     use trace::trace::{Call, Action, Res};
     use cita_types::{Address, U256, H256};
-    use util::DBTransaction;
+    use cita_db::{DBTransaction, kvdb, KeyValueDB};
 
     struct NoopExtras;
 
@@ -457,8 +458,8 @@ mod tests {
         }
     }
 
-    fn new_db() -> Arc<::util::kvdb::KeyValueDB> {
-        Arc::new(::util::kvdb::in_memory(::db::NUM_COLUMNS.unwrap_or(0)))
+    fn new_db() -> Arc<KeyValueDB> {
+        Arc::new(kvdb::in_memory(::db::NUM_COLUMNS.unwrap_or(0)))
     }
 
     #[test]
