@@ -32,6 +32,7 @@ extern crate proof;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
+extern crate db as cita_db;
 extern crate hashable;
 extern crate merklehash;
 #[cfg_attr(test, macro_use)]
@@ -103,7 +104,7 @@ pub mod snapshot;
 
 mod spec;
 
+pub use cita_db::journaldb;
 pub use evm::Error;
 pub use factory::*;
 pub use types::*;
-pub use util::journaldb;

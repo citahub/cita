@@ -19,6 +19,7 @@
 
 //! Single account in the system.
 
+use cita_db::{trie, DBValue, HashDB, Trie, TrieFactory};
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use hashable::{Hashable, HASH_EMPTY, HASH_NULL_RLP};
@@ -705,6 +706,7 @@ impl fmt::Debug for Account {
 mod tests {
     use super::*;
     use account_db::*;
+    use cita_db::MemoryDB;
     use rlp::{Compressible, RlpType, UntrustedRlp};
 
     #[test]

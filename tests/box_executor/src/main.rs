@@ -20,8 +20,6 @@ extern crate bincode;
 extern crate cita_crypto as crypto;
 extern crate cita_types;
 extern crate clap;
-extern crate common_types;
-extern crate core;
 #[macro_use]
 extern crate libproto;
 extern crate dotenv;

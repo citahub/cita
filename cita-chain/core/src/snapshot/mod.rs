@@ -39,9 +39,9 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
+use cita_db::kvdb::{DBTransaction, KeyValueDB};
 use hashable::Hashable;
 use snappy;
-use util::kvdb::{DBTransaction, KeyValueDB};
 use util::{Bytes, Mutex, BLOCKLIMIT};
 
 use basic_types::{LogBloom, LogBloomGroup};

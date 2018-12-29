@@ -35,6 +35,7 @@ use libproto::blockchain::{
 pub use types::block::*;
 use types::extras::*;
 
+use cita_db::kvdb::*;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use hashable::Hashable;
@@ -56,7 +57,6 @@ use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
 use types::transaction::{Action, SignedTransaction};
-use util::kvdb::*;
 use util::HeapSizeOf;
 use util::{Mutex, RwLock};
 

@@ -100,6 +100,7 @@ extern crate tempfile;
 extern crate tx_pool;
 #[macro_use]
 extern crate util;
+extern crate db as cita_db;
 extern crate hashable;
 extern crate uuid;
 

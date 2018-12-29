@@ -16,9 +16,9 @@
 
 use std::sync::Arc;
 
+use cita_db::HashDB;
 use cita_types::{Address, H256};
 use state::Account;
-use util::*;
 
 /// State backend. See module docs for more details.
 pub trait Backend: Send {

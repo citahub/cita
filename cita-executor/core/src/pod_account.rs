@@ -22,6 +22,7 @@ use state::Account;
 use std::collections::BTreeMap;
 use std::fmt;
 use util::*;
+use cita_db::{sec_trie_root, TrieFactory, HashDB};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// An account, expressed as Plain-Old-Data (hence the name).

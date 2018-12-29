@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_db::kvdb::KeyValueDB;
 use cita_types::traits::ConvertType;
 use cita_types::{clean_0x, Address, H256, U256};
 use crypto::digest::Digest;
@@ -33,7 +34,6 @@ use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
 use types::extras::*;
-use util::kvdb::KeyValueDB;
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
 

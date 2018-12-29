@@ -18,6 +18,7 @@
 // Remove some hf code.
 
 use byteorder::{ByteOrder, LittleEndian};
+use cita_db::{DBTransaction, HashDB, JournalDB, KeyValueDB};
 use cita_types::{Address, H256};
 use db::COL_ACCOUNT_BLOOM;
 use ethcore_bloom_journal::*;
@@ -28,7 +29,7 @@ use state::Account;
 use std::collections::{HashSet, VecDeque};
 use std::sync::Arc;
 use util::cache::MemoryLruCache;
-use util::{DBTransaction, HashDB, JournalDB, KeyValueDB, Mutex, UtilError};
+use util::{Mutex, UtilError};
 
 /// Value used to initialize bloom bitmap size.
 ///

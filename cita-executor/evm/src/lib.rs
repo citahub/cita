@@ -27,6 +27,7 @@ extern crate logger;
 extern crate rlp;
 extern crate rustc_hex;
 extern crate util;
+extern crate db as cita_db;
 
 pub mod action_params;
 pub mod call_type;

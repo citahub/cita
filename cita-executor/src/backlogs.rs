@@ -16,10 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::core::libexecutor::block::{ClosedBlock, OpenBlock};
+use cita_db::Itertools;
 use cita_types::Address;
 use libproto::{ExecutedResult, Proof};
 use std::collections::BTreeMap;
-use util::Itertools;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Priority {
@@ -408,14 +408,14 @@ pub fn wrap_height(height: usize) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::{wrap_height, Backlog, Backlogs, Priority};
+    use cita_db::journaldb;
+    use cita_db::kvdb::{in_memory, KeyValueDB};
     use core::header::OpenHeader;
     use core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
     use core::libexecutor::sys_config::BlockSysConfig;
     use core::state_db::StateDB;
     use hashable::HASH_NULL_RLP;
     use std::sync::Arc;
-    use util::journaldb;
-    use util::kvdb::{in_memory, KeyValueDB};
 
     fn generate_block_body() -> BlockBody {
         let mut stx = SignedTransaction::default();

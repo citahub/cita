@@ -43,11 +43,11 @@ use std::time::Duration;
 use types::filter::Filter;
 use types::ids::BlockId;
 
+use cita_db::kvdb::DatabaseConfig;
 use cita_directories::DataPath;
 use core::db;
 use std::fs::File;
 use std::path::Path;
-use util::kvdb::DatabaseConfig;
 
 use core::snapshot;
 use core::snapshot::io::{PackedReader, PackedWriter, SnapshotReader};

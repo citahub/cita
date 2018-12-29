@@ -22,8 +22,6 @@ extern crate bincode;
 extern crate cita_crypto as crypto;
 extern crate cita_types;
 extern crate clap;
-extern crate common_types;
-extern crate core;
 extern crate cpuprofiler;
 extern crate dotenv;
 #[macro_use]
@@ -51,6 +49,8 @@ use std::convert::TryFrom;
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
 use std::time;
+
+pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010000";
 
 pub type PubType = (String, Vec<u8>);
 
@@ -87,7 +87,7 @@ fn create_contract(
 
     let contract_address = match flag {
         1 => "",
-        0 => common_types::reserved_addresses::STORE_ADDRESS,
+        0 => STORE_ADDRESS,
         _ => "0000000000000000000000000000000082720029",
     };
     let mut txs = Vec::new();
@@ -238,5 +238,18 @@ fn main() {
                 send_flag = false;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    extern crate common_types;
+
+    #[test]
+    fn test_used_store_address() {
+        assert_eq!(
+            common_types::reserved_addresses::STORE_ADDRESS,
+            super::STORE_ADDRESS
+        );
     }
 }

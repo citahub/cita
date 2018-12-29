@@ -17,14 +17,15 @@
 //! Account state encoding and decoding
 
 use account_db::{AccountDB, AccountDBMut};
+use cita_db::hashdb::HashDB;
+use cita_db::{Trie, TrieDB, TrieDBMut, TrieMut};
 use cita_types::{Address, H256, U256};
 use hashable::{HASH_EMPTY, HASH_NULL_RLP};
 use rlp::{RlpStream, UntrustedRlp};
 use snapshot::Error;
 use std::collections::HashSet;
 use types::basic_account::BasicAccount;
-use util::hashdb::HashDB;
-use util::{Bytes, Trie, TrieDB, TrieDBMut, TrieMut};
+use util::Bytes;
 
 // An empty account -- these were replaced with RLP null data for a space optimization in v1.
 const ACC_EMPTY: BasicAccount = BasicAccount {
