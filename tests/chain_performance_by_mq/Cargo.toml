@@ -17,7 +17,6 @@ dotenv = "0.13.0"
 uuid = { version = "0.7", features = ["v4"] }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-core = { path = "../../cita-chain/core" }
 bincode = "0.8.0"
 cpuprofiler = "0.0.3"
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
