@@ -418,21 +418,8 @@ where
 
         let address = self.origin_info.address;
         let balance = self.balance(&address)?;
-        // if &address == refund_address {
-        //     // TODO [todr] To be consistent with CPP client we set balance to 0 in that case.
-        //     self.state.sub_balance(&address, &balance)?;
-        // } else {
-        //     trace!(target: "ext", "Suiciding {} -> {} (xfer: {})", address, refund_address, balance);
-        //     self.state
-        //         .transfer_balance(&address,
-        //                           refund_address,
-        //                           &balance,
-        //                           self.substate.cleanup_mode(&self.schedule))?;
-        // }
-
         self.tracer.trace_suicide(address, balance, *refund_address);
         self.substate.suicides.insert(address);
-
         Ok(())
     }
 
