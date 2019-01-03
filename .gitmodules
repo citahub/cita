@@ -15,3 +15,7 @@
 [submodule "scripts/contracts/interaction"]
 	path = scripts/contracts/interaction
 	url = https://github.com/cryptape/cita-sys-interaction.git
+[submodule "scripts/config_tool/genesis"]
+	path = scripts/config_tool/genesis
+	url = https://github.com/cryptape/genesis.git
+	branch = v0.20.2
