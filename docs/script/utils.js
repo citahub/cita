@@ -1,11 +1,14 @@
-var log = console.log.bind(console);
+var remoteUrls = {
+  baseUrl: 'https://raw.githubusercontent.com/cryptape/cita/',
+  tagsUrl: 'https://api.github.com/repos/cryptape/cita/tags/'
+}
 var dir = (ver) => {
   if (['v0.17', 'v0.18'].indexOf(ver) > -1) {
     return 'Latest'
   }
   return ''
 }
-var baseUrlGen = (ver, lng) => `https://raw.githubusercontent.com/cryptape/cita/${ver|| 'develop'}/docs/${lng || 'zh-CN'}/${dir(ver)}`
+var baseUrlGen = (ver, lng) => `${remoteUrls.baseUrl}${ver|| 'develop'}/docs/${lng || 'zh-CN'}/${dir(ver)}`
 
 const loadTags = () => {
   // let tag
@@ -21,7 +24,7 @@ const loadTags = () => {
 
   }
   if (fetch) {
-    fetch('https://api.github.com/repos/cryptape/cita/tags').then(res => res.json()).then(tags => tags.slice(0, -5).filter(tag => !tag.name.endsWith('rc')).map(tag => tag.name)).then(tagNames => {
+    fetch(remoteUrls.tagsUrl).then(res => res.json()).then(tags => tags.slice(0, -5).filter(tag => !tag.name.endsWith('rc')).map(tag => tag.name)).then(tagNames => {
       window.tags = tagNames
       appendTags(tagNames)
     })
@@ -38,7 +41,8 @@ const handleSSRRouter = () => {
   }
   const params = window.location.hash.replace('#/', '').split('/')
   if (Object.keys(lngs).indexOf(params[0]) > -1) {
-    const fileRouter = !params[2] ? '' : params.slice(2).join('/')
+    let fileRouter = !params[2] ? '' : params.slice(2).join('/')
+    fileRouter = fileRouter + `?version=${params[1]}&lng=${lngs[params[0]]}`
     const newPath = `${window.location.hostname === 'localhost' ? '' : '/cita'}/#/` + fileRouter
     window.location.replace(newPath)
   }
