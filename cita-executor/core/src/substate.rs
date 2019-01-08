@@ -16,9 +16,7 @@
 
 //! Execution environment substate.
 
-use evm::Schedule;
 use log_entry::LogEntry;
-use state::CleanupMode;
 use std::collections::HashSet;
 use cita_types::{Address, U256};
 
@@ -55,15 +53,6 @@ impl Substate {
         self.logs.extend(s.logs.into_iter());
         self.sstore_clears_count = self.sstore_clears_count + s.sstore_clears_count;
         self.contracts_created.extend(s.contracts_created.into_iter());
-    }
-
-    /// Get the cleanup mode object from this.
-    pub fn cleanup_mode(&mut self, schedule: &Schedule) -> CleanupMode {
-        match (schedule.no_empty, schedule.kill_empty) {
-            (false, _) => CleanupMode::ForceCreate,
-            (true, false) => CleanupMode::NoEmpty,
-            (true, true) => CleanupMode::KillEmpty(&mut self.garbage),
-        }
     }
 }
 

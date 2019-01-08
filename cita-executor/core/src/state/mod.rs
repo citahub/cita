@@ -265,17 +265,6 @@ enum RequireCache {
     Abi,
 }
 
-/// Mode of dealing with null accounts.
-#[derive(PartialEq)]
-pub enum CleanupMode<'a> {
-    /// Create accounts which would be null.
-    ForceCreate,
-    /// Don't delete null accounts upon touching, but also don't create them.
-    NoEmpty,
-    /// Add encountered null accounts to the provided kill-set, to be deleted later.
-    KillEmpty(&'a mut HashSet<Address>),
-}
-
 const SEC_TRIE_DB_UNWRAP_STR: &str =
     "A state can only be created with valid root.\
      Creating a SecTrieDB with a valid root will not fail.\
@@ -287,7 +276,7 @@ impl<B: Backend> State<B> {
     pub fn new(mut db: B, account_start_nonce: U256, factories: Factories) -> State<B> {
         let mut root = H256::new();
         {
-            // init trie and reset root too null
+            // init trie and reset root to null
             let _ = factories.trie.create(db.as_hashdb_mut(), &mut root);
         }
 
