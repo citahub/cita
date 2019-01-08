@@ -26,7 +26,7 @@ use core::snapshot::io::{PackedReader, PackedWriter};
 use crossbeam_channel::{Receiver, Sender};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Resp as Ack, SnapshotResp};
-use std::convert::TryInto;
+use libproto::TryInto;
 use std::sync::Arc;
 
 pub fn handle_snapshot_height(req_height: u64, current_height: u64) -> u64 {
@@ -178,7 +178,7 @@ mod tests {
     use super::*;
     use libproto::snapshot::Resp as Ack;
     use libproto::Message;
-    use std::convert::TryFrom;
+    use libproto::TryFrom;
 
     fn wrap(origin_db: &str, temp_dir: ::std::path::PathBuf) -> String {
         match origin_db {

@@ -20,7 +20,7 @@ use cita_db::kvdb::{Database, DatabaseConfig, KeyValueDB};
 use cita_directories::DataPath;
 use cita_types::H256;
 use libproto::blockchain::SignedTransaction;
-use std::convert::{TryFrom, TryInto};
+use libproto::{TryFrom, TryInto};
 use std::sync::Arc;
 
 /// Wal means write ahead log

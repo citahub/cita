@@ -7,7 +7,7 @@ authors = ["Parity Technologies <admin@parity.io>", "Cryptape Technologies <cont
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 byteorder = { version = "1", default-features = false }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 bincode = "0.8.0"

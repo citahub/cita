@@ -32,12 +32,13 @@ use libproto::{
     BlackList, BlockTxHashes, BlockTxHashesReq, BlockTxn, Crypto, GetBlockTxn, Message,
     OperateType, Origin, Request, Response, UnverifiedTransaction, VerifyBlockReq, VerifyTxReq,
 };
+use libproto::{TryFrom, TryInto};
 use lru::LruCache;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon::ThreadPoolBuilder;
 use serde_json;
 use std::collections::{HashMap, HashSet};
-use std::convert::{Into, TryFrom, TryInto};
+use std::convert::Into;
 use std::str::FromStr;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;

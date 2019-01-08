@@ -19,11 +19,12 @@ use bincode::{serialize, Infinite};
 use cita_types::H256;
 use crypto::*;
 use hashable::Hashable;
+use libproto::TryInto;
 use libproto::{Block, BlockWithProof, Message, SignedTransaction, Transaction};
 use proof::BftProof;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
-use std::convert::{Into, TryInto};
+use std::convert::Into;
 use std::time::{Duration, UNIX_EPOCH};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy, Hash)]

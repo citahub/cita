@@ -68,11 +68,6 @@
 //! [`handle module`]: ./handler/index.html
 //!
 
-#![feature(custom_attribute)]
-#![feature(integer_atomics)]
-#![feature(try_from)]
-#![feature(tool_lints)]
-
 extern crate cita_crypto as crypto;
 extern crate cita_directories;
 extern crate cita_types;

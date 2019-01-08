@@ -66,9 +66,6 @@
 //! [`Chain`]: ../core/libchain/chain/struct.Chain.html
 //!
 
-#![feature(try_from)]
-#![feature(tool_lints)]
-
 extern crate byteorder;
 extern crate cita_types;
 extern crate clap;

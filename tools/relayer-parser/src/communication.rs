@@ -19,9 +19,10 @@ use futures::future::Either;
 use futures::sync::{mpsc, oneshot};
 use futures::{Future, Sink, Stream};
 use hyper;
+use libproto::TryInto;
 use parking_lot::{Mutex, RwLock};
 use serde_json;
-use std::convert::{Into, TryInto};
+use std::convert::Into;
 use tokio_core::reactor::{Core, Timeout};
 
 use cita_types::{H256, U256};

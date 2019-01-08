@@ -19,7 +19,7 @@ use libproto::blockchain::Proof;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq};
 use libproto::Message;
-use std::convert::{TryFrom, TryInto};
+use libproto::{TryFrom, TryInto};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;

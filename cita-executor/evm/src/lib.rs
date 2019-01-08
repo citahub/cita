@@ -16,8 +16,6 @@
 
 //! Ethereum virtual machine.
 
-#![feature(tool_lints)]
-
 extern crate bit_set;
 extern crate cita_types;
 extern crate common_types as types;

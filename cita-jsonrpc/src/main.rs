@@ -52,10 +52,6 @@
 //! uuid number and `TransferType`.
 //!
 
-#![feature(try_from)]
-#![feature(tool_lints)]
-#![feature(never_type)]
-
 extern crate bytes;
 extern crate clap;
 extern crate cpuprofiler;
@@ -113,9 +109,9 @@ use http_server::Server;
 use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
+use libproto::TryInto;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::sync::mpsc::{channel, Sender};
 use std::sync::Arc;
 use std::thread;

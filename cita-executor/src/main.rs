@@ -81,10 +81,6 @@
 //! [`StateDB`]: ../core_executor/state_db/struct.StateDB.html
 //!
 
-#![feature(try_from)]
-#![feature(tool_lints)]
-#![feature(mpsc_select)]
-
 #[macro_use]
 extern crate crossbeam_channel;
 #[cfg(test)]

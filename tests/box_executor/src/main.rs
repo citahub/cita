@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(try_from)]
 extern crate bincode;
 extern crate cita_crypto as crypto;
 extern crate cita_types;

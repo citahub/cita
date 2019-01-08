@@ -31,9 +31,10 @@ use libproto::{
     ExecutedResult, Message, OperateType, Proof, ProofType, Request_oneof_req as Request,
     SyncRequest, SyncResponse,
 };
+use libproto::{TryFrom, TryInto};
 use proof::BftProof;
 use serde_json;
-use std::convert::{Into, TryFrom, TryInto};
+use std::convert::Into;
 use std::mem;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
