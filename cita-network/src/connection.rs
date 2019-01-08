@@ -208,7 +208,7 @@ pub struct Connections {
 }
 
 impl Connections {
-    pub fn new(config: &config::NetConfig) -> (Self, Sender<Task>) {
+    pub fn create(config: &config::NetConfig) -> (Self, Sender<Task>) {
         let id_card = config.id_card.unwrap();
         let (task_sender, task_receiver) = channel();
         let (connect_sender, connect_receiver) = channel();

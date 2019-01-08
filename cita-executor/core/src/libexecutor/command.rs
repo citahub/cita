@@ -673,10 +673,10 @@ pub fn exit(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
     rollback_id: BlockId,
-) -> () {
+) {
     command_req_sender.send(Command::Exit(rollback_id));
     match command_resp_receiver.recv().unwrap() {
-        CommandResp::Exit => (),
+        CommandResp::Exit => {}
         _ => unimplemented!(),
     }
 }

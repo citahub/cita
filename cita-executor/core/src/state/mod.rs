@@ -1265,7 +1265,7 @@ mod tests {
         let stx = tx.sign(*privkey);
 
         // 4) signed
-        let signed = SignedTransaction::new(&stx).unwrap();
+        let signed = SignedTransaction::create(&stx).unwrap();
 
         // 5)
         let mut state = get_temp_state();

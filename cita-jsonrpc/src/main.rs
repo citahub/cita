@@ -236,7 +236,8 @@ fn main() {
             .name(String::from("http worker"))
             .spawn(move || {
                 let server =
-                    Server::new(&addr, tx_relay, http_responses, timeout, &allow_origin).unwrap();
+                    Server::create(&addr, tx_relay, http_responses, timeout, &allow_origin)
+                        .unwrap();
                 let jsonrpc_server = server
                     .jsonrpc()
                     .map_err(|err| eprintln!("server err {}", err));

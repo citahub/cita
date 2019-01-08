@@ -233,7 +233,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(
+    pub fn create(
         addr: &SocketAddr,
         tx: mpsc::Sender<(String, ProtoRequest)>,
         responses: RpcMap,
@@ -336,7 +336,7 @@ mod integration_test {
             .name(format!("test-server-{}", Uuid::new_v4()))
             .spawn(move || {
                 let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
-                let server = Server::new(&addr, tx, responses, timeout, &allow_origin).unwrap();
+                let server = Server::create(&addr, tx, responses, timeout, &allow_origin).unwrap();
 
                 let addr = server.local_addr();
                 addr_tx.send((addr, shutdown_tx)).unwrap();

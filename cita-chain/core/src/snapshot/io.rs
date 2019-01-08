@@ -68,7 +68,7 @@ pub struct PackedWriter {
 
 impl PackedWriter {
     /// Create a new "PackedWriter", to write into the file at the given path.
-    pub fn new(path: &Path) -> io::Result<Self> {
+    pub fn create(path: &Path) -> io::Result<Self> {
         Ok(PackedWriter {
             file: File::create(path)?,
             block_hashes: Vec::new(),
@@ -129,7 +129,7 @@ pub struct LooseWriter {
 impl LooseWriter {
     /// Create a new LooseWriter which will write into the given directory,
     /// creating it if it doesn't exist.
-    pub fn new(path: PathBuf) -> io::Result<Self> {
+    pub fn create(path: PathBuf) -> io::Result<Self> {
         fs::create_dir_all(&path)?;
 
         Ok(LooseWriter { dir: path })
@@ -185,7 +185,7 @@ impl PackedReader {
     /// Create a new `PackedReader` for the file at the given path.
     /// This will fail if any io errors are encountered or the file
     /// is not a valid packed snapshot.
-    pub fn new(path: &Path) -> Result<Option<Self>, ::error::Error> {
+    pub fn create(path: &Path) -> Result<Option<Self>, ::error::Error> {
         let mut file = File::open(path)?;
         let file_len = file.metadata()?.len();
         if file_len < 8 {
@@ -270,7 +270,7 @@ pub struct LooseReader {
 impl LooseReader {
     /// Create a new `LooseReader` which will read the manifest and chunk data from
     /// the given directory.
-    pub fn new(mut dir: PathBuf) -> Result<Self, ::error::Error> {
+    pub fn create(mut dir: PathBuf) -> Result<Self, ::error::Error> {
         let mut manifest_buf = Vec::new();
 
         dir.push("MANIFEST");

@@ -248,7 +248,7 @@ pub fn create_block(
         tx.set_quota(1844674);
 
         let stx = tx.sign(*privkey);
-        let new_tx = SignedTransaction::new(&stx).unwrap();
+        let new_tx = SignedTransaction::create(&stx).unwrap();
         txs.push(new_tx);
     }
     body.set_transactions(txs);

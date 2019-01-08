@@ -88,14 +88,14 @@ pub fn spawn_restore_snapshot(
         executor: Arc::new(executor),
     };
     let snapshot_service = Arc::new(
-        CoreSnapshot::service::Service::new(snapshot_params).expect("new snapshot service"),
+        CoreSnapshot::service::Service::create(snapshot_params).expect("new snapshot service"),
     );
 
     // Spawn -> Restore -> Response
     let mq_resp_sender = mq_resp_sender.clone();
     let filename = filename.to_owned();
     ::std::thread::spawn(move || {
-        match PackedReader::new(::std::path::Path::new(&filename)) {
+        match PackedReader::create(::std::path::Path::new(&filename)) {
             Ok(Some(reader)) => {
                 let result = CoreSnapshot::restore_using(&snapshot_service, &reader, true);
                 response(&mq_resp_sender, Ack::RestoreAck, result);

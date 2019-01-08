@@ -726,7 +726,7 @@ fn take_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) {
 
 fn restore_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Proof, String> {
     let file_name = snapshot_req.file.clone() + "_chain.rlp";
-    let reader = PackedReader::new(Path::new(&file_name))
+    let reader = PackedReader::create(Path::new(&file_name))
         .map_err(|e| format!("Couldn't open snapshot file: {}", e))
         .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
     let reader = match reader {
@@ -746,7 +746,7 @@ fn restore_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Pr
         chain: chain.clone(),
     };
 
-    let snapshot = SnapshotService::new(snapshot_params).unwrap();
+    let snapshot = SnapshotService::create(snapshot_params).unwrap();
     let snapshot = Arc::new(snapshot);
     match snapshot::restore_using(&snapshot, &reader, true) {
         Ok(_) => {

@@ -46,7 +46,7 @@ pub struct RpcClient {
 }
 
 impl RpcClient {
-    pub fn new(upstream: &UpStream) -> ::std::sync::Arc<Self> {
+    pub fn create(upstream: &UpStream) -> ::std::sync::Arc<Self> {
         let tb = ::std::thread::Builder::new().name("RpcClient".to_string());
         let uri = upstream.url.parse::<hyper::Uri>().unwrap();
         let (tx, rx) =
@@ -117,7 +117,7 @@ impl RpcClient {
 macro_rules! rpc_send_and_get_result_from_reply {
     ($upstream:ident, $request:ident, $result_type:path) => {{
         define_reply_type!(ReplyType, $result_type);
-        let rpc_cli = RpcClient::new($upstream);
+        let rpc_cli = RpcClient::create($upstream);
         let body: String = $request.into();
         let data = rpc_cli.do_post(&body)?;
         let reply: ReplyType = serde_json::from_slice(&data).map_err(|_| {

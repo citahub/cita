@@ -194,7 +194,7 @@ fn main() {
 
     //connections manage to loop
     let (tx, rx) = channel();
-    let (mut con, task_sender) = Connections::new(&config);
+    let (mut con, task_sender) = Connections::create(&config);
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1)).unwrap();
     let _ = watcher.watch(".", RecursiveMode::NonRecursive);
 

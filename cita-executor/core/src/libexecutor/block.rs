@@ -76,7 +76,7 @@ impl DerefMut for ExecutedBlock {
 }
 
 impl ExecutedBlock {
-    pub fn new(
+    pub fn create(
         factories: Factories,
         conf: &BlockSysConfig,
         tracing: bool,
