@@ -232,9 +232,9 @@ mod test {
                             ("0x00".to_owned(), "0x013241b2".to_owned()),
                             ("0x01".to_owned(), "0x02".to_owned()),
                         ]
-                            .iter()
-                            .cloned()
-                            .collect(),
+                        .iter()
+                        .cloned()
+                        .collect(),
                     },
                 ),
                 (
@@ -247,9 +247,9 @@ mod test {
                     },
                 ),
             ]
-                .iter()
-                .cloned()
-                .collect(),
+            .iter()
+            .cloned()
+            .collect(),
         };
         assert_eq!(serde_json::from_value::<Spec>(genesis).unwrap(), spec);
     }
