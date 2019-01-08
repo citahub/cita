@@ -26,6 +26,7 @@ pub use libexecutor::block::*;
 use libexecutor::call_request::CallRequest;
 use serde_json;
 use std::fmt;
+use std::sync::Arc;
 use util::RwLock;
 
 use jsonrpc_types::rpctypes::{
@@ -480,7 +481,7 @@ impl Commander for Executor {
         Executor {
             current_header: RwLock::new(current_header),
             db: RwLock::new(db),
-            state_db: RwLock::new(state_db),
+            state_db: Arc::new(RwLock::new(state_db)),
             factories,
             sys_config,
             engine,

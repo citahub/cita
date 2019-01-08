@@ -50,7 +50,7 @@ use util::UtilError;
 pub struct Executor {
     pub current_header: RwLock<Header>,
     pub db: RwLock<Arc<KeyValueDB>>,
-    pub state_db: RwLock<StateDB>,
+    pub state_db: Arc<RwLock<StateDB>>,
     pub factories: Factories,
 
     pub sys_config: GlobalSysConfig,
@@ -102,7 +102,7 @@ impl Executor {
         let mut executor = Executor {
             current_header: RwLock::new(current_header),
             db: RwLock::new(database),
-            state_db: RwLock::new(state_db),
+            state_db: Arc::new(RwLock::new(state_db)),
             factories,
             sys_config: GlobalSysConfig::default(),
             engine: Box::new(NullEngine::cita()),
