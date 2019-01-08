@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(try_from)]
 extern crate bincode;
 extern crate cita_crypto as crypto;
 extern crate cita_types;
@@ -38,7 +37,7 @@ extern crate serde_yaml;
 mod generate_block;
 
 use std::collections::HashMap;
-use std::convert::{From, TryFrom};
+use std::convert::From;
 use std::env;
 use std::io::Read;
 use std::str::FromStr;
@@ -55,6 +54,7 @@ use crypto::{CreateKey, KeyPair, PrivKey};
 use generate_block::BuildBlock;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
+use libproto::TryFrom;
 use pubsub::start_pubsub;
 
 pub type PubType = (String, Vec<u8>);

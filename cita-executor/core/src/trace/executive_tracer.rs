@@ -16,10 +16,13 @@
 
 //! Simple executive tracer.
 
-use evm::action_params::ActionParams;
-use trace::{Tracer, VMTracer, FlatTrace, TraceError};
-use trace::trace::{Call, Create, Action, Res, CreateResult, CallResult, VMTrace, VMOperation, VMExecutedOperation, MemoryDiff, StorageDiff, Suicide};
 use cita_types::{Address, U256};
+use evm::action_params::ActionParams;
+use trace::trace::{
+    Action, Call, CallResult, Create, CreateResult, MemoryDiff, Res, StorageDiff, Suicide,
+    VMExecutedOperation, VMOperation, VMTrace,
+};
+use trace::{FlatTrace, TraceError, Tracer, VMTracer};
 use util::Bytes;
 
 /// Simple executive tracer. Traces all calls and creates. Ignores delegatecalls.
@@ -66,28 +69,46 @@ fn prefix_subtrace_addresses(mut traces: Vec<FlatTrace>) -> Vec<FlatTrace> {
 fn should_prefix_address_properly() {
     use super::trace::{Action, Res, Suicide};
 
-    let f = |v: Vec<usize>| {
-        FlatTrace {
-            action: Action::Suicide(Suicide {
-                                        address: Default::default(),
-                                        balance: Default::default(),
-                                        refund_address: Default::default(),
-                                    }),
-            result: Res::None,
-            subtraces: 0,
-            trace_address: v.into_iter().collect(),
-        }
+    let f = |v: Vec<usize>| FlatTrace {
+        action: Action::Suicide(Suicide {
+            address: Default::default(),
+            balance: Default::default(),
+            refund_address: Default::default(),
+        }),
+        result: Res::None,
+        subtraces: 0,
+        trace_address: v.into_iter().collect(),
     };
-    let t = vec![vec![], vec![0], vec![0, 0], vec![0], vec![], vec![], vec![0], vec![]]
+    let t = vec![
+        vec![],
+        vec![0],
+        vec![0, 0],
+        vec![0],
+        vec![],
+        vec![],
+        vec![0],
+        vec![],
+    ]
+    .into_iter()
+    .map(&f)
+    .collect();
+    let t = prefix_subtrace_addresses(t);
+    assert_eq!(
+        t,
+        vec![
+            vec![0],
+            vec![0, 0],
+            vec![0, 0, 0],
+            vec![0, 0],
+            vec![1],
+            vec![2],
+            vec![2, 0],
+            vec![3]
+        ]
         .into_iter()
         .map(&f)
-        .collect();
-    let t = prefix_subtrace_addresses(t);
-    assert_eq!(t,
-               vec![vec![0], vec![0, 0], vec![0, 0, 0], vec![0, 0], vec![1], vec![2], vec![2, 0], vec![3]]
-                   .into_iter()
-                   .map(&f)
-                   .collect::<Vec<_>>());
+        .collect::<Vec<_>>()
+    );
 }
 
 impl Tracer for ExecutiveTracer {
@@ -103,30 +124,49 @@ impl Tracer for ExecutiveTracer {
         Some(vec![])
     }
 
-    fn trace_call(&mut self, call: Option<Call>, gas_used: U256, output: Option<Bytes>, subs: Vec<FlatTrace>) {
+    fn trace_call(
+        &mut self,
+        call: Option<Call>,
+        gas_used: U256,
+        output: Option<Bytes>,
+        subs: Vec<FlatTrace>,
+    ) {
         let trace = FlatTrace {
             trace_address: Default::default(),
             subtraces: top_level_subtraces(&subs),
-            action: Action::Call(call.expect("self.prepare_trace_call().is_some(): so we must be tracing: qed")),
+            action: Action::Call(
+                call.expect("self.prepare_trace_call().is_some(): so we must be tracing: qed"),
+            ),
             result: Res::Call(CallResult {
-                                  gas_used,
-                                  output: output.expect("self.prepare_trace_output().is_some(): so we must be tracing: qed"),
-                              }),
+                gas_used,
+                output: output
+                    .expect("self.prepare_trace_output().is_some(): so we must be tracing: qed"),
+            }),
         };
         debug!(target: "trace", "Traced call {:?}", trace);
         self.traces.push(trace);
         self.traces.extend(prefix_subtrace_addresses(subs));
     }
 
-    fn trace_create(&mut self, create: Option<Create>, gas_used: U256, code: Option<Bytes>, address: Address, subs: Vec<FlatTrace>) {
+    fn trace_create(
+        &mut self,
+        create: Option<Create>,
+        gas_used: U256,
+        code: Option<Bytes>,
+        address: Address,
+        subs: Vec<FlatTrace>,
+    ) {
         let trace = FlatTrace {
             subtraces: top_level_subtraces(&subs),
-            action: Action::Create(create.expect("self.prepare_trace_create().is_some(): so we must be tracing: qed")),
+            action: Action::Create(
+                create.expect("self.prepare_trace_create().is_some(): so we must be tracing: qed"),
+            ),
             result: Res::Create(CreateResult {
-                                    gas_used,
-                                    code: code.expect("self.prepare_trace_output.is_some(): so we must be tracing: qed"),
-                                    address,
-                                }),
+                gas_used,
+                code: code
+                    .expect("self.prepare_trace_output.is_some(): so we must be tracing: qed"),
+                address,
+            }),
             trace_address: Default::default(),
         };
         debug!(target: "trace", "Traced create {:?}", trace);
@@ -138,7 +178,9 @@ impl Tracer for ExecutiveTracer {
         let trace = FlatTrace {
             trace_address: Default::default(),
             subtraces: top_level_subtraces(&subs),
-            action: Action::Call(call.expect("self.prepare_trace_call().is_some(): so we must be tracing: qed")),
+            action: Action::Call(
+                call.expect("self.prepare_trace_call().is_some(): so we must be tracing: qed"),
+            ),
             result: Res::FailedCall(error),
         };
         debug!(target: "trace", "Traced failed call {:?}", trace);
@@ -146,10 +188,17 @@ impl Tracer for ExecutiveTracer {
         self.traces.extend(prefix_subtrace_addresses(subs));
     }
 
-    fn trace_failed_create(&mut self, create: Option<Create>, subs: Vec<FlatTrace>, error: TraceError) {
+    fn trace_failed_create(
+        &mut self,
+        create: Option<Create>,
+        subs: Vec<FlatTrace>,
+        error: TraceError,
+    ) {
         let trace = FlatTrace {
             subtraces: top_level_subtraces(&subs),
-            action: Action::Create(create.expect("self.prepare_trace_create().is_some(): so we must be tracing: qed")),
+            action: Action::Create(
+                create.expect("self.prepare_trace_create().is_some(): so we must be tracing: qed"),
+            ),
             result: Res::FailedCreate(error),
             trace_address: Default::default(),
         };
@@ -162,10 +211,10 @@ impl Tracer for ExecutiveTracer {
         let trace = FlatTrace {
             subtraces: 0,
             action: Action::Suicide(Suicide {
-                                        address,
-                                        refund_address,
-                                        balance,
-                                    }),
+                address,
+                refund_address,
+                balance,
+            }),
             result: Res::None,
             trace_address: Default::default(),
         };
@@ -204,20 +253,32 @@ impl ExecutiveVMTracer {
 impl VMTracer for ExecutiveVMTracer {
     fn trace_prepare_execute(&mut self, pc: usize, instruction: u8, gas_cost: &U256) -> bool {
         self.data.operations.push(VMOperation {
-                                      pc,
-                                      instruction,
-                                      gas_cost: *gas_cost,
-                                      executed: None,
-                                  });
+            pc,
+            instruction,
+            gas_cost: *gas_cost,
+            executed: None,
+        });
         true
     }
 
-    fn trace_executed(&mut self, gas_used: U256, stack_push: &[U256], mem_diff: Option<(usize, &[u8])>, store_diff: Option<(U256, U256)>) {
+    fn trace_executed(
+        &mut self,
+        gas_used: U256,
+        stack_push: &[U256],
+        mem_diff: Option<(usize, &[u8])>,
+        store_diff: Option<(U256, U256)>,
+    ) {
         let ex = VMExecutedOperation {
             gas_used,
             stack_push: stack_push.to_vec(),
-            mem_diff: mem_diff.map(|(s, r)| MemoryDiff { offset: s, data: r.to_vec() }),
-            store_diff: store_diff.map(|(l, v)| StorageDiff { location: l, value: v }),
+            mem_diff: mem_diff.map(|(s, r)| MemoryDiff {
+                offset: s,
+                data: r.to_vec(),
+            }),
+            store_diff: store_diff.map(|(l, v)| StorageDiff {
+                location: l,
+                value: v,
+            }),
         };
         self.data
             .operations

@@ -19,10 +19,10 @@
 //! TODO: consider spliting it into two separate files.
 
 use super::interpreter::SharedCache;
+use cita_types::U256;
 use evm::Evm;
 use std::fmt;
 use std::sync::Arc;
-use cita_types::U256;
 
 #[derive(Debug, PartialEq, Clone)]
 /// Type of EVM to use.
@@ -37,16 +37,24 @@ pub enum VMType {
 impl fmt::Display for VMType {
     #[cfg(feature = "jit")]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match *self {
-            VMType::Jit => "JIT",
-            VMType::Interpreter => "INT",
-        })
+        write!(
+            f,
+            "{}",
+            match *self {
+                VMType::Jit => "JIT",
+                VMType::Interpreter => "INT",
+            }
+        )
     }
     #[cfg(not(feature = "jit"))]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match *self {
-            VMType::Interpreter => "INT",
-        })
+        write!(
+            f,
+            "{}",
+            match *self {
+                VMType::Interpreter => "INT",
+            }
+        )
     }
 }
 
@@ -95,14 +103,18 @@ impl Factory {
     #[cfg(feature = "jit")]
     pub fn create(&self, gas: U256) -> Box<Evm> {
         match self.evm {
-            VMType::Jit => {
-                Box::new(super::jit::JitEvm::default())
+            VMType::Jit => Box::new(super::jit::JitEvm::default()),
+            VMType::Interpreter => {
+                if Self::can_fit_in_usize(gas) {
+                    Box::new(super::interpreter::Interpreter::<usize>::new(
+                        self.evm_cache.clone(),
+                    ))
+                } else {
+                    Box::new(super::interpreter::Interpreter::<U256>::new(
+                        self.evm_cache.clone(),
+                    ))
+                }
             }
-            VMType::Interpreter => if Self::can_fit_in_usize(gas) {
-                Box::new(super::interpreter::Interpreter::<usize>::new(self.evm_cache.clone()))
-            } else {
-                Box::new(super::interpreter::Interpreter::<U256>::new(self.evm_cache.clone()))
-            },
         }
     }
 
@@ -111,11 +123,17 @@ impl Factory {
     #[cfg(not(feature = "jit"))]
     pub fn create(&self, gas: U256) -> Box<Evm> {
         match self.evm {
-            VMType::Interpreter => if Self::can_fit_in_usize(gas) {
-                Box::new(super::interpreter::Interpreter::<usize>::new(Arc::clone(&self.evm_cache)))
-            } else {
-                Box::new(super::interpreter::Interpreter::<U256>::new(Arc::clone(&self.evm_cache)))
-            },
+            VMType::Interpreter => {
+                if Self::can_fit_in_usize(gas) {
+                    Box::new(super::interpreter::Interpreter::<usize>::new(Arc::clone(
+                        &self.evm_cache,
+                    )))
+                } else {
+                    Box::new(super::interpreter::Interpreter::<U256>::new(Arc::clone(
+                        &self.evm_cache,
+                    )))
+                }
+            }
         }
     }
 

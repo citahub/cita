@@ -472,7 +472,7 @@ mod tests {
 
     fn generate_closed_block(open_block: OpenBlock) -> ClosedBlock {
         let state_db = generate_state_db();
-        let exec_block = ExecutedBlock::new(
+        let exec_block = ExecutedBlock::create(
             Default::default(),
             &BlockSysConfig::default(),
             false,

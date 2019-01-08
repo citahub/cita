@@ -19,11 +19,11 @@ use bytes::BytesMut;
 use citaprotocol::pubsub_message_to_network_message;
 use config;
 use config::NetConfig;
+use libproto::TryInto;
 use libproto::{Message, OperateType};
 use native_tls::{self, TlsConnector};
 use notify::DebouncedEvent;
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
@@ -208,7 +208,7 @@ pub struct Connections {
 }
 
 impl Connections {
-    pub fn new(config: &config::NetConfig) -> (Self, Sender<Task>) {
+    pub fn create(config: &config::NetConfig) -> (Self, Sender<Task>) {
         let id_card = config.id_card.unwrap();
         let (task_sender, task_receiver) = channel();
         let (connect_sender, connect_receiver) = channel();

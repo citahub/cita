@@ -15,11 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(try_from)]
-#![cfg_attr(test, feature(test))]
-#![feature(tool_lints)]
-#![feature(mpsc_select)]
-
 extern crate bincode;
 extern crate byteorder;
 extern crate cita_crypto_trait;
@@ -32,9 +27,9 @@ extern crate proof;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
+extern crate cita_merklehash;
 extern crate db as cita_db;
 extern crate hashable;
-extern crate merklehash;
 #[cfg_attr(test, macro_use)]
 extern crate serde_json;
 extern crate util;
@@ -64,8 +59,6 @@ extern crate transient_hashmap;
 extern crate cita_crypto;
 extern crate core;
 extern crate ethabi;
-#[cfg(test)]
-extern crate test;
 
 extern crate grpc;
 #[cfg(feature = "privatetx")]

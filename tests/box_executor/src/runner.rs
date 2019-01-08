@@ -10,8 +10,8 @@ extern crate rlp;
 extern crate rustc_serialize;
 extern crate serde_yaml;
 
-use std::convert::{From, TryFrom};
-use std::convert::{Into, TryInto};
+use libproto::{TryFrom, TryInto};
+use std::convert::{From, Into};
 use std::str::FromStr;
 use std::u8;
 use std::{thread, time};

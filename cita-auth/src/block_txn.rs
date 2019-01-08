@@ -18,9 +18,9 @@
 use cita_types::H256;
 use handler::verify_tx_sig;
 use hashable::Hashable;
+use libproto::TryInto;
 use libproto::{BlockTxn, GetBlockTxn, Origin, SignedTransaction};
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
-use std::convert::TryInto;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 

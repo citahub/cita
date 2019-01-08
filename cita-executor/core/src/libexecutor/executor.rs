@@ -390,7 +390,7 @@ impl Executor {
         let last_hashes = self.build_last_hashes(None, open_block.number() - 1);
         let parent_hash = *open_block.parent_hash();
 
-        ExecutedBlock::new(
+        ExecutedBlock::create(
             self.factories.clone(),
             &self.sys_config.block_sys_config,
             false,

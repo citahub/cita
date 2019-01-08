@@ -78,9 +78,6 @@
 //! [`network_message_to_pubsub_message`]: ./citaprotocol/fn.network_message_to_pubsub_message.html
 //!
 
-#![feature(try_from)]
-#![feature(tool_lints)]
-
 extern crate byteorder;
 extern crate bytes;
 extern crate clap;
@@ -117,11 +114,11 @@ use config::NetConfig;
 use connection::{manage_connect, Connections, Task};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
+use libproto::TryFrom;
 use netserver::NetServer;
 use network::NetWork;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use pubsub::start_pubsub;
-use std::convert::TryFrom;
 use std::net::SocketAddr;
 use std::sync::mpsc::channel;
 use std::thread;
@@ -197,7 +194,7 @@ fn main() {
 
     //connections manage to loop
     let (tx, rx) = channel();
-    let (mut con, task_sender) = Connections::new(&config);
+    let (mut con, task_sender) = Connections::create(&config);
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1)).unwrap();
     let _ = watcher.watch(".", RecursiveMode::NonRecursive);
 

@@ -176,7 +176,7 @@ impl From<ProtoBlockBody> for BlockBody {
             transactions: body
                 .get_transactions()
                 .iter()
-                .map(|t| SignedTransaction::new(t).expect("transaction can not be converted"))
+                .map(|t| SignedTransaction::create(t).expect("transaction can not be converted"))
                 .collect(),
         }
     }

@@ -52,10 +52,6 @@
 //! uuid number and `TransferType`.
 //!
 
-#![feature(try_from)]
-#![feature(tool_lints)]
-#![feature(never_type)]
-
 extern crate bytes;
 extern crate clap;
 extern crate cpuprofiler;
@@ -113,9 +109,9 @@ use http_server::Server;
 use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
+use libproto::TryInto;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::sync::mpsc::{channel, Sender};
 use std::sync::Arc;
 use std::thread;
@@ -240,7 +236,8 @@ fn main() {
             .name(String::from("http worker"))
             .spawn(move || {
                 let server =
-                    Server::new(&addr, tx_relay, http_responses, timeout, &allow_origin).unwrap();
+                    Server::create(&addr, tx_relay, http_responses, timeout, &allow_origin)
+                        .unwrap();
                 let jsonrpc_server = server
                     .jsonrpc()
                     .map_err(|err| eprintln!("server err {}", err));

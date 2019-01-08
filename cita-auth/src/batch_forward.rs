@@ -16,8 +16,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::TryInto;
 use libproto::{BatchRequest, Message, Request};
-use std::convert::{Into, TryInto};
+use std::convert::Into;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;

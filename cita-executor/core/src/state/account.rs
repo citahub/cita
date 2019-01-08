@@ -473,20 +473,21 @@ impl Account {
             self.code_hash,
             self.code_cache.lower_hex()
         );
-        self.code_size.is_some() || if self.code_hash != HASH_EMPTY {
-            match db.get(&self.code_hash) {
-                Some(x) => {
-                    self.code_size = Some(x.len());
-                    true
+        self.code_size.is_some()
+            || if self.code_hash != HASH_EMPTY {
+                match db.get(&self.code_hash) {
+                    Some(x) => {
+                        self.code_size = Some(x.len());
+                        true
+                    }
+                    _ => {
+                        warn!("Failed get code of {}", self.code_hash);
+                        false
+                    }
                 }
-                _ => {
-                    warn!("Failed get code of {}", self.code_hash);
-                    false
-                }
+            } else {
+                false
             }
-        } else {
-            false
-        }
     }
 
     /// Provide a database to get `abi_size`. Should not be called if it is a contract without abi.
@@ -498,20 +499,21 @@ impl Account {
             self.abi_hash,
             self.abi_cache.lower_hex()
         );
-        self.abi_size.is_some() || if self.abi_hash != HASH_EMPTY {
-            match db.get(&self.abi_hash) {
-                Some(x) => {
-                    self.abi_size = Some(x.len());
-                    true
+        self.abi_size.is_some()
+            || if self.abi_hash != HASH_EMPTY {
+                match db.get(&self.abi_hash) {
+                    Some(x) => {
+                        self.abi_size = Some(x.len());
+                        true
+                    }
+                    _ => {
+                        warn!("Failed get abi of {}", self.abi_hash);
+                        false
+                    }
                 }
-                _ => {
-                    warn!("Failed get abi of {}", self.abi_hash);
-                    false
-                }
+            } else {
+                false
             }
-        } else {
-            false
-        }
     }
 
     /// Determine whether there are any un-`commit()`-ed storage-setting operations.

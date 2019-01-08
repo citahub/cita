@@ -65,7 +65,7 @@ struct RestorationParams<'a> {
 
 impl Restoration {
     // make a new restoration using the given parameters.
-    fn new(params: RestorationParams) -> Result<Self, Error> {
+    fn create(params: RestorationParams) -> Result<Self, Error> {
         let manifest = params.manifest;
 
         let state_chunks = manifest.state_hashes.iter().cloned().collect();
@@ -202,7 +202,7 @@ pub struct Service {
 
 impl Service {
     /// Create a new snapshot service from the given parameters.
-    pub fn new(params: ServiceParams) -> Result<Self, Error> {
+    pub fn create(params: ServiceParams) -> Result<Self, Error> {
         let mut service = Service {
             restoration: Mutex::new(None),
             snapshot_root: params.snapshot_root,
@@ -239,7 +239,7 @@ impl Service {
             }
         }
 
-        let reader = LooseReader::new(service.snapshot_dir()).ok();
+        let reader = LooseReader::create(service.snapshot_dir()).ok();
         *service.reader.get_mut() = reader;
 
         Ok(service)
@@ -321,7 +321,7 @@ impl Service {
 
         // make new restoration.
         let writer = if recover {
-            Some(LooseWriter::new(self.temp_recovery_dir())?)
+            Some(LooseWriter::create(self.temp_recovery_dir())?)
         } else {
             None
         };
@@ -339,7 +339,7 @@ impl Service {
         let state_chunks = params.manifest.state_hashes.len();
         let block_chunks = params.manifest.block_hashes.len();
 
-        *res = Some(Restoration::new(params)?);
+        *res = Some(Restoration::create(params)?);
 
         *self.status.lock() = RestorationStatus::Ongoing {
             state_chunks: state_chunks as u32,

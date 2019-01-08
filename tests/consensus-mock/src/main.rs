@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(try_from)]
 extern crate bincode;
 extern crate chrono;
 extern crate cita_crypto as crypto;
@@ -40,10 +39,11 @@ use hashable::Hashable;
 use libproto::blockchain::{Block, BlockBody, BlockTxs, BlockWithProof};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
+use libproto::{TryFrom, TryInto};
 use proof::BftProof;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
-use std::convert::{Into, TryFrom, TryInto};
+use std::convert::Into;
 use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};

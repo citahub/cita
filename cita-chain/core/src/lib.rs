@@ -14,18 +14,15 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#![feature(try_from)]
-#![cfg_attr(test, feature(test))]
-#![feature(tool_lints)]
 
 extern crate byteorder;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate logger;
+extern crate cita_merklehash;
 extern crate hashable;
 extern crate lru_cache;
-extern crate merklehash;
 extern crate proof;
 extern crate rlp;
 extern crate snappy;
@@ -53,8 +50,6 @@ extern crate transient_hashmap;
 
 #[cfg(test)]
 extern crate cita_crypto;
-#[cfg(test)]
-extern crate test;
 
 pub mod env_info;
 

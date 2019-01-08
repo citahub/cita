@@ -36,19 +36,20 @@ pub use types::block::*;
 use types::extras::*;
 
 use cita_db::kvdb::*;
+use cita_merklehash;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use hashable::Hashable;
 use header::Header;
 use libproto::executor::ExecutedResult;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::TryInto;
 use libproto::{BlockTxHashes, FullTransaction, Message};
-use merklehash;
 use proof::BftProof;
 use receipt::{LocalizedReceipt, Receipt};
 use rlp::{self, Encodable};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::convert::{Into, TryInto};
+use std::convert::Into;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -77,7 +78,7 @@ pub struct RelayInfo {
 pub struct TxProof {
     tx: SignedTransaction,
     receipt: Receipt,
-    receipt_proof: merklehash::Proof,
+    receipt_proof: cita_merklehash::Proof,
     block_header: Header,
     next_proposal_header: Header,
     proposal_proof: ProtoProof,
@@ -97,9 +98,12 @@ impl TxProof {
             return false;
         };
         // Use receipt_proof and receipt_root to prove the receipt in the block.
-        if self.receipt_proof.verify(
-            *self.block_header.receipts_root(),
+        let receipt_merkle_proof: cita_merklehash::MerkleProof<H256> =
+            self.receipt_proof.clone().into();
+        if receipt_merkle_proof.verify(
+            self.block_header.receipts_root(),
             self.receipt.clone().rlp_bytes().into_vec().crypt_hash(),
+            cita_merklehash::merge,
         ) {
         } else {
             warn!("txproof verify receipt root merklehash failed");
@@ -888,19 +892,27 @@ impl Chain {
                         }
                     })
                     .and_then(|receipt| {
-                        merklehash::Tree::from_bytes(
-                            receipts.receipts.iter().map(|r| r.rlp_bytes().into_vec()),
+                        cita_merklehash::Tree::from_hashes(
+                            receipts
+                                .receipts
+                                .iter()
+                                .map(|r| r.rlp_bytes().into_vec().crypt_hash())
+                                .collect::<Vec<_>>(),
+                            cita_merklehash::merge,
                         )
                         .get_proof_by_input_index(index)
                         .map(|receipt_proof| (index, block, receipt.clone(), receipt_proof))
                     })
             })
             .and_then(|(index, block, receipt, receipt_proof)| {
-                block
-                    .body()
-                    .transactions()
-                    .get(index)
-                    .map(|tx| (tx.clone(), receipt, receipt_proof, block.header().clone()))
+                block.body().transactions().get(index).map(|tx| {
+                    (
+                        tx.clone(),
+                        receipt,
+                        receipt_proof.into(),
+                        block.header().clone(),
+                    )
+                })
             })
             .and_then(|(tx, receipt, receipt_proof, block_header)| {
                 self.block_by_height(block_header.number() + 1)

@@ -327,10 +327,10 @@ impl ZkPrivacy {
             }
         }
         let _ = ext.log(
-            vec![
-                H256::from_str("c73b5a8f31a1a078a14123cc93687f4a59389c76caf88d5d2154d3f3ce25ff49")
-                    .unwrap(),
-            ],
+            vec![H256::from_str(
+                "c73b5a8f31a1a078a14123cc93687f4a59389c76caf88d5d2154d3f3ce25ff49",
+            )
+            .unwrap()],
             &data,
         );
 

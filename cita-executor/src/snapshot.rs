@@ -26,7 +26,7 @@ use core::snapshot::io::{PackedReader, PackedWriter};
 use crossbeam_channel::{Receiver, Sender};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Resp as Ack, SnapshotResp};
-use std::convert::TryInto;
+use libproto::TryInto;
 use std::sync::Arc;
 
 pub fn handle_snapshot_height(req_height: u64, current_height: u64) -> u64 {
@@ -88,14 +88,14 @@ pub fn spawn_restore_snapshot(
         executor: Arc::new(executor),
     };
     let snapshot_service = Arc::new(
-        CoreSnapshot::service::Service::new(snapshot_params).expect("new snapshot service"),
+        CoreSnapshot::service::Service::create(snapshot_params).expect("new snapshot service"),
     );
 
     // Spawn -> Restore -> Response
     let mq_resp_sender = mq_resp_sender.clone();
     let filename = filename.to_owned();
     ::std::thread::spawn(move || {
-        match PackedReader::new(::std::path::Path::new(&filename)) {
+        match PackedReader::create(::std::path::Path::new(&filename)) {
             Ok(Some(reader)) => {
                 let result = CoreSnapshot::restore_using(&snapshot_service, &reader, true);
                 response(&mq_resp_sender, Ack::RestoreAck, result);
@@ -178,7 +178,7 @@ mod tests {
     use super::*;
     use libproto::snapshot::Resp as Ack;
     use libproto::Message;
-    use std::convert::TryFrom;
+    use libproto::TryFrom;
 
     fn wrap(origin_db: &str, temp_dir: ::std::path::PathBuf) -> String {
         match origin_db {

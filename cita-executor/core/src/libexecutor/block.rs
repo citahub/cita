@@ -16,15 +16,16 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use basic_types::LogBloom;
+use cita_merklehash;
 use cita_types::{Address, H256, U256};
 use engines::Engine;
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
+use hashable::Hashable;
 use libexecutor::auto_exec::auto_exec;
 use libexecutor::sys_config::BlockSysConfig;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
-use merklehash;
 use receipt::Receipt;
 use rlp::*;
 use state::State;
@@ -75,7 +76,7 @@ impl DerefMut for ExecutedBlock {
 }
 
 impl ExecutedBlock {
-    pub fn new(
+    pub fn create(
         factories: Factories,
         conf: &BlockSysConfig,
         tracing: bool,
@@ -173,9 +174,16 @@ impl ExecutedBlock {
         let mut block = Block::new(self.block);
         let state_root = *self.state.root();
         block.set_state_root(state_root);
-        let receipts_root =
-            merklehash::Tree::from_bytes(self.receipts.iter().map(|r| r.rlp_bytes().to_vec()))
-                .get_root_hash();
+        let receipts_root = cita_merklehash::Tree::from_hashes(
+            self.receipts
+                .iter()
+                .map(|r| r.rlp_bytes().to_vec().crypt_hash())
+                .collect::<Vec<_>>(),
+            cita_merklehash::merge,
+        )
+        .get_root_hash()
+        .cloned()
+        .unwrap_or(cita_merklehash::HASH_NULL);
 
         block.set_receipts_root(receipts_root);
         block.set_quota_used(self.current_quota_used);
