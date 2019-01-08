@@ -91,7 +91,10 @@ impl<S: fmt::Display> Stack<S> for VecStack<S> {
     }
 
     fn peek_top(&self, no_from_top: usize) -> &[S] {
-        assert!(self.stack.len() >= no_from_top, "peek_top asked for more items than exist.");
+        assert!(
+            self.stack.len() >= no_from_top,
+            "peek_top asked for more items than exist."
+        );
         &self.stack[self.stack.len() - no_from_top..self.stack.len()]
     }
 }

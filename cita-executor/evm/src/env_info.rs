@@ -16,9 +16,9 @@
 
 // use std::cmp;
 
-use types::BlockNumber;
-use std::sync::Arc;
 use cita_types::{Address, H256, U256};
+use std::sync::Arc;
+use types::BlockNumber;
 // use ethjson;
 
 /// Simple vector of hashes, should be at most 256 items large, can be smaller if being used

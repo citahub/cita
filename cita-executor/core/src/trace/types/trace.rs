@@ -18,12 +18,12 @@
 
 use super::error::Error;
 
-use evm::action_params::ActionParams;
 use basic_types::LogBloom;
+use cita_types::traits::BloomTools;
+use cita_types::{Address, U256};
+use evm::action_params::ActionParams;
 use evm::call_type::CallType;
 use rlp::*;
-use cita_types::{U256, Address};
-use cita_types::traits::BloomTools;
 use util::Bytes;
 
 /// `Call` result.
@@ -261,7 +261,6 @@ impl Decodable for Suicide {
     }
 }
 
-
 /// Description of an action that we trace; will be either a call or a create.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "ipc", binary)]
@@ -383,10 +382,9 @@ impl Res {
     pub fn bloom(&self) -> LogBloom {
         match *self {
             Res::Create(ref create) => create.bloom(),
-            Res::Call(_) |
-            Res::FailedCall(_) |
-            Res::FailedCreate(_) |
-            Res::None => Default::default(),
+            Res::Call(_) | Res::FailedCall(_) | Res::FailedCreate(_) | Res::None => {
+                Default::default()
+            }
         }
     }
 
@@ -420,9 +418,9 @@ impl Encodable for MemoryDiff {
 impl Decodable for MemoryDiff {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         Ok(MemoryDiff {
-               offset: rlp.val_at(0)?,
-               data: rlp.val_at(1)?,
-           })
+            offset: rlp.val_at(0)?,
+            data: rlp.val_at(1)?,
+        })
     }
 }
 
@@ -447,9 +445,9 @@ impl Encodable for StorageDiff {
 impl Decodable for StorageDiff {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         Ok(StorageDiff {
-               location: rlp.val_at(0)?,
-               value: rlp.val_at(1)?,
-           })
+            location: rlp.val_at(0)?,
+            value: rlp.val_at(1)?,
+        })
     }
 }
 
@@ -480,11 +478,11 @@ impl Encodable for VMExecutedOperation {
 impl Decodable for VMExecutedOperation {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         Ok(VMExecutedOperation {
-               gas_used: rlp.val_at(0)?,
-               stack_push: rlp.list_at(1)?,
-               mem_diff: rlp.val_at(2)?,
-               store_diff: rlp.val_at(3)?,
-           })
+            gas_used: rlp.val_at(0)?,
+            stack_push: rlp.list_at(1)?,
+            mem_diff: rlp.val_at(2)?,
+            store_diff: rlp.val_at(3)?,
+        })
     }
 }
 

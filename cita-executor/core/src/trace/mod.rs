@@ -32,16 +32,16 @@ pub use self::import::ImportRequest;
 pub use self::localized::LocalizedTrace;
 pub use self::noop_tracer::{NoopTracer, NoopVMTracer};
 use self::trace::{Call, Create};
-pub use self::types::{filter, flat, localized, trace};
 pub use self::types::error::Error as TraceError;
-pub use self::types::filter::{Filter, AddressesFilter};
-pub use self::types::flat::{FlatTrace, FlatTransactionTraces, FlatBlockTraces};
-pub use self::types::trace::{VMTrace, VMOperation, VMExecutedOperation, MemoryDiff, StorageDiff};
+pub use self::types::filter::{AddressesFilter, Filter};
+pub use self::types::flat::{FlatBlockTraces, FlatTrace, FlatTransactionTraces};
+pub use self::types::trace::{MemoryDiff, StorageDiff, VMExecutedOperation, VMOperation, VMTrace};
+pub use self::types::{filter, flat, localized, trace};
+use cita_db::DBTransaction;
+use cita_types::{Address, H256, U256};
 use evm::action_params::ActionParams;
 use header::BlockNumber;
-use cita_types::{Address, U256, H256};
 use util::Bytes;
-use cita_db::DBTransaction;
 
 /// This trait is used by executive to build traces.
 pub trait Tracer: Send {
@@ -55,16 +55,34 @@ pub trait Tracer: Send {
     fn prepare_trace_output(&self) -> Option<Bytes>;
 
     /// Stores trace call info.
-    fn trace_call(&mut self, call: Option<Call>, gas_used: U256, output: Option<Bytes>, subs: Vec<FlatTrace>);
+    fn trace_call(
+        &mut self,
+        call: Option<Call>,
+        gas_used: U256,
+        output: Option<Bytes>,
+        subs: Vec<FlatTrace>,
+    );
 
     /// Stores trace create info.
-    fn trace_create(&mut self, create: Option<Create>, gas_used: U256, code: Option<Bytes>, address: Address, subs: Vec<FlatTrace>);
+    fn trace_create(
+        &mut self,
+        create: Option<Create>,
+        gas_used: U256,
+        code: Option<Bytes>,
+        address: Address,
+        subs: Vec<FlatTrace>,
+    );
 
     /// Stores failed call trace.
     fn trace_failed_call(&mut self, call: Option<Call>, subs: Vec<FlatTrace>, error: TraceError);
 
     /// Stores failed create trace.
-    fn trace_failed_create(&mut self, create: Option<Create>, subs: Vec<FlatTrace>, error: TraceError);
+    fn trace_failed_create(
+        &mut self,
+        create: Option<Create>,
+        subs: Vec<FlatTrace>,
+        error: TraceError,
+    );
 
     /// Stores suicide info.
     fn trace_suicide(&mut self, address: Address, balance: U256, refund_address: Address);
@@ -87,7 +105,14 @@ pub trait VMTracer: Send {
     }
 
     /// Trace the finalised execution of a single instruction.
-    fn trace_executed(&mut self, _gas_used: U256, _stack_push: &[U256], _mem_diff: Option<(usize, &[u8])>, _store_diff: Option<(U256, U256)>) {}
+    fn trace_executed(
+        &mut self,
+        _gas_used: U256,
+        _stack_push: &[U256],
+        _mem_diff: Option<(usize, &[u8])>,
+        _store_diff: Option<(U256, U256)>,
+    ) {
+    }
 
     /// Spawn subtracer which will be used to trace deeper levels of execution.
     fn prepare_subtrace(&self, code: &[u8]) -> Self
@@ -122,10 +147,19 @@ pub trait Database {
     fn import(&self, batch: &mut DBTransaction, request: ImportRequest);
 
     /// Returns localized trace at given position.
-    fn trace(&self, block_number: BlockNumber, tx_position: usize, trace_position: Vec<usize>) -> Option<LocalizedTrace>;
+    fn trace(
+        &self,
+        block_number: BlockNumber,
+        tx_position: usize,
+        trace_position: Vec<usize>,
+    ) -> Option<LocalizedTrace>;
 
     /// Returns localized traces created by a single transaction.
-    fn transaction_traces(&self, block_number: BlockNumber, tx_position: usize) -> Option<Vec<LocalizedTrace>>;
+    fn transaction_traces(
+        &self,
+        block_number: BlockNumber,
+        tx_position: usize,
+    ) -> Option<Vec<LocalizedTrace>>;
 
     /// Returns localized traces created in given block.
     fn block_traces(&self, block_number: BlockNumber) -> Option<Vec<LocalizedTrace>>;

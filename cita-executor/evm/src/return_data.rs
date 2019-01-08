@@ -44,14 +44,9 @@ impl ReturnData {
     }
     /// Create `ReturnData` from give buffer and slice.
     pub fn new(mem: Vec<u8>, offset: usize, size: usize) -> Self {
-        ReturnData {
-            mem,
-            offset,
-            size,
-        }
+        ReturnData { mem, offset, size }
     }
 }
-
 
 /// Gas Left: either it is a known value, or it needs to be computed by processing
 /// a return instruction.
@@ -66,6 +61,6 @@ pub enum GasLeft {
         /// Return data buffer.
         data: ReturnData,
         /// Apply or revert state changes on revert.
-        apply_state: bool
+        apply_state: bool,
     },
 }

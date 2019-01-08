@@ -14,16 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+use call_type::CallType;
+use cita_types::{Address, H256, U256};
 use env_info::EnvInfo;
+use error;
+use ext::{ContractCreateResult, Ext, MessageCallResult};
 use return_data::{GasLeft, ReturnData};
 use schedule::Schedule;
-use ext::{Ext, ContractCreateResult, MessageCallResult};
-use call_type::CallType;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use util::*;
-use cita_types::{Address, H256, U256};
-use error;
 
 pub struct FakeLogEntry {
     pub topics: Vec<H256>,
@@ -70,7 +70,7 @@ pub struct FakeExt {
 pub fn test_finalize(res: Result<GasLeft, error::Error>) -> Result<U256, error::Error> {
     match res {
         Ok(GasLeft::Known(gas)) => Ok(gas),
-        Ok(GasLeft::NeedsReturn{..}) => unimplemented!(), // since ret is unimplemented.
+        Ok(GasLeft::NeedsReturn { .. }) => unimplemented!(), // since ret is unimplemented.
         Err(e) => Err(e),
     }
 }
@@ -119,33 +119,46 @@ impl Ext for FakeExt {
 
     fn create(&mut self, gas: &U256, value: &U256, code: &[u8]) -> ContractCreateResult {
         self.calls.insert(FakeCall {
-                              call_type: FakeCallType::Create,
-                              gas: *gas,
-                              sender_address: None,
-                              receive_address: None,
-                              value: Some(*value),
-                              data: code.to_vec(),
-                              code_address: None,
-                          });
+            call_type: FakeCallType::Create,
+            gas: *gas,
+            sender_address: None,
+            receive_address: None,
+            value: Some(*value),
+            data: code.to_vec(),
+            code_address: None,
+        });
         ContractCreateResult::Failed
     }
 
-    fn call(&mut self, gas: &U256, sender_address: &Address, receive_address: &Address, value: Option<U256>, data: &[u8], code_address: &Address, _output: &mut [u8], _call_type: CallType) -> MessageCallResult {
-
+    fn call(
+        &mut self,
+        gas: &U256,
+        sender_address: &Address,
+        receive_address: &Address,
+        value: Option<U256>,
+        data: &[u8],
+        code_address: &Address,
+        _output: &mut [u8],
+        _call_type: CallType,
+    ) -> MessageCallResult {
         self.calls.insert(FakeCall {
-                              call_type: FakeCallType::Call,
-                              gas: *gas,
-                              sender_address: Some(*sender_address),
-                              receive_address: Some(*receive_address),
-                              value,
-                              data: data.to_vec(),
-                              code_address: Some(*code_address),
-                          });
+            call_type: FakeCallType::Call,
+            gas: *gas,
+            sender_address: Some(*sender_address),
+            receive_address: Some(*receive_address),
+            value,
+            data: data.to_vec(),
+            code_address: Some(*code_address),
+        });
         MessageCallResult::Success(*gas, ReturnData::empty())
     }
 
     fn extcode(&self, address: &Address) -> error::Result<Arc<Bytes>> {
-        Ok(self.codes.get(address).unwrap_or(&Arc::new(Bytes::new())).clone())
+        Ok(self
+            .codes
+            .get(address)
+            .unwrap_or(&Arc::new(Bytes::new()))
+            .clone())
     }
 
     fn extcodesize(&self, address: &Address) -> error::Result<usize> {
@@ -154,9 +167,9 @@ impl Ext for FakeExt {
 
     fn log(&mut self, topics: Vec<H256>, data: &[u8]) -> error::Result<()> {
         self.logs.push(FakeLogEntry {
-                           topics,
-                           data: data.to_vec(),
-                       });
+            topics,
+            data: data.to_vec(),
+        });
         Ok(())
     }
 
@@ -182,7 +195,7 @@ impl Ext for FakeExt {
 
     fn is_static(&self) -> bool {
         self.is_static
-     }
+    }
 
     fn inc_sstore_clears(&mut self) {
         self.sstore_clears += 1;

@@ -65,7 +65,11 @@ impl Memory for Vec<u8> {
     fn read_slice(&self, init_off_u: U256, init_size_u: U256) -> &[u8] {
         let off = init_off_u.low_u64() as usize;
         let size = init_size_u.low_u64() as usize;
-        if !is_valid_range(off, size) { &self[0..0] } else { &self[off..off + size] }
+        if !is_valid_range(off, size) {
+            &self[0..0]
+        } else {
+            &self[off..off + size]
+        }
     }
 
     fn read(&self, offset: U256) -> U256 {
@@ -76,7 +80,11 @@ impl Memory for Vec<u8> {
     fn writeable_slice(&mut self, offset: U256, size: U256) -> &mut [u8] {
         let off = offset.low_u64() as usize;
         let s = size.low_u64() as usize;
-        if !is_valid_range(off, s) { &mut self[0..0] } else { &mut self[off..off + s] }
+        if !is_valid_range(off, s) {
+            &mut self[0..0]
+        } else {
+            &mut self[off..off + s]
+        }
     }
 
     fn write_slice(&mut self, offset: U256, slice: &[u8]) {
@@ -111,10 +119,12 @@ impl Memory for Vec<u8> {
         let mut offset = offset.low_u64() as usize;
         let size = size.low_u64() as usize;
         if !is_valid_range(offset, size) {
-            return ReturnData::empty()
+            return ReturnData::empty();
         }
         if self.len() - size > MAX_RETURN_WASTE_BYTES {
-            { let _ =  self.drain(..offset); }
+            {
+                let _ = self.drain(..offset);
+            }
             self.truncate(size);
             self.shrink_to_fit();
             offset = 0;
@@ -122,7 +132,6 @@ impl Memory for Vec<u8> {
         ReturnData::new(self, offset, size)
     }
 }
-
 
 #[test]
 fn test_memory_read_and_write() {

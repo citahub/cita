@@ -16,7 +16,7 @@
 
 //! Helper type with all filter state data.
 
-use jsonrpc_types::rpctypes::{Log, Filter};
+use jsonrpc_types::rpctypes::{Filter, Log};
 use std::collections::HashSet;
 pub type BlockNumber = u64;
 
