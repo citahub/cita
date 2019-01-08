@@ -74,4 +74,4 @@ CITA is created by Cryptape team with :heart:.
 
 ## Contact us
 
-[Telegram Group](https://t.me/joinchat/E7dJKFL8xTwCe8MaiZWdhw)
+[Forum](https://talk.nervos.org)
