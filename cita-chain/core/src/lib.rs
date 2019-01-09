@@ -43,7 +43,6 @@ extern crate cita_secp256k1;
 extern crate cita_types;
 extern crate common_types as types;
 extern crate crossbeam;
-extern crate crypto;
 extern crate jsonrpc_types;
 extern crate time;
 extern crate transient_hashmap;

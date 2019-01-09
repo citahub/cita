@@ -21,7 +21,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use cita_db::{DBTransaction, HashDB, JournalDB, KeyValueDB};
 use cita_types::{Address, H256};
 use db::COL_ACCOUNT_BLOOM;
-use ethcore_bloom_journal::*;
+use ethcore_bloom_journal::{Bloom, BloomJournal};
 use header::BlockNumber;
 use lru_cache::LruCache;
 use state::backend::*;

@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file. And this pr
 ### CITA-Framework
 
 - [Optimazation] Upgrade default rust toolchain to stable. [@yangby]
+- [Optimazation] Remove useless dependencies. [@yangby]
 
 ### Executor
 
