@@ -85,7 +85,9 @@ impl ExecutedBlock {
         state_root: H256,
         last_hashes: Arc<LastHashes>,
     ) -> Result<Self, Error> {
-        let state = State::from_existing(db, state_root, U256::default(), factories)?;
+        let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
+        state.super_admin_account = conf.super_admin_account;
+
         let r = ExecutedBlock {
             block,
             state,

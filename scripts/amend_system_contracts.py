@@ -5,15 +5,14 @@
 Amend the code and storage of system contract.
 """
 
-import json
-import functools
-import subprocess
-import logging
-import time
-import sys
 import argparse
+import functools
+import json
+import logging
+import subprocess
+import sys
+import time
 from jsonrpcclient.http_client import HTTPClient
-
 
 LATEST_VERSION = 1
 AMEND_ADDR = '0xffffffffffffffffffffffffffffffffff010002'
@@ -73,26 +72,34 @@ def get_receipt(tx_hash, url, retry=8):
 
 def amend_code(addr, code, args):
     """ Amend the code """
-    if code:
-        code = addr + code[2:]
+    try:
+        if code:
+            code = addr + code[2:]
+            print('code:', code)
+            args.code = code
+            tx_hash = send_tx(args)
+            receipt = get_receipt(tx_hash, args.url)
+            if receipt['errorMessage']:
+                logging.critical('amend code of %s error: %s', addr, receipt['errorMessage'])
+                sys.exit(1)
+    except Exception as e:
+        logging.critical('amend code of %s exception: %s', addr, e)
+        sys.exit(1)
+
+
+def amend_storage(addr, key, val, args):
+    """ Amend the storage: key and value """
+    try:
+        code = addr + key[2:].zfill(64) + val[2:].zfill(64)
         print('code:', code)
         args.code = code
         tx_hash = send_tx(args)
         receipt = get_receipt(tx_hash, args.url)
         if receipt['errorMessage']:
-            logging.critical('receipt error')
+            logging.critical('amend storage of %s[%s] error: %s', addr, key, receipt['errorMessage'])
             sys.exit(1)
-
-
-def amend_storage(addr, key, val, args):
-    """ Amend the storage: key and value """
-    code = addr + key[2:].zfill(64) + val[2:].zfill(64)
-    print('code:', code)
-    args.code = code
-    tx_hash = send_tx(args)
-    receipt = get_receipt(tx_hash, args.url)
-    if receipt['errorMessage']:
-        logging.critical('receipt error')
+    except Exception as e:
+        logging.critical('amend storage of %s[%s] exception: %s', addr, key, e)
         sys.exit(1)
 
 
