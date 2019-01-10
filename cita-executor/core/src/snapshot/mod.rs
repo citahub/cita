@@ -16,9 +16,6 @@
 
 //! Snapshot format and creation.
 
-extern crate ethcore_bloom_journal;
-extern crate num_cpus;
-
 // chunks around 4MB before compression
 const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 

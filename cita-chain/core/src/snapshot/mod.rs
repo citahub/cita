@@ -16,8 +16,6 @@
 
 //! Snapshot format and creation.
 
-extern crate num_cpus;
-
 //pub mod service;
 pub mod error;
 pub mod io;

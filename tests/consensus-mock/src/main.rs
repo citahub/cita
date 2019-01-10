@@ -30,7 +30,6 @@ extern crate pubsub;
 extern crate serde_derive;
 extern crate cita_types as types;
 extern crate hashable;
-extern crate serde_yaml;
 
 use bincode::{serialize, Infinite};
 use clap::App;
@@ -158,7 +157,6 @@ fn main() {
         .get_matches();
 
     let default_interval = 3;
-    // get the mock data and parse it to serde_yaml format
     let interval = value_t!(matches, "interval", u64).unwrap_or(default_interval);
     let key_pair = KeyPair::gen_keypair();
     let pk_miner = key_pair.privkey();
