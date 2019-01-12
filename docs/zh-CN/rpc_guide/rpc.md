@@ -27,6 +27,7 @@
 * [getMetaData](#getmetadata)
 * [getBlockHeader](#getblockheader)
 * [getStateProof](#getstateproof)
+* [getStorageAt](#getStorageAt)
 
 ***
 
