@@ -301,6 +301,7 @@ mod integration_test {
 
     use super::*;
     use futures::{sync::oneshot, Stream};
+    use jsonrpc_proto::response::OutputExt;
     use jsonrpc_types;
     use jsonrpc_types::response::Output;
     use libproto::protos;
@@ -397,11 +398,12 @@ mod integration_test {
                 if let Some(val) = value {
                     match val {
                         TransferType::HTTP((req_info, sender)) => {
-                            let _ = sender.send(Output::from(content, req_info));
+                            let _ = sender.send(Output::from_res_info(content, req_info));
                         }
                         TransferType::WEBSOCKET((req_info, sender)) => {
                             let _ = sender.send(
-                                serde_json::to_string(&Output::from(content, req_info)).unwrap(),
+                                serde_json::to_string(&Output::from_res_info(content, req_info))
+                                    .unwrap(),
                             );
                         }
                     }
