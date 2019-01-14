@@ -61,6 +61,7 @@ extern crate futures;
 extern crate http;
 extern crate httparse;
 extern crate hyper;
+extern crate jsonrpc_proto;
 extern crate jsonrpc_types;
 extern crate libc;
 #[macro_use]

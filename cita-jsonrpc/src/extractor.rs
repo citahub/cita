@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use futures::future::{Future, FutureResult};
+use jsonrpc_proto::complete::CompleteInto;
 use jsonrpc_types::request::{
     PartialRequest, Request as JsonRequest, RpcRequest as JsonrpcRequest,
 };
