@@ -108,21 +108,21 @@ impl Encodable for Action {
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// crypto type.
 pub enum CryptoType {
-    SECP,
-    SM2,
+    DEFAULT,
+    RESERVED,
 }
 
 impl Default for CryptoType {
     fn default() -> CryptoType {
-        CryptoType::SECP
+        CryptoType::DEFAULT
     }
 }
 
 impl Decodable for CryptoType {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         match rlp.as_val::<u8>()? {
-            0 => Ok(CryptoType::SECP),
-            1 => Ok(CryptoType::SM2),
+            0 => Ok(CryptoType::DEFAULT),
+            1 => Ok(CryptoType::RESERVED),
             _ => Err(DecoderError::Custom("Unknown Type.")),
         }
     }
@@ -131,8 +131,8 @@ impl Decodable for CryptoType {
 impl Encodable for CryptoType {
     fn rlp_append(&self, s: &mut RlpStream) {
         match *self {
-            CryptoType::SECP => s.append_internal(&(0u8)),
-            CryptoType::SM2 => s.append_internal(&(1u8)),
+            CryptoType::DEFAULT => s.append_internal(&(0u8)),
+            CryptoType::RESERVED => s.append_internal(&(1u8)),
         };
     }
 }
@@ -140,8 +140,8 @@ impl Encodable for CryptoType {
 impl From<ProtoCrypto> for CryptoType {
     fn from(c: ProtoCrypto) -> CryptoType {
         match c {
-            ProtoCrypto::SECP => CryptoType::SECP,
-            ProtoCrypto::SM2 => CryptoType::SM2,
+            ProtoCrypto::DEFAULT => CryptoType::DEFAULT,
+            ProtoCrypto::RESERVED => CryptoType::RESERVED,
         }
     }
 }
@@ -432,8 +432,8 @@ impl UnverifiedTransaction {
         untx.set_signature(self.signature.to_vec());
 
         match self.crypto_type {
-            CryptoType::SECP => untx.set_crypto(ProtoCrypto::SECP),
-            CryptoType::SM2 => untx.set_crypto(ProtoCrypto::SM2),
+            CryptoType::DEFAULT => untx.set_crypto(ProtoCrypto::DEFAULT),
+            CryptoType::RESERVED => untx.set_crypto(ProtoCrypto::RESERVED),
         }
         untx
     }

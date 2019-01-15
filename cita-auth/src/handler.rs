@@ -55,7 +55,7 @@ pub fn verify_tx_sig(crypto: Crypto, hash: &H256, sig_bytes: &[u8]) -> Result<Ve
 
     let sig = Signature::from(sig_bytes);
     match crypto {
-        Crypto::SECP => sig
+        Crypto::DEFAULT => sig
             .recover(&hash)
             .map(|pubkey| pubkey.to_vec())
             .map_err(|_| ()),
