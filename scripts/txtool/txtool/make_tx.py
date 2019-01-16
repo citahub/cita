@@ -2,21 +2,22 @@
 # coding=utf-8
 
 from __future__ import print_function, absolute_import
+
 import argparse
 import binascii
+import pysodium
 import random
 import string
-from pathlib import Path
-from blockchain_pb2 import Transaction, SignedTransaction, UnverifiedTransaction, Crypto
-from util import hex2bytes, run_command, remove_hex_0x, recover_pub
-from secp256k1 import PrivateKey
-from ethereum.utils import sha3
-import pysodium
-from generate_account import generate
 from block_number import block_number
-from url_util import endpoint
-from log import logger
+from blockchain_pb2 import Transaction, UnverifiedTransaction, Crypto
+from ethereum.utils import sha3
+from generate_account import generate
 from jsonrpcclient.http_client import HTTPClient
+from log import logger
+from pathlib import Path
+from secp256k1 import PrivateKey
+from url_util import endpoint
+from util import hex2bytes, run_command, remove_hex_0x
 
 LATEST_VERSION = 1
 
@@ -165,7 +166,7 @@ def _blake2b_ed25519_deploy_data(current_height,
     unverify_tx = UnverifiedTransaction()
     unverify_tx.transaction.CopyFrom(tx)
     unverify_tx.signature = hex2bytes(signature)
-    unverify_tx.crypto = Crypto.Value('SECP')
+    unverify_tx.crypto = Crypto.Value('DEFAULT')
 
     logger.info("unverify_tx is {}".format(
         binascii.hexlify(unverify_tx.SerializeToString())))
@@ -227,7 +228,7 @@ def _sha3_secp256k1_deploy_data(current_height,
     unverify_tx = UnverifiedTransaction()
     unverify_tx.transaction.CopyFrom(tx)
     unverify_tx.signature = hex2bytes(signature)
-    unverify_tx.crypto = Crypto.Value('SECP')
+    unverify_tx.crypto = Crypto.Value('DEFAULT')
 
     logger.info("unverify_tx is {}".format(
         binascii.hexlify(unverify_tx.SerializeToString())))

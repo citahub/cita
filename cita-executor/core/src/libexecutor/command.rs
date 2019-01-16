@@ -15,37 +15,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use super::economical_model::EconomicalModel;
+use super::executor::{make_consensus_config, Executor};
+use super::sys_config::GlobalSysConfig;
 pub use byteorder::{BigEndian, ByteOrder};
 use call_analytics::CallAnalytics;
+use cita_types::traits::LowerHex;
+use cita_types::{Address, H256, U256};
 use contracts::solc::{sys_config::ChainId, PermissionManagement, SysConfig, VersionManager};
+use crossbeam_channel::{Receiver, Sender};
 use engines::NullEngine;
 use error::CallError;
 use evm::env_info::EnvInfo;
 use executive::{Executed, Executive, TransactOptions};
-pub use libexecutor::block::*;
-use libexecutor::call_request::CallRequest;
-use serde_json;
-use std::fmt;
-use std::sync::Arc;
-use util::RwLock;
-
 use jsonrpc_types::rpctypes::{
     BlockNumber, BlockTag, EconomicalModel as RpcEconomicalModel, MetaData,
 };
-
-use super::economical_model::EconomicalModel;
-use super::executor::{make_consensus_config, Executor};
-use super::sys_config::GlobalSysConfig;
-use cita_types::traits::LowerHex;
-use cita_types::{Address, H256, U256};
-use crossbeam_channel::{Receiver, Sender};
+pub use libexecutor::block::*;
+use libexecutor::call_request::CallRequest;
 use libproto::ExecutedResult;
+use serde_json;
 use state::State;
 use state_db::StateDB;
 use std::convert::{From, Into};
+use std::fmt;
+use std::sync::Arc;
 use types::ids::BlockId;
 use types::transaction::{Action, SignedTransaction, Transaction};
 use util::Bytes;
+use util::RwLock;
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]
 pub enum Command {
@@ -278,7 +276,11 @@ impl Commander for Executor {
         let env_info = EnvInfo {
             number: header.number(),
             author: *header.proposer(),
-            timestamp: header.timestamp(),
+            timestamp: if self.eth_compatibility {
+                header.timestamp() / 1000
+            } else {
+                header.timestamp()
+            },
             difficulty: U256::default(),
             last_hashes: ::std::sync::Arc::new(last_hashes),
             gas_used: *header.quota_used(),
@@ -478,6 +480,7 @@ impl Commander for Executor {
         let fsm_resp_sender = self.fsm_resp_sender.clone();
         let command_req_receiver = self.command_req_receiver.clone();
         let command_resp_sender = self.command_resp_sender.clone();
+        let eth_compatibility = self.eth_compatibility;
         Executor {
             current_header: RwLock::new(current_header),
             db: RwLock::new(db),
@@ -489,6 +492,7 @@ impl Commander for Executor {
             fsm_resp_sender,
             command_req_receiver,
             command_resp_sender,
+            eth_compatibility,
         }
     }
 }

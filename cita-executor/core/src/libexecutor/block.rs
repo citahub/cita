@@ -59,6 +59,7 @@ pub struct ExecutedBlock {
     last_hashes: Arc<LastHashes>,
     account_gas_limit: U256,
     account_gas: HashMap<Address, U256>,
+    eth_compatibility: bool,
 }
 
 impl Deref for ExecutedBlock {
@@ -76,6 +77,7 @@ impl DerefMut for ExecutedBlock {
 }
 
 impl ExecutedBlock {
+    #[allow(clippy::too_many_arguments)]
     pub fn create(
         factories: Factories,
         conf: &BlockSysConfig,
@@ -84,6 +86,7 @@ impl ExecutedBlock {
         db: StateDB,
         state_root: H256,
         last_hashes: Arc<LastHashes>,
+        eth_compatibility: bool,
     ) -> Result<Self, Error> {
         let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
         state.super_admin_account = conf.super_admin_account;
@@ -103,6 +106,7 @@ impl ExecutedBlock {
             ),
             current_quota_used: Default::default(),
             receipts: Default::default(),
+            eth_compatibility,
         };
 
         Ok(r)
@@ -117,7 +121,11 @@ impl ExecutedBlock {
         EnvInfo {
             number: self.number(),
             author: *self.proposer(),
-            timestamp: self.timestamp(),
+            timestamp: if self.eth_compatibility {
+                self.timestamp() / 1000
+            } else {
+                self.timestamp()
+            },
             difficulty: U256::default(),
             last_hashes: Arc::clone(&self.last_hashes),
             gas_used: self.current_quota_used,

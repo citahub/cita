@@ -206,6 +206,7 @@ pub fn init_executor2(
         fsm_resp_sender,
         command_req_receiver,
         command_resp_sender,
+        false,
     );
     executor
 }
