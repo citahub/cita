@@ -79,14 +79,18 @@ Executor.toml is the configuration file for the Executor microservice as follows
 journaldb_type = "archive"
 prooftype = 2
 grpc_port = 5000
+genesis_path = "./genesis.json"
 statedb_cache_size = 5242880
+eth_compatibility = false
 
 ```
 
 * `journaldb_type` : type of JournalDB algorithm. There are 4 types, including "archive", "light", "fast" and "basic". The default is `archive`
 * `prooftype` : type of consensus algorithm, (CITA only supports the CITA-BFT algorithm in current)
 * `grpc_port` : grpc port
+* `genesis_path` : path of genesis file
 * `statedb_cache_size`:  size of global cache in StateDB, which is used to save account and code. The default is 5242880, that is, 5M.
+* `eth_compatibility` : the switch that is it compatible with Ethereum(CITA is not compatible with Ethereum by default. The timestamp in block, CITA is milliseconds, Ethereum is second).
 
 ## RPC
 
