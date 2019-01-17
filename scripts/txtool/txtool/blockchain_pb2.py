@@ -8,7 +8,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -20,7 +19,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='blockchain.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x10\x62lockchain.proto\"2\n\x05Proof\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\x0c\x12\x18\n\x04type\x18\x02 \x01(\x0e\x32\n.ProofType\"\xda\x01\n\x0b\x42lockHeader\x12\x10\n\x08prevhash\x18\x01 \x01(\x0c\x12\x11\n\ttimestamp\x18\x02 \x01(\x04\x12\x0e\n\x06height\x18\x03 \x01(\x04\x12\x12\n\nstate_root\x18\x04 \x01(\x0c\x12\x19\n\x11transactions_root\x18\x05 \x01(\x0c\x12\x15\n\rreceipts_root\x18\x06 \x01(\x0c\x12\x12\n\nquota_used\x18\x07 \x01(\x04\x12\x13\n\x0bquota_limit\x18\x08 \x01(\x04\x12\x15\n\x05proof\x18\t \x01(\x0b\x32\x06.Proof\x12\x10\n\x08proposer\x18\n \x01(\x0c\"&\n\x06Status\x12\x0c\n\x04hash\x18\x01 \x01(\x0c\x12\x0e\n\x06height\x18\x02 \x01(\x04\"\xb0\x01\n\x0f\x41\x63\x63ountGasLimit\x12\x1a\n\x12\x63ommon_quota_limit\x18\x01 \x01(\x04\x12\x46\n\x14specific_quota_limit\x18\x02 \x03(\x0b\x32(.AccountGasLimit.SpecificQuotaLimitEntry\x1a\x39\n\x17SpecificQuotaLimitEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x04:\x02\x38\x01\"\\\n\nRichStatus\x12\x0c\n\x04hash\x18\x01 \x01(\x0c\x12\x0e\n\x06height\x18\x02 \x01(\x04\x12\r\n\x05nodes\x18\x03 \x03(\x0c\x12\x10\n\x08interval\x18\x04 \x01(\x04\x12\x0f\n\x07version\x18\x05 \x01(\r\"\xb6\x01\n\x0bTransaction\x12\n\n\x02to\x18\x01 \x01(\t\x12\r\n\x05nonce\x18\x02 \x01(\t\x12\r\n\x05quota\x18\x03 \x01(\x04\x12\x19\n\x11valid_until_block\x18\x04 \x01(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x01(\x0c\x12\r\n\x05value\x18\x06 \x01(\x0c\x12\x10\n\x08\x63hain_id\x18\x07 \x01(\r\x12\x0f\n\x07version\x18\x08 \x01(\r\x12\r\n\x05to_v1\x18\t \x01(\x0c\x12\x13\n\x0b\x63hain_id_v1\x18\n \x01(\x0c\"f\n\x15UnverifiedTransaction\x12!\n\x0btransaction\x18\x01 \x01(\x0b\x32\x0c.Transaction\x12\x11\n\tsignature\x18\x02 \x01(\x0c\x12\x17\n\x06\x63rypto\x18\x03 \x01(\x0e\x32\x07.Crypto\"j\n\x11SignedTransaction\x12\x34\n\x14transaction_with_sig\x18\x01 \x01(\x0b\x32\x16.UnverifiedTransaction\x12\x0f\n\x07tx_hash\x18\x02 \x01(\x0c\x12\x0e\n\x06signer\x18\x03 \x01(\x0c\"5\n\tBlockBody\x12(\n\x0ctransactions\x18\x01 \x03(\x0b\x32\x12.SignedTransaction\"P\n\x05\x42lock\x12\x0f\n\x07version\x18\x01 \x01(\r\x12\x1c\n\x06header\x18\x02 \x01(\x0b\x32\x0c.BlockHeader\x12\x18\n\x04\x62ody\x18\x03 \x01(\x0b\x32\n.BlockBody\"<\n\x0e\x42lockWithProof\x12\x13\n\x03\x62lk\x18\x01 \x01(\x0b\x32\x06.Block\x12\x15\n\x05proof\x18\x02 \x01(\x0b\x32\x06.Proof\"4\n\x08\x42lockTxs\x12\x0e\n\x06height\x18\x01 \x01(\x04\x12\x18\n\x04\x62ody\x18\x03 \x01(\x0b\x32\n.BlockBody\"3\n\tBlackList\x12\x12\n\nblack_list\x18\x01 \x03(\x0c\x12\x12\n\nclear_list\x18\x02 \x03(\x0c\"\x1d\n\x0bStateSignal\x12\x0e\n\x06height\x18\x01 \x01(\x04*2\n\tProofType\x12\x12\n\x0e\x41uthorityRound\x10\x00\x12\x08\n\x04Raft\x10\x01\x12\x07\n\x03\x42\x66t\x10\x02*\x1b\n\x06\x43rypto\x12\x08\n\x04SECP\x10\x00\x12\x07\n\x03SM2\x10\x01\x62\x06proto3')
+  serialized_options=None,
+  serialized_pb=_b('\n\x10\x62lockchain.proto\"2\n\x05Proof\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\x0c\x12\x18\n\x04type\x18\x02 \x01(\x0e\x32\n.ProofType\"\xda\x01\n\x0b\x42lockHeader\x12\x10\n\x08prevhash\x18\x01 \x01(\x0c\x12\x11\n\ttimestamp\x18\x02 \x01(\x04\x12\x0e\n\x06height\x18\x03 \x01(\x04\x12\x12\n\nstate_root\x18\x04 \x01(\x0c\x12\x19\n\x11transactions_root\x18\x05 \x01(\x0c\x12\x15\n\rreceipts_root\x18\x06 \x01(\x0c\x12\x12\n\nquota_used\x18\x07 \x01(\x04\x12\x13\n\x0bquota_limit\x18\x08 \x01(\x04\x12\x15\n\x05proof\x18\t \x01(\x0b\x32\x06.Proof\x12\x10\n\x08proposer\x18\n \x01(\x0c\"&\n\x06Status\x12\x0c\n\x04hash\x18\x01 \x01(\x0c\x12\x0e\n\x06height\x18\x02 \x01(\x04\"\xb0\x01\n\x0f\x41\x63\x63ountGasLimit\x12\x1a\n\x12\x63ommon_quota_limit\x18\x01 \x01(\x04\x12\x46\n\x14specific_quota_limit\x18\x02 \x03(\x0b\x32(.AccountGasLimit.SpecificQuotaLimitEntry\x1a\x39\n\x17SpecificQuotaLimitEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x04:\x02\x38\x01\"p\n\nRichStatus\x12\x0c\n\x04hash\x18\x01 \x01(\x0c\x12\x0e\n\x06height\x18\x02 \x01(\x04\x12\r\n\x05nodes\x18\x03 \x03(\x0c\x12\x10\n\x08interval\x18\x04 \x01(\x04\x12\x0f\n\x07version\x18\x05 \x01(\r\x12\x12\n\nvalidators\x18\x06 \x03(\x0c\"\xb6\x01\n\x0bTransaction\x12\n\n\x02to\x18\x01 \x01(\t\x12\r\n\x05nonce\x18\x02 \x01(\t\x12\r\n\x05quota\x18\x03 \x01(\x04\x12\x19\n\x11valid_until_block\x18\x04 \x01(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x01(\x0c\x12\r\n\x05value\x18\x06 \x01(\x0c\x12\x10\n\x08\x63hain_id\x18\x07 \x01(\r\x12\x0f\n\x07version\x18\x08 \x01(\r\x12\r\n\x05to_v1\x18\t \x01(\x0c\x12\x13\n\x0b\x63hain_id_v1\x18\n \x01(\x0c\"f\n\x15UnverifiedTransaction\x12!\n\x0btransaction\x18\x01 \x01(\x0b\x32\x0c.Transaction\x12\x11\n\tsignature\x18\x02 \x01(\x0c\x12\x17\n\x06\x63rypto\x18\x03 \x01(\x0e\x32\x07.Crypto\"j\n\x11SignedTransaction\x12\x34\n\x14transaction_with_sig\x18\x01 \x01(\x0b\x32\x16.UnverifiedTransaction\x12\x0f\n\x07tx_hash\x18\x02 \x01(\x0c\x12\x0e\n\x06signer\x18\x03 \x01(\x0c\"5\n\tBlockBody\x12(\n\x0ctransactions\x18\x01 \x03(\x0b\x32\x12.SignedTransaction\"%\n\x10\x43ompactBlockBody\x12\x11\n\ttx_hashes\x18\x01 \x03(\x0c\"P\n\x05\x42lock\x12\x0f\n\x07version\x18\x01 \x01(\r\x12\x1c\n\x06header\x18\x02 \x01(\x0b\x32\x0c.BlockHeader\x12\x18\n\x04\x62ody\x18\x03 \x01(\x0b\x32\n.BlockBody\"^\n\x0c\x43ompactBlock\x12\x0f\n\x07version\x18\x01 \x01(\r\x12\x1c\n\x06header\x18\x02 \x01(\x0b\x32\x0c.BlockHeader\x12\x1f\n\x04\x62ody\x18\x03 \x01(\x0b\x32\x11.CompactBlockBody\"<\n\x0e\x42lockWithProof\x12\x13\n\x03\x62lk\x18\x01 \x01(\x0b\x32\x06.Block\x12\x15\n\x05proof\x18\x02 \x01(\x0b\x32\x06.Proof\"4\n\x08\x42lockTxs\x12\x0e\n\x06height\x18\x01 \x01(\x04\x12\x18\n\x04\x62ody\x18\x03 \x01(\x0b\x32\n.BlockBody\"3\n\tBlackList\x12\x12\n\nblack_list\x18\x01 \x03(\x0c\x12\x12\n\nclear_list\x18\x02 \x03(\x0c\"\x1d\n\x0bStateSignal\x12\x0e\n\x06height\x18\x01 \x01(\x04*2\n\tProofType\x12\x12\n\x0e\x41uthorityRound\x10\x00\x12\x08\n\x04Raft\x10\x01\x12\x07\n\x03\x42\x66t\x10\x02*#\n\x06\x43rypto\x12\x0b\n\x07\x44\x45\x46\x41ULT\x10\x00\x12\x0c\n\x08RESERVED\x10\x01\x62\x06proto3')
 )
 
 _PROOFTYPE = _descriptor.EnumDescriptor(
@@ -31,21 +31,21 @@ _PROOFTYPE = _descriptor.EnumDescriptor(
   values=[
     _descriptor.EnumValueDescriptor(
       name='AuthorityRound', index=0, number=0,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='Raft', index=1, number=1,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='Bft', index=2, number=2,
-      options=None,
+      serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  options=None,
-  serialized_start=1340,
-  serialized_end=1390,
+  serialized_options=None,
+  serialized_start=1495,
+  serialized_end=1545,
 )
 _sym_db.RegisterEnumDescriptor(_PROOFTYPE)
 
@@ -57,18 +57,18 @@ _CRYPTO = _descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='SECP', index=0, number=0,
-      options=None,
+      name='DEFAULT', index=0, number=0,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='SM2', index=1, number=1,
-      options=None,
+      name='RESERVED', index=1, number=1,
+      serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  options=None,
-  serialized_start=1392,
-  serialized_end=1419,
+  serialized_options=None,
+  serialized_start=1547,
+  serialized_end=1582,
 )
 _sym_db.RegisterEnumDescriptor(_CRYPTO)
 
@@ -76,8 +76,8 @@ Crypto = enum_type_wrapper.EnumTypeWrapper(_CRYPTO)
 AuthorityRound = 0
 Raft = 1
 Bft = 2
-SECP = 0
-SM2 = 1
+DEFAULT = 0
+RESERVED = 1
 
 
 
@@ -94,21 +94,21 @@ _PROOF = _descriptor.Descriptor(
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='type', full_name='Proof.type', index=1,
       number=2, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -132,77 +132,77 @@ _BLOCKHEADER = _descriptor.Descriptor(
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='timestamp', full_name='BlockHeader.timestamp', index=1,
       number=2, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='height', full_name='BlockHeader.height', index=2,
       number=3, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='state_root', full_name='BlockHeader.state_root', index=3,
       number=4, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='transactions_root', full_name='BlockHeader.transactions_root', index=4,
       number=5, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='receipts_root', full_name='BlockHeader.receipts_root', index=5,
       number=6, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='quota_used', full_name='BlockHeader.quota_used', index=6,
       number=7, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='quota_limit', full_name='BlockHeader.quota_limit', index=7,
       number=8, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='proof', full_name='BlockHeader.proof', index=8,
       number=9, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='proposer', full_name='BlockHeader.proposer', index=9,
       number=10, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -226,21 +226,21 @@ _STATUS = _descriptor.Descriptor(
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='height', full_name='Status.height', index=1,
       number=2, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -264,21 +264,21 @@ _ACCOUNTGASLIMIT_SPECIFICQUOTALIMITENTRY = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='value', full_name='AccountGasLimit.SpecificQuotaLimitEntry.value', index=1,
       number=2, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=_descriptor._ParseOptions(descriptor_pb2.MessageOptions(), _b('8\001')),
+  serialized_options=_b('8\001'),
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -301,21 +301,21 @@ _ACCOUNTGASLIMIT = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='specific_quota_limit', full_name='AccountGasLimit.specific_quota_limit', index=1,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[_ACCOUNTGASLIMIT_SPECIFICQUOTALIMITENTRY, ],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -339,49 +339,56 @@ _RICHSTATUS = _descriptor.Descriptor(
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='height', full_name='RichStatus.height', index=1,
       number=2, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='nodes', full_name='RichStatus.nodes', index=2,
       number=3, type=12, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='interval', full_name='RichStatus.interval', index=3,
       number=4, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='version', full_name='RichStatus.version', index=4,
       number=5, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='validators', full_name='RichStatus.validators', index=5,
+      number=6, type=12, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=512,
-  serialized_end=604,
+  serialized_end=624,
 )
 
 
@@ -398,84 +405,84 @@ _TRANSACTION = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='nonce', full_name='Transaction.nonce', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='quota', full_name='Transaction.quota', index=2,
       number=3, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='valid_until_block', full_name='Transaction.valid_until_block', index=3,
       number=4, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='data', full_name='Transaction.data', index=4,
       number=5, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='value', full_name='Transaction.value', index=5,
       number=6, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='chain_id', full_name='Transaction.chain_id', index=6,
       number=7, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='version', full_name='Transaction.version', index=7,
       number=8, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='to_v1', full_name='Transaction.to_v1', index=8,
       number=9, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='chain_id_v1', full_name='Transaction.chain_id_v1', index=9,
       number=10, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=607,
-  serialized_end=789,
+  serialized_start=627,
+  serialized_end=809,
 )
 
 
@@ -492,35 +499,35 @@ _UNVERIFIEDTRANSACTION = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='signature', full_name='UnverifiedTransaction.signature', index=1,
       number=2, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='crypto', full_name='UnverifiedTransaction.crypto', index=2,
       number=3, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=791,
-  serialized_end=893,
+  serialized_start=811,
+  serialized_end=913,
 )
 
 
@@ -537,35 +544,35 @@ _SIGNEDTRANSACTION = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='tx_hash', full_name='SignedTransaction.tx_hash', index=1,
       number=2, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='signer', full_name='SignedTransaction.signer', index=2,
       number=3, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=895,
-  serialized_end=1001,
+  serialized_start=915,
+  serialized_end=1021,
 )
 
 
@@ -582,21 +589,52 @@ _BLOCKBODY = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1003,
-  serialized_end=1056,
+  serialized_start=1023,
+  serialized_end=1076,
+)
+
+
+_COMPACTBLOCKBODY = _descriptor.Descriptor(
+  name='CompactBlockBody',
+  full_name='CompactBlockBody',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='tx_hashes', full_name='CompactBlockBody.tx_hashes', index=0,
+      number=1, type=12, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1078,
+  serialized_end=1115,
 )
 
 
@@ -613,35 +651,80 @@ _BLOCK = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='header', full_name='Block.header', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='body', full_name='Block.body', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1058,
-  serialized_end=1138,
+  serialized_start=1117,
+  serialized_end=1197,
+)
+
+
+_COMPACTBLOCK = _descriptor.Descriptor(
+  name='CompactBlock',
+  full_name='CompactBlock',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='version', full_name='CompactBlock.version', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='header', full_name='CompactBlock.header', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='body', full_name='CompactBlock.body', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1199,
+  serialized_end=1293,
 )
 
 
@@ -658,28 +741,28 @@ _BLOCKWITHPROOF = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='proof', full_name='BlockWithProof.proof', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1140,
-  serialized_end=1200,
+  serialized_start=1295,
+  serialized_end=1355,
 )
 
 
@@ -696,28 +779,28 @@ _BLOCKTXS = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='body', full_name='BlockTxs.body', index=1,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1202,
-  serialized_end=1254,
+  serialized_start=1357,
+  serialized_end=1409,
 )
 
 
@@ -734,28 +817,28 @@ _BLACKLIST = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='clear_list', full_name='BlackList.clear_list', index=1,
       number=2, type=12, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1256,
-  serialized_end=1307,
+  serialized_start=1411,
+  serialized_end=1462,
 )
 
 
@@ -772,21 +855,21 @@ _STATESIGNAL = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1309,
-  serialized_end=1338,
+  serialized_start=1464,
+  serialized_end=1493,
 )
 
 _PROOF.fields_by_name['type'].enum_type = _PROOFTYPE
@@ -799,6 +882,8 @@ _SIGNEDTRANSACTION.fields_by_name['transaction_with_sig'].message_type = _UNVERI
 _BLOCKBODY.fields_by_name['transactions'].message_type = _SIGNEDTRANSACTION
 _BLOCK.fields_by_name['header'].message_type = _BLOCKHEADER
 _BLOCK.fields_by_name['body'].message_type = _BLOCKBODY
+_COMPACTBLOCK.fields_by_name['header'].message_type = _BLOCKHEADER
+_COMPACTBLOCK.fields_by_name['body'].message_type = _COMPACTBLOCKBODY
 _BLOCKWITHPROOF.fields_by_name['blk'].message_type = _BLOCK
 _BLOCKWITHPROOF.fields_by_name['proof'].message_type = _PROOF
 _BLOCKTXS.fields_by_name['body'].message_type = _BLOCKBODY
@@ -811,7 +896,9 @@ DESCRIPTOR.message_types_by_name['Transaction'] = _TRANSACTION
 DESCRIPTOR.message_types_by_name['UnverifiedTransaction'] = _UNVERIFIEDTRANSACTION
 DESCRIPTOR.message_types_by_name['SignedTransaction'] = _SIGNEDTRANSACTION
 DESCRIPTOR.message_types_by_name['BlockBody'] = _BLOCKBODY
+DESCRIPTOR.message_types_by_name['CompactBlockBody'] = _COMPACTBLOCKBODY
 DESCRIPTOR.message_types_by_name['Block'] = _BLOCK
+DESCRIPTOR.message_types_by_name['CompactBlock'] = _COMPACTBLOCK
 DESCRIPTOR.message_types_by_name['BlockWithProof'] = _BLOCKWITHPROOF
 DESCRIPTOR.message_types_by_name['BlockTxs'] = _BLOCKTXS
 DESCRIPTOR.message_types_by_name['BlackList'] = _BLACKLIST
@@ -891,12 +978,26 @@ BlockBody = _reflection.GeneratedProtocolMessageType('BlockBody', (_message.Mess
   ))
 _sym_db.RegisterMessage(BlockBody)
 
+CompactBlockBody = _reflection.GeneratedProtocolMessageType('CompactBlockBody', (_message.Message,), dict(
+  DESCRIPTOR = _COMPACTBLOCKBODY,
+  __module__ = 'blockchain_pb2'
+  # @@protoc_insertion_point(class_scope:CompactBlockBody)
+  ))
+_sym_db.RegisterMessage(CompactBlockBody)
+
 Block = _reflection.GeneratedProtocolMessageType('Block', (_message.Message,), dict(
   DESCRIPTOR = _BLOCK,
   __module__ = 'blockchain_pb2'
   # @@protoc_insertion_point(class_scope:Block)
   ))
 _sym_db.RegisterMessage(Block)
+
+CompactBlock = _reflection.GeneratedProtocolMessageType('CompactBlock', (_message.Message,), dict(
+  DESCRIPTOR = _COMPACTBLOCK,
+  __module__ = 'blockchain_pb2'
+  # @@protoc_insertion_point(class_scope:CompactBlock)
+  ))
+_sym_db.RegisterMessage(CompactBlock)
 
 BlockWithProof = _reflection.GeneratedProtocolMessageType('BlockWithProof', (_message.Message,), dict(
   DESCRIPTOR = _BLOCKWITHPROOF,
@@ -927,6 +1028,5 @@ StateSignal = _reflection.GeneratedProtocolMessageType('StateSignal', (_message.
 _sym_db.RegisterMessage(StateSignal)
 
 
-_ACCOUNTGASLIMIT_SPECIFICQUOTALIMITENTRY.has_options = True
-_ACCOUNTGASLIMIT_SPECIFICQUOTALIMITENTRY._options = _descriptor._ParseOptions(descriptor_pb2.MessageOptions(), _b('8\001'))
+_ACCOUNTGASLIMIT_SPECIFICQUOTALIMITENTRY._options = None
 # @@protoc_insertion_point(module_scope)

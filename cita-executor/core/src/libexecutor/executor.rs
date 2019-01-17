@@ -15,9 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use super::command::{Command, CommandResp, Commander};
+use super::fsm::FSM;
+use super::sys_config::GlobalSysConfig;
 use bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 pub use byteorder::{BigEndian, ByteOrder};
+use cita_db::kvdb::{DBTransaction, Database, DatabaseConfig};
+use cita_db::trie::{TrieFactory, TrieSpec};
+use cita_db::{journaldb, KeyValueDB};
+use cita_types::H256;
 use contracts::{native::factory::Factory as NativeFactory, solc::NodeManager};
+use crossbeam_channel::{Receiver, Sender};
 use db;
 use db::*;
 use engines::{Engine, NullEngine};
@@ -27,22 +35,12 @@ use factory::*;
 use header::*;
 pub use libexecutor::block::*;
 use libexecutor::genesis::Genesis;
-use types::extras::*;
-
 use libproto::{ConsensusConfig, ExecutedResult};
-
-use super::command::{Command, CommandResp, Commander};
-use super::fsm::FSM;
-use super::sys_config::GlobalSysConfig;
-use cita_db::kvdb::{DBTransaction, Database, DatabaseConfig};
-use cita_db::trie::{TrieFactory, TrieSpec};
-use cita_db::{journaldb, KeyValueDB};
-use cita_types::H256;
-use crossbeam_channel::{Receiver, Sender};
 use state_db::StateDB;
 use std::convert::{From, Into};
 use std::sync::Arc;
 use std::time::Instant;
+use types::extras::*;
 use types::ids::BlockId;
 use util::RwLock;
 use util::UtilError;
@@ -60,6 +58,8 @@ pub struct Executor {
     pub fsm_resp_sender: Sender<ClosedBlock>,
     pub command_req_receiver: Receiver<Command>,
     pub command_resp_sender: Sender<CommandResp>,
+
+    pub eth_compatibility: bool,
 }
 
 impl Executor {
@@ -73,6 +73,7 @@ impl Executor {
         fsm_resp_sender: Sender<ClosedBlock>,
         command_req_receiver: Receiver<Command>,
         command_resp_sender: Sender<CommandResp>,
+        eth_compatibility: bool,
     ) -> Executor {
         let mut genesis = Genesis::init(&genesis_path);
         let database = open_state_db(data_path);
@@ -110,6 +111,7 @@ impl Executor {
             fsm_resp_sender,
             command_req_receiver,
             command_resp_sender,
+            eth_compatibility,
         };
 
         executor.sys_config = GlobalSysConfig::load(&executor, BlockId::Pending);
@@ -398,6 +400,7 @@ impl Executor {
             self.state_db.read().boxed_clone_canon(&parent_hash),
             current_state_root,
             last_hashes.into(),
+            self.eth_compatibility,
         )
         .unwrap()
     }

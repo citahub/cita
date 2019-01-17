@@ -480,6 +480,7 @@ mod tests {
             state_db,
             HASH_NULL_RLP,
             Arc::new(Vec::new()),
+            false,
         )
         .unwrap();
         exec_block.close(&BlockSysConfig::default())

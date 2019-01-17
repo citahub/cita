@@ -81,8 +81,6 @@
 //! [`StateDB`]: ../core_executor/state_db/struct.StateDB.html
 //!
 
-#[macro_use]
-extern crate crossbeam_channel;
 #[cfg(test)]
 extern crate cita_crypto;
 extern crate cita_directories;
@@ -90,6 +88,9 @@ extern crate cita_types;
 extern crate clap;
 extern crate common_types as types;
 extern crate core_executor as core;
+#[macro_use]
+extern crate crossbeam_channel;
+extern crate db as cita_db;
 extern crate dotenv;
 extern crate error;
 extern crate evm;
@@ -103,18 +104,11 @@ extern crate libproto;
 extern crate logger;
 extern crate proof;
 extern crate pubsub;
-extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 #[macro_use]
 extern crate util;
-extern crate db as cita_db;
-
-mod backlogs;
-mod postman;
-mod snapshot;
-#[cfg(test)]
-mod tests;
 
 use cita_directories::DataPath;
 use clap::App;
@@ -127,6 +121,12 @@ use std::sync::mpsc::channel;
 use std::thread;
 use util::set_panic_handler;
 
+mod backlogs;
+mod postman;
+mod snapshot;
+#[cfg(test)]
+mod tests;
+
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 #[derive(Debug, PartialEq, Deserialize)]
@@ -136,6 +136,7 @@ pub struct Options {
     journaldb_type: String,
     genesis_path: String,
     statedb_cache_size: usize,
+    eth_compatibility: bool,
 }
 
 impl Options {
@@ -146,6 +147,7 @@ impl Options {
             journaldb_type: String::from("archive"),
             genesis_path: String::from("genesis.json"),
             statedb_cache_size: 5 * 1024 * 1024,
+            eth_compatibility: false,
         }
     }
 
@@ -232,6 +234,7 @@ fn main() {
             fsm_resp_sender.clone(),
             command_req_receiver.clone(),
             command_resp_sender.clone(),
+            options.eth_compatibility,
         );
         let current_height = executor.get_current_height();
         let current_hash = executor.get_current_hash();
