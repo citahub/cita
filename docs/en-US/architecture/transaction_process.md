@@ -10,8 +10,8 @@ CITA采用微服务架构，各个服务之间通过消息通道进行消息的�
 
 ```protobuf
 enum Crypto {
-    SECP = 0;
-    SM2 = 1;
+    DEFAULT = 0;
+    RESERVED = 1;
 }
 
 message Transaction {

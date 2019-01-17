@@ -111,8 +111,8 @@ For the user of V0.16 and older versions: Please pay attention that we deprecate
 // Transaction
 syntax = "proto3";
 enum Crypto {
-    SECP = 0;
-    SM2 = 1;
+    DEFAULT = 0;
+    RESERVED = 1;
 }
 
 message Transaction {
@@ -218,7 +218,7 @@ let signature = sign(privkey, tx.protobuf_serialize().hash());
 let unverify_tx = UnverifiedTransaction::new();
 unverify_tx.transaction = tx;
 unverify_tx.signature = signature;
-unverify_tx.crypto = SECP;
+unverify_tx.crypto = DEFAULT;
 
 params = unverify_tx.protobuf_serialize().to_hex_string();
 ```
