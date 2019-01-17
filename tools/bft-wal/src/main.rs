@@ -36,8 +36,9 @@ pub struct OldAuthorityManage {
 
 impl OldAuthorityManage {
     pub fn init() -> Self {
-        let logpath =
-            ::std::env::var(DATA_PATH).unwrap_or_else(|_| panic!("{} must be set", DATA_PATH));
+        let logpath = ::std::env::var(DATA_PATH)
+            .unwrap_or_else(|_| panic!("{} must be set", DATA_PATH))
+            + "/authorities";
 
         let mut authority_manage = Self {
             authorities: Vec::new(),
