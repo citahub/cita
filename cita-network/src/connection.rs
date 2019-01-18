@@ -18,7 +18,7 @@
 use bytes::BytesMut;
 use citaprotocol::pubsub_message_to_network_message;
 use config;
-use config::NetConfig;
+use config::{NetConfig, PeerConfig};
 use libproto::TryInto;
 use libproto::{Message, OperateType};
 use native_tls::{self, TlsConnector};
@@ -220,17 +220,9 @@ impl Connections {
         });
 
         if let Some(peers) = config.peers.as_ref() {
-            for peer in peers.iter() {
-                let id_card: u32 = peer.id_card.unwrap();
-                let addr = format!("{}:{}", peer.ip.clone().unwrap(), peer.port.unwrap())
-                    .to_socket_addrs()
-                    .unwrap()
-                    .next()
-                    .unwrap();
-                connect_sender
-                    .send((id_card, addr, peer.common_name.clone().unwrap_or_default()))
-                    .unwrap();
-            }
+            config_peer(&peers).into_iter().for_each(|config| {
+                connect_sender.send(config).unwrap();
+            });
         }
 
         (
@@ -283,18 +275,7 @@ impl Connections {
         // Update configuration
         match config.peers {
             Some(peers) => {
-                let config_peers = peers
-                    .into_iter()
-                    .map(|peer| {
-                        let id_card: u32 = peer.id_card.unwrap();
-                        let addr = format!("{}:{}", peer.ip.unwrap(), peer.port.unwrap())
-                            .to_socket_addrs()
-                            .unwrap()
-                            .next()
-                            .unwrap();
-                        (id_card, addr, peer.common_name.unwrap_or_default())
-                    })
-                    .collect::<Vec<(u32, SocketAddr, String)>>();
+                let config_peers = config_peer(&peers);
 
                 let remove_peers = self
                     .peers
@@ -442,6 +423,35 @@ pub fn manage_connect(config_path: &str, rx: Receiver<DebouncedEvent>, task_send
             Err(e) => warn!("watch error: {:?}", e),
         }
     });
+}
+
+fn config_peer(config: &[PeerConfig]) -> Vec<(u32, SocketAddr, String)> {
+    config
+        .into_iter()
+        .filter_map(|peer| {
+            if let (Some(id_card), Some(ip), Some(port)) =
+                (peer.id_card, peer.ip.clone(), peer.port)
+            {
+                match format!("{}:{}", ip, port).to_socket_addrs() {
+                    Ok(mut result) => {
+                        if let Some(addr) = result.next() {
+                            Some((id_card, addr, peer.common_name.clone().unwrap_or_default()))
+                        } else {
+                            error!("Can't convert to socket address, error");
+                            None
+                        }
+                    }
+                    Err(e) => {
+                        error!("Can't convert to socket address, error: {}", e);
+                        None
+                    }
+                }
+            } else {
+                error!("Invalid peer config: {:?}", peer);
+                None
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
