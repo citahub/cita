@@ -1,53 +1,97 @@
 # Changelog
-All notable changes to this project will be documented in this file. And this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+After alomost three months, CITA version 0.21 is coming. In this version, we have bring several features
+such as automatic contract execution, hostname parsing in network. At the same time, we did lots of work
+in module code refactoring, test coverage, bug fixs.
+
+In the following time, CITA enters a maintenance period temporarily. We plan not to add more new features and
+committed to improving the quolity of code, fixing bugs, improving documentation and supplementing tests.
 
 ## [Unreleased]
 
 ### CITA-Framework
 
-- [Optimazation] Upgrade default rust toolchain to stable. [@yangby]
-- [Optimazation] Remove useless dependencies. [@yangby]
+- [Optimization] Upgrade default rust toolchain to stable. [@yangby]
+- [Optimization] Remove useless dependencies. [@yangby]
+- [Optimization] Compact block Relay. [@u2] [@yangby]
 
 ### Executor
 
-- [Feature] Automatic execution by [@kaikai]
-- [Optimazation] Enable changing size of global cache in StateDB by [@lhf]
+- [Feature] Automatic execution. [@kaikai]
+- [Optimization] Enable changing size of global cache in StateDB. [@lhf]
 - [Refactor] Decouple executor and postman [@keroro520] [@WPF]
-- [Configuration] deprecate `--genesis` command option, instead place into `executor.toml`
+- [Configuration] Deprecate `--genesis` command option, instead place into `executor.toml`. [@keroro520]
+- [Configuration] Add argument about timestamp uint in `executor.toml` to compatibility with Ethereum.[@zhiwei]
+- [Optimization] Change state db type to ensure safe reference. [@WPF]
+- [Optimization] Remove unused code in state db. [@WPF]
+- [Optimization] Add more tests in executor and postman. [@WPF]
+- [Optimization] Add block priority in postman. [@keroro520]
+- [Refactor] Decouple global sysconfig from transactionOptions. [@kaikai]
+- [Optimization] Deprecate some dangerous clone usage in block and state. [@keroro520]
+- [Optimization] Remove cached latest hashes. [@zhiwei]
+- [Fix] Fix problem in zk privacy. [@zhiwei]
+- [Fix] Fix defects in snapshot. [@keroro520]
 
 ### Chain
 
+- [Optimization] Rename crypto enum. [@zhiwei]
+
 ### Auth
+
+- [Optimization] Introduce quick check for history heights. [@zhiwei]
 
 ### Network
 
+- [Feature] Enable parsing hostname directly in network.toml. [@driftluo]
+- [Fix] Fix bug for network not send all msg. [@jerry-yu]
+
 ### Consensus
 
-- [Optimazation] Add a min-heap timer. [@KaoImin]
-- [Optimazation] Optimize wait time for proposal, prevote and precommit. [@jerry-yu]
+- [Optimization] Add a min-heap timer. [@KaoImin]
+- [Optimization] Optimize wait time for proposal, prevote and precommit. [@jerry-yu]
 
 ### RPC
 
-- [Fix] The 'chainIdV1' in the response of getMetaData is hex string, so it should has 0x-prefix. [@yangby]
+- [Fix] The 'chainIdV1' in the response of getMetaData is hex string, so it should have 0x-prefix. [@yangby]
+- [Optimization] Split libproto operations from Jsonrpc. [@zeroqn]
+- [Feature] Add `from` field in `Gettransaction` rpc interface. [@zeroqn]
+- [Optimization] Upgrade hyper version and split `Service` and `Server`. [@zeroqn]
 
 ### System Contract
 
-- [Optimazation] Change default quotaPrice to 1000000 by [@WPF]
+- [Feature] Change default quotaPrice to 1000000. [@WPF]
+- [Optimization] Take interfaces and test contracts out as a dependent submodule. [@kaikai]
 
 ### Scripts
 
-- [Configuration] Store their own address for each node. [@yangby]
+- [Feature] Store their own address for each node. [@yangby]
 - [Configuration] Rename checkPermission to checkCallPermission. [@kaikai]
+- [Feature] Check the maximum number of consensus nodes. [@zhiwei]
+- [Configuration] Optimize usage of backup and clean command. [@keroro520]
+- [Optimization] Add exit info about creating genesis. [@kaikai]
+- [Feature] Support start 4 nodes in docker compose. [@zhiwei]
 
 ### Test
 
-- [Optimazation] Split large ci jobs by [@u2]
+- [Optimization] Split large ci jobs. [@u2]
+- [Optimization] Add test about amend operation. [@zhiwei]
+- [Optimization] Add test to ensure genesis compatibility. [@kaikai]
+- [Optimization] Add test about snapshot. [@keroro520]
 
 ### Doc
 
 - [Doc] Complete the doc of system contract interface. [@kaikai]
+- [Doc] Update crypto type and timestamp configuration in executor.toml. [@zhiwei]
+- [Doc] More detail statements about cita-bft consensus. [@KaoImin]
+- [Doc] Update sdk info in readme. [@zhouyun-zoe]
+- [Doc] Add node command description. [@WPF]
 
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.20...HEAD
+### Tool
+
+- [Optimization] Split util module into standalone crates. [@yangby]
+- [Refactor] Combing the snapshot logic and rewrite snapshot_tools. [@keroro520]
+
+[Unreleased]: https://github.com/cryptape/cita/compare/v0.21...HEAD
 
 [@KaoImin]: https://github.com/KaoImin
 [@WPF]: https://github.com/ouwenkg
@@ -60,3 +104,4 @@ All notable changes to this project will be documented in this file. And this pr
 [@yangby]: https://github.com/yangby-cryptape
 [@zhiwei]: https://github.com/rink1969
 [@zhouyun-zoe]: https://github.com/zhouyun-zoe
+[@zeroqn]: https://github.com/zeroqn
