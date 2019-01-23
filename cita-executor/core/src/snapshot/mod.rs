@@ -840,6 +840,7 @@ impl BlockRebuilder {
         batch.write(COL_EXTRA, &height, &hash);
 
         if is_best {
+            info!("snapshot restoration write CURRENT_HASH: {:?}", hash);
             batch.write(COL_EXTRA, &CurrentHash, &hash);
         }
     }
