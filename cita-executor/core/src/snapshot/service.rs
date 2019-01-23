@@ -156,13 +156,17 @@ impl Restoration {
         // connect out-of-order chunks and verify chain integrity.
         self.secondary.finalize()?;
 
-        let _ = self.db.flush();
-
         if let Some(writer) = self.writer {
             writer.finish(self.manifest)?;
         }
 
-        //self.guard.disarm();
+        info!("snapshot flush snapshot-database");
+        if let Err(reason) = self.db.flush() {
+            error!("failed to flush snapshot database: {}", reason);
+        }
+
+        info!("snapshot close snapshot-database");
+        self.db.close();
         Ok(())
     }
 
