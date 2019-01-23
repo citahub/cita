@@ -625,65 +625,53 @@ impl Forward {
     }
 
     fn deal_snapshot_req(&self, snapshot_req: &SnapshotReq) {
-        let mut resp = SnapshotResp::new();
         match snapshot_req.cmd {
             Cmd::Snapshot => {
-                info!("[snapshot] receive {:?}", snapshot_req);
+                info!("receive Snapshot::Snapshot {:?}", snapshot_req);
                 let chain = self.chain.clone();
                 let ctx_pub = self.ctx_pub.clone();
                 let snapshot_req = snapshot_req.clone();
                 let snapshot_builder = thread::Builder::new().name("snapshot_chain".into());
                 let _ = snapshot_builder.spawn(move || {
                     take_snapshot(&chain, &snapshot_req);
-
+                    snapshot_response(&ctx_pub, Resp::SnapshotAck, true, None, None);
                     info!("Taking snapshot finished!!!");
-
-                    //resp SnapshotAck to snapshot_tool
-                    resp.set_resp(Resp::SnapshotAck);
-                    resp.set_flag(true);
-                    let msg: Message = resp.into();
-                    ctx_pub
-                        .send((
-                            routing_key!(Chain >> SnapshotResp).into(),
-                            msg.try_into().unwrap(),
-                        ))
-                        .unwrap();
                 });
             }
             Cmd::Begin => {
-                info!("[snapshot] receive cmd: Begin");
+                info!("receive Snapshot::Begin: {:?}", snapshot_req);
                 let mut is_snapshot = self.chain.is_snapshot.write();
                 *is_snapshot = true;
+                let ctx_pub = self.ctx_pub.clone();
+                snapshot_response(&ctx_pub, Resp::BeginAck, true, None, None);
             }
             Cmd::Restore => {
-                info!("[snapshot] receive {:?}", snapshot_req);
+                info!("receive Snapshot::Restore {:?}", snapshot_req);
+                let ctx_pub = self.ctx_pub.clone();
                 match restore_snapshot(&self.chain.clone(), snapshot_req) {
                     Ok(proof) => {
-                        resp.set_proof(proof);
-                        resp.set_height(self.chain.get_current_height());
-                        resp.set_flag(true);
+                        let height = self.chain.get_current_height();
+                        snapshot_response(
+                            &ctx_pub,
+                            Resp::RestoreAck,
+                            true,
+                            Some(height),
+                            Some(proof),
+                        );
                     }
-                    Err(e) => {
-                        warn!("restore_snapshot failed: {:?}", e);
-                        resp.set_flag(false);
+                    Err(err) => {
+                        error!("snapshot restore failed: {:?}", err);
+                        snapshot_response(&ctx_pub, Resp::RestoreAck, false, None, None);
                     }
                 }
-
-                //resp RestoreAck to snapshot_tool
-                resp.set_resp(Resp::RestoreAck);
-                let msg: Message = resp.into();
-                self.ctx_pub
-                    .send((
-                        routing_key!(Chain >> SnapshotResp).into(),
-                        msg.try_into().unwrap(),
-                    ))
-                    .unwrap();
             }
             Cmd::Clear => {
-                info!("[snapshot] receive cmd: Clear");
+                info!("receive Snapshot::Clear: {:?}", snapshot_req);
+                let ctx_pub = self.ctx_pub.clone();
+                snapshot_response(&ctx_pub, Resp::ClearAck, true, None, None);
             }
             Cmd::End => {
-                info!("[snapshot] receive {:?}", snapshot_req);
+                info!("receive Snapshot::End {:?}", snapshot_req);
                 let chain = self.chain.clone();
                 let ctx_pub = self.ctx_pub.clone();
                 thread::spawn(move || {
@@ -693,6 +681,7 @@ impl Forward {
 
                     let mut is_snapshot = chain.is_snapshot.write();
                     *is_snapshot = false;
+                    snapshot_response(&ctx_pub, Resp::EndAck, true, None, None);
                 });
             }
         }
@@ -759,4 +748,31 @@ fn restore_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Pr
             Err(e)
         }
     }
+}
+
+fn snapshot_response(
+    sender: &Sender<(String, Vec<u8>)>,
+    ack: Resp,
+    flag: bool,
+    height: Option<u64>,
+    proof: Option<Proof>,
+) {
+    info!("snapshot_response ack: {:?}, flag: {}", ack, flag);
+    let mut resp = SnapshotResp::new();
+    resp.set_resp(ack);
+    resp.set_flag(flag);
+    if let Some(height) = height {
+        resp.set_height(height);
+    }
+    if let Some(proof) = proof {
+        resp.set_proof(proof);
+    }
+
+    let msg: Message = resp.into();
+    sender
+        .send((
+            routing_key!(Chain >> SnapshotResp).into(),
+            msg.try_into().unwrap(),
+        ))
+        .unwrap();
 }
