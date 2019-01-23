@@ -732,7 +732,6 @@ impl Postman {
             }
             SnapshotCommand::Clear => {
                 // We change Executor's DB with snapshot's DB when receive `SnapshotCommand::Clear`
-
                 //   1. Ensure Executor stopped
                 command::exit(
                     &self.command_req_sender,
@@ -742,8 +741,8 @@ impl Postman {
 
                 //   2. Move snapshot's DB to replace Executor's DB
                 let origin_db = cita_directories::DataPath::root_node_path() + "/statedb";
-                let restoration_db =
-                    cita_directories::DataPath::root_node_path() + "/snapshot_executor";
+                let restoration_db = cita_directories::DataPath::root_node_path()
+                    + "/snapshot_executor/restoration/db";
                 snapshot::change_database(&self.mq_resp_sender, origin_db, restoration_db);
 
                 // TODO: This is a dirty trick, for close Postman without noticing Executor.
