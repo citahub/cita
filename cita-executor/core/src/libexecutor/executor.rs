@@ -125,8 +125,11 @@ impl Executor {
     }
 
     pub fn close(&mut self) {
-        // FIXME close database gracefully
-        // self.db.read().close();
+        // IMPORTANT: close and release database handler so that it will not
+        //            compact data/logs in background, which may effect snapshot
+        //            changing database when restore snapshot.
+        self.db.read().close();
+
         info!(
             "executor closed, current_height: {}",
             self.get_current_height()
