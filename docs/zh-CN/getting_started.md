@@ -150,6 +150,18 @@ $ ./env.sh make release
 >
 >   运行 test2-chain 方式与上面 test-chain 一致，并且只能在同一个Docker 里运行。
 
+### 节点命令
+
+通过 `./bin/cita` 查看节点命令。
+```shell
+Usage: cita <command> <node> [options]
+where <command> is one of the following:
+    { help | setup | start | stop | restart | ping
+      top | backup | clean | logs | logrotate }
+
+Run `cita help` for more detailed information.
+```
+
 ### 启动节点
 
 执行以下命令依次启动四个节点，该命令正常情况下不会返回，节点后台运行。

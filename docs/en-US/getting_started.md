@@ -113,6 +113,18 @@ After the node initialization, the node configuration file will be generated in 
 * test-chain/2
 * test-chain/3
 
+### Node commands
+
+View node commands via `./bin/cita`.
+```shell
+Usage: cita <command> <node> [options]
+where <command> is one of the following:
+    { help | setup | start | stop | restart | ping
+      top | backup | clean | logs | logrotate }
+
+Run `cita help` for more detailed information.
+```
+
 ## Run nodes
 
 The commands of operation the nodes are the same. Take`test-chain/0`as an example.
