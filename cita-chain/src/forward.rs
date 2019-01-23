@@ -642,17 +642,15 @@ impl Forward {
                 info!("receive Snapshot::Begin: {:?}", snapshot_req);
                 let mut is_snapshot = self.chain.is_snapshot.write();
                 *is_snapshot = true;
-                let ctx_pub = self.ctx_pub.clone();
-                snapshot_response(&ctx_pub, Resp::BeginAck, true, None, None);
+                snapshot_response(&self.ctx_pub, Resp::BeginAck, true, None, None);
             }
             Cmd::Restore => {
                 info!("receive Snapshot::Restore {:?}", snapshot_req);
-                let ctx_pub = self.ctx_pub.clone();
                 match restore_snapshot(&self.chain.clone(), snapshot_req) {
                     Ok(proof) => {
                         let height = self.chain.get_current_height();
                         snapshot_response(
-                            &ctx_pub,
+                            &self.ctx_pub,
                             Resp::RestoreAck,
                             true,
                             Some(height),
@@ -661,14 +659,13 @@ impl Forward {
                     }
                     Err(err) => {
                         error!("snapshot restore failed: {:?}", err);
-                        snapshot_response(&ctx_pub, Resp::RestoreAck, false, None, None);
+                        snapshot_response(&self.ctx_pub, Resp::RestoreAck, false, None, None);
                     }
                 }
             }
             Cmd::Clear => {
                 info!("receive Snapshot::Clear: {:?}", snapshot_req);
-                let ctx_pub = self.ctx_pub.clone();
-                snapshot_response(&ctx_pub, Resp::ClearAck, true, None, None);
+                snapshot_response(&self.ctx_pub, Resp::ClearAck, true, None, None);
             }
             Cmd::End => {
                 info!("receive Snapshot::End {:?}", snapshot_req);
