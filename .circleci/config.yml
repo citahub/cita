@@ -230,6 +230,7 @@ jobs:
       - run:
           name: Basic Tls Integrate Test
           command: ./tests/integrate_test/cita_tls_basic.sh
+
   "Integrate Test Part-2":
     <<: *job-default
     steps:
@@ -324,6 +325,14 @@ jobs:
           name: Genesis Test
           command: ./tests/compatibility/check_genesis.sh
 
+  "Passed":
+    docker:
+      - image: alpine:latest
+    steps:
+      - run:
+          name: Passed
+          command: exit 0
+
 workflows:
   version: 2
   "Build & Test":
@@ -376,3 +385,15 @@ workflows:
       - "Unit Test (sm3 & sm2)":
           requires:
             - "Unit Test (sha3 & secp256k1)"
+
+      - "Passed":
+          requires:
+            - "Integrate Test Part-1"
+            - "Integrate Test Part-2"
+            - "Byzantine Test in Quota Mode"
+            - "Byzantine Test in Charge Mode"
+            - "Crosschain Test"
+            - "Robustness Test"
+            - "Genesis Test"
+            - "Unit Test (blake2b & ed25519)"
+            - "Unit Test (sm3 & sm2)"
