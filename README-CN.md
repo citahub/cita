@@ -92,4 +92,4 @@ GPLv3 license
 
 ## 联系我们
 
-[Telegram 开发者群组](https://t.me/joinchat/E7dJKFL8xTwCe8MaiZWdhw)
+邮箱： <contact@cryptape.com>
