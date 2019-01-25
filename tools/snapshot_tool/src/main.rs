@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -27,33 +27,28 @@ extern crate pubsub;
 #[macro_use]
 extern crate util;
 
-mod snapshot_tool;
-
 use clap::App;
 use fs2::FileExt;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use postman::Postman;
 use pubsub::start_pubsub;
-use snapshot_tool::SnapShot;
-use std::fs::{self, OpenOptions};
+use std::fs::{self, File, OpenOptions};
 use std::sync::mpsc::channel;
 use util::set_panic_handler;
 
-const SNAPSHOT_FILE: &str = ".cita_snapshot";
+mod postman;
+
+const SNAPSHOT_LOCK: &str = ".cita_snapshot";
 
 fn main() {
     micro_service_init!("cita-snapshot", "CITA:snapshot");
 
-    // Judge whether snapshot_tool have started.
-    let f = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .open(SNAPSHOT_FILE)
-        .expect("Failed to open lock file");
-    f.try_lock_exclusive().expect("snapshot already started.");
+    // 1. Aquire client's lock
+    let locker = lock();
 
+    // 2. Parse command-line options
     let matches = App::new("snapshot")
-        .version("0.1")
+        .version("2.0")
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .arg_from_usage("-m, --cmd=[snapshot] 'snapshot or restore'")
@@ -61,29 +56,20 @@ fn main() {
         .arg_from_usage("-s, --start_height=[0] 'start height'") //latest or valid ancient block_id
         .arg_from_usage("-e, --end_height=[1000] 'end height'") //todo remove
         .get_matches();
+    let command = matches.value_of("cmd").expect("provide specific command");
+    let command = cast_command(command);
+    let file = matches
+        .value_of("file")
+        .expect("provice specific snapshot-file path");
+    let file = file.to_owned();
+    let start_height = matches.value_of("start_height").unwrap_or("0");
+    let start_height = cast_height(start_height);
+    let end_height = matches.value_of("end_height").unwrap_or("0");
+    let end_height = cast_height(end_height);
 
-    let cmd = matches.value_of("cmd").unwrap_or("snapshot");
-    let file = matches.value_of("file").unwrap_or("snapshot");
-
-    let s = matches.value_of("start_height").unwrap_or("0");
-    let start_height = if s.starts_with("0x") | s.starts_with("0X") {
-        u64::from_str_radix(&s[2..], 16).unwrap()
-    } else {
-        u64::from_str_radix(s, 10).unwrap()
-    };
-
-    let e = matches.value_of("end_height").unwrap_or("0");
-    let end_height = if e.starts_with("0x") | e.starts_with("0X") {
-        u64::from_str_radix(&e[2..], 16).unwrap()
-    } else {
-        u64::from_str_radix(e, 10).unwrap()
-    };
-
-    let (tx, rx) = channel();
-    let (ctx_pub, crx_pub) = channel();
-
-    let mut snapshot_instance = SnapShot::new(ctx_pub, start_height, end_height, file.to_string());
-
+    // 3. Start message-bus watcher in background
+    let (mq_req_sender, mq_req_receiver) = channel();
+    let (mq_resp_sender, mq_resp_receiver) = channel();
     start_pubsub(
         "snapshot",
         routing_key!([
@@ -93,35 +79,60 @@ fn main() {
             Chain >> SnapshotResp,
             Auth >> SnapshotResp,
         ]),
-        tx,
-        crx_pub,
+        mq_req_sender,
+        mq_resp_receiver,
     );
 
-    match cmd {
-        "snapshot" => {
-            snapshot_instance.snapshot();
-            println!("snapshot_tool send snapshot cmd");
-        }
-        "restore" => {
-            snapshot_instance.begin();
-            println!("snapshot_tool send restore cmd");
-        }
-        _ => {
-            println!("snapshot_tool send error cmd");
-            return;
-        }
+    // 4. Create a postman and start serving
+    let mut postman = Postman::new(
+        mq_req_receiver,
+        mq_resp_sender,
+        command,
+        start_height,
+        end_height,
+        file,
+    );
+    postman.clear_message_bus();
+    match postman.serve() {
+        Ok(()) => info!("successful to {}", postman.command),
+        Err(err) => error!("failed to {}: {:?}", postman.command, err),
     }
-    let mut exit = false;
-    loop {
-        if let Ok((key, msg)) = rx.recv() {
-            info!("snapshot_tool receive ack key: {:?}", key);
-            exit = snapshot_instance.parse_data(&key, &msg);
-        }
-        if exit {
-            // Remove the file
-            f.unlock().unwrap();
-            let _ = fs::remove_file(SNAPSHOT_FILE);
-            break;
-        }
+
+    // 5. Release client's lock
+    unlock(&locker);
+}
+
+fn lock() -> File {
+    let locker = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(SNAPSHOT_LOCK)
+        .unwrap_or_else(|_| panic!("failed to open lock-file {}", SNAPSHOT_LOCK));
+    locker
+        .try_lock_exclusive()
+        .expect("snapshot already started.");
+    locker
+}
+
+fn unlock(locker: &File) {
+    locker.unlock().unwrap();
+    fs::remove_file(SNAPSHOT_LOCK).expect("failed to release lock-file");
+}
+
+fn cast_command(command: &str) -> String {
+    assert!(
+        command == "snapshot" || command == "restore",
+        "given command is equal either snapshot or restore: {}",
+        command,
+    );
+    command.to_string()
+}
+
+fn cast_height(s: &str) -> u64 {
+    if s.starts_with("0x") || s.starts_with("0X") {
+        u64::from_str_radix(&s[2..], 16).unwrap()
+    } else {
+        u64::from_str_radix(s, 10).unwrap()
     }
 }

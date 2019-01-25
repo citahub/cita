@@ -803,25 +803,22 @@ impl MsgHandler {
     }
 
     fn deal_snapshot(&mut self, snapshot_req: &SnapshotReq) {
-        let mut resp = SnapshotResp::new();
-        let mut send = false;
         match snapshot_req.cmd {
             Cmd::Snapshot => {
-                info!("[snapshot] receive cmd: Snapshot");
+                info!("receive Snapshot::Snapshot: {:?}", snapshot_req);
+                snapshot_response(&self.tx_pub, Resp::SnapshotAck, true);
             }
             Cmd::Begin => {
-                info!("[snapshot] receive cmd: Begin");
+                info!("receive Snapshot::Begin: {:?}", snapshot_req);
                 self.is_snapshot = true;
-
-                resp.set_resp(Resp::BeginAck);
-                resp.set_flag(true);
-                send = true;
+                snapshot_response(&self.tx_pub, Resp::BeginAck, true);
             }
             Cmd::Restore => {
-                info!("[snapshot] receive cmd: Restore");
+                info!("receive Snapshot::Restore: {:?}", snapshot_req);
+                snapshot_response(&self.tx_pub, Resp::RestoreAck, true);
             }
             Cmd::Clear => {
-                info!("[snapshot] receive cmd: Clear");
+                info!("receive Snapshot::Clear: {:?}", snapshot_req);
 
                 self.dispatcher.clear_txs_pool(0);
                 self.cache.clear();
@@ -829,32 +826,14 @@ impl MsgHandler {
                 self.history_hashes.clear();
                 self.black_list_cache.clear();
 
-                resp.set_resp(Resp::ClearAck);
-                resp.set_flag(true);
-                send = true;
+                snapshot_response(&self.tx_pub, Resp::ClearAck, true);
             }
             Cmd::End => {
-                info!(
-                    "[snapshot] receive cmd: End, height = {}",
-                    snapshot_req.end_height
-                );
+                info!("receive Snapshot::End: {:?}", snapshot_req);
                 self.send_single_block_tx_hashes_req(snapshot_req.end_height);
                 self.is_snapshot = false;
-
-                resp.set_resp(Resp::EndAck);
-                resp.set_flag(true);
-                send = true;
+                snapshot_response(&self.tx_pub, Resp::EndAck, true);
             }
-        }
-
-        if send {
-            let msg: Message = resp.into();
-            self.tx_pub
-                .send((
-                    routing_key!(Auth >> SnapshotResp).into(),
-                    (&msg).try_into().unwrap(),
-                ))
-                .unwrap();
         }
     }
 
@@ -1059,4 +1038,19 @@ impl MsgHandler {
             return false;
         }
     }
+}
+
+fn snapshot_response(sender: &Sender<(String, Vec<u8>)>, ack: Resp, flag: bool) {
+    info!("snapshot_response ack: {:?}, flag: {}", ack, flag);
+
+    let mut resp = SnapshotResp::new();
+    resp.set_resp(ack);
+    resp.set_flag(flag);
+    let msg: Message = resp.into();
+    sender
+        .send((
+            routing_key!(Auth >> SnapshotResp).into(),
+            (&msg).try_into().unwrap(),
+        ))
+        .unwrap();
 }
