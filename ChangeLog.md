@@ -1,11 +1,6 @@
 # Changelog
 
-After alomost three months, CITA version 0.21 is coming. In this version, we have bring several features
-such as automatic contract execution, hostname parsing in network. At the same time, we did lots of work
-in module code refactoring, test coverage, bug fixs.
-
-In the following time, CITA enters a maintenance period temporarily. We plan not to add more new features and
-committed to improving the quolity of code, fixing bugs, improving documentation and supplementing tests.
+All notable changes to this project will be documented in this file. And this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
