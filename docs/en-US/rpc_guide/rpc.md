@@ -944,7 +944,8 @@ Polling method for a filter, which returns an array of logs which occurred since
 
 * Returns
 
-    `Array` - Array of log objects, or an empty array if nothing has changed since last poll.
+    `Array` - Array of log objects, or an empty array. If the filter belongs to blockfilter,
+    the result returned is a block hash array containing the hashes of the block after the filter was created.
     同 [getLogs](#getlogs)
 
 * Example
@@ -972,6 +973,24 @@ Polling method for a filter, which returns an array of logs which occurred since
                 "logIndex":"0x0",
                 "transactionLogIndex":"0x0"
             }
+        ]
+    }
+    ```
+
+    ```shell
+    curl -X POST --data '{"jsonrpc":"2.0","method":"getFilterChanges","params":["0x3"],"id":74}'
+    ```
+
+    ```json
+    // BlockFilter Result
+    {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "result": [
+            "0x2a5da766caf9a83139b15249bbe56f48f51df3124610e007156af8117817c966",
+            "0x77eb877cfd841e996d078ff43e81a3700adda27ce9895d224e02a9b78aa01aaa",
+            "0x8780527ca2f34c52006b2e1af3b7e6c8f5f26bd1c02c78e0e751f0f44bf66fcf",
+            "0x63d7057e10d1441911864167cece31d5065b7efb062cac172d262ed93a749e84"
         ]
     }
     ```
