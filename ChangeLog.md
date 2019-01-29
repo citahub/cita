@@ -51,6 +51,7 @@ All notable changes to this project will be documented in this file. And this pr
 - [Optimization] Split libproto operations from Jsonrpc. [@zeroqn]
 - [Feature] Add `from` field in `Gettransaction` rpc interface. [@zeroqn]
 - [Optimization] Upgrade hyper version and split `Service` and `Server`. [@zeroqn]
+- [Fix] Fix `getFilterChanges` interface, the hash array returned in the case of a block filter starts from the next block. [@WPF]
 
 ### System Contract
 
