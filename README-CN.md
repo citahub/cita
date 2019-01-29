@@ -57,8 +57,8 @@ CITA（ Cryptape Inter-enterprise Trust Automation ）是一个面向企业级�
 
 ## 文档
 
-- [英文版](https://cryptape.github.io/cita/#/en-US/latest/index)
-- [中文版](https://cryptape.github.io/cita/)
+- [英文版](https://docs.citahub.com/en-US/cita/cita-intro)
+- [中文版](https://docs.citahub.com/zh-CN/cita/cita-intro)
 
 ## API/SDK
 
@@ -66,9 +66,10 @@ CITA 支持 JSON-RPC 和 WebSocket (experimental) API/v1。
 
 对于 CITA 的 API/v1，你可以使用任意的 HTTP 代理，或者下面的 SDK：
 
-* [Java](https://github.com/cryptape/nervosj)
-* [JavaScript](https://github.com/cryptape/nervos.js)
-* [Swift](https://github.com/cryptape/appchain-swift)
+* [Java](https://github.com/cryptape/cita-sdk-java)
+* [JavaScript](https://github.com/cryptape/cita-sdk-js)
+* [Swift](https://github.com/cryptape/cita-sdk-swift)
+* [Ruby](https://github.com/cryptape/cita-sdk-ruby)
 
 ## 社区贡献
 
