@@ -932,7 +932,7 @@ impl Executor {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
-        let conf = self.get_sys_config(self.get_max_height());
+        let conf = self.get_sys_config(self.get_current_height());
         let parent_hash = *block.parent_hash();
         let check_options = CheckOptions {
             permission: conf.check_permission,
@@ -969,7 +969,7 @@ impl Executor {
         let now = Instant::now();
         let current_state_root = self.current_state_root();
         let last_hashes = self.last_hashes();
-        let conf = self.get_sys_config(self.get_max_height());
+        let conf = self.get_sys_config(self.get_current_height());
         let chain_owner = conf.chain_owner;
         let parent_hash = *block.parent_hash();
         let check_options = CheckOptions {
