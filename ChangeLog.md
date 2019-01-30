@@ -81,6 +81,7 @@ All notable changes to this project will be documented in this file. And this pr
 - [Doc] More detail statements about cita-bft consensus. [@KaoImin]
 - [Doc] Update sdk info in readme. [@zhouyun-zoe]
 - [Doc] Add node command description. [@WPF]
+- [Doc] Build a new [documentation website](https://docs.citahub.com/en-US/cita/cita-intro). [@zhouyun-zoe]
 
 ### Tool
 
