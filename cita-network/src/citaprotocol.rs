@@ -20,6 +20,7 @@
 use byteorder::{ByteOrder, NetworkEndian};
 use bytes::BufMut;
 use bytes::BytesMut;
+use log::{error, warn};
 use std::io;
 use std::str;
 use tokio::codec::{Decoder, Encoder};
