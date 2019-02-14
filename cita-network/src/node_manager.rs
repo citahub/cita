@@ -6,12 +6,11 @@ use crossbeam_channel::{select, tick, unbounded};
 use discovery::RawAddr;
 use fnv::FnvHashMap;
 use libproto::{Message as ProtoMessage, TryInto};
-use log::{debug, trace, warn};
+use log::{debug, error, trace, warn};
 use p2p::{context::ServiceControl, multiaddr::ToMultiaddr, SessionId};
 use std::{
     collections::HashMap,
-    net::SocketAddr,
-    str::FromStr,
+    net::{SocketAddr, ToSocketAddrs},
     time::{Duration, Instant},
 };
 
@@ -36,29 +35,34 @@ impl NodesManager {
         node_mgr
     }
 
-    // The [[peers]] 'MUST' be config, Otherwise leads a panic,
-    // and cannot setup network service.
     pub fn from_config(cfg: NetConfig) -> Self {
         let mut node_mgr = NodesManager::default();
-
-        let cfg_addrs = cfg
-            .peers
-            .expect("[NodesManager] peers MUST be config in a network config file.");
-
         let max_connects = cfg.max_connects.unwrap_or(DEFAULT_MAX_CONNECTS);
         node_mgr.max_connects = max_connects;
 
-        for addr in cfg_addrs {
-            let ip = addr
-                .ip
-                .expect("[NodeManager] ip 'MUST' be set in known_nodes.");
-            let port = addr
-                .port
-                .expect("[NodeManager] port 'MUST' be set in known_nodes.");
-            let addr_str = format!("{}:{}", ip, port);
-            let socket_addr = SocketAddr::from_str(&addr_str).unwrap();
-            let raw_addr = RawAddr::from(socket_addr);
-            node_mgr.known_addrs.insert(raw_addr, 100);
+        if let Some(known_addrs) = cfg.peers {
+            for addr in known_addrs {
+                if let (Some(ip), Some(port)) = (addr.ip, addr.port) {
+                    let addr_str = format!("{}:{}", ip, port);
+                    match addr_str.to_socket_addrs() {
+                        Ok(mut result) => {
+                            if let Some(socket_addr) = result.next() {
+                                let raw_addr = RawAddr::from(socket_addr);
+                                node_mgr.known_addrs.insert(raw_addr, 100);
+                            } else {
+                                error!("[NodeManager] Can't convert to socket address!");
+                            }
+                        }
+                        Err(e) => {
+                            error!("[NodeManager] Can't convert to socket address! error: {}", e);
+                        }
+                    }
+                } else {
+                    warn!("[NodeManager] ip(host) & port 'MUST' be set in peers.");
+                }
+            }
+        } else {
+            warn!("NodeManager] Does not set any peers in config file!");
         }
 
         node_mgr
