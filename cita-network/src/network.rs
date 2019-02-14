@@ -73,6 +73,7 @@ impl NetworkClient {
         self.sender.try_send(msg).unwrap_or_else(|err| {
             warn!("Send message to network failed : {:?}", err);
         });
+    }
 }
 
 pub enum NetworkMessage {
