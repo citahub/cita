@@ -1,8 +1,7 @@
 use crate::mq_client::{MqClient, PubMessage};
 use crate::node_manager::{BroadcastReq, GetPeerCountReq, NodesManagerClient};
 use crate::synchronizer::{SynchronizerClient, SynchronizerMessage};
-use crossbeam_channel;
-use crossbeam_channel::unbounded;
+use crossbeam_channel::{self,unbounded};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
@@ -71,15 +70,9 @@ impl NetworkClient {
     }
 
     fn send_msg(&self, msg: NetworkMessage) {
-        match self.sender.try_send(msg) {
-            Ok(_) => {
-                debug!("Send message to network Success");
-            }
-            Err(err) => {
-                warn!("Send message to network failed : {:?}", err);
-            }
-        }
-    }
+        self.sender.try_send(msg).unwrap_or_else(|err| {
+            warn!("Send message to network failed : {:?}", err);
+        });
 }
 
 pub enum NetworkMessage {
