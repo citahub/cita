@@ -112,7 +112,7 @@ fn main() {
         .forever(true)
         .key_pair(SecioKeyPair::secp256k1_generated())
         .build(SHandle::new(nodes_mgr.client()));
-    let addr = format!("/ip4/127.0.0.1/tcp/{}", config.port.unwrap_or(DEFAULT_PORT));
+    let addr = format!("/ip4/0.0.0.0/tcp/{}", config.port.unwrap_or(DEFAULT_PORT));
     let _ = service.listen(&addr.parse().unwrap());
     nodes_mgr.set_service_task_sender(service.control().clone());
     // <<<< End init p2p protocols
