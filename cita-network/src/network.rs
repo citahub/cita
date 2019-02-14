@@ -1,7 +1,7 @@
 use crate::mq_client::{MqClient, PubMessage};
 use crate::node_manager::{BroadcastReq, GetPeerCountReq, NodesManagerClient};
 use crate::synchronizer::{SynchronizerClient, SynchronizerMessage};
-use crossbeam_channel::{self,unbounded};
+use crossbeam_channel::{self, unbounded};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
