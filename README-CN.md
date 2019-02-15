@@ -15,9 +15,7 @@ CITA（ Cryptape Inter-enterprise Trust Automation ）是一个面向企业级�
   也有可能是一组服务器组成的集群，同时 CITA 还支持部署在云服务器上，充分利用了各种服务器硬件来提升处理能力。
   节点与节点之间通过P2P通信，节点内部各模块通过消息总线通信，这一点与 Fabric 仅仅在共识模块运用消息总线通信完全不同。
 
-![](https://github.com/cryptape/cita-whitepaper/blob/master/en/cita-network.png?raw=true)
-
-![](https://github.com/cryptape/cita-whitepaper/blob/master/en/cita-parallel.png?raw=true)
+![](https://github.com/cryptape/citahub-docs/blob/master/docs/assets/cita-assets/architecture.jpg?raw=true)
 
 - **组件可插拔**
 
