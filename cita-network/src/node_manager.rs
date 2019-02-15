@@ -8,6 +8,7 @@ use fnv::FnvHashMap;
 use libproto::{Message as ProtoMessage, TryInto};
 use log::{debug, error, trace, warn};
 use p2p::{context::ServiceControl, multiaddr::ToMultiaddr, SessionId};
+use rand::{thread_rng, Rng};
 use std::{
     collections::HashMap,
     net::{SocketAddr, ToSocketAddrs},
@@ -18,20 +19,26 @@ pub const DEFAULT_MAX_CONNECTS: usize = 4;
 pub const DEFAULT_PORT: usize = 4000;
 pub const CHECK_CONNECTED_NODES: Duration = Duration::from_secs(3);
 
+pub type PeerKey = u64;
+
 pub struct NodesManager {
     check_connected_nodes: crossbeam_channel::Receiver<Instant>,
     known_addrs: FnvHashMap<RawAddr, i32>,
     connected_addrs: HashMap<SessionId, RawAddr>,
+    connected_peer_keys: HashMap<PeerKey, SessionId>,
     max_connects: usize,
     nodes_manager_client: NodesManagerClient,
     nodes_manager_service_receiver: crossbeam_channel::Receiver<NodesManagerMessage>,
     service_ctrl: Option<ServiceControl>,
+    my_peer_key: PeerKey,
 }
 
 impl NodesManager {
     pub fn new(known_addrs: FnvHashMap<RawAddr, i32>) -> Self {
         let mut node_mgr = NodesManager::default();
+        let num = thread_rng().gen::<u64>();
         node_mgr.known_addrs = known_addrs;
+        node_mgr.my_peer_key = num;
         node_mgr
     }
 
@@ -54,7 +61,10 @@ impl NodesManager {
                             }
                         }
                         Err(e) => {
-                            error!("[NodeManager] Can't convert to socket address! error: {}", e);
+                            error!(
+                                "[NodeManager] Can't convert to socket address! error: {}",
+                                e
+                            );
                         }
                     }
                 } else {
@@ -137,10 +147,12 @@ impl Default for NodesManager {
             check_connected_nodes: ticker,
             known_addrs: FnvHashMap::default(),
             connected_addrs: HashMap::default(),
+            connected_peer_keys: HashMap::default(),
             max_connects: DEFAULT_MAX_CONNECTS,
             nodes_manager_client: client,
             nodes_manager_service_receiver: rx,
             service_ctrl: None,
+            my_peer_key: 0,
         }
     }
 }
@@ -226,6 +238,39 @@ impl NodesManagerMessage {
     }
 }
 
+#[derive(Default, Clone)]
+pub struct InitMsg {
+    chain_id: u64,
+    peer_key: PeerKey,
+}
+
+impl Into<Vec<u8>> for InitMsg {
+    fn into(self) -> Vec<u8> {
+        let mut out = Vec::new();
+        out.extend_from_slice(&self.chain_id.to_be_bytes());
+        out.extend_from_slice(&self.peer_key.to_be_bytes());
+        out
+    }
+}
+
+#[derive(Default)]
+pub struct InitMsgReq {
+    session_id: SessionId,
+    init_msg: InitMsg,
+}
+
+impl InitMsgReq {
+    pub fn new(session_id: SessionId, chain_id: u64, peer_key: PeerKey) -> Self {
+        let init_msg = InitMsg { chain_id, peer_key };
+        InitMsgReq {
+            session_id,
+            init_msg,
+        }
+    }
+
+    pub fn handle(self, _service: &mut NodesManager) {}
+}
+
 pub struct AddNodeReq {
     addr: SocketAddr,
 }
@@ -301,9 +346,24 @@ impl AddConnectedNodeReq {
 
     pub fn handle(self, service: &mut NodesManager) {
         // FIXME: If have reached to max_connects, disconnected this node.
+        let peer_key = service.my_peer_key;
         service
             .connected_addrs
             .insert(self.session_id, RawAddr::from(self.addr));
+
+        let send_key = "init".to_string();
+        let init_msg = InitMsg {
+            chain_id: 0,
+            peer_key,
+        };
+        let msg_bytes: Vec<u8> = init_msg.into();
+
+        let mut buf = BytesMut::with_capacity(4 + 4 + 1 + send_key.len() + msg_bytes.len());
+        pubsub_message_to_network_message(&mut buf, Some((send_key, msg_bytes)));
+        if let Some(ref mut ctrl) = service.service_ctrl {
+            //FIXME: handle the error!
+            let _ = ctrl.send_message(Some(vec![self.session_id]), 1, buf.to_vec());
+        }
     }
 }
 
