@@ -30,15 +30,13 @@ pub struct NodesManager {
     nodes_manager_client: NodesManagerClient,
     nodes_manager_service_receiver: crossbeam_channel::Receiver<NodesManagerMessage>,
     service_ctrl: Option<ServiceControl>,
-    my_peer_key: PeerKey,
+    peer_key: PeerKey,
 }
 
 impl NodesManager {
     pub fn new(known_addrs: FnvHashMap<RawAddr, i32>) -> Self {
         let mut node_mgr = NodesManager::default();
-        let num = thread_rng().gen::<u64>();
         node_mgr.known_addrs = known_addrs;
-        node_mgr.my_peer_key = num;
         node_mgr
     }
 
@@ -142,6 +140,7 @@ impl Default for NodesManager {
         let (tx, rx) = unbounded();
         let ticker = tick(CHECK_CONNECTED_NODES);
         let client = NodesManagerClient { sender: tx };
+        let peer_key = thread_rng().gen::<u64>();
 
         NodesManager {
             check_connected_nodes: ticker,
@@ -152,7 +151,7 @@ impl Default for NodesManager {
             nodes_manager_client: client,
             nodes_manager_service_receiver: rx,
             service_ctrl: None,
-            my_peer_key: 0,
+            peer_key,
         }
     }
 }
@@ -346,7 +345,7 @@ impl AddConnectedNodeReq {
 
     pub fn handle(self, service: &mut NodesManager) {
         // FIXME: If have reached to max_connects, disconnected this node.
-        let peer_key = service.my_peer_key;
+        let peer_key = service.peer_key;
         service
             .connected_addrs
             .insert(self.session_id, RawAddr::from(self.addr));
