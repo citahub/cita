@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -14,6 +14,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 use crate::mq_client::{MqClient, PubMessage};
 use crate::node_manager::{BroadcastReq, NodesManagerClient, SingleTxReq};
 use crossbeam_channel;
