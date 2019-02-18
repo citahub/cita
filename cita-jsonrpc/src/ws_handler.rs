@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use helper::{select_topic, RpcMap, TransferType};
+use jsonrpc_proto::complete::CompleteInto;
 use jsonrpc_types::request::{PartialRequest, RequestInfo};
 use jsonrpc_types::response::RpcFailure;
 use jsonrpc_types::Error;

@@ -35,6 +35,7 @@ for binary in \
         consensus-mock \
         chain-executor-mock \
         box_executor \
+        bft-wal \
         ; do
     cp -rf "target/${type}/${binary}" target/install/bin/
 done
@@ -58,5 +59,5 @@ cp -f scripts/env.sh                       target/install/
 cp -f scripts/daemon.sh                    target/install/
 
 # 7) amend info of system contract
-cp -f scripts/amend_sys_cont_to_v0-20.py              target/install/scripts/
-cp -f scripts/amend_sys_cont_to_v0-20.sh              target/install/scripts/
+cp -f scripts/amend_system_contracts.sh    target/install/scripts/
+cp -f scripts/amend_system_contracts.py    target/install/scripts/

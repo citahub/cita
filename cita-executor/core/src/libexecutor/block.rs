@@ -16,13 +16,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use basic_types::LogBloom;
+use cita_merklehash;
 use cita_types::{Address, H256, U256};
-use contracts::solc::PriceManagement;
 use engines::Engine;
 use error::Error;
 use evm::env_info::{EnvInfo, LastHashes};
 use factory::Factories;
-use libexecutor::executor::{CheckOptions, EconomicalModel, Executor, GlobalSysConfig};
+use hashable::Hashable;
+use libexecutor::auto_exec::auto_exec;
+use libexecutor::sys_config::BlockSysConfig;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use receipt::Receipt;
 use rlp::*;
@@ -30,17 +32,10 @@ use state::State;
 use state_db::StateDB;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::time::Instant;
 use trace::FlatTrace;
-pub use types::block::{Block, BlockBody};
-use types::ids::BlockId;
+pub use types::block::{Block, BlockBody, OpenBlock};
 use types::transaction::SignedTransaction;
-use util::merklehash;
-
-/// Check the 256 transactions once
-const CHECK_NUM: usize = 0xff;
 
 lazy_static! {
     /// Block Reward
@@ -54,11 +49,190 @@ pub trait Drain {
     fn drain(self) -> StateDB;
 }
 
-/// Block that prepared to commit to db.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
+pub struct ExecutedBlock {
+    pub block: OpenBlock,
+    pub receipts: Vec<Receipt>,
+    pub state: State<StateDB>,
+    pub current_quota_used: U256,
+    traces: Option<Vec<Vec<FlatTrace>>>,
+    last_hashes: Arc<LastHashes>,
+    account_gas_limit: U256,
+    account_gas: HashMap<Address, U256>,
+    eth_compatibility: bool,
+}
+
+impl Deref for ExecutedBlock {
+    type Target = OpenBlock;
+
+    fn deref(&self) -> &OpenBlock {
+        &self.block
+    }
+}
+
+impl DerefMut for ExecutedBlock {
+    fn deref_mut(&mut self) -> &mut OpenBlock {
+        &mut self.block
+    }
+}
+
+impl ExecutedBlock {
+    #[allow(clippy::too_many_arguments)]
+    pub fn create(
+        factories: Factories,
+        conf: &BlockSysConfig,
+        tracing: bool,
+        block: OpenBlock,
+        db: StateDB,
+        state_root: H256,
+        last_hashes: Arc<LastHashes>,
+        eth_compatibility: bool,
+    ) -> Result<Self, Error> {
+        let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
+        state.super_admin_account = conf.super_admin_account;
+
+        let r = ExecutedBlock {
+            block,
+            state,
+            traces: if tracing { Some(Vec::new()) } else { None },
+            last_hashes,
+            account_gas_limit: conf.account_quota_limit.common_quota_limit.into(),
+            account_gas: conf.account_quota_limit.specific_quota_limit.iter().fold(
+                HashMap::new(),
+                |mut acc, (key, value)| {
+                    acc.insert(*key, (*value).into());
+                    acc
+                },
+            ),
+            current_quota_used: Default::default(),
+            receipts: Default::default(),
+            eth_compatibility,
+        };
+
+        Ok(r)
+    }
+
+    pub fn transactions(&self) -> &[SignedTransaction] {
+        self.body.transactions()
+    }
+
+    /// Transaction execution env info.
+    pub fn env_info(&self) -> EnvInfo {
+        EnvInfo {
+            number: self.number(),
+            author: *self.proposer(),
+            timestamp: if self.eth_compatibility {
+                self.timestamp() / 1000
+            } else {
+                self.timestamp()
+            },
+            difficulty: U256::default(),
+            last_hashes: Arc::clone(&self.last_hashes),
+            gas_used: self.current_quota_used,
+            gas_limit: *self.quota_limit(),
+            account_gas_limit: 0.into(),
+        }
+    }
+
+    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
+    pub fn apply_transaction(
+        &mut self,
+        engine: &Engine,
+        t: &SignedTransaction,
+        conf: &BlockSysConfig,
+    ) {
+        let mut env_info = self.env_info();
+        self.account_gas
+            .entry(*t.sender())
+            .or_insert(self.account_gas_limit);
+        env_info.account_gas_limit = *self
+            .account_gas
+            .get(t.sender())
+            .expect("account should exist in account_gas_limit");
+
+        let has_traces = self.traces.is_some();
+        match self.state.apply(&env_info, engine, t, has_traces, conf) {
+            Ok(outcome) => {
+                trace!("apply signed transaction {} success", t.hash());
+                if let Some(ref mut traces) = self.traces {
+                    traces.push(outcome.trace);
+                }
+                let transaction_quota_used = outcome.receipt.quota_used - self.current_quota_used;
+                self.current_quota_used = outcome.receipt.quota_used;
+                if conf.check_options.quota {
+                    if let Some(value) = self.account_gas.get_mut(t.sender()) {
+                        *value = *value - transaction_quota_used;
+                    }
+                }
+                self.receipts.push(outcome.receipt);
+            }
+            _ => panic!("apply_transaction: There must be something wrong!"),
+        }
+    }
+
+    /// Turn this into a `ClosedBlock`.
+    pub fn close(mut self, conf: &BlockSysConfig) -> ClosedBlock {
+        if conf.auto_exec {
+            auto_exec(
+                &mut self.state,
+                conf.auto_exec_quota_limit,
+                conf.economical_model,
+            );
+            self.state.commit().expect("commit trie error");
+        }
+        // Rebuild block
+        let mut block = Block::new(self.block);
+        let state_root = *self.state.root();
+        block.set_state_root(state_root);
+        let receipts_root = cita_merklehash::Tree::from_hashes(
+            self.receipts
+                .iter()
+                .map(|r| r.rlp_bytes().to_vec().crypt_hash())
+                .collect::<Vec<_>>(),
+            cita_merklehash::merge,
+        )
+        .get_root_hash()
+        .cloned()
+        .unwrap_or(cita_merklehash::HASH_NULL);
+
+        block.set_receipts_root(receipts_root);
+        block.set_quota_used(self.current_quota_used);
+
+        // blocks blooms
+        let log_bloom = self
+            .receipts
+            .clone()
+            .into_iter()
+            .fold(LogBloom::zero(), |mut b, r| {
+                b = b | r.log_bloom;
+                b
+            });
+
+        block.set_log_bloom(log_bloom);
+        block.rehash();
+
+        ClosedBlock {
+            block,
+            receipts: self.receipts,
+            state: self.state,
+        }
+    }
+}
+
+// Block that prepared to commit to db.
+#[derive(Debug)]
 pub struct ClosedBlock {
     /// Protobuf Block
-    pub block: OpenBlock,
+    pub block: Block,
+    pub receipts: Vec<Receipt>,
+    pub state: State<StateDB>,
+}
+
+impl Drain for ClosedBlock {
+    /// Drop this object and return the underlieing database.
+    fn drain(self) -> StateDB {
+        self.state.drop().1
+    }
 }
 
 impl ClosedBlock {
@@ -106,43 +280,7 @@ impl ClosedBlock {
     }
 }
 
-impl Drain for ClosedBlock {
-    /// Drop this object and return the underlieing database.
-    fn drain(self) -> StateDB {
-        self.block.drain()
-    }
-}
-
 impl Deref for ClosedBlock {
-    type Target = OpenBlock;
-
-    fn deref(&self) -> &OpenBlock {
-        &self.block
-    }
-}
-
-impl DerefMut for ClosedBlock {
-    fn deref_mut(&mut self) -> &mut OpenBlock {
-        &mut self.block
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct ExecutedBlock {
-    pub block: Block,
-    pub receipts: Vec<Receipt>,
-    pub state: State<StateDB>,
-    pub current_quota_used: U256,
-    traces: Option<Vec<Vec<FlatTrace>>>,
-}
-
-impl Drain for ExecutedBlock {
-    fn drain(self) -> StateDB {
-        self.state.drop().1
-    }
-}
-
-impl Deref for ExecutedBlock {
     type Target = Block;
 
     fn deref(&self) -> &Block {
@@ -150,213 +288,9 @@ impl Deref for ExecutedBlock {
     }
 }
 
-impl DerefMut for ExecutedBlock {
+impl DerefMut for ClosedBlock {
     fn deref_mut(&mut self) -> &mut Block {
         &mut self.block
-    }
-}
-
-impl ExecutedBlock {
-    fn new(block: Block, state: State<StateDB>, tracing: bool) -> ExecutedBlock {
-        ExecutedBlock {
-            block,
-            receipts: Default::default(),
-            state,
-            current_quota_used: U256::zero(),
-            traces: if tracing { Some(Vec::new()) } else { None },
-        }
-    }
-
-    pub fn transactions(&self) -> &[SignedTransaction] {
-        self.body().transactions()
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct OpenBlock {
-    exec_block: ExecutedBlock,
-    last_hashes: Arc<LastHashes>,
-    account_gas_limit: U256,
-    account_gas: HashMap<Address, U256>,
-}
-
-impl Drain for OpenBlock {
-    fn drain(self) -> StateDB {
-        self.exec_block.drain()
-    }
-}
-
-impl Deref for OpenBlock {
-    type Target = ExecutedBlock;
-
-    fn deref(&self) -> &ExecutedBlock {
-        &self.exec_block
-    }
-}
-
-impl DerefMut for OpenBlock {
-    fn deref_mut(&mut self) -> &mut ExecutedBlock {
-        &mut self.exec_block
-    }
-}
-
-impl OpenBlock {
-    pub fn new(
-        factories: Factories,
-        conf: GlobalSysConfig,
-        tracing: bool,
-        block: Block,
-        db: StateDB,
-        state_root: H256,
-        last_hashes: Arc<LastHashes>,
-    ) -> Result<Self, Error> {
-        let mut state = State::from_existing(db, state_root, U256::default(), factories)?;
-        state.account_permissions = conf.account_permissions;
-        state.group_accounts = conf.group_accounts;
-        state.super_admin_account = conf.super_admin_account;
-
-        let r = OpenBlock {
-            exec_block: ExecutedBlock::new(block, state, tracing),
-            last_hashes,
-            account_gas_limit: conf.account_gas_limit.common_gas_limit.into(),
-            account_gas: conf.account_gas_limit.specific_gas_limit.iter().fold(
-                HashMap::new(),
-                |mut acc, (key, value)| {
-                    acc.insert(*key, (*value).into());
-                    acc
-                },
-            ),
-        };
-
-        Ok(r)
-    }
-
-    /// Transaction execution env info.
-    pub fn env_info(&self) -> EnvInfo {
-        EnvInfo {
-            number: self.number(),
-            author: *self.header.proposer(),
-            timestamp: self.timestamp(),
-            difficulty: U256::default(),
-            last_hashes: Arc::clone(&self.last_hashes),
-            gas_used: self.current_quota_used,
-            gas_limit: *self.quota_limit(),
-            account_gas_limit: 0.into(),
-        }
-    }
-
-    /// Execute transactions
-    /// Return false if be interrupted
-    pub fn apply_transactions(
-        &mut self,
-        executor: &Executor,
-        chain_owner: Address,
-        check_options: &CheckOptions,
-    ) -> bool {
-        let price_management = PriceManagement::new(executor);
-        let quota_price = price_management
-            .quota_price(BlockId::Pending)
-            .unwrap_or_else(PriceManagement::default_quota_price);
-        for (index, mut t) in self.body.transactions.clone().into_iter().enumerate() {
-            if index & CHECK_NUM == 0 && executor.is_interrupted.load(Ordering::SeqCst) {
-                executor.is_interrupted.store(false, Ordering::SeqCst);
-                return false;
-            }
-
-            let economical_model: EconomicalModel = *executor.economical_model.read();
-            if economical_model == EconomicalModel::Charge {
-                t.gas_price = quota_price;
-            }
-
-            self.apply_transaction(
-                &*executor.engine,
-                &t,
-                *executor.economical_model.read(),
-                chain_owner,
-                check_options,
-            );
-        }
-
-        let now = Instant::now();
-        self.state.commit().expect("commit trie error");
-        let new_now = Instant::now();
-        debug!("state root use {:?}", new_now.duration_since(now));
-
-        let quota_used = self.current_quota_used;
-        self.set_quota_used(quota_used);
-        true
-    }
-
-    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
-    pub fn apply_transaction(
-        &mut self,
-        engine: &Engine,
-        t: &SignedTransaction,
-        economical_model: EconomicalModel,
-        chain_owner: Address,
-        check_options: &CheckOptions,
-    ) {
-        let mut env_info = self.env_info();
-        self.account_gas
-            .entry(*t.sender())
-            .or_insert(self.account_gas_limit);
-        env_info.account_gas_limit = *self
-            .account_gas
-            .get(t.sender())
-            .expect("account should exist in account_gas_limit");
-
-        let has_traces = self.traces.is_some();
-        match self.state.apply(
-            &env_info,
-            engine,
-            t,
-            has_traces,
-            economical_model,
-            chain_owner,
-            check_options,
-        ) {
-            Ok(outcome) => {
-                trace!("apply signed transaction {} success", t.hash());
-                if let Some(ref mut traces) = self.traces {
-                    traces.push(outcome.trace);
-                }
-                let transaction_quota_used = outcome.receipt.quota_used - self.current_quota_used;
-                self.current_quota_used = outcome.receipt.quota_used;
-                if check_options.quota {
-                    if let Some(value) = self.account_gas.get_mut(t.sender()) {
-                        *value = *value - transaction_quota_used;
-                    }
-                }
-                self.receipts.push(outcome.receipt);
-            }
-            _ => panic!("apply_transaction: There must be something wrong!"),
-        }
-    }
-
-    /// Turn this into a `ClosedBlock`.
-    pub fn close(mut self) -> ClosedBlock {
-        // Rebuild block
-        let state_root = *self.state.root();
-        self.set_state_root(state_root);
-        let receipts_root = merklehash::MerkleTree::from_bytes(
-            self.receipts.iter().map(|r| r.rlp_bytes().to_vec()),
-        )
-        .get_root_hash();
-        self.set_receipts_root(receipts_root);
-
-        // blocks blooms
-        let log_bloom = self
-            .receipts
-            .clone()
-            .into_iter()
-            .fold(LogBloom::zero(), |mut b, r| {
-                b = b | r.log_bloom;
-                b
-            });
-
-        self.set_log_bloom(log_bloom);
-
-        ClosedBlock { block: self }
     }
 }
 

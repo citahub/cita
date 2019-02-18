@@ -15,11 +15,13 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use account_db::AccountDBMut;
+use cita_db::{sec_trie_root, HashDB, TrieFactory};
+use cita_types::{H256, U256};
+use hashable::Hashable;
 use rlp::{self, RlpStream};
 use state::Account;
 use std::collections::BTreeMap;
 use std::fmt;
-use cita_types::{H256, U256};
 use util::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -45,12 +47,15 @@ impl PodAccount {
         PodAccount {
             balance: *acc.balance(),
             nonce: *acc.nonce(),
-            storage: acc.storage_changes().iter().fold(BTreeMap::new(), |mut m, (k, v)| {
-                m.insert(*k, *v);
-                m
-            }),
+            storage: acc
+                .storage_changes()
+                .iter()
+                .fold(BTreeMap::new(), |mut m, (k, v)| {
+                    m.insert(*k, *v);
+                    m
+                }),
             code: acc.code().map(|x| x.to_vec()),
-            abi: acc.abi().map(|x| x.to_vec())
+            abi: acc.abi().map(|x| x.to_vec()),
         }
     }
 
@@ -59,7 +64,12 @@ impl PodAccount {
         let mut stream = RlpStream::new_list(5);
         stream.append(&self.nonce);
         stream.append(&self.balance);
-        stream.append(&sec_trie_root(self.storage.iter().map(|(k, v)| (k.to_vec(), rlp::encode(&U256::from(&**v)).to_vec())).collect()));
+        stream.append(&sec_trie_root(
+            self.storage
+                .iter()
+                .map(|(k, v)| (k.to_vec(), rlp::encode(&U256::from(&**v)).to_vec()))
+                .collect(),
+        ));
         stream.append(&self.code.as_ref().unwrap_or(&vec![]).crypt_hash());
         stream.append(&self.abi.as_ref().unwrap_or(&vec![]).crypt_hash());
         stream.out()
@@ -91,11 +101,15 @@ impl PodAccount {
 
 impl fmt::Display for PodAccount {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "(bal={}; nonce={}; code={} bytes, #{}; abi={} bytes, #{}; storage={} items)",
+        write!(
+            f,
+            "(bal={}; nonce={}; code={} bytes, #{}; abi={} bytes, #{}; storage={} items)",
             self.balance,
             self.nonce,
             self.code.as_ref().map_or(0, |c| c.len()),
-            self.code.as_ref().map_or_else(H256::new, |c| c.crypt_hash()),
+            self.code
+                .as_ref()
+                .map_or_else(H256::new, |c| c.crypt_hash()),
             self.abi.as_ref().map_or(0, |c| c.len()),
             self.abi.as_ref().map_or_else(H256::new, |c| c.crypt_hash()),
             self.storage.len(),

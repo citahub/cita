@@ -20,8 +20,10 @@ use basic_types::LogBloom;
 use cita_ed25519::Error as EthkeyError;
 use cita_types::{H256, U256};
 
+use cita_db::TrieError;
 pub use executed::{CallError, ExecutionError};
 use header::BlockNumber;
+use snappy;
 use snapshot::Error as SnapshotError;
 use std::fmt;
 use util::*;
@@ -242,7 +244,7 @@ pub enum Error {
     /// Standard io error.
     StdIo(::std::io::Error),
     /// Snappy error.
-    Snappy(::util::snappy::SnappyError),
+    Snappy(snappy::SnappyError),
     /// Ethkey error.
     Ethkey(EthkeyError),
     /// Snapshot error

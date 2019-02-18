@@ -18,7 +18,7 @@
 use cita_types::H256;
 use core::filters::eth_filter::EthFilter;
 use core::libchain::chain::{BlockInQueue, Chain};
-use core::libchain::Block;
+use core::libchain::OpenBlock;
 use error::ErrorCode;
 use jsonrpc_types::rpctypes::{
     BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
@@ -31,9 +31,10 @@ use libproto::{
     ExecutedResult, Message, OperateType, Proof, ProofType, Request_oneof_req as Request,
     SyncRequest, SyncResponse,
 };
+use libproto::{TryFrom, TryInto};
 use proof::BftProof;
 use serde_json;
-use std::convert::{Into, TryFrom, TryInto};
+use std::convert::Into;
 use std::mem;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::Sender;
@@ -43,11 +44,11 @@ use std::time::Duration;
 use types::filter::Filter;
 use types::ids::BlockId;
 
+use cita_db::kvdb::DatabaseConfig;
+use cita_directories::DataPath;
 use core::db;
 use std::fs::File;
 use std::path::Path;
-use util::datapath::DataPath;
-use util::kvdb::DatabaseConfig;
 
 use core::snapshot;
 use core::snapshot::io::{PackedReader, PackedWriter, SnapshotReader};
@@ -178,7 +179,7 @@ impl Forward {
                 match self.chain.block(block_height.block_id.into()) {
                     Some(block) => {
                         let rpc_block = RpcBlock::new(
-                            block.hash().to_vec(),
+                            block.hash().unwrap().to_vec(),
                             include_txs,
                             block.protobuf().try_into().unwrap(),
                         );
@@ -385,14 +386,13 @@ impl Forward {
             current_height
         );
 
-        let block = Block::from(proto_block);
+        let block = OpenBlock::from(proto_block);
         debug!(
-            "consensus block {} {:?} tx hash  {:?} len {} version {}",
+            "consensus block {} tx hash {:?} len {} version {}",
             block.number(),
-            block.hash(),
             block.transactions_root(),
             block.body().transactions().len(),
-            block.header.version()
+            block.version()
         );
         if blk_height == (current_height + 1) {
             {
@@ -503,12 +503,12 @@ impl Forward {
                 break;
             }
 
-            self.add_sync_block(Block::from(block));
+            self.add_sync_block(OpenBlock::from(block));
         }
     }
 
     // Check block group from remote and enqueue
-    fn add_sync_block(&self, block: Block) {
+    fn add_sync_block(&self, block: OpenBlock) {
         let block_proof_type = block.proof_type();
         let chain_proof_type = self.chain.get_chain_prooftype();
         let blk_height = block.number() as usize;
@@ -625,65 +625,50 @@ impl Forward {
     }
 
     fn deal_snapshot_req(&self, snapshot_req: &SnapshotReq) {
-        let mut resp = SnapshotResp::new();
         match snapshot_req.cmd {
             Cmd::Snapshot => {
-                info!("[snapshot] receive {:?}", snapshot_req);
+                info!("receive Snapshot::Snapshot {:?}", snapshot_req);
                 let chain = self.chain.clone();
                 let ctx_pub = self.ctx_pub.clone();
                 let snapshot_req = snapshot_req.clone();
                 let snapshot_builder = thread::Builder::new().name("snapshot_chain".into());
                 let _ = snapshot_builder.spawn(move || {
                     take_snapshot(&chain, &snapshot_req);
-
+                    snapshot_response(&ctx_pub, Resp::SnapshotAck, true, None, None);
                     info!("Taking snapshot finished!!!");
-
-                    //resp SnapshotAck to snapshot_tool
-                    resp.set_resp(Resp::SnapshotAck);
-                    resp.set_flag(true);
-                    let msg: Message = resp.into();
-                    ctx_pub
-                        .send((
-                            routing_key!(Chain >> SnapshotResp).into(),
-                            msg.try_into().unwrap(),
-                        ))
-                        .unwrap();
                 });
             }
             Cmd::Begin => {
-                info!("[snapshot] receive cmd: Begin");
+                info!("receive Snapshot::Begin: {:?}", snapshot_req);
                 let mut is_snapshot = self.chain.is_snapshot.write();
                 *is_snapshot = true;
+                snapshot_response(&self.ctx_pub, Resp::BeginAck, true, None, None);
             }
             Cmd::Restore => {
-                info!("[snapshot] receive {:?}", snapshot_req);
+                info!("receive Snapshot::Restore {:?}", snapshot_req);
                 match restore_snapshot(&self.chain.clone(), snapshot_req) {
                     Ok(proof) => {
-                        resp.set_proof(proof);
-                        resp.set_height(self.chain.get_current_height());
-                        resp.set_flag(true);
+                        let height = self.chain.get_current_height();
+                        snapshot_response(
+                            &self.ctx_pub,
+                            Resp::RestoreAck,
+                            true,
+                            Some(height),
+                            Some(proof),
+                        );
                     }
-                    Err(e) => {
-                        warn!("restore_snapshot failed: {:?}", e);
-                        resp.set_flag(false);
+                    Err(err) => {
+                        error!("snapshot restore failed: {:?}", err);
+                        snapshot_response(&self.ctx_pub, Resp::RestoreAck, false, None, None);
                     }
                 }
-
-                //resp RestoreAck to snapshot_tool
-                resp.set_resp(Resp::RestoreAck);
-                let msg: Message = resp.into();
-                self.ctx_pub
-                    .send((
-                        routing_key!(Chain >> SnapshotResp).into(),
-                        msg.try_into().unwrap(),
-                    ))
-                    .unwrap();
             }
             Cmd::Clear => {
-                info!("[snapshot] receive cmd: Clear");
+                info!("receive Snapshot::Clear: {:?}", snapshot_req);
+                snapshot_response(&self.ctx_pub, Resp::ClearAck, true, None, None);
             }
             Cmd::End => {
-                info!("[snapshot] receive {:?}", snapshot_req);
+                info!("receive Snapshot::End {:?}", snapshot_req);
                 let chain = self.chain.clone();
                 let ctx_pub = self.ctx_pub.clone();
                 thread::spawn(move || {
@@ -693,6 +678,7 @@ impl Forward {
 
                     let mut is_snapshot = chain.is_snapshot.write();
                     *is_snapshot = false;
+                    snapshot_response(&ctx_pub, Resp::EndAck, true, None, None);
                 });
             }
         }
@@ -726,7 +712,7 @@ fn take_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) {
 
 fn restore_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Proof, String> {
     let file_name = snapshot_req.file.clone() + "_chain.rlp";
-    let reader = PackedReader::new(Path::new(&file_name))
+    let reader = PackedReader::create(Path::new(&file_name))
         .map_err(|e| format!("Couldn't open snapshot file: {}", e))
         .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
     let reader = match reader {
@@ -746,7 +732,7 @@ fn restore_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Pr
         chain: chain.clone(),
     };
 
-    let snapshot = SnapshotService::new(snapshot_params).unwrap();
+    let snapshot = SnapshotService::create(snapshot_params).unwrap();
     let snapshot = Arc::new(snapshot);
     match snapshot::restore_using(&snapshot, &reader, true) {
         Ok(_) => {
@@ -759,4 +745,31 @@ fn restore_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Pr
             Err(e)
         }
     }
+}
+
+fn snapshot_response(
+    sender: &Sender<(String, Vec<u8>)>,
+    ack: Resp,
+    flag: bool,
+    height: Option<u64>,
+    proof: Option<Proof>,
+) {
+    info!("snapshot_response ack: {:?}, flag: {}", ack, flag);
+    let mut resp = SnapshotResp::new();
+    resp.set_resp(ack);
+    resp.set_flag(flag);
+    if let Some(height) = height {
+        resp.set_height(height);
+    }
+    if let Some(proof) = proof {
+        resp.set_proof(proof);
+    }
+
+    let msg: Message = resp.into();
+    sender
+        .send((
+            routing_key!(Chain >> SnapshotResp).into(),
+            msg.try_into().unwrap(),
+        ))
+        .unwrap();
 }

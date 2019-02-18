@@ -58,7 +58,8 @@ impl EthFilter for Chain {
                 PollFilter::Block(ref mut block_number) => {
                     // + 1, cause we want to return hashes including current block hash.
                     let current_number = self.get_current_height() + 1;
-                    let hashes = (*block_number..current_number)
+                    // + 1, cause we want to return hashes from next block after a block filter was created.
+                    let hashes = ((*block_number + 1)..current_number)
                         .filter_map(|_id| self.block_hash_by_height(_id))
                         .collect::<Vec<H256>>();
 

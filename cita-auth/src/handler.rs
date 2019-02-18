@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,187 +15,47 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use block_txn::{BlockTxnMessage, BlockTxnReq};
+use block_verify::BlockVerify;
 use cita_types::traits::LowerHex;
 use cita_types::{clean_0x, Address, H256, U256};
 use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use dispatcher::Dispatcher;
 use error::ErrorCode;
+use history::HistoryHeights;
 use jsonrpc_types::rpctypes::TxResponse;
 use libproto::auth::{Miscellaneous, MiscellaneousReq};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
 use libproto::{
-    BlackList, BlockTxHashes, BlockTxHashesReq, Crypto, Message, Request, Response, Ret,
-    VerifyBlockReq, VerifyBlockResp, VerifyTxReq,
+    BlackList, BlockTxHashes, BlockTxHashesReq, BlockTxn, Crypto, GetBlockTxn, Message,
+    OperateType, Origin, Request, Response, UnverifiedTransaction, VerifyBlockReq, VerifyTxReq,
 };
+use libproto::{TryFrom, TryInto};
 use lru::LruCache;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon::ThreadPoolBuilder;
 use serde_json;
 use std::collections::{HashMap, HashSet};
-use std::convert::{Into, TryFrom, TryInto};
+use std::convert::Into;
 use std::str::FromStr;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
-use util::instrument::{unix_now, AsMillis};
+use transaction_verify::Error;
 use util::BLOCKLIMIT;
 
-#[derive(Debug)]
-struct HistoryHeights {
-    heights: HashSet<u64>,
-    max_height: u64,
-    min_height: u64,
-    is_init: bool,
-    last_timestamp: u64,
-}
+const TX_OK: &str = "OK";
 
-impl HistoryHeights {
-    pub fn new() -> Self {
-        HistoryHeights {
-            heights: HashSet::new(),
-            max_height: 0,
-            min_height: 0,
-            is_init: false,
-            //init value is 0 mean first time must not too frequent
-            last_timestamp: 0,
-        }
-    }
-
-    pub fn reset(&mut self) {
-        self.heights.clear();
-        self.max_height = 0;
-        self.min_height = 0;
-        self.is_init = false;
-        self.last_timestamp = 0;
-    }
-
-    pub fn update_height(&mut self, height: u64) {
-        // update 'min_height', 'max_height', 'heights'
-        if height < self.min_height {
-            trace!(
-                "height is small than min_height: {} < {}",
-                height,
-                self.min_height,
-            );
-            return;
-        } else if height > self.max_height {
-            self.max_height = height;
-
-            let old_min_height = self.min_height;
-            self.min_height = if height > BLOCKLIMIT {
-                height - BLOCKLIMIT + 1
-            } else {
-                0
-            };
-
-            self.heights.insert(height);
-            for i in old_min_height..self.min_height {
-                self.heights.remove(&i);
-            }
-        } else {
-            self.heights.insert(height);
-        }
-
-        // update 'is_init'
-        let mut is_init = true;
-        for i in self.min_height..self.max_height {
-            if !self.heights.contains(&i) {
-                is_init = false;
-                break;
-            }
-        }
-        self.is_init = is_init;
-    }
-
-    pub fn next_height(&self) -> u64 {
-        self.max_height + 1
-    }
-
-    pub fn is_init(&self) -> bool {
-        self.is_init
-    }
-
-    pub fn max_height(&self) -> u64 {
-        self.max_height
-    }
-
-    pub fn min_height(&self) -> u64 {
-        self.min_height
-    }
-
-    // at least wait 3s from latest update
-    pub fn is_too_frequent(&self) -> bool {
-        AsMillis::as_millis(&unix_now()) < self.last_timestamp + 3000
-    }
-
-    pub fn update_time_stamp(&mut self) {
-        // update time_stamp
-        self.last_timestamp = AsMillis::as_millis(&unix_now());
-    }
-}
-
-#[cfg(test)]
-mod history_heights_tests {
-    use super::HistoryHeights;
-
-    #[test]
-    fn basic() {
-        let mut h = HistoryHeights::new();
-        assert_eq!(h.is_init(), false);
-        assert_eq!(h.next_height(), 1);
-
-        h.update_height(60);
-        assert_eq!(h.is_init(), false);
-        assert_eq!(h.next_height(), 61);
-
-        for i in 0..60 {
-            h.update_height(i);
-        }
-        assert_eq!(h.is_init(), true);
-        assert_eq!(h.next_height(), 61);
-
-        h.update_height(70);
-        assert_eq!(h.is_init(), false);
-        assert_eq!(h.next_height(), 71);
-
-        for i in 0..70 {
-            h.update_height(i);
-        }
-        assert_eq!(h.is_init(), true);
-        assert_eq!(h.next_height(), 71);
-
-        h.update_height(99);
-        assert_eq!(h.is_init(), false);
-        assert_eq!(h.next_height(), 100);
-
-        for i in 0..99 {
-            h.update_height(i);
-        }
-        assert_eq!(h.is_init(), true);
-        assert_eq!(h.next_height(), 100);
-
-        h.update_height(100);
-        assert_eq!(h.is_init(), true);
-        assert_eq!(h.next_height(), 101);
-
-        h.update_height(101);
-        assert_eq!(h.is_init(), true);
-        assert_eq!(h.next_height(), 102);
-    }
-}
-
-// verify chain id and signature
-pub fn verify_tx_sig(req: &VerifyTxReq) -> Result<Vec<u8>, ()> {
-    let hash = H256::from(req.get_hash());
-    let sig_bytes = req.get_signature();
+// verify signature
+pub fn verify_tx_sig(crypto: Crypto, hash: &H256, sig_bytes: &[u8]) -> Result<Vec<u8>, ()> {
     if sig_bytes.len() != SIGNATURE_BYTES_LEN {
         return Err(());
     }
 
     let sig = Signature::from(sig_bytes);
-    match req.get_crypto() {
-        Crypto::SECP => sig
+    match crypto {
+        Crypto::DEFAULT => sig
             .recover(&hash)
             .map(|pubkey| pubkey.to_vec())
             .map_err(|_| ()),
@@ -227,7 +87,6 @@ pub struct MsgHandler {
     cache: LruCache<H256, Option<Vec<u8>>>,
     chain_id: Option<ChainId>,
     history_heights: HistoryHeights,
-    cache_block_req: Option<VerifyBlockReq>,
     history_hashes: HashMap<u64, HashSet<H256>>,
     dispatcher: Dispatcher,
     tx_request: Sender<Request>,
@@ -236,6 +95,8 @@ pub struct MsgHandler {
     black_list_cache: HashMap<Address, i8>,
     is_need_proposal_new_block: bool,
     config_info: SysConfigInfo,
+    block_txn_req: Option<(BlockTxnReq)>,
+    verify_block_req: Option<VerifyBlockReq>,
 }
 
 impl MsgHandler {
@@ -258,7 +119,6 @@ impl MsgHandler {
             cache: LruCache::new(tx_verify_cache_size),
             chain_id: None,
             history_heights: HistoryHeights::new(),
-            cache_block_req: None,
             history_hashes: HashMap::with_capacity(BLOCKLIMIT as usize),
             dispatcher,
             tx_request,
@@ -273,6 +133,8 @@ impl MsgHandler {
                 admin_address: None,
                 version: None,
             },
+            block_txn_req: None,
+            verify_block_req: None,
         }
     }
 
@@ -287,36 +149,6 @@ impl MsgHandler {
         self.tx_pool_limit != 0 && tx_count + self.dispatcher.tx_pool_len() > self.tx_pool_limit
     }
 
-    fn cache_block_request_id(&self) -> Option<u64> {
-        self.cache_block_req
-            .as_ref()
-            .map(|cache_block_req| cache_block_req.get_id())
-    }
-
-    // max(new_request_id, next_request_id, cache_request_id):
-    // new_request_id -> replace the cache
-    // next_request_id -> clean the cache
-    // cache_request_id -> keep the cache
-    fn update_cache_block_req(&mut self, blk_req: VerifyBlockReq) {
-        let new_request_id = blk_req.get_id();
-        let next_height = self.history_heights.next_height();
-        let next_request_id = next_height << 16;
-        match self.cache_block_request_id() {
-            Some(cache_request_id) => {
-                if new_request_id > cache_request_id && new_request_id >= next_request_id {
-                    self.cache_block_req = Some(blk_req);
-                } else if next_request_id > cache_request_id {
-                    self.cache_block_req = None;
-                }
-            }
-            None => {
-                if new_request_id > next_request_id {
-                    self.cache_block_req = Some(blk_req);
-                }
-            }
-        }
-    }
-
     #[allow(unknown_lints, clippy::option_option)] // TODO clippy
     fn get_ret_from_cache(&self, tx_hash: &H256) -> Option<Option<Vec<u8>>> {
         self.cache.peek(tx_hash).cloned()
@@ -324,46 +156,6 @@ impl MsgHandler {
 
     fn save_ret_to_cache(&mut self, tx_hash: H256, option_pubkey: Option<Vec<u8>>) {
         self.cache.put(tx_hash, option_pubkey);
-    }
-
-    pub fn verify_block_quota(&self, blkreq: &VerifyBlockReq) -> bool {
-        let reqs = blkreq.get_reqs();
-        let quota_limit = self
-            .config_info
-            .account_quota_limit
-            .get_common_quota_limit();
-        let mut specific_quota_limit = self
-            .config_info
-            .account_quota_limit
-            .get_specific_quota_limit()
-            .clone();
-        let mut account_gas_used: HashMap<Address, u64> = HashMap::new();
-        let mut n = self.config_info.block_quota_limit;
-        for req in reqs {
-            let quota = req.get_quota();
-            let signer = pubkey_to_address(&PubKey::from(req.get_signer()));
-
-            if n < quota {
-                return false;
-            }
-
-            if self.config_info.check_quota {
-                let value = account_gas_used.entry(signer).or_insert_with(|| {
-                    if let Some(value) = specific_quota_limit.remove(&signer.lower_hex()) {
-                        value
-                    } else {
-                        quota_limit
-                    }
-                });
-                if *value < quota {
-                    return false;
-                } else {
-                    *value -= quota;
-                }
-            }
-            n -= quota;
-        }
-        true
     }
 
     pub fn verify_tx_quota(&self, quota: u64, signer: &[u8]) -> bool {
@@ -391,163 +183,58 @@ impl MsgHandler {
         true
     }
 
-    fn process_block_verify(&mut self, blk_req: VerifyBlockReq) {
-        let tx_cnt = blk_req.get_reqs().len();
-        let request_id = blk_req.get_id();
-        let height = request_id >> 16;
-
-        if self.history_heights.next_height() != height {
-            trace!(
-                "Not current block verify request with request_id: {}",
-                request_id
-            );
-            self.update_cache_block_req(blk_req);
-            return;
-        }
-
-        info!(
-            "Process block verify request with request_id: {}",
-            request_id
-        );
-
-        // for block verify, req must include signer
-        for req in blk_req.get_reqs() {
-            let req_signer = req.get_signer();
-            if req_signer.is_empty() {
-                let tx_hash = H256::from_slice(req.get_tx_hash());
-                self.publish_block_verification_result(request_id, Ret::BadSig);
-                self.save_ret_to_cache(tx_hash, None);
-                return;
-            }
-        }
-
-        let mut reqs_no_cache = Vec::new();
-        for req in blk_req.get_reqs() {
-            let tx_hash = H256::from_slice(req.get_tx_hash());
-            if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
-                if let Some(pubkey) = option_pubkey {
-                    let req_signer = req.get_signer();
-                    if req_signer != pubkey.to_vec().as_slice() {
-                        self.publish_block_verification_result(request_id, Ret::BadSig);
-                        return;
-                    }
-                } else {
-                    // cached result is bad
-                    self.publish_block_verification_result(request_id, Ret::BadSig);
-                    return;
-                }
-            } else {
-                reqs_no_cache.push(req);
-            }
-        }
-
-        info!(
-            "block verify request with {} tx not hit cache {}",
-            tx_cnt,
-            reqs_no_cache.len()
-        );
-
-        // parallel verify tx and collect results
-        let reqs_no_cache_count = reqs_no_cache.len();
-        let results: Vec<(H256, Vec<u8>)> = reqs_no_cache
-            .into_par_iter()
-            .map(|req| {
-                let tx_hash = H256::from_slice(req.get_tx_hash());
-                let result = verify_tx_sig(&req);
-                match result {
-                    Ok(pubkey) => {
-                        let req_signer = req.get_signer();
-                        if req_signer != pubkey.as_slice() {
-                            None
-                        } else {
-                            Some((tx_hash, pubkey))
-                        }
-                    }
-                    Err(_) => None,
-                }
-            })
-            .while_some()
-            .collect();
-
-        let results_len = results.len();
-        for (tx_hash, pubkey) in results {
-            self.save_ret_to_cache(tx_hash, Some(pubkey));
-        }
-
-        if results_len != reqs_no_cache_count {
-            self.publish_block_verification_result(request_id, Ret::BadSig);
-            return;
-        }
-
-        // check valid_until_block and history block dup
-        for req in blk_req.get_reqs() {
-            let ret = self.verify_tx_req(req);
-            if ret != Ret::OK {
-                self.publish_block_verification_result(request_id, ret);
-                return;
-            }
-        }
-
-        if !self.verify_block_quota(&blk_req) {
-            self.publish_block_verification_result(request_id, Ret::QuotaNotEnough);
-            return;
-        }
-
-        self.publish_block_verification_result(request_id, Ret::OK);
-    }
-
     // verify to and version
-    fn verify_request(&self, req: &Request) -> Ret {
+    fn verify_request(&self, req: &Request) -> Result<(), Error> {
         let un_tx = req.get_un_tx();
         let tx = un_tx.get_transaction();
         let tx_version = tx.get_version();
         if tx_version != self.config_info.version.unwrap() {
-            return Ret::InvalidVersion;
+            return Err(Error::InvalidVersion);
         }
         if tx_version == 0 {
             // new to must be empty
             if !tx.get_to_v1().is_empty() {
-                return Ret::InvalidValue;
+                return Err(Error::InvalidValue);
             }
             let to = clean_0x(tx.get_to());
             if !to.is_empty() && Address::from_str(to).is_err() {
-                return Ret::InvalidValue;
+                return Err(Error::InvalidValue);
             }
         } else if tx_version == 1 {
             // old to must be empty
             if !tx.get_to().is_empty() {
-                return Ret::InvalidValue;
+                return Err(Error::InvalidValue);
             }
             // check to_v1
             let to = tx.get_to_v1();
             if !to.is_empty() && to.len() != 20 {
-                return Ret::InvalidValue;
+                return Err(Error::InvalidValue);
             }
         } else {
             error!("unexpected version {}!", tx_version);
-            return Ret::InvalidValue;
+            return Err(Error::InvalidValue);
         }
 
-        Ret::OK
+        Ok(())
     }
 
     /// Verify black list
-    fn verify_black_list(&self, req: &VerifyTxReq) -> Ret {
+    fn verify_black_list(&self, req: &VerifyTxReq) -> Result<(), Error> {
         if let Some(credit) = self
             .black_list_cache
             .get(&pubkey_to_address(&PubKey::from_slice(req.get_signer())))
         {
             if *credit < 0 {
-                Ret::Forbidden
+                Err(Error::Forbidden)
             } else {
-                Ret::OK
+                Ok(())
             }
         } else {
-            Ret::OK
+            Ok(())
         }
     }
 
-    fn verify_tx_req_chain_id(&self, req: &VerifyTxReq) -> Ret {
+    fn verify_tx_req_chain_id(&self, req: &VerifyTxReq) -> Result<(), Error> {
         let version = self.config_info.version.unwrap();
 
         let chain_id = match version {
@@ -581,25 +268,25 @@ impl MsgHandler {
                 chain_id.unwrap(),
                 self.chain_id
             );
-            return Ret::BadChainId;
+            return Err(Error::BadChainId);
         }
 
-        Ret::OK
+        Ok(())
     }
 
-    // verify chain id, nonce, valid_until_block, dup, quota and black list
-    fn verify_tx_req(&self, req: &VerifyTxReq) -> Ret {
+    // verify chain id, nonce, value, valid_until_block, dup, quota and black list
+    fn verify_tx_req(&self, req: &VerifyTxReq) -> Result<(), Error> {
         let ret = self.verify_tx_req_chain_id(req);
-        if ret != Ret::OK {
+        if ret.is_err() {
             return ret;
         }
 
         if req.get_nonce().len() > 128 {
-            return Ret::InvalidNonce;
+            return Err(Error::InvalidNonce);
         }
 
         if req.get_value().len() != 32 {
-            return Ret::InvalidValue;
+            return Err(Error::InvalidValue);
         }
 
         if self
@@ -608,13 +295,13 @@ impl MsgHandler {
             .map(|admin| pubkey_to_address(&PubKey::from_slice(req.get_signer())) != admin)
             .unwrap_or_else(|| false)
         {
-            return Ret::Forbidden;
+            return Err(Error::Forbidden);
         }
 
         let valid_until_block = req.get_valid_until_block();
         let next_height = self.history_heights.next_height();
         if valid_until_block < next_height || valid_until_block >= (next_height + BLOCKLIMIT) {
-            return Ret::InvalidUntilBlock;
+            return Err(Error::InvalidUntilBlock);
         }
 
         let tx_hash = H256::from_slice(req.get_tx_hash());
@@ -625,32 +312,18 @@ impl MsgHandler {
                     tx_hash,
                     height
                 );
-                return Ret::Dup;
+                return Err(Error::Dup);
             }
         }
 
         if !self.verify_tx_quota(req.get_quota(), req.get_signer()) {
-            return Ret::QuotaNotEnough;
+            return Err(Error::QuotaNotEnough);
         }
 
-        Ret::OK
+        Ok(())
     }
 
-    fn publish_block_verification_result(&self, request_id: u64, ret: Ret) {
-        let mut blkresp = VerifyBlockResp::new();
-        blkresp.set_id(request_id);
-        blkresp.set_ret(ret);
-
-        let msg: Message = blkresp.into();
-        self.tx_pub
-            .send((
-                routing_key!(Auth >> VerifyBlockResp).into(),
-                msg.try_into().unwrap(),
-            ))
-            .unwrap();
-    }
-
-    fn publish_tx_failed_result(&self, request_id: Vec<u8>, ret: Ret) {
+    fn publish_tx_failed_result(&self, request_id: Vec<u8>, ret: &Error) {
         let result = format!("{:?}", ret);
         let mut response = Response::new();
         response.set_request_id(request_id);
@@ -671,8 +344,7 @@ impl MsgHandler {
         let mut response = Response::new();
         response.set_request_id(request_id);
 
-        let result = format!("{:?}", Ret::OK);
-        let tx_response = TxResponse::new(tx_hash, result.clone());
+        let tx_response = TxResponse::new(tx_hash, TX_OK.to_string());
         let tx_state = serde_json::to_string(&tx_response).unwrap();
         response.set_tx_state(tx_state);
 
@@ -747,17 +419,6 @@ impl MsgHandler {
 
             // Daily tasks
             {
-                if self.is_ready() {
-                    // process block verify if we have cached block request
-                    if let Some(cache_request_id) = self.cache_block_request_id() {
-                        let cache_height = cache_request_id >> 16;
-                        if cache_height == self.history_heights.next_height() {
-                            let cache_block_req = self.cache_block_req.take().unwrap();
-                            self.process_block_verify(cache_block_req);
-                        }
-                    }
-                }
-
                 if self.is_need_proposal_new_block && self.is_ready() {
                     self.dispatcher.proposal_tx_list(
                         (self.history_heights.next_height() - 1) as usize, // todo fix bft
@@ -784,10 +445,6 @@ impl MsgHandler {
                         let black_list = msg.take_black_list().unwrap();
                         self.deal_black_list(&black_list);
                     }
-                    routing_key!(Consensus >> VerifyBlockReq) => {
-                        let blk_req = msg.take_verify_block_req().unwrap();
-                        self.deal_verify_block_req(blk_req);
-                    }
                     routing_key!(Net >> Request) | routing_key!(Jsonrpc >> RequestNewTxBatch) => {
                         let is_local = rounting_key.is_sub_module(SubModules::Jsonrpc);
                         let newtx_req = msg.take_request().unwrap();
@@ -800,6 +457,31 @@ impl MsgHandler {
                     routing_key!(Snapshot >> SnapshotReq) => {
                         let snapshot_req = msg.take_snapshot_req().unwrap();
                         self.deal_snapshot(&snapshot_req);
+                    }
+                    routing_key!(Net >> GetBlockTxn) => {
+                        let mut get_block_txn = msg.take_get_block_txn().unwrap();
+                        let origin = msg.get_origin();
+                        self.deal_get_block_txn(&mut get_block_txn, origin);
+                    }
+                    // Compact proposal
+                    routing_key!(Consensus >> VerifyBlockReq) => {
+                        if !self.is_ready() {
+                            info!("Net/Consensus >> CompactProposal: auth is not ready");
+                            return;
+                        } else {
+                            self.deal_signed_proposal(msg);
+                        }
+                    }
+                    routing_key!(Net >> BlockTxn) => {
+                        if !self.is_ready() || self.verify_block_req.is_none() {
+                            info!("Net >> BlockTxn: auth is not ready");
+                            return;
+                        } else {
+                            let verify_block_req = self.verify_block_req.clone();
+                            if let Some(verify_block_req) = verify_block_req {
+                                self.deal_block_txn(msg, verify_block_req);
+                            }
+                        }
                     }
                     _ => {
                         error!("receive unexpected message key {}", key);
@@ -891,27 +573,6 @@ impl MsgHandler {
             });
     }
 
-    fn deal_verify_block_req(&mut self, blk_req: VerifyBlockReq) {
-        let tx_cnt = blk_req.get_reqs().len();
-        info!("get block verify request with {:?} request", tx_cnt);
-
-        if tx_cnt == 0 {
-            error!(
-                "Wrong block verify request with 0 tx request_id: {}",
-                blk_req.get_id()
-            );
-            return;
-        }
-
-        if !self.is_ready() {
-            trace!("consensus >> verifyblock: auth is not ready");
-            self.update_cache_block_req(blk_req);
-            return;
-        }
-
-        self.process_block_verify(blk_req);
-    }
-
     #[allow(unknown_lints, clippy::cyclomatic_complexity)] // TODO clippy
     fn deal_request(&mut self, is_local: bool, newtx_req: Request) {
         if newtx_req.has_batch_req() {
@@ -925,7 +586,7 @@ impl MsgHandler {
                 if is_local {
                     for tx_req in batch_new_tx.iter() {
                         let request_id = tx_req.get_request_id().to_vec();
-                        self.publish_tx_failed_result(request_id, Ret::NotReady);
+                        self.publish_tx_failed_result(request_id, &Error::NotReady);
                     }
                 }
                 return;
@@ -936,9 +597,7 @@ impl MsgHandler {
                 if is_local {
                     for tx_req in batch_new_tx.iter() {
                         let request_id = tx_req.get_request_id().to_vec();
-                        if is_local {
-                            self.publish_tx_failed_result(request_id, Ret::Busy);
-                        }
+                        self.publish_tx_failed_result(request_id, &Error::Busy);
                     }
                 }
                 return;
@@ -953,7 +612,7 @@ impl MsgHandler {
                     if option_pubkey.is_none() {
                         if is_local {
                             let request_id = tx_req.get_request_id().to_vec();
-                            self.publish_tx_failed_result(request_id, Ret::BadSig);
+                            self.publish_tx_failed_result(request_id, &Error::BadSig);
                         }
                         continue;
                     }
@@ -969,7 +628,11 @@ impl MsgHandler {
             let results: Vec<(H256, Option<Vec<u8>>)> = requests_no_cached
                 .into_par_iter()
                 .map(|(tx_hash, ref req)| {
-                    let result = verify_tx_sig(req);
+                    let result = verify_tx_sig(
+                        req.get_crypto(),
+                        &H256::from(req.get_hash()),
+                        &req.get_signature(),
+                    );
                     match result {
                         Ok(pubkey) => (tx_hash, Some(pubkey)),
                         Err(_) => (tx_hash, None),
@@ -986,7 +649,7 @@ impl MsgHandler {
                 } else if let Some(ref mut v) = requests.get_mut(&tx_hash) {
                     if is_local {
                         let request_id = v.1.get_request_id().to_vec();
-                        self.publish_tx_failed_result(request_id, Ret::BadSig);
+                        self.publish_tx_failed_result(request_id, &Error::BadSig);
                     }
                     v.2 = false;
                 }
@@ -998,10 +661,10 @@ impl MsgHandler {
                 .filter(|(_tx_hash, (_req, _tx_req, flag))| *flag)
                 .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
                     let ret = self.verify_black_list(&req);
-                    if ret != Ret::OK {
+                    if ret.is_err() {
                         if is_local {
                             let request_id = tx_req.get_request_id().to_vec();
-                            self.publish_tx_failed_result(request_id, ret);
+                            self.publish_tx_failed_result(request_id, &ret.unwrap_err());
                         }
                         false
                     } else {
@@ -1010,10 +673,10 @@ impl MsgHandler {
                 })
                 .filter(|(_tx_hash, (ref _req, ref tx_req, _flag))| {
                     let ret = self.verify_request(tx_req);
-                    if ret != Ret::OK {
+                    if ret.is_err() {
                         if is_local {
                             let request_id = tx_req.get_request_id().to_vec();
-                            self.publish_tx_failed_result(request_id, ret);
+                            self.publish_tx_failed_result(request_id, &ret.unwrap_err());
                         }
                         false
                     } else {
@@ -1022,10 +685,10 @@ impl MsgHandler {
                 })
                 .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
                     let ret = self.verify_tx_req(&req);
-                    if ret != Ret::OK {
+                    if ret.is_err() {
                         if is_local {
                             let request_id = tx_req.get_request_id().to_vec();
-                            self.publish_tx_failed_result(request_id, ret);
+                            self.publish_tx_failed_result(request_id, &ret.unwrap_err());
                         }
                         false
                     } else {
@@ -1046,7 +709,7 @@ impl MsgHandler {
                         self.forward_request(tx_req.clone());
                     } else if is_local {
                         // dup with transaction in tx pool
-                        self.publish_tx_failed_result(request_id, Ret::Dup);
+                        self.publish_tx_failed_result(request_id, &Error::Dup);
                     }
                 });
         } else if newtx_req.has_un_tx() {
@@ -1055,14 +718,14 @@ impl MsgHandler {
             if !self.is_ready() {
                 trace!("net || jsonrpc: auth is not ready");
                 if is_local {
-                    self.publish_tx_failed_result(request_id, Ret::NotReady);
+                    self.publish_tx_failed_result(request_id, &Error::NotReady);
                 }
                 return;
             }
             if self.is_flow_control(1) {
                 trace!("flow control ...");
                 if is_local {
-                    self.publish_tx_failed_result(request_id, Ret::Busy);
+                    self.publish_tx_failed_result(request_id, &Error::Busy);
                 }
                 return;
             }
@@ -1071,12 +734,16 @@ impl MsgHandler {
             let tx_hash = H256::from_slice(req.get_tx_hash());
             if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
                 if option_pubkey.is_none() {
-                    self.publish_tx_failed_result(request_id, Ret::BadSig);
+                    self.publish_tx_failed_result(request_id, &Error::BadSig);
                     return;
                 }
                 req.set_signer(option_pubkey.unwrap());
             } else {
-                let result = verify_tx_sig(&req);
+                let result = verify_tx_sig(
+                    req.get_crypto(),
+                    &H256::from(req.get_hash()),
+                    &req.get_signature(),
+                );
                 self.save_ret_to_cache(tx_hash, result.clone().ok());
                 match result {
                     Ok(pubkey) => {
@@ -1084,7 +751,7 @@ impl MsgHandler {
                     }
                     Err(_) => {
                         if is_local {
-                            self.publish_tx_failed_result(request_id, Ret::BadSig);
+                            self.publish_tx_failed_result(request_id, &Error::BadSig);
                         }
                         return;
                     }
@@ -1093,26 +760,26 @@ impl MsgHandler {
 
             // black verify
             let ret = self.verify_black_list(&req);
-            if ret != Ret::OK {
+            if ret.is_err() {
                 if is_local {
-                    self.publish_tx_failed_result(request_id, ret);
+                    self.publish_tx_failed_result(request_id, &ret.unwrap_err());
                 }
                 return;
             }
 
             let ret = self.verify_request(&newtx_req);
-            if ret != Ret::OK {
+            if ret.is_err() {
                 if is_local {
-                    self.publish_tx_failed_result(request_id, ret);
+                    self.publish_tx_failed_result(request_id, &ret.unwrap_err());
                 }
                 return;
             }
 
             // other verify
             let ret = self.verify_tx_req(&req);
-            if ret != Ret::OK {
+            if ret.is_err() {
                 if is_local {
-                    self.publish_tx_failed_result(request_id, ret);
+                    self.publish_tx_failed_result(request_id, &ret.unwrap_err());
                 }
                 return;
             }
@@ -1130,65 +797,43 @@ impl MsgHandler {
                 self.forward_request(newtx_req);
             } else if is_local {
                 // dup with transaction in tx pool
-                self.publish_tx_failed_result(request_id, Ret::Dup);
+                self.publish_tx_failed_result(request_id, &Error::Dup);
             }
         }
     }
 
     fn deal_snapshot(&mut self, snapshot_req: &SnapshotReq) {
-        let mut resp = SnapshotResp::new();
-        let mut send = false;
         match snapshot_req.cmd {
             Cmd::Snapshot => {
-                info!("[snapshot] receive cmd: Snapshot");
+                info!("receive Snapshot::Snapshot: {:?}", snapshot_req);
+                snapshot_response(&self.tx_pub, Resp::SnapshotAck, true);
             }
             Cmd::Begin => {
-                info!("[snapshot] receive cmd: Begin");
+                info!("receive Snapshot::Begin: {:?}", snapshot_req);
                 self.is_snapshot = true;
-
-                resp.set_resp(Resp::BeginAck);
-                resp.set_flag(true);
-                send = true;
+                snapshot_response(&self.tx_pub, Resp::BeginAck, true);
             }
             Cmd::Restore => {
-                info!("[snapshot] receive cmd: Restore");
+                info!("receive Snapshot::Restore: {:?}", snapshot_req);
+                snapshot_response(&self.tx_pub, Resp::RestoreAck, true);
             }
             Cmd::Clear => {
-                info!("[snapshot] receive cmd: Clear");
+                info!("receive Snapshot::Clear: {:?}", snapshot_req);
 
                 self.dispatcher.clear_txs_pool(0);
                 self.cache.clear();
                 self.history_heights.reset();
-                self.cache_block_req = None;
                 self.history_hashes.clear();
                 self.black_list_cache.clear();
 
-                resp.set_resp(Resp::ClearAck);
-                resp.set_flag(true);
-                send = true;
+                snapshot_response(&self.tx_pub, Resp::ClearAck, true);
             }
             Cmd::End => {
-                info!(
-                    "[snapshot] receive cmd: End, height = {}",
-                    snapshot_req.end_height
-                );
+                info!("receive Snapshot::End: {:?}", snapshot_req);
                 self.send_single_block_tx_hashes_req(snapshot_req.end_height);
                 self.is_snapshot = false;
-
-                resp.set_resp(Resp::EndAck);
-                resp.set_flag(true);
-                send = true;
+                snapshot_response(&self.tx_pub, Resp::EndAck, true);
             }
-        }
-
-        if send {
-            let msg: Message = resp.into();
-            self.tx_pub
-                .send((
-                    routing_key!(Auth >> SnapshotResp).into(),
-                    (&msg).try_into().unwrap(),
-                ))
-                .unwrap();
         }
     }
 
@@ -1211,4 +856,201 @@ impl MsgHandler {
             info!("Get chain_id({:?}) from executor", self.chain_id);
         }
     }
+
+    fn deal_get_block_txn(&mut self, get_block_txn: &mut GetBlockTxn, origin: Origin) {
+        let short_ids: Vec<H256> = get_block_txn
+            .get_short_ids()
+            .into_iter()
+            .map(|id| H256::from(U256::from(id.as_slice())))
+            .collect();
+        let txs: Vec<UnverifiedTransaction> = self
+            .dispatcher
+            .get_txs(&short_ids)
+            .into_iter()
+            .map(|mut tx| tx.take_transaction_with_sig())
+            .collect();
+
+        info!("GetBlockTxn size: {}, origin: {}", txs.len(), origin);
+
+        let mut block_txn = BlockTxn::new();
+        block_txn.set_block_hash(get_block_txn.take_block_hash());
+        block_txn.set_transactions(txs.into());
+        let msg = Message::init(OperateType::Single, origin, block_txn.into());
+
+        self.tx_pub
+            .send((
+                routing_key!(Auth >> BlockTxn).into(),
+                (&msg).try_into().unwrap(),
+            ))
+            .unwrap();
+    }
+
+    fn deal_signed_proposal(&mut self, mut msg: Message) {
+        let verify_block_req = msg.take_verify_block_req().unwrap();
+        let block_hash = verify_block_req.get_block().crypt_hash();
+        let tx_hashes = verify_block_req.get_block().get_body().transaction_hashes();
+        let origin = msg.get_origin();
+
+        {
+            if tx_hashes.is_empty() {
+                return;
+            };
+
+            // Check tx hash in cache
+            for tx_hash in tx_hashes.clone() {
+                if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
+                    // BadSig
+                    if option_pubkey.is_none() {
+                        let resp = verify_block_req.reply(Err(()));
+                        let msg = Message::init(OperateType::Single, origin, resp.into());
+                        self.tx_pub
+                            .send((
+                                routing_key!(Auth >> VerifyBlockResp).into(),
+                                (&msg).try_into().unwrap(),
+                            ))
+                            .unwrap();
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Check missing hashes
+        let missing_hashes = self.dispatcher.check_missing(tx_hashes.clone());
+
+        if missing_hashes.is_empty() {
+            // TODO: Refactor
+            let transactions = self.dispatcher.get_txs(&tx_hashes);
+
+            if let Err(err) = verify_block_req.check_txs(&transactions[..]) {
+                error!("verify_block_req check txs failed {:?}", err);
+            }
+            let resp = verify_block_req.reply(Ok(transactions));
+
+            let msg = Message::init(OperateType::Single, 0, resp.into());
+            self.tx_pub
+                .send((
+                    routing_key!(Auth >> VerifyBlockResp).into(),
+                    (&msg).try_into().unwrap(),
+                ))
+                .unwrap();
+        } else {
+            info!("missing_hashes len : {}", missing_hashes.len());
+            self.verify_block_req = Some(verify_block_req);
+
+            let mut get_block_txn = GetBlockTxn::new();
+            get_block_txn.set_block_hash(block_hash.to_vec());
+            let missing_hashes = missing_hashes
+                .into_iter()
+                .map(|hash| hash.to_vec())
+                .collect();
+            get_block_txn.set_short_ids(missing_hashes);
+
+            self.block_txn_req = Some((origin, get_block_txn.clone()));
+
+            let msg = Message::init(OperateType::Single, origin, get_block_txn.into());
+            self.tx_pub
+                .send((
+                    routing_key!(Auth >> GetBlockTxn).into(),
+                    (&msg).try_into().unwrap(),
+                ))
+                .unwrap();
+        }
+    }
+
+    // TODO: Add test
+    fn deal_block_txn(&mut self, mut msg: Message, verify_block_req: VerifyBlockReq) {
+        let block_txn = msg.take_block_txn().unwrap();
+        let origin = msg.get_origin();
+
+        let block_txn_message = BlockTxnMessage { origin, block_txn };
+        // Validate and add the transaction to the pool
+        if self.validate_block_txn(block_txn_message) {
+            let tx_hashes = verify_block_req.get_block().get_body().transaction_hashes();
+
+            let transactions = self.dispatcher.get_txs(&tx_hashes);
+
+            if transactions.len() != tx_hashes.len() {
+                info!(
+                    "block txn transactions number is not matched, expect: {}, got: {}",
+                    tx_hashes.len(),
+                    transactions.len()
+                );
+                return;
+            }
+
+            let result = {
+                let block = BlockVerify {
+                    transactions: &transactions,
+                };
+
+                block.verify_quota(
+                    self.config_info.block_quota_limit,
+                    &self.config_info.account_quota_limit,
+                    self.config_info.check_quota,
+                )
+            };
+
+            // TODO: Refactor
+            let resp = if result {
+                if let Err(err) = verify_block_req.check_txs(&transactions[..]) {
+                    error!("verify_block_req check txs failed {:?}", err);
+                }
+                verify_block_req.reply(Ok(transactions))
+            } else {
+                verify_block_req.reply(Err(()))
+            };
+            let msg = Message::init(OperateType::Single, 0, resp.into());
+            self.tx_pub
+                .send((
+                    routing_key!(Auth >> VerifyBlockResp).into(),
+                    (&msg).try_into().unwrap(),
+                ))
+                .unwrap();
+        };
+    }
+
+    // TODO: Add test
+    fn validate_block_txn(&mut self, mut block_txn: BlockTxnMessage) -> bool {
+        // TODO: Need NLL to avoid clone
+        if let Some(ref block_txn_req) = self.block_txn_req.clone() {
+            let result = block_txn.validate(block_txn_req);
+            match result {
+                Ok(signed_txn) => {
+                    for tx in signed_txn.iter() {
+                        let un_tx = tx.get_transaction_with_sig();
+                        self.save_ret_to_cache(
+                            H256::from_slice(tx.get_tx_hash()),
+                            Some(un_tx.get_signature().to_vec()),
+                        );
+                    }
+
+                    self.dispatcher.add_txs_to_pool(signed_txn);
+                    return true;
+                }
+                Err(error) => {
+                    info!("Validate BlockTxn error: {}", error);
+                    return false;
+                }
+            }
+        } else {
+            info!("Could not find cached block_txn_req");
+            return false;
+        }
+    }
+}
+
+fn snapshot_response(sender: &Sender<(String, Vec<u8>)>, ack: Resp, flag: bool) {
+    info!("snapshot_response ack: {:?}, flag: {}", ack, flag);
+
+    let mut resp = SnapshotResp::new();
+    resp.set_resp(ack);
+    resp.set_flag(flag);
+    let msg: Message = resp.into();
+    sender
+        .send((
+            routing_key!(Auth >> SnapshotResp).into(),
+            (&msg).try_into().unwrap(),
+        ))
+        .unwrap();
 }

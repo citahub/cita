@@ -19,7 +19,8 @@ use connection::Task;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
 use libproto::{Message, Response};
-use std::convert::{Into, TryFrom, TryInto};
+use libproto::{TryFrom, TryInto};
+use std::convert::Into;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -106,15 +107,25 @@ impl NetWork {
                         .tx_new_tx
                         .send((routing_key!(Net >> Request).into(), data));
                 }
-                routing_key!(Consensus >> SignedProposal) => {
+                routing_key!(Consensus >> CompactSignedProposal) => {
                     let _ = self
                         .tx_consensus
-                        .send((routing_key!(Net >> SignedProposal).into(), data));
+                        .send((routing_key!(Net >> CompactSignedProposal).into(), data));
                 }
                 routing_key!(Consensus >> RawBytes) => {
                     let _ = self
                         .tx_consensus
                         .send((routing_key!(Net >> RawBytes).into(), data));
+                }
+                routing_key!(Auth >> GetBlockTxn) => {
+                    let _ = self
+                        .tx_new_tx
+                        .send((routing_key!(Net >> GetBlockTxn).into(), data));
+                }
+                routing_key!(Auth >> BlockTxn) => {
+                    let _ = self
+                        .tx_new_tx
+                        .send((routing_key!(Net >> BlockTxn).into(), data));
                 }
                 _ => {
                     error!("Unexpected key {} from {:?}", key, source);
@@ -126,45 +137,29 @@ impl NetWork {
     fn snapshot_req(&self, data: &[u8]) {
         let mut msg = Message::try_from(data).unwrap();
         let req = msg.take_snapshot_req().unwrap();
-        let mut resp = SnapshotResp::new();
-        let mut send = false;
         match req.cmd {
             Cmd::Snapshot => {
-                info!("[snapshot] receive cmd: Snapshot");
+                info!("receive Snapshot::Snapshot: {:?}", req);
+                snapshot_response(&self.tx_pub, Resp::SnapshotAck, true);
             }
             Cmd::Begin => {
-                info!("[snapshot] receive cmd: Begin");
+                info!("receive Snapshot::Begin: {:?}", req);
                 self.is_pause.store(true, Ordering::SeqCst);
-                resp.set_resp(Resp::BeginAck);
-                resp.set_flag(true);
-                send = true;
+                snapshot_response(&self.tx_pub, Resp::BeginAck, true);
             }
             Cmd::Restore => {
-                info!("[snapshot] receive cmd: Restore");
+                info!("receive Snapshot::Restore: {:?}", req);
+                snapshot_response(&self.tx_pub, Resp::RestoreAck, true);
             }
             Cmd::Clear => {
-                info!("[snapshot] receive cmd: Clear");
-                resp.set_resp(Resp::ClearAck);
-                resp.set_flag(true);
-                send = true;
+                info!("receive Snapshot::Clear: {:?}", req);
+                snapshot_response(&self.tx_pub, Resp::ClearAck, true);
             }
             Cmd::End => {
-                info!("[snapshot] receive cmd: End");
+                info!("receive Snapshot::End: {:?}", req);
                 self.is_pause.store(false, Ordering::SeqCst);
-                resp.set_resp(Resp::EndAck);
-                resp.set_flag(true);
-                send = true;
+                snapshot_response(&self.tx_pub, Resp::EndAck, true);
             }
-        }
-
-        if send {
-            let msg: Message = resp.into();
-            self.tx_pub
-                .send((
-                    routing_key!(Net >> SnapshotResp).into(),
-                    (&msg).try_into().unwrap(),
-                ))
-                .unwrap();
         }
     }
 
@@ -188,4 +183,18 @@ impl NetWork {
             }
         }
     }
+}
+
+fn snapshot_response(sender: &Sender<(String, Vec<u8>)>, ack: Resp, flag: bool) {
+    info!("snapshot_response ack: {:?}, flag: {}", ack, flag);
+    let mut resp = SnapshotResp::new();
+    resp.set_resp(ack);
+    resp.set_flag(flag);
+    let message: Message = resp.into();
+    sender
+        .send((
+            routing_key!(Net >> SnapshotResp).into(),
+            (&message).try_into().unwrap(),
+        ))
+        .unwrap();
 }

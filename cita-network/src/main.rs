@@ -24,25 +24,29 @@
 //!
 //! 1. Subscribe channel
 //!
-//!     |       Queue       | PubModule | Message Type   |
-//!     | ----------------- | --------- | -------------- |
-//!     | network_tx        | Auth      | Request        |
-//!     | network_consensus | Consensus | SignedProposal |
-//!     | network_consensus | Consensus | RawBytes       |
-//!     | network           | Chain     | Status         |
-//!     | network           | Chain     | syncResponse   |
-//!     | network           | Jonsonrpc | RequestNet     |
+//!     |       Queue       | PubModule | Message Type          |
+//!     | ----------------- | --------- | --------------------- |
+//!     | network_tx        | Auth      | Request               |
+//!     | network_consensus | Consensus | CompactSignedProposal |
+//!     | network_consensus | Consensus | RawBytes              |
+//!     | network           | Chain     | Status                |
+//!     | network           | Chain     | SyncResponse          |
+//!     | network           | Jonsonrpc | RequestNet            |
+//!     | network           | Auth      | GetBlockTxn           |
+//!     | network           | Auth      | BlockTxn              |
 //!
 //! 2. Publish channel
 //!
-//!     |       Queue       | PubModule | SubModule           | Message Type   |
-//!     | ----------------- | --------- | ------------------- | -------------- |
-//!     | network           | Net       | Chain, Executor     | SyncResponse   |
-//!     | network           | Net       | Snapshot            | SnapshotResp   |
-//!     | network           | Net       | Jsonrpc             | Response       |
-//!     | network_tx        | Net       | Auth                | Request        |
-//!     | network_consensus | Net       | Executor, Consensus | SignedProposal |
-//!     | network_consensus | Net       | Consensus           | RawBytes       |
+//!     |       Queue       | PubModule | SubModule           | Message Type          |
+//!     | ----------------- | --------- | ------------------- | --------------------- |
+//!     | network           | Net       | Chain, Executor     | SyncResponse          |
+//!     | network           | Net       | Snapshot            | SnapshotResp          |
+//!     | network           | Net       | Jsonrpc             | Response              |
+//!     | network_tx        | Net       | Auth                | Request               |
+//!     | network_consensus | Net       | Consensus           | ComapctSignedProposal |
+//!     | network_consensus | Net       | Consensus           | RawBytes              |
+//!     | network           | Net       | Auth                | BlockTxn              |
+//!     | network           | Net       | Auth                | GetBlockTxn           |
 //!
 //! ### p2p binary protocol
 //! | Start      | Full length | Key length | Key value      | Message value    |
@@ -73,9 +77,6 @@
 //! [`pubsub_message_to_network_message`]: ./citaprotocol/fn.pubsub_message_to_network_message.html
 //! [`network_message_to_pubsub_message`]: ./citaprotocol/fn.network_message_to_pubsub_message.html
 //!
-
-#![feature(try_from)]
-#![feature(tool_lints)]
 
 extern crate byteorder;
 extern crate bytes;
@@ -113,11 +114,11 @@ use config::NetConfig;
 use connection::{manage_connect, Connections, Task};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
+use libproto::TryFrom;
 use netserver::NetServer;
 use network::NetWork;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use pubsub::start_pubsub;
-use std::convert::TryFrom;
 use std::net::SocketAddr;
 use std::sync::mpsc::channel;
 use std::thread;
@@ -152,7 +153,7 @@ fn main() {
     let (ctx_pub_tx, crx_pub_tx) = channel();
     start_pubsub(
         "network_tx",
-        routing_key!([Auth >> Request]),
+        routing_key!([Auth >> Request, Auth >> GetBlockTxn, Auth >> BlockTxn]),
         ctx_sub_tx,
         crx_pub_tx,
     );
@@ -161,7 +162,7 @@ fn main() {
     let (ctx_pub_consensus, crx_pub_consensus) = channel();
     start_pubsub(
         "network_consensus",
-        routing_key!([Consensus >> SignedProposal, Consensus >> RawBytes]),
+        routing_key!([Consensus >> CompactSignedProposal, Consensus >> RawBytes]),
         ctx_sub_consensus,
         crx_pub_consensus,
     );
@@ -174,7 +175,7 @@ fn main() {
             Chain >> Status,
             Chain >> SyncResponse,
             Jsonrpc >> RequestNet,
-            Snapshot >> SnapshotReq,
+            Snapshot >> SnapshotReq
         ]),
         ctx_sub,
         crx_pub,
@@ -193,7 +194,7 @@ fn main() {
 
     //connections manage to loop
     let (tx, rx) = channel();
-    let (mut con, task_sender) = Connections::new(&config);
+    let (mut con, task_sender) = Connections::create(&config);
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1)).unwrap();
     let _ = watcher.watch(".", RecursiveMode::NonRecursive);
 

@@ -16,11 +16,12 @@
 
 //! Database utilities and definitions.
 
+use cita_db::{DBTransaction, KeyValueDB};
 use rlp::{decode, encode, Decodable, Encodable};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::ops::Deref;
-use util::{DBTransaction, KeyValueDB, RwLock};
+use util::RwLock;
 
 // database columns
 /// Column for State

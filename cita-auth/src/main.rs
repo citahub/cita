@@ -26,7 +26,7 @@
 //! 1. Subscribe channel
 //!
 //!     | Queue | PubModule | Message Type      |
-//!     | ----- | --------- | ----------------- |
+//!     | ----- | --------- | ------------------|
 //!     | auth  | Consensus | VerifyBlockReq    |
 //!     | auth  | Chain     | BlockTxHashes     |
 //!     | auth  | Executor  | BlackList         |
@@ -34,18 +34,22 @@
 //!     | auth  | Net       | Request           |
 //!     | auth  | Snapshot  | SnapshotReq       |
 //!     | auth  | Executor  | Miscellaneous     |
+//!     | auth  | Net       | GetBlockTxn       |
+//!     | auth  | Net       | BlockTxn          |
 //!
 //! 2. Publish channel
 //!
-//!     | Queue | PubModule | SubModule | Message Type      |
-//!     | ----- | --------- | --------- | ----------------- |
-//!     | auth  | Auth      | Chain     | BlockTxHashesReq  |
-//!     | auth  | Auth      | Consensus | VerifyBlockResp   |
-//!     | auth  | Auth      | Jsonrpc   | Response          |
-//!     | auth  | Auth      | Net       | Request           |
-//!     | auth  | Auth      | Consensus | BlockTxs          |
-//!     | auth  | Auth      | Snapshot  | SnapshotResp      |
-//!     | auth  | Auth      | Executor  | MiscellaneousReq  |
+//!     | Queue | PubModule | SubModule | Message Type     |
+//!     | ----- | --------- | --------- | ---------------- |
+//!     | auth  | Auth      | Chain     | BlockTxHashesReq |
+//!     | auth  | Auth      | Consensus | VerifyBlockResp  |
+//!     | auth  | Auth      | Jsonrpc   | Response         |
+//!     | auth  | Auth      | Net       | Request          |
+//!     | auth  | Auth      | Consensus | BlockTxs         |
+//!     | auth  | Auth      | Snapshot  | SnapshotResp     |
+//!     | auth  | Auth      | Executor  | MiscellaneousReq |
+//!     | auth  | Auth      | Net       | GetBlockTxn      |
+//!     | auth  | Auth      | Net       | BlockTxn         |
 //!
 //! ### Key behavior
 //!
@@ -64,12 +68,8 @@
 //! [`handle module`]: ./handler/index.html
 //!
 
-#![feature(custom_attribute)]
-#![feature(integer_atomics)]
-#![feature(try_from)]
-#![feature(tool_lints)]
-
 extern crate cita_crypto as crypto;
+extern crate cita_directories;
 extern crate cita_types;
 extern crate clap;
 extern crate core as chain_core;
@@ -83,6 +83,9 @@ extern crate libproto;
 extern crate logger;
 extern crate lru;
 extern crate pubsub;
+#[cfg(test)]
+#[macro_use]
+extern crate quickcheck;
 extern crate rayon;
 #[macro_use]
 extern crate serde_derive;
@@ -92,13 +95,10 @@ extern crate tempfile;
 extern crate tx_pool;
 #[macro_use]
 extern crate util;
+extern crate db as cita_db;
+extern crate hashable;
 extern crate uuid;
 
-pub mod batch_forward;
-pub mod config;
-pub mod dispatcher;
-pub mod handler;
-pub mod txwal;
 use batch_forward::BatchForward;
 use clap::App;
 use config::Config;
@@ -110,6 +110,16 @@ use pubsub::start_pubsub;
 use std::sync::mpsc::channel;
 use std::thread;
 use util::set_panic_handler;
+
+pub mod batch_forward;
+pub mod block_txn;
+pub mod block_verify;
+pub mod config;
+pub mod dispatcher;
+pub mod handler;
+pub mod history;
+mod transaction_verify;
+pub mod txwal;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
@@ -176,6 +186,8 @@ fn main() {
             Net >> Request,
             Snapshot >> SnapshotReq,
             Executor >> Miscellaneous,
+            Net >> GetBlockTxn,
+            Net >> BlockTxn,
         ]),
         tx_sub,
         rx_pub,

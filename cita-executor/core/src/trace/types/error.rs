@@ -17,7 +17,7 @@
 //! Trace errors.
 
 use evm::Error as EvmError;
-use rlp::{Encodable, RlpStream, Decodable, DecoderError, UntrustedRlp};
+use rlp::{Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
 use std::fmt;
 
 /// Trace evm errors.

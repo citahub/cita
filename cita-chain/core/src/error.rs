@@ -19,12 +19,13 @@
 use basic_types::LogBloom;
 use cita_ed25519::Error as EthkeyError;
 
-
+use cita_db::TrieError;
+use cita_types::{H256, U256, U512};
 use header::BlockNumber;
+use snappy;
+use snapshot::error::Error as SnapshotError;
 use std::fmt;
 use util::*;
-use cita_types::{H256, U256, U512};
-use snapshot::error::Error as SnapshotError;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 /// Errors concerning transaction processing.
@@ -92,9 +93,10 @@ impl fmt::Display for TransactionError {
             InsufficientGas { minimal, got } => {
                 format!("Insufficient gas. Min={}, Given={}", minimal, got)
             }
-            InsufficientBalance { balance, cost } => {
-                format!("Insufficient balance for transaction. Balance={}, Cost={}", balance, cost)
-            }
+            InsufficientBalance { balance, cost } => format!(
+                "Insufficient balance for transaction. Balance={}, Cost={}",
+                balance, cost
+            ),
             GasLimitExceeded { limit, got } => {
                 format!("Gas limit exceeded. Limit={}, Given={}", limit, got)
             }
@@ -320,7 +322,7 @@ pub enum Error {
     /// Standard io error.
     StdIo(::std::io::Error),
     /// Snappy error.
-    Snappy(::util::snappy::SnappyError),
+    Snappy(snappy::SnappyError),
     /// Ethkey error.
     Ethkey(EthkeyError),
     /// Snapshot error

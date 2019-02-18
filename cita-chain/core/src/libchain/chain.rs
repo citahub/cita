@@ -35,18 +35,21 @@ use libproto::blockchain::{
 pub use types::block::*;
 use types::extras::*;
 
+use cita_db::kvdb::*;
+use cita_merklehash;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
+use hashable::Hashable;
 use header::Header;
 use libproto::executor::ExecutedResult;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::TryInto;
 use libproto::{BlockTxHashes, FullTransaction, Message};
 use proof::BftProof;
 use receipt::{LocalizedReceipt, Receipt};
 use rlp::{self, Encodable};
-use state_db::StateDB;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::convert::{Into, TryInto};
+use std::convert::Into;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -55,10 +58,6 @@ use types::filter::Filter;
 use types::ids::{BlockId, TransactionId};
 use types::log_entry::{LocalizedLogEntry, LogEntry};
 use types::transaction::{Action, SignedTransaction};
-use util::journaldb;
-use util::kvdb::*;
-use util::merklehash;
-use util::Hashable;
 use util::HeapSizeOf;
 use util::{Mutex, RwLock};
 
@@ -79,7 +78,7 @@ pub struct RelayInfo {
 pub struct TxProof {
     tx: SignedTransaction,
     receipt: Receipt,
-    receipt_proof: merklehash::MerkleProof,
+    receipt_proof: cita_merklehash::Proof,
     block_header: Header,
     next_proposal_header: Header,
     proposal_proof: ProtoProof,
@@ -99,17 +98,19 @@ impl TxProof {
             return false;
         };
         // Use receipt_proof and receipt_root to prove the receipt in the block.
-        if merklehash::verify_proof(
-            *self.block_header.receipts_root(),
-            &self.receipt_proof,
+        let receipt_merkle_proof: cita_merklehash::MerkleProof<H256> =
+            self.receipt_proof.clone().into();
+        if receipt_merkle_proof.verify(
+            self.block_header.receipts_root(),
             self.receipt.clone().rlp_bytes().into_vec().crypt_hash(),
+            cita_merklehash::merge,
         ) {
         } else {
             warn!("txproof verify receipt root merklehash failed");
             return false;
         };
         // Calculate block header hash, and is should be same as the parent_hash in next header
-        if self.block_header.note_dirty().hash() == *self.next_proposal_header.parent_hash() {
+        if self.block_header.hash().unwrap() == *self.next_proposal_header.parent_hash() {
         } else {
             warn!("txproof verify block header hash failed");
             return false;
@@ -271,9 +272,9 @@ impl BloomGroupDatabase for Chain {
 
 #[derive(Debug, Clone)]
 pub enum BlockInQueue {
-    Proposal(Block),
-    ConsensusBlock(Block, ProtoProof),
-    SyncBlock((Block, Option<ProtoProof>)),
+    Proposal(OpenBlock),
+    ConsensusBlock(OpenBlock, ProtoProof),
+    SyncBlock((OpenBlock, Option<ProtoProof>)),
 }
 
 pub struct Chain {
@@ -286,7 +287,6 @@ pub struct Chain {
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
     pub proof_map: RwLock<BTreeMap<u64, ProtoProof>>,
     pub db: RwLock<Arc<KeyValueDB>>,
-    pub state_db: RwLock<StateDB>,
 
     // block cache
     pub block_headers: RwLock<HashMap<BlockNumber, Header>>,
@@ -363,8 +363,6 @@ impl Chain {
             400,
         );
 
-        let journal_db = journaldb::new(Arc::clone(&db), journaldb::Algorithm::Archive, COL_STATE);
-        let state_db = StateDB::new(journal_db);
         let blooms_config = BloomChainConfig {
             levels: LOG_BLOOMS_LEVELS,
             elements_per_index: LOG_BLOOMS_ELEMENTS_PER_INDEX,
@@ -397,7 +395,6 @@ impl Chain {
             block_receipts: RwLock::new(HashMap::new()),
             cache_man: Mutex::new(cache_man),
             db: RwLock::new(db),
-            state_db: RwLock::new(state_db),
             polls_filter: Arc::new(Mutex::new(PollManager::default())),
             nodes: RwLock::new(Vec::new()),
             validators: RwLock::new(Vec::new()),
@@ -495,34 +492,20 @@ impl Chain {
         *self.version.write() = Some(version);
     }
 
-    pub fn set_db_result(&self, ret: &ExecutedResult, block: &Block) {
+    pub fn set_db_result(&self, ret: &ExecutedResult, block: &OpenBlock) {
         let info = ret.get_executed_info();
         let number = info.get_header().get_height();
-        let version = block.version();
-        let mut hdr = Header::new();
         let log_bloom = LogBloom::from(info.get_header().get_log_bloom());
-        hdr.set_quota_limit(U256::from(info.get_header().get_quota_limit()));
-        hdr.set_quota_used(U256::from(info.get_header().get_quota_used()));
-        hdr.set_number(number);
-        // hdr.set_parent_hash(*block.parent_hash());
-        hdr.set_parent_hash(H256::from_slice(info.get_header().get_prevhash()));
-        hdr.set_receipts_root(H256::from(info.get_header().get_receipts_root()));
-        hdr.set_state_root(H256::from(info.get_header().get_state_root()));
-        hdr.set_timestamp(info.get_header().get_timestamp());
-        hdr.set_transactions_root(H256::from(info.get_header().get_transactions_root()));
-        hdr.set_log_bloom(log_bloom);
-        hdr.set_proof(block.proof().clone());
-        hdr.set_proposer(Address::from(info.get_header().get_proposer()));
-        hdr.set_version(version);
+        let hdr = Header::from_executed_info(ret.get_executed_info(), &block.header);
 
-        let hash = hdr.hash();
+        let hash = hdr.hash().unwrap();
         trace!(
             "commit block in db hash {:?}, height {:?}, version {}",
             hash,
             number,
-            version
+            block.version()
         );
-        let block_transaction_addresses = block.transaction_addresses(hash);
+        let block_transaction_addresses = block.body().transaction_addresses(hash);
         let blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup> = if log_bloom.is_zero() {
             HashMap::new()
         } else {
@@ -566,7 +549,7 @@ impl Chain {
                 block_transaction_addresses,
                 CacheUpdatePolicy::Overwrite,
             );
-            for key in block.body().transaction_hashes() {
+            for key in block.body.transaction_hashes() {
                 self.cache_man
                     .lock()
                     .note_used(CacheId::TransactionAddresses(key));
@@ -657,7 +640,7 @@ impl Chain {
 
         // Genesis block
         if number == 0 && self.get_current_height() == 0 {
-            let blk = Block::default();
+            let blk = OpenBlock::default();
             self.set_db_result(ret, &blk);
             let block_tx_hashes = Vec::new();
             self.delivery_block_tx_hashes(number, &block_tx_hashes, &ctx_pub);
@@ -774,7 +757,7 @@ impl Chain {
     pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
         {
             let header = self.current_header.read();
-            if header.hash() == hash {
+            if header.hash().unwrap() == hash {
                 return Some(header.clone());
             }
         }
@@ -810,7 +793,7 @@ impl Chain {
 
     pub fn block_hash_by_height(&self, height: BlockNumber) -> Option<H256> {
         self.block_header_by_height(height)
-            .and_then(|hdr| Some(hdr.hash()))
+            .and_then(|hdr| Some(hdr.hash().unwrap()))
     }
 
     /// Get block body by hash
@@ -909,19 +892,27 @@ impl Chain {
                         }
                     })
                     .and_then(|receipt| {
-                        merklehash::MerkleTree::from_bytes(
-                            receipts.receipts.iter().map(|r| r.rlp_bytes().into_vec()),
+                        cita_merklehash::Tree::from_hashes(
+                            receipts
+                                .receipts
+                                .iter()
+                                .map(|r| r.rlp_bytes().into_vec().crypt_hash())
+                                .collect::<Vec<_>>(),
+                            cita_merklehash::merge,
                         )
                         .get_proof_by_input_index(index)
                         .map(|receipt_proof| (index, block, receipt.clone(), receipt_proof))
                     })
             })
             .and_then(|(index, block, receipt, receipt_proof)| {
-                block
-                    .body()
-                    .transactions()
-                    .get(index)
-                    .map(|tx| (tx.clone(), receipt, receipt_proof, block.header().clone()))
+                block.body().transactions().get(index).map(|tx| {
+                    (
+                        tx.clone(),
+                        receipt,
+                        receipt_proof.into(),
+                        block.header().clone(),
+                    )
+                })
             })
             .and_then(|(tx, receipt, receipt_proof, block_header)| {
                 self.block_by_height(block_header.number() + 1)
@@ -1064,7 +1055,7 @@ impl Chain {
 
     #[inline]
     pub fn get_current_hash(&self) -> H256 {
-        self.current_header.read().hash()
+        self.current_header.read().hash().unwrap()
     }
 
     #[inline]
@@ -1280,7 +1271,7 @@ impl Chain {
             trace!("delivery_current_rich_status : node list or version is not ready!");
             return;
         }
-        let current_hash = header.hash();
+        let current_hash = header.hash().unwrap();
         let current_height = header.number();
         let nodes: Vec<Address> = self.nodes.read().clone();
         let validators: Vec<Address> = self.validators.read().clone();
@@ -1399,7 +1390,7 @@ impl Chain {
             .unwrap();
     }
 
-    pub fn set_block_body(&self, height: BlockNumber, block: &Block) {
+    pub fn set_block_body(&self, height: BlockNumber, block: &OpenBlock) {
         let mut batch = DBTransaction::new();
         {
             let mut write_bodies = self.block_bodies.write();

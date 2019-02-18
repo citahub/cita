@@ -19,9 +19,10 @@
 // use ethjson;
 use call_type::CallType;
 
-use std::sync::Arc;
 use cita_types::{Address, H256, U256};
-use util::{HASH_EMPTY, Bytes};
+use hashable::HASH_EMPTY;
+use std::sync::Arc;
+use util::Bytes;
 
 /// Transaction value
 #[derive(Clone, Debug)]

@@ -5,7 +5,7 @@ const config = require('../config');
 const { genContract } = util;
 
 const { authorization } = config.contract;
-const abi = JSON.parse(fs.readFileSync('abi/Authorization.abi'));
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/Authorization.abi'));
 const contract = genContract(abi, authorization);
 
 // queryPermissions

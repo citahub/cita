@@ -17,10 +17,10 @@
 //! State diff module.
 
 use account_diff::*;
+use cita_types::Address;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::*;
-use cita_types::Address;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 #[cfg_attr(feature = "ipc", binary)]

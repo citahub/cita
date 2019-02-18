@@ -1,65 +1,68 @@
 NormalContracts:
 - SysConfig:
     address: '0xffffffffffffffffffffffffffffffffff020000'
-    file: system/sys_config.sol
+    file: system/SysConfig.sol
 - NodeManager:
     address: '0xffffffffffffffffffffffffffffffffff020001'
-    file: system/node_manager.sol
+    file: system/NodeManager.sol
 - ChainManager:
     address: '0xffffffffffffffffffffffffffffffffff020002'
-    file: system/chain_manager.sol
+    file: system/ChainManager.sol
 - QuotaManager:
     address: '0xffffffffffffffffffffffffffffffffff020003'
-    file: system/quota_manager.sol
+    file: system/QuotaManager.sol
 - PermissionManagement:
     address: '0xffffffffffffffffffffffffffffffffff020004'
-    file: permission_management/permission_management.sol
+    file: permission_management/PermissionManagement.sol
 - PermissionCreator:
     address: '0xffffffffffffffffffffffffffffffffff020005'
-    file: permission_management/permission_creator.sol
+    file: permission_management/PermissionCreator.sol
 - Authorization:
     address: '0xffffffffffffffffffffffffffffffffff020006'
-    file: permission_management/authorization.sol
+    file: permission_management/Authorization.sol
 - RoleManagement:
     address: '0xffffffffffffffffffffffffffffffffff020007'
-    file: role_management/role_management.sol
+    file: role_management/RoleManagement.sol
 - RoleCreator:
     address: '0xffffffffffffffffffffffffffffffffff020008'
-    file: role_management/role_creator.sol
+    file: role_management/RoleCreator.sol
 - Group:
     address: '0xffffffffffffffffffffffffffffffffff020009'
-    file: user_management/group.sol
+    file: user_management/Group.sol
 - GroupManagement:
     address: '0xffffffffffffffffffffffffffffffffff02000a'
-    file: user_management/group_management.sol
+    file: user_management/GroupManagement.sol
 - GroupCreator:
     address: '0xffffffffffffffffffffffffffffffffff02000b'
-    file: user_management/group_creator.sol
+    file: user_management/GroupCreator.sol
 - Admin:
     address: '0xffffffffffffffffffffffffffffffffff02000c'
-    file: common/admin.sol
+    file: common/Admin.sol
 - RoleAuth:
     address: '0xffffffffffffffffffffffffffffffffff02000d'
-    file: role_management/role_auth.sol
+    file: role_management/RoleAuth.sol
 - BatchTx:
     address: '0xffffffffffffffffffffffffffffffffff02000e'
-    file: system/batch_tx.sol
+    file: system/BatchTx.sol
 - EmergencyBrake:
     address: '0xffffffffffffffffffffffffffffffffff02000f'
-    file: system/emergency_brake.sol
+    file: system/EmergencyBrake.sol
 - PriceManager:
     address: '0xffffffffffffffffffffffffffffffffff020010'
-    file: system/price_manager.sol
+    file: system/PriceManager.sol
 - VersionManager:
     address: '0xffffffffffffffffffffffffffffffffff020011'
-    file: system/version_manager.sol
+    file: system/VersionManager.sol
 - AllGroups:
     address: '0xffffffffffffffffffffffffffffffffff020012'
-    file: user_management/all_groups.sol
+    file: user_management/AllGroups.sol
+- AutoExec:
+    address: '0xffffffffffffffffffffffffffffffffff020013'
+    file: system/AutoExec.sol
 
 
 PermissionContracts:
-  file: permission_management/permission.sol
+  file: permission_management/Permission.sol
   basic:
   - sendTx:
       address: '0xffffffffffffffffffffffffffffffffff021000'

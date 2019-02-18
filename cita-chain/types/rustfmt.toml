@@ -1,8 +1,0 @@
-ignore = [
-    "src/account_diff.rs",
-    "src/basic_account.rs",
-    "src/call_analytics.rs",
-    "src/filter.rs",
-    "src/log_entry.rs",
-    "src/state_diff.rs"
-]

@@ -1,6 +1,6 @@
 # <img src="https://github.com/cryptape/assets/blob/master/CITA-logo.png?raw=true" width="256">
 
-[![Build Status](https://travis-ci.org/cryptape/cita.svg?branch=develop)](https://travis-ci.org/cryptape/cita)
+[![Build Status](https://travis-ci.com/cryptape/cita.svg?branch=develop)](https://travis-ci.com/cryptape/cita)
 
 [English](./README.md) | 简体中文
 
@@ -41,7 +41,7 @@ CITA（ Cryptape Inter-enterprise Trust Automation ）是一个面向企业级�
 
   CITA上支持使用 Solidity，Go 语言，Rust 开发智能合约，同时也支持以太坊的所有开发工具（Truffle，Zeppeling，Remix 等）。
 
-- **链间互动**
+- **跨链**
 
   在区块链世界里，各种各样的链在不断的涌现出来。这些链如何互相配合形成区块链网络？
   CITA 目前提供了一个简单的跨链协议来支持主链与侧链之间的通信。我们也正对跨链通信做更多的探索，旨在扩大在各种链上运行的应用程序的价值。
@@ -57,8 +57,8 @@ CITA（ Cryptape Inter-enterprise Trust Automation ）是一个面向企业级�
 
 ## 文档
 
-- [英文版](https://cryptape.github.io/cita/#/en-US/latest/index)
-- [中文版](https://cryptape.github.io/cita/)
+- [英文版](https://docs.citahub.com/en-US/cita/cita-intro)
+- [中文版](https://docs.citahub.com/zh-CN/cita/cita-intro)
 
 ## API/SDK
 
@@ -66,9 +66,10 @@ CITA 支持 JSON-RPC 和 WebSocket (experimental) API/v1。
 
 对于 CITA 的 API/v1，你可以使用任意的 HTTP 代理，或者下面的 SDK：
 
-* [Java](https://github.com/cryptape/nervosj)
-* [Rust](https://github.com/cryptape/rust-web3)
-* [JavaScript](https://github.com/cryptape/nervos.js)
+* [Java](https://github.com/cryptape/cita-sdk-java)
+* [JavaScript](https://github.com/cryptape/cita-sdk-js)
+* [Swift](https://github.com/cryptape/cita-sdk-swift)
+* [Ruby](https://github.com/cryptape/cita-sdk-ruby)
 
 ## 社区贡献
 
@@ -92,4 +93,4 @@ GPLv3 license
 
 ## 联系我们
 
-[Telegram 开发者群组](https://t.me/joinchat/E7dJKFL8xTwCe8MaiZWdhw)
+邮箱： <contact@cryptape.com>

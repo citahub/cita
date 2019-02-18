@@ -28,6 +28,8 @@ use types::reserved_addresses;
 const ALLACCOUNTS: &[u8] = &*b"queryAllAccounts()";
 const PERMISSIONS: &[u8] = &*b"queryPermissions(address)";
 const RESOURCES: &[u8] = &*b"queryResource()";
+#[cfg(test)]
+const DEFAULT_SUPER_ADEMIN: &str = "4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000";
 
 lazy_static! {
     static ref ALLACCOUNTS_HASH: Vec<u8> = method_tools::encode_to_vec(ALLACCOUNTS);
@@ -180,11 +182,10 @@ pub fn contains_resource(
 
 #[cfg(test)]
 mod tests {
-
     extern crate logger;
 
     use super::contains_resource;
-    use super::{PermissionManagement, Resource};
+    use super::{PermissionManagement, Resource, DEFAULT_SUPER_ADEMIN};
     use cita_types::{Address, H160, H256};
     use contracts::tools::method as method_tools;
     use std::collections::HashMap;
@@ -278,12 +279,13 @@ mod tests {
     }
 
     #[test]
-    fn test_all_accounts() {
+    fn test_solc() {
         let executor = init_executor(vec![(
             "Authorization.superAdmin",
-            "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000",
+            &format!("0x{}", DEFAULT_SUPER_ADEMIN),
         )]);
 
+        // Test all_accounts
         let permission_management = PermissionManagement::new(&executor);
         let all_accounts: Vec<Address> = permission_management
             .all_accounts(BlockId::Pending)
@@ -292,25 +294,16 @@ mod tests {
         assert_eq!(
             all_accounts,
             vec![
-                Address::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000").unwrap(),
+                Address::from_str(DEFAULT_SUPER_ADEMIN).unwrap(),
                 Address::from_str(reserved_addresses::GROUP).unwrap(),
             ]
         );
-    }
 
-    #[test]
-    fn test_permissions() {
-        let executor = init_executor(vec![
-            ((
-                "Authorization.superAdmin",
-                "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000",
-            )),
-        ]);
-        let super_admin = Address::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000").unwrap();
+        // Test permissions
+        let super_admin_address = Address::from_str(DEFAULT_SUPER_ADEMIN).unwrap();
 
-        let permission_management = PermissionManagement::new(&executor);
         let mut permissions: Vec<Address> = permission_management
-            .permissions(&(H256::from(super_admin)), BlockId::Pending)
+            .permissions(&(H256::from(super_admin_address)), BlockId::Pending)
             .unwrap();
         permissions.sort();
 
@@ -343,52 +336,13 @@ mod tests {
         expected_permissions.sort();
 
         assert_eq!(permissions, expected_permissions);
-    }
 
-    #[test]
-    fn test_resources() {
-        let executor = init_executor(vec![]);
-        let permission = Address::from_str(reserved_addresses::PERMISSION_NEW_PERMISSION).unwrap();
-
-        let permission_management = PermissionManagement::new(&executor);
-        let resources: Vec<Resource> = permission_management
-            .resources(&permission, BlockId::Pending)
-            .unwrap();
-        assert_eq!(
-            resources,
-            vec![Resource {
-                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
-                func: method_tools::encode_to_vec(NEW_PERMISSION),
-            }]
-        );
-    }
-
-    #[test]
-    fn test_resources_from_not_exist_permission() {
-        let executor = init_executor(vec![]);
-        let permission = Address::from(0x13);
-
-        let permission_management = PermissionManagement::new(&executor);
-        let resources = permission_management
-            .resources(&permission, BlockId::Pending)
-            .unwrap();
-        assert_eq!(resources, vec![]);
-    }
-
-    #[test]
-    fn test_load_account_permissions() {
-        let executor = init_executor(vec![(
-            "Authorization.superAdmin",
-            "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000",
-        )]);
-        let super_admin = Address::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000").unwrap();
-
-        let permission_management = PermissionManagement::new(&executor);
+        // Test account permissions
         let account_permissions: HashMap<Address, Vec<Resource>> =
             permission_management.load_account_permissions(BlockId::Pending);
-        assert_eq!(account_permissions.contains_key(&super_admin), true);
+        assert_eq!(account_permissions.contains_key(&super_admin_address), true);
 
-        let mut resources = (*account_permissions.get(&super_admin).unwrap()).clone();
+        let mut resources = (*account_permissions.get(&super_admin_address).unwrap()).clone();
         resources.sort();
 
         let mut expected_resources = vec![
@@ -561,5 +515,32 @@ mod tests {
         expected_resources.sort();
 
         assert_eq!(resources, expected_resources);
+    }
+
+    #[test]
+    fn test_resources() {
+        let executor = init_executor(vec![]);
+        let permission = Address::from_str(reserved_addresses::PERMISSION_NEW_PERMISSION).unwrap();
+
+        // Test resources
+        let permission_management = PermissionManagement::new(&executor);
+        let resources: Vec<Resource> = permission_management
+            .resources(&permission, BlockId::Pending)
+            .unwrap();
+        assert_eq!(
+            resources,
+            vec![Resource {
+                cont: Address::from_str(reserved_addresses::PERMISSION_MANAGEMENT).unwrap(),
+                func: method_tools::encode_to_vec(NEW_PERMISSION),
+            }]
+        );
+
+        // Test resources from not exist permission
+        let permission = Address::from(0x13);
+
+        let resources = permission_management
+            .resources(&permission, BlockId::Pending)
+            .unwrap();
+        assert_eq!(resources, vec![]);
     }
 }

@@ -56,9 +56,9 @@ def generate_prevhash(resource_dir):
     return None
 
 
-def generate_authorities(amount):
-    authorities = AuthorityList()
-    signers = list()
+def generate_keypairs(amount):
+    addresses = AddressList()
+    privkeys = list()
     _, address_path = tempfile.mkstemp()
     _, secret_path = tempfile.mkstemp()
     cmd = 'create_key_addr "{}" "{}"'.format(secret_path, address_path)
@@ -70,9 +70,9 @@ def generate_authorities(amount):
             secret = stream.read().strip()
         os.remove(address_path)
         os.remove(secret_path)
-        authorities.add_after_check(address)
-        signers.append(secret)
-    return authorities, signers
+        addresses.add_after_check(address)
+        privkeys.append(secret)
+    return addresses, privkeys
 
 
 def need_directory(dirpath):
@@ -81,7 +81,7 @@ def need_directory(dirpath):
         os.makedirs(dirpath)
 
 
-class AddressList(list):
+class NetworkAddressList(list):
     @classmethod
     def from_str(cls, addrs_str, size_check=None, delimiter=','):
         addrs = cls()
@@ -113,19 +113,20 @@ class AddressList(list):
             if addr['host'] == host and addr['port'] == port:
                 raise Exception('address {}:{} has been added twice'.format(
                     host, port))
-        self.append(dict(host=host, port=port, signer=''))
+        self.append(dict(host=host, port=port, address='', privkey=''))
 
-    def add_signers(self, signers):
-        if len(self) != len(signers):
-            raise Exception('Size of signers [{}] is not equal to'
-                            ' size of addresses [{}].'.format(
-                                len(signers), len(self)))
+    def add_addresses(self, addresses):
         size = len(self)
         for idx in range(0, size):
-            self[idx]['signer'] = signers[idx]
+            self[idx]['address'] = addresses[idx]
+
+    def add_privkeys(self, privkeys):
+        size = len(self)
+        for idx in range(0, size):
+            self[idx]['privkey'] = privkeys[idx]
 
 
-class AuthorityList(list):
+class AddressList(list):
     @classmethod
     def from_str(cls, addrs_str, delimiter=','):
         addrs = cls()
@@ -137,7 +138,7 @@ class AuthorityList(list):
 
     def add_after_check(self, addr):
         if addr in self:
-            raise Exception('authority {} has been added twice'.format(addr))
+            raise Exception('address {} has been added twice'.format(addr))
         self.append(addr)
 
     def to_str(self, delimiter=','):
@@ -160,7 +161,7 @@ class ChainInfo(object):
         self.nodes_list = os.path.join(self.template_dir, 'nodes.list')
         self.authorities_list = os.path.join(self.template_dir,
                                              'authorities.list')
-        self.nodes = AddressList()
+        self.nodes = NetworkAddressList()
         self.enable_tls = False
         self.root_ca_name = 'rootCA'
         self.node_ca_name = chain_name
@@ -220,16 +221,18 @@ class ChainInfo(object):
                              self.node_prefix, self.output_root)
         with open(self.nodes_list, 'rt') as stream:
             nodes_str = ''.join(stream.readlines()).replace('\n', ',')
-        self.nodes = AddressList.from_str(nodes_str)
+        self.nodes = NetworkAddressList.from_str(nodes_str)
 
     def encrypted_create_rootca(self, tls):
         self.enable_tls = tls
-        if not self.enable_tls :
+        if not self.enable_tls:
             return
-
         subj = self.prefix_subj + 'cita'
-        cmd = f'openssl req -newkey rsa:1024 -nodes -keyout {self.template_dir}/{self.root_ca_name}.key '\
-            f'-days {self.ca_days} -x509 -out {self.template_dir}/{self.root_ca_name}.crt -subj "{subj}"'
+        cmd = f'openssl req -newkey rsa:1024 -nodes' \
+            f' -keyout {self.template_dir}/{self.root_ca_name}.key' \
+            f' -days {self.ca_days} -x509' \
+            f' -out {self.template_dir}/{self.root_ca_name}.crt' \
+            f' -subj "{subj}"'
         os.system(cmd)
 
     def encrypted_load_from_existed(self):
@@ -238,37 +241,46 @@ class ChainInfo(object):
             self.enable_tls = True
 
     def encrypted_create_nodeca(self, node_id):
-        if not self.enable_tls :
+        if not self.enable_tls:
             return
         node_dir = os.path.join(self.output_root, f'{node_id}')
         need_directory(node_dir)
 
         subj = self.prefix_subj + f'{self.node_ca_name}{node_id}.cita'
-        cmd = f'openssl req -newkey rsa:1024 -nodes -keyout {node_dir}/{self.node_ca_name}.key ' \
-            f'-days {self.ca_days} -out {node_dir}/{self.node_ca_name}.csr -subj "{subj}"'
+
+        cmd = f'openssl req -newkey rsa:1024 -nodes' \
+            f' -keyout {node_dir}/{self.node_ca_name}.key' \
+            f' -days {self.ca_days}' \
+            f' -out {node_dir}/{self.node_ca_name}.csr' \
+            f' -subj "{subj}"'
         os.system(cmd)
 
-        cmd = f'openssl x509 -CAcreateserial -req -in {node_dir}/{self.node_ca_name}.csr ' \
-            f'-CA {self.template_dir}/{self.root_ca_name}.crt ' \
-            f'-CAkey {self.template_dir}/{self.root_ca_name}.key ' \
-            f'-out {node_dir}/{self.node_ca_name}.crt -days {self.ca_days}'
+        cmd = f'openssl x509 -CAcreateserial -req' \
+            f' -in {node_dir}/{self.node_ca_name}.csr' \
+            f' -CA {self.template_dir}/{self.root_ca_name}.crt' \
+            f' -CAkey {self.template_dir}/{self.root_ca_name}.key' \
+            f' -days {self.ca_days}' \
+            f' -out {node_dir}/{self.node_ca_name}.crt'
         os.system(cmd)
 
-        cmd = f'openssl pkcs12 -export -in {node_dir}/{self.node_ca_name}.crt ' \
-            f'-inkey {node_dir}/{self.node_ca_name}.key ' \
-            f'-out {node_dir}/{self.server_ca_name}.pfx -password pass:server.tls.cita' 
+        cmd = f'openssl pkcs12 -export' \
+            f' -in {node_dir}/{self.node_ca_name}.crt' \
+            f' -inkey {node_dir}/{self.node_ca_name}.key' \
+            f' -out {node_dir}/{self.server_ca_name}.pfx ' \
+            f' -password pass:server.tls.cita'
         os.system(cmd)
 
-        for suffix in ('crt','csr','key') :
+        for suffix in ('crt', 'csr', 'key'):
             os.remove(f'{node_dir}/{self.node_ca_name}.{suffix}')
-        shutil.copyfile(f'{self.template_dir}/{self.root_ca_name}.crt',f'{node_dir}/{self.root_ca_name}.crt')
+        shutil.copyfile(
+            f'{self.template_dir}/{self.root_ca_name}.crt',
+            f'{node_dir}/{self.root_ca_name}.crt')
 
     def create_peer_data(self, node_id, node):
-        if not self.enable_tls :
-            return dict(id_card=node_id, ip=node['host'], port=node['port'])
-        else:
-            key = '{}{}.cita'.format(self.node_ca_name, node_id)
-            return dict(id_card=node_id, ip=node['host'], port=node['port'], common_name=key)
+        ret = dict(id_card=node_id, ip=node['host'], port=node['port'])
+        if self.enable_tls:
+            ret['common_name'] = '{}{}.cita'.format(self.node_ca_name, node_id)
+        return ret
 
     def create_init_data(self, super_admin, contract_arguments):
         from create_init_data import core as create_init_data
@@ -285,8 +297,10 @@ class ChainInfo(object):
                        prevhash)
 
     def append_node(self, node):
-        if isinstance(node, AddressList):
+        # For append mode: use the first element to store the new node
+        if isinstance(node, NetworkAddressList):
             node = node[0]
+
         node_id = len(self.nodes)
         self.nodes.add_after_check(node['host'], node['port'])
         node_dir = os.path.join(self.output_root, '{}'.format(node_id))
@@ -318,18 +332,27 @@ class ChainInfo(object):
                     self.node_prefix, node_id))
             stream.write('DATA_PATH=./data\n')
 
-        consensus_config = os.path.join(node_dir, 'privkey')
-        with open(consensus_config, 'wt') as stream:
-            stream.write(node['signer'])
+        privkey = node.get('privkey')
+        if privkey:
+            privkey_config = os.path.join(node_dir, 'privkey')
+            with open(privkey_config, 'wt') as stream:
+                stream.write(privkey)
+                stream.write('\n')
 
-        network_config = os.path.join(self.configs_dir, 'network.toml')
+        address = node.get('address')
+        if address:
+            address_config = os.path.join(node_dir, 'address')
+            with open(address_config, 'wt') as stream:
+                stream.write(address)
+                stream.write('\n')
 
-        with open(network_config, 'rt') as stream:
+        network_full_config = os.path.join(self.configs_dir, 'network.toml')
+        with open(network_full_config, 'rt') as stream:
             network_data = toml.load(stream)
             self.encrypted_create_nodeca(node_id)
-            network_data['peers'].append(self.create_peer_data(node_id,node))
-            config = network_data["peers"]
-        with open(network_config, 'wt') as stream:
+            network_data['peers'].append(self.create_peer_data(node_id, node))
+            config = network_data['peers']
+        with open(network_full_config, 'wt') as stream:
             toml.dump(network_data, stream)
 
         for old_id in range(0, node_id):
@@ -337,9 +360,10 @@ class ChainInfo(object):
             network_config = os.path.join(old_dir, 'network.toml')
             with open(network_config, 'rt') as stream:
                 network_data = toml.load(stream)
-                network_data['peers'].append(self.create_peer_data(node_id,node))
+                network_data['peers'].append(self.create_peer_data(node_id, node))
             with open(network_config, 'wt') as stream:
-                stream.write(f"# Current node ip is {config[old_id]['ip']}\n")
+                current_ip = config[old_id]['ip']
+                stream.write(f'# Current node ip is {current_ip}\n')
                 toml.dump(network_data, stream)
 
         network_config = os.path.join(node_dir, 'network.toml')
@@ -347,10 +371,11 @@ class ChainInfo(object):
             network_data = toml.load(stream)
             network_data['id_card'] = node_id
             network_data['port'] = node['port']
-            if self.enable_tls :
+            if self.enable_tls:
                 network_data['enable_tls'] = True
         with open(network_config, 'wt') as stream:
-            stream.write(f"# Current node ip is {config[node_id]['ip']}\n")
+            current_ip = config[node_id]['ip']
+            stream.write(f'# Current node ip is {current_ip}\n')
             toml.dump(network_data, stream)
 
         with open(self.nodes_list, 'at') as stream:
@@ -392,7 +417,7 @@ def parse_arguments():
 
     pcreate.add_argument(
         '--authorities',
-        type=AuthorityList.from_str,
+        type=AddressList.from_str,
         metavar='{var}[,{var}[,{var}[,{var}[, ...]]]]'.format(var='AUTHORITY'),
         help='Authorities (addresses) list.')
     pcreate.add_argument(
@@ -402,8 +427,8 @@ def parse_arguments():
 
     pcreate.add_argument(
         '--nodes',
-        type=AddressList.from_str,
-        default=AddressList(),
+        type=NetworkAddressList.from_str,
+        default=NetworkAddressList(),
         metavar='{var}[,{var}[,{var}[,{var}[, ...]]]]'.format(var='IP:PORT'),
         help='Node network addresses for new nodes.')
 
@@ -438,10 +463,10 @@ def parse_arguments():
         default=4337,
         help='websocket port for this chain')
 
-    # enable encrypted 
+    # enable encrypted
     pcreate.add_argument(
         '--enable_tls',
-        action="store_true",
+        action='store_true',
         help='The data is encrypted and transmitted on the network')
 
     #
@@ -457,20 +482,23 @@ def parse_arguments():
         help='Name of the existed chain.')
 
     pappend.add_argument(
-        '--signer',
-        help='The signer of new node. Will generate a new if not set.')
-
-    pappend.add_argument(
         '--node',
-        required=False,
-        type=AddressList.from_str_get_one,
+        required=True,
+        type=NetworkAddressList.from_str_get_one,
         metavar='IP:PORT',
         help='Node network addresses for new nodes.')
+
+    pappend.add_argument(
+        '--address',
+        help='The address of new node. Will generate a new address (with privkey) if not set.')
 
     args = parser.parse_args()
 
     # Check arguments
     if args.subcmd == SUBCMD_CREATE:
+        if len(args.nodes) > 256:
+            logging.critical('The number of nodes exceeds the maximum limit(256).')
+            sys.exit(1)
         if not args.super_admin:
             logging.critical('--super_admin is empty, it\'s required'
                              ' to continue.'
@@ -480,9 +508,13 @@ def parse_arguments():
             if not args.nodes:
                 logging.critical('Both --authorities and --nodes is empty.')
                 sys.exit(1)
-            authorities, signers = generate_authorities(len(args.nodes))
-            args.nodes.add_signers(signers)
+            authorities, privkeys = generate_keypairs(len(args.nodes))
+            args.nodes.add_privkeys(privkeys)
             setattr(args, 'authorities', authorities)
+        elif len(args.nodes) != len(args.authorities):
+            logging.critical('The number of nodes is not equal to the number of authorities.')
+            sys.exit(1)
+        args.nodes.add_addresses(args.authorities)
         for val in (('authorities', 'NodeManager', 'nodes'),
                     ('chain_name', 'SysConfig', 'chainName')):
             if args.contract_arguments.kkv_get(val[1], val[2]):
@@ -498,11 +530,12 @@ def parse_arguments():
             stakes = ','.join(['0' for _ in args.authorities])
             args.contract_arguments.kkv_set('NodeManager', 'stakes', stakes)
     elif args.subcmd == SUBCMD_APPEND:
-        if args.signer:
-            args.node.add_signers([args.signer])
+        if args.address:
+            args.node.add_addresses([args.address])
         else:
-            _, signers = generate_authorities(1)
-            args.node.add_signers(signers)
+            addresses, privkeys = generate_keypairs(1)
+            args.node.add_addresses(addresses)
+            args.node.add_privkeys(privkeys)
     else:
         logging.critical('Please select a valid subcommand.')
         sys.exit(1)

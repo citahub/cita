@@ -30,60 +30,15 @@ use super::{BlockRebuilder, ManifestData, RestorationStatus, StateRebuilder};
 use error::Error;
 
 use cita_types::H256;
-use libexecutor::executor::{get_current_header, Executor};
-use state_db::StateDB;
+use libexecutor::executor::Executor;
 
-use util::journaldb::{self, Algorithm};
-use util::kvdb::{Database, DatabaseConfig, KeyValueDB};
-use util::snappy;
+use cita_db::journaldb::Algorithm;
+use cita_db::kvdb::{Database, DatabaseConfig, KeyValueDB};
+use cita_db::TrieError;
+use snappy;
 use util::Bytes;
 use util::UtilError;
 use util::{Mutex, RwLock, RwLockReadGuard};
-
-/// Number of blocks in an ethash snapshot.
-// make dependent on difficulty incrment divisor?
-//const SNAPSHOT_BLOCKS: u64 = 5000;
-/// Maximum number of blocks allowed in an ethash snapshot.
-//const MAX_SNAPSHOT_BLOCKS: u64 = 30000;
-
-/// External database restoration handler
-pub trait DatabaseRestore: Send + Sync {
-    /// Restart with a new backend. Takes ownership of passed database and moves it to a new location.
-    fn restore_db(&self, new_db: &str) -> Result<(), Error>;
-}
-
-impl DatabaseRestore for Executor {
-    /// Restart the client with a new backend
-    fn restore_db(&self, new_db: &str) -> Result<(), ::error::Error> {
-        trace!("Replacing client database with {:?}", new_db);
-        let header;
-        {
-            let mut state_db = self.state_db.write();
-
-            let db = self.db.write();
-            db.restore(new_db)?;
-
-            let cache_size = state_db.cache_size();
-            *state_db = StateDB::new(
-                journaldb::new(db.clone(), Algorithm::Archive, ::db::COL_STATE),
-                cache_size,
-            );
-
-            // replace executor
-            header = match get_current_header(&*db.clone()) {
-                Some(header) => header,
-                _ => {
-                    trace!("Get header failed.");
-                    return Err(Error::PowInvalid);
-                }
-            };
-        }
-
-        self.replace_executor(header, false);
-
-        Ok(())
-    }
-}
 
 /// State restoration manager.
 struct Restoration {
@@ -110,7 +65,7 @@ struct RestorationParams<'a> {
 
 impl Restoration {
     // make a new restoration using the given parameters.
-    fn new(params: RestorationParams) -> Result<Self, Error> {
+    fn create(params: RestorationParams) -> Result<Self, Error> {
         let manifest = params.manifest;
 
         let state_chunks = manifest.state_hashes.iter().cloned().collect();
@@ -180,8 +135,6 @@ impl Restoration {
 
     // finish up restoration.
     fn finalize(self) -> Result<(), Error> {
-        use util::TrieError;
-
         if !self.is_done() {
             return Ok(());
         }
@@ -203,13 +156,17 @@ impl Restoration {
         // connect out-of-order chunks and verify chain integrity.
         self.secondary.finalize()?;
 
-        let _ = self.db.flush();
-
         if let Some(writer) = self.writer {
             writer.finish(self.manifest)?;
         }
 
-        //self.guard.disarm();
+        info!("snapshot flush snapshot-database");
+        if let Err(reason) = self.db.flush() {
+            error!("failed to flush snapshot database: {}", reason);
+        }
+
+        info!("snapshot close snapshot-database");
+        self.db.close();
         Ok(())
     }
 
@@ -227,8 +184,6 @@ pub struct ServiceParams {
     pub pruning: Algorithm,
     /// Usually "<chain hash>/snapshot"
     pub snapshot_root: PathBuf,
-    /// A handle for database restoration.
-    pub db_restore: Arc<DatabaseRestore>,
     pub executor: Arc<Executor>,
 }
 
@@ -243,7 +198,6 @@ pub struct Service {
     reader: RwLock<Option<LooseReader>>,
     state_chunks: AtomicUsize,
     block_chunks: AtomicUsize,
-    db_restore: Arc<DatabaseRestore>,
     progress: super::Progress,
     taking_snapshot: AtomicBool,
     restoring_snapshot: AtomicBool,
@@ -252,7 +206,7 @@ pub struct Service {
 
 impl Service {
     /// Create a new snapshot service from the given parameters.
-    pub fn new(params: ServiceParams) -> Result<Self, Error> {
+    pub fn create(params: ServiceParams) -> Result<Self, Error> {
         let mut service = Service {
             restoration: Mutex::new(None),
             snapshot_root: params.snapshot_root,
@@ -262,7 +216,6 @@ impl Service {
             reader: RwLock::new(None),
             state_chunks: AtomicUsize::new(0),
             block_chunks: AtomicUsize::new(0),
-            db_restore: params.db_restore,
             progress: Default::default(),
             taking_snapshot: AtomicBool::new(false),
             restoring_snapshot: AtomicBool::new(false),
@@ -290,7 +243,7 @@ impl Service {
             }
         }
 
-        let reader = LooseReader::new(service.snapshot_dir()).ok();
+        let reader = LooseReader::create(service.snapshot_dir()).ok();
         *service.reader.get_mut() = reader;
 
         Ok(service)
@@ -329,14 +282,6 @@ impl Service {
         let mut dir = self.restoration_dir();
         dir.push("temp");
         dir
-    }
-
-    // replace one the client's database with our own.
-    fn replace_client_db(&self) -> Result<(), Error> {
-        let our_db = self.restoration_db();
-
-        self.db_restore.restore_db(&*our_db.to_string_lossy())?;
-        Ok(())
     }
 
     /// Get a reference to the snapshot reader.
@@ -380,7 +325,7 @@ impl Service {
 
         // make new restoration.
         let writer = if recover {
-            Some(LooseWriter::new(self.temp_recovery_dir())?)
+            Some(LooseWriter::create(self.temp_recovery_dir())?)
         } else {
             None
         };
@@ -398,7 +343,7 @@ impl Service {
         let state_chunks = params.manifest.state_hashes.len();
         let block_chunks = params.manifest.block_hashes.len();
 
-        *res = Some(Restoration::new(params)?);
+        *res = Some(Restoration::create(params)?);
 
         *self.status.lock() = RestorationStatus::Ongoing {
             state_chunks: state_chunks as u32,
@@ -417,36 +362,10 @@ impl Service {
     fn finalize_restoration(&self, rest: &mut Option<Restoration>) -> Result<(), Error> {
         trace!("finalizing restoration");
 
-        let recover = rest.as_ref().map_or(false, |rest| rest.writer.is_some());
-
         // destroy the restoration before replacing databases and snapshot.
         rest.take().map(|r| r.finalize()).unwrap_or(Ok(()))?;
 
-        self.replace_client_db()?;
-
-        if recover {
-            let mut reader = self.reader.write();
-            *reader = None; // destroy the old reader if it existed.
-
-            let snapshot_dir = self.snapshot_dir();
-
-            if snapshot_dir.exists() {
-                trace!(
-                    "removing old snapshot dir at {}",
-                    snapshot_dir.to_string_lossy(),
-                );
-                fs::remove_dir_all(&snapshot_dir)?;
-            }
-
-            trace!("copying restored snapshot files over");
-            fs::rename(self.temp_recovery_dir(), &snapshot_dir)?;
-
-            *reader = Some(LooseReader::new(snapshot_dir)?);
-        }
-
-        fs::remove_dir_all(&self.snapshot_root)?;
         *self.status.lock() = RestorationStatus::Inactive;
-
         Ok(())
     }
 

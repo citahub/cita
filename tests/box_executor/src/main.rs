@@ -15,19 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(try_from)]
 extern crate bincode;
 extern crate cita_crypto as crypto;
 extern crate cita_types;
 extern crate clap;
-extern crate common_types;
-extern crate core;
 #[macro_use]
 extern crate libproto;
 extern crate dotenv;
+extern crate hashable;
 extern crate proof;
 extern crate rustc_serialize;
-extern crate util;
 #[macro_use]
 extern crate logger;
 
@@ -48,7 +45,7 @@ use std::env;
 fn main() {
     dotenv::dotenv().ok();
     env::set_var("RUST_BACKTRACE", "full");
-    logger::init();
+    logger::init_config("box_executor");
     let matches = App::new("mock-consensus")
         .arg(
             clap::Arg::with_name("mock-data")

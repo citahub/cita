@@ -9,7 +9,13 @@ pragma solidity ^0.4.24;
 // Ref: https://github.com/ethereum/solidity/issues/2708#issuecomment-320957367
 contract CrossChain {
 
-    event SendCrossChain(uint fromChainId, uint toChainId, address destContract, bytes4 destFuncSig, uint64 sendNonce);
+    event SendCrossChain(
+        uint fromChainId,
+        uint toChainId,
+        address destContract,
+        bytes4 destFuncSig,
+        uint64 sendNonce
+    );
     event RecvCrossChain(address indexed sender, bytes txData);
 
     address crossChainVerifyAddr = 0xffFfffFfFFFfFFfffFFFffffFfFfffFfFF030002;
@@ -47,7 +53,13 @@ contract CrossChain {
         bytes4 destFuncSig
     ) internal {
         uint fromChainId = getFromChainId();
-        emit SendCrossChain(fromChainId, toChainId, destContract, destFuncSig, crossChainSendNonce);
+        emit SendCrossChain(
+            fromChainId,
+            toChainId,
+            destContract,
+            destFuncSig,
+            crossChainSendNonce
+        );
         crossChainSendNonce += 1;
     }
 
@@ -67,7 +79,9 @@ contract CrossChain {
             recvFuncSig := mload(ptr)
         }
         address contractAddr = crossChainVerifyAddr;
-        bytes4 nativeFunc = bytes4(keccak256("verifyTransaction(address,bytes4,uint64,bytes)"));
+        bytes4 nativeFunc = bytes4(
+            keccak256("verifyTransaction(address,bytes4,uint64,bytes)")
+        );
         uint64 recvNonce = crossChainRecvNonce;
         // bytes len + bytes
         uint txProofSize = 0x20 + txProof.length / 0x20 * 0x20;

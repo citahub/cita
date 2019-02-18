@@ -14,16 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_crypto_trait::Sign;
 use cita_ed25519::{Message as ED_Message, Signature as ED_Signature};
 use cita_secp256k1::Signature;
 use cita_types::{H256, U256};
 use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160 as Ripemd160Digest;
 use crypto::sha2::Sha256 as Sha256Digest;
+use hashable::Hashable;
 use spec;
 use std::cmp::min;
-use util::crypto::Sign;
-use util::{BytesRef, Hashable};
+use util::BytesRef;
 
 /// Native implementation of a built-in contract.
 pub trait Impl: Send + Sync {
@@ -205,10 +206,10 @@ mod tests {
     extern crate rustc_serialize;
 
     use super::{ethereum_builtin, Builtin, Linear, Pricer};
+    use cita_crypto_trait::{CreateKey, Sign};
     use cita_ed25519::{pubkey_to_address as ED_pubkey_to_address, KeyPair, Signature};
     use cita_types::{H256, U256};
     use spec;
-    use util::crypto::{CreateKey, Sign};
     use util::BytesRef;
 
     #[test]
@@ -412,7 +413,8 @@ mod tests {
         /*    let i_bad = FromHex::from_hex("48173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03").unwrap();
         let mut o = [255u8; 32];
         f.execute(&i_bad[..], &mut BytesRef::Fixed(&mut o[..]));
-        assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);*/    }
+        assert_eq!(&o[..], &(FromHex::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap())[..]);*/
+    }
 
     #[test]
     fn edrecover() {

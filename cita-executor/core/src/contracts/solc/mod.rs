@@ -32,13 +32,14 @@ pub use self::emergency_brake::EmergencyBrake;
 pub use self::node_manager::NodeManager;
 pub use self::permission_management::{PermissionManagement, Resource};
 pub use self::price_manager::PriceManagement;
-pub use self::quota_manager::{AccountGasLimit, QuotaManager};
+pub use self::quota_manager::{AccountQuotaLimit, QuotaManager, AUTO_EXEC_QL_VALUE};
 pub use self::sys_config::SysConfig;
 pub use self::user_management::UserManagement;
 pub use self::version_management::VersionManager;
 
 use cita_types::Address;
 use libexecutor::call_request::CallRequest;
+use libexecutor::command::Commander;
 use libexecutor::executor::Executor;
 use types::ids::BlockId;
 use util::Bytes;
@@ -55,7 +56,7 @@ trait ContractCallExt {
     ) -> Result<Bytes, String>;
 }
 
-impl ContractCallExt for Executor {
+impl<'a> ContractCallExt for Executor {
     fn call_method(
         &self,
         address: &Address,

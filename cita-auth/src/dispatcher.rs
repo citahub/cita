@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -21,9 +21,10 @@ use handler::SysConfigInfo;
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
+use libproto::TryInto;
 use std::cell::RefCell;
 use std::collections::HashSet;
-use std::convert::{Into, TryInto};
+use std::convert::Into;
 use std::sync::mpsc::Sender;
 use std::thread;
 use tx_pool;
@@ -77,7 +78,7 @@ impl Dispatcher {
         let mut block_txs = BlockTxs::new();
         let mut body = BlockBody::new();
 
-        let out_txs = self.get_txs_from_pool(
+        let out_txs = self.take_txs_from_pool(
             height as u64,
             config_info.block_quota_limit,
             config_info.account_quota_limit.clone(),
@@ -122,8 +123,6 @@ impl Dispatcher {
     }
 
     pub fn add_tx_to_pool(&self, tx: &SignedTransaction) -> bool {
-        // 交易放入pool，
-        // 放入pool完成后，持久化
         trace!("add tx {} to pool", tx.get_tx_hash().lower_hex());
         let txs_pool = &mut self.txs_pool.borrow_mut();
         let success = txs_pool.enqueue(tx.clone());
@@ -140,7 +139,35 @@ impl Dispatcher {
         success
     }
 
-    pub fn get_txs_from_pool(
+    // TODO: Wal shoud be inside pool
+    pub fn add_txs_to_pool(&self, txs: Vec<SignedTransaction>) {
+        let txs_pool = &mut self.txs_pool.borrow_mut();
+        let added: Vec<SignedTransaction> = txs
+            .into_iter()
+            .filter(|tx| txs_pool.enqueue(tx.clone()))
+            .collect();
+        if self.wal_enable {
+            self.wal.write_batch(&added);
+        }
+    }
+
+    pub fn get_txs(&self, ids: &[H256]) -> Vec<SignedTransaction> {
+        let pool = self.txs_pool.borrow();
+        ids.into_iter()
+            .map(|id| pool.get(id).cloned())
+            .filter(|tx| tx.is_some())
+            .map(|tx| tx.unwrap())
+            .collect()
+    }
+
+    pub fn check_missing(&self, ids: Vec<H256>) -> Vec<H256> {
+        let pool = self.txs_pool.borrow();
+        ids.into_iter()
+            .filter(|id| pool.get(id).is_none())
+            .collect()
+    }
+
+    pub fn take_txs_from_pool(
         &self,
         height: u64,
         block_quota_limit: u64,
@@ -161,25 +188,27 @@ impl Dispatcher {
     }
 
     pub fn del_txs_from_pool_with_hash(&self, txs: &HashSet<H256>) {
-        //收到删除通知，从pool中删除vec中的交易
         {
             self.txs_pool.borrow_mut().update_with_hash(txs);
         }
-        //改成多线程删除数据
         if self.wal_enable {
             let mut wal = self.wal.clone();
             let txs = txs.clone();
             thread::spawn(move || {
-                for tx in txs {
-                    wal.delete_with_hash(&tx);
-                }
+                wal.delete_with_hashes(&txs.into_iter().collect::<Vec<H256>>());
             });
         }
     }
 
     // Read tx information from wal, and restore to txs_pool.
     // This function will be called in Dispatcher::new().
-    pub fn read_tx_from_wal(&mut self) -> u64 {
-        self.wal.read(&mut self.txs_pool.borrow_mut())
+    pub fn read_tx_from_wal(&mut self) -> usize {
+        let txs = self.wal.read_all();
+        let len = txs.len();
+        let mut pool = self.txs_pool.borrow_mut();
+        for tx in txs {
+            pool.enqueue(tx);
+        }
+        len
     }
 }

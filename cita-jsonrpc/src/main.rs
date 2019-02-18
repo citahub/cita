@@ -52,9 +52,6 @@
 //! uuid number and `TransferType`.
 //!
 
-#![feature(try_from)]
-#![feature(tool_lints)]
-
 extern crate bytes;
 extern crate clap;
 extern crate cpuprofiler;
@@ -64,6 +61,7 @@ extern crate futures;
 extern crate http;
 extern crate httparse;
 extern crate hyper;
+extern crate jsonrpc_proto;
 extern crate jsonrpc_types;
 extern crate libc;
 #[macro_use]
@@ -80,8 +78,11 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate threadpool;
 extern crate time;
+extern crate tokio;
 extern crate tokio_core;
+extern crate tokio_executor;
 extern crate tokio_io;
+extern crate tokio_timer;
 extern crate unicase;
 #[macro_use]
 extern crate util;
@@ -89,29 +90,33 @@ extern crate uuid;
 extern crate ws;
 
 mod config;
+mod extractor;
 mod fdlimit;
 mod helper;
+mod http_header;
 mod http_server;
 mod mq_handler;
+mod mq_publisher;
 mod response;
+mod service_error;
 mod ws_handler;
 
 use clap::App;
 use config::{NewTxFlowConfig, ProfileConfig};
 use cpuprofiler::PROFILER;
 use fdlimit::set_fd_limit;
+use futures::Future;
 use http_server::Server;
 use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
+use libproto::TryInto;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::sync::mpsc::{channel, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};
-use tokio_core::reactor::Core;
 use util::{set_panic_handler, Mutex};
 use uuid::Uuid;
 use ws_handler::WsFactory;
@@ -225,28 +230,36 @@ fn main() {
             .thread_number
             .unwrap_or_else(num_cpus::get);
 
-        for i in 0..threads {
-            let addr = addr.clone().parse().unwrap();
-            let tx = tx_relay.clone();
-            let timeout = http_config.timeout;
-            let http_responses = Arc::clone(&http_responses);
-            let allow_origin = http_config.allow_origin.clone();
-            let _ = thread::Builder::new()
-                .name(format!("worker{}", i))
-                .spawn(move || {
-                    let core = Core::new().unwrap();
-                    let handle = core.handle();
-                    let timeout = Duration::from_secs(timeout);
-                    let listener = http_server::listener(&addr, &handle).unwrap();
-                    Server::start(core, listener, tx, http_responses, timeout, &allow_origin);
-                })
-                .unwrap();
-        }
+        let addr = addr.parse().unwrap();
+        let timeout = http_config.timeout;
+        let allow_origin = http_config.allow_origin;
+        let _ = thread::Builder::new()
+            .name(String::from("http worker"))
+            .spawn(move || {
+                let server =
+                    Server::create(&addr, tx_relay, http_responses, timeout, &allow_origin)
+                        .unwrap();
+                let jsonrpc_server = server
+                    .jsonrpc()
+                    .map_err(|err| eprintln!("server err {}", err));
+
+                let mut rt = tokio::runtime::Builder::new()
+                    .core_threads(threads)
+                    .build()
+                    .unwrap();
+                rt.spawn(jsonrpc_server);
+
+                tokio_executor::enter()
+                    .unwrap()
+                    .block_on(rt.shutdown_on_idle())
+                    .unwrap();
+            })
+            .unwrap();
     }
 
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
-        mq_handle.handle(&key, &msg);
+        let _ = mq_handle.handle(&key, &msg);
     }
 }
 

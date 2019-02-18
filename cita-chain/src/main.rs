@@ -66,9 +66,6 @@
 //! [`Chain`]: ../core/libchain/chain/struct.Chain.html
 //!
 
-#![feature(try_from)]
-#![feature(tool_lints)]
-
 extern crate byteorder;
 extern crate cita_types;
 extern crate clap;
@@ -86,11 +83,15 @@ extern crate pubsub;
 extern crate serde_json;
 #[macro_use]
 extern crate util;
+extern crate cita_directories;
+extern crate db as cita_db;
 
 mod block_processor;
 mod forward;
 
 use block_processor::BlockProcessor;
+use cita_db::kvdb::{Database, DatabaseConfig};
+use cita_directories::DataPath;
 use clap::App;
 use core::db;
 use core::libchain;
@@ -102,8 +103,6 @@ use std::sync::Arc;
 use std::thread;
 use std::time;
 use std::time::Duration;
-use util::datapath::DataPath;
-use util::kvdb::{Database, DatabaseConfig};
 use util::set_panic_handler;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));

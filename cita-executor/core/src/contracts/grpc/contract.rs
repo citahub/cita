@@ -62,7 +62,6 @@ pub fn invoke_grpc_contract<B>(
     env_info: &EnvInfo,
     params: &ActionParams,
     state: &mut State<B>,
-    check_permission: bool,
     _check_quota: bool,
     connect_info: &ConnectInfo,
 ) -> GrpcResult<InvokeResponse>
@@ -70,7 +69,7 @@ where
     B: StateBackend,
 {
     let invoke_request = new_invoke_request(params, connect_info, env_info);
-    let mut evm_impl = CallEvmImpl::new(state, check_permission);
+    let mut evm_impl = CallEvmImpl::new(state);
     evm_impl.call(
         connect_info.get_ip(),
         connect_info.get_port(),
@@ -82,7 +81,6 @@ pub fn create_grpc_contract<B>(
     env_info: &EnvInfo,
     params: &ActionParams,
     state: &mut State<B>,
-    check_permission: bool,
     _check_quota: bool,
     connect_info: &ConnectInfo,
 ) -> GrpcResult<InvokeResponse>
@@ -90,7 +88,7 @@ where
     B: StateBackend,
 {
     let invoke_request = new_invoke_request(params, connect_info, env_info);
-    let mut evm_impl = CallEvmImpl::new(state, check_permission);
+    let mut evm_impl = CallEvmImpl::new(state);
     evm_impl.create(
         connect_info.get_ip(),
         connect_info.get_port(),

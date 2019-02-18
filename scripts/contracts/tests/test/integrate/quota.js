@@ -6,7 +6,7 @@ const quota = require('../helpers/quota');
 
 const { expect } = chai;
 const {
-  getTxReceipt, logger, nervos, genTxParams,
+  getTxReceipt, logger, appchain, genTxParams,
 } = util;
 const { setDefaultAQL, getDefaultAQL } = quota;
 
@@ -42,7 +42,7 @@ describe('test quota not enough error', () => {
   it('should send a tx with bigger quota and get error msg', async () => {
     const param = await genTxParams();
     // TODO should receive an error
-    nervos.appchain.sendTransaction(param).catch((e) => {
+    appchain.base.sendTransaction(param).catch((e) => {
       logger.log('\nerror:\n', e);
       expect(e).to.equal('QuotaNotEnough');
     });
@@ -71,7 +71,7 @@ describe('test quota not enough error', () => {
 
   it('should send a tx with bigger quota', async () => {
     const param = await genTxParams();
-    const res = await nervos.appchain.sendTransaction(param);
+    const res = await appchain.base.sendTransaction(param);
     logger.debug('\nSend tx ok:\n', JSON.stringify(res));
   });
 });

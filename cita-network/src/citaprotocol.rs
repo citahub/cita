@@ -88,6 +88,7 @@ pub fn pubsub_message_to_network_message(buf: &mut BytesMut, msg: Option<(String
         // Use 1 byte to store key length.
         if length_key > u8::max_value() as usize {
             error!("The MQ message key is too long {}.", key);
+            return;
         }
         // Use 1 bytes to store the length for key, then store key, the last part is body.
         let length_full = 1 + length_key + body.len();
@@ -97,6 +98,7 @@ pub fn pubsub_message_to_network_message(buf: &mut BytesMut, msg: Option<(String
                 key,
                 body.len()
             );
+            return;
         }
         let request_id = NETMSG_START + length_full as u64;
         NetworkEndian::write_u64(&mut request_id_bytes, request_id);

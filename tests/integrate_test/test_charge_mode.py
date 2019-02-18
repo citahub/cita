@@ -15,6 +15,7 @@ from ecdsa import SigningKey, SECP256k1
 from jsonrpcclient.http_client import HTTPClient
 
 LATEST_VERSION = 1
+DEFAULT_QUOTA_PRICE = 1000000
 
 def send_tx(privkey, to_addr, value=0, quota=30000, code="", version=LATEST_VERSION):
     """
@@ -153,18 +154,18 @@ def main():
 
     alice_old_balance = get_balance(alice_address)
 
-    # Send 10 * 10000 from miner to alice
-    test_transfer(miner_privkey, alice_address, 10 * 10000, version,
+    # Send 10 * 10000 * DEFAULT_QUOTA_PRICE from miner to alice
+    test_transfer(miner_privkey, alice_address, 10 * 10000 * DEFAULT_QUOTA_PRICE, version,
                   sender_is_miner=True)
-    assert get_balance(alice_address) - alice_old_balance == 10 * 10000, \
-        'Alice({}) should receive 10 * 10000 now'.format(alice_address)
-    # Send 50000 from alice to bob
+    assert get_balance(alice_address) - alice_old_balance == 10 * 10000 * DEFAULT_QUOTA_PRICE, \
+        'Alice({}) should receive 10 * 10000 * {} now'.format(alice_address, DEFAULT_QUOTA_PRICE)
 
+    # Send 30000 * DEFAULT_QUOTA_PRICE from alice to bob
     bob_old_balance = get_balance(bob_address)
-    test_transfer(alice_privkey, bob_address, 30000, version)
+    test_transfer(alice_privkey, bob_address, 30000 * DEFAULT_QUOTA_PRICE, version)
     bob_new_balance = get_balance(bob_address)
-    assert bob_new_balance - bob_old_balance == 30000, \
-        'Bob({}) should receive 30000 now'.format(bob_address)
+    assert bob_new_balance - bob_old_balance == 30000 * DEFAULT_QUOTA_PRICE, \
+        'Bob({}) should receive 30000 * {} now'.format(bob_address, DEFAULT_QUOTA_PRICE)
 
     # Bob send an invalid transaction to chain (Error=NotEnoughCash)
     tx_hash = send_tx(bob_privkey, "", quota=29000, code="", version=version)
@@ -172,8 +173,8 @@ def main():
     get_receipt(tx_hash)
     bob_new_balance2 = get_balance(bob_address)
     # Because base_quota_required=21000 (30000 - 21000 = 9000)
-    assert bob_new_balance - bob_new_balance2 == 21000, \
-        'Bob({}) should spend 21000'.format(bob_address)
+    assert bob_new_balance - bob_new_balance2 == 21000 * DEFAULT_QUOTA_PRICE, \
+        'Bob({}) should spend 21000 * {}'.format(bob_address, DEFAULT_QUOTA_PRICE)
 
     print('>>> Charge Mode test successfully!')
 

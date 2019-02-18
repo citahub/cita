@@ -20,6 +20,7 @@ use cita_types::{Address, H256, U256};
 use evm;
 use evm::action_params::{ActionParams, ActionValue};
 use executive::Executive;
+use libexecutor::economical_model::EconomicalModel;
 use reserved_addresses;
 use state::State;
 use state_db::*;
@@ -33,7 +34,6 @@ fn call_vm(
     use engines::NullEngine;
     use evm::env_info::EnvInfo;
     use evm::{Factory, VMType};
-    use libexecutor::executor::EconomicalModel;
     use state::Substate;
     use trace::{ExecutiveTracer, ExecutiveVMTracer};
     let factory = Factory::new(VMType::Interpreter, 1024 * 32);
@@ -51,8 +51,6 @@ fn call_vm(
         &native_factory,
         false,
         EconomicalModel::Quota,
-        false,
-        Address::from(0),
     );
     let mut out = vec![];
     ex.call(

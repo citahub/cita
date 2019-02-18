@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(try_from)]
 extern crate cita_crypto;
 #[macro_use]
 extern crate clap;
@@ -47,7 +46,6 @@ use core::libchain::chain::{RelayInfo, TxProof};
 use libproto::blockchain::UnverifiedTransaction;
 
 use arguments::{build_commandline, parse_arguments};
-use cita_types::traits::LowerHex;
 use configuration::{parse_configfile, UpStream};
 
 fn main() {
@@ -123,7 +121,7 @@ fn construct_transaction(
     communication::cita_get_metadata(upstream)
         .ok()
         .and_then(|metadata| {
-            if metadata.chain_id_v1 == relay_info.to_chain_id.lower_hex() {
+            if metadata.chain_id_v1 == relay_info.to_chain_id.into() {
                 Some(relay_info.to_chain_id)
             } else {
                 error!(

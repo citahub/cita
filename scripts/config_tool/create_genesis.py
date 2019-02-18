@@ -97,9 +97,7 @@ class GenesisData(object):
         self.contracts_docs_dir = contracts_docs_dir
         self.contracts_common_dir = os.path.join(self.contracts_dir, 'common')
         self.contracts_lib_dir = os.path.join(self.contracts_dir, 'lib')
-        self.contracts_perm_dir = os.path.join(self.contracts_dir, 'permission_management')
-        self.contracts_sys_dir = os.path.join(self.contracts_dir, 'system')
-        self.contracts_interfaces_dir = os.path.join(self.contracts_dir, 'interfaces')
+        self.contracts_interaction_dir = os.path.join(contracts_dir, 'interaction')
         contracts_list_file = os.path.join(contracts_dir, 'contracts.yml')
         self.load_contracts_list(contracts_list_file)
         self.load_contracts_args(init_data_file)
@@ -139,17 +137,19 @@ class GenesisData(object):
 
     def compile_to_data(self, name, path):
         """Compile a solidity file and return the result data."""
+
+        import logging
+
         compiled = solidity.compile_file(
             path,
             combined='bin,abi,userdoc,devdoc,hashes',
-            extra_args='common={} lib={} permission_management={} interfaces={} system={}'.format(
+            extra_args='common={} lib={} interaction={}'.format(
                 self.contracts_common_dir,
                 self.contracts_lib_dir,
-                self.contracts_perm_dir,
-                self.contracts_interfaces_dir,
-                self.contracts_sys_dir))
+                self.contracts_interaction_dir))
         data = solidity.solidity_get_contract_data(compiled, path, name)
         if not data['bin']:
+            logging.critical('The bin of contract %r is empty. Please check it!', name)
             sys.exit(1)
         return data
 
@@ -160,7 +160,7 @@ class GenesisData(object):
                 doc_file = os.path.join(self.contracts_docs_dir,
                                         '{}-{}.json'.format(name, doc_type))
                 with open(doc_file, 'w') as stream:
-                    json.dump(data[doc_type], stream, separators=(',', ': '),indent=4)
+                    json.dump(data[doc_type], stream, separators=(',', ': '), indent=4)
 
     def mine_contract_on_chain_tester(self, addr, code):
         """Mine in test chain to get data of a contract."""
@@ -180,6 +180,14 @@ class GenesisData(object):
     def init_normal_contracts(self):
         """Compile normal contracts from files and construct by arguments.
         """
+        flags = [
+            'checkCallPermission',
+            'checkSendTxPermission',
+            'checkCreateContractPermission',
+            'checkQuota',
+            'checkFeeBackPlatform',
+            'autoExec'
+        ]
         ncinfo = self.contracts_list['NormalContracts']
         for name, info in ncinfo.items():
             addr = info['address']
@@ -188,6 +196,11 @@ class GenesisData(object):
             self.write_docs(name, data)
             ctt = ContractTranslator(data['abi'])
             args = self.contracts_args.get(name)
+            if name == 'SysConfig':
+                args['flags'] = []
+                for flag in flags:
+                    args['flags'].append(args[flag])
+                    args.pop(flag)
             extra = b'' if not args else ctt.encode_constructor_arguments(
                 [arg for arg in args.values()])
             self.mine_contract_on_chain_tester(addr, data['bin'] + extra)

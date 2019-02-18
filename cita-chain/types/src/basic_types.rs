@@ -25,11 +25,3 @@ pub use log_blooms::LogBloomGroup;
 lazy_static! {
     pub static ref ZERO_LOGBLOOM: LogBloom = LogBloom::from([0x00; 256]);
 }
-
-/// Semantic boolean for when a seal/signature is included.
-pub enum Seal {
-    /// The seal/signature is included.
-    With,
-    /// The seal/signature is not included.
-    Without,
-}

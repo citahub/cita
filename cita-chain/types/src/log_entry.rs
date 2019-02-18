@@ -16,14 +16,14 @@
 
 //! Log entry type definition.
 
-use BlockNumber;
+use cita_types::traits::BloomTools;
+use cita_types::{Address, Bloom, H256};
+use jsonrpc_types::rpctypes::Log as RpcLog;
+use libproto::executor::LogEntry as ProtoLogEntry;
 use rlp::*;
 use std::ops::Deref;
-use cita_types::{Address, Bloom, H256};
-use cita_types::traits::BloomTools;
-use jsonrpc_types::rpctypes::Log as RpcLog;
 use util::{Bytes, HeapSizeOf};
-use libproto::executor::LogEntry as ProtoLogEntry;
+use BlockNumber;
 
 pub type LogBloom = Bloom;
 
@@ -67,21 +67,21 @@ impl HeapSizeOf for LogEntry {
 impl LogEntry {
     /// Calculates the bloom of this log entry.
     pub fn bloom(&self) -> LogBloom {
-        self.topics.iter().fold(
-            LogBloom::from_raw(&self.address),
-            |b, t| {
+        self.topics
+            .iter()
+            .fold(LogBloom::from_raw(&self.address), |b, t| {
                 let mut b = b;
                 b.accrue_raw(&t);
                 b
-            }
-        )
+            })
     }
 
     pub fn protobuf(&self) -> ProtoLogEntry {
         let mut proto_log_entry = ProtoLogEntry::new();
 
         proto_log_entry.set_address(self.address.to_vec());
-        proto_log_entry.topics = self.topics
+        proto_log_entry.topics = self
+            .topics
             .clone()
             .into_iter()
             .map(|topic| topic.to_vec())
@@ -152,7 +152,7 @@ impl Into<RpcLog> for LocalizedLogEntry {
 
 #[cfg(test)]
 mod tests {
-    use super::{LogEntry, LogBloom};
+    use super::{LogBloom, LogEntry};
     use cita_types::Address;
 
     #[test]
@@ -167,7 +167,9 @@ mod tests {
                      0000000000000000000000000000000000000000000000000000000000000000"
             .parse::<LogBloom>()
             .unwrap();
-        let address = "0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6".parse::<Address>().unwrap();
+        let address = "0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6"
+            .parse::<Address>()
+            .unwrap();
         let log = LogEntry {
             address,
             topics: vec![],

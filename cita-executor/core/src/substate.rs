@@ -16,11 +16,9 @@
 
 //! Execution environment substate.
 
-use evm::Schedule;
-use log_entry::LogEntry;
-use state::CleanupMode;
-use std::collections::HashSet;
 use cita_types::{Address, U256};
+use log_entry::LogEntry;
+use std::collections::HashSet;
 
 /// State changes which should be applied in finalize,
 /// after transaction is fully executed.
@@ -54,16 +52,8 @@ impl Substate {
         self.garbage.extend(s.garbage.into_iter());
         self.logs.extend(s.logs.into_iter());
         self.sstore_clears_count = self.sstore_clears_count + s.sstore_clears_count;
-        self.contracts_created.extend(s.contracts_created.into_iter());
-    }
-
-    /// Get the cleanup mode object from this.
-    pub fn cleanup_mode(&mut self, schedule: &Schedule) -> CleanupMode {
-        match (schedule.no_empty, schedule.kill_empty) {
-            (false, _) => CleanupMode::ForceCreate,
-            (true, false) => CleanupMode::NoEmpty,
-            (true, true) => CleanupMode::KillEmpty(&mut self.garbage),
-        }
+        self.contracts_created
+            .extend(s.contracts_created.into_iter());
     }
 }
 
@@ -83,20 +73,20 @@ mod tests {
         let mut sub_state = Substate::new();
         sub_state.contracts_created.push(1u64.into());
         sub_state.logs.push(LogEntry {
-                                address: 1u64.into(),
-                                topics: vec![],
-                                data: vec![],
-                            });
+            address: 1u64.into(),
+            topics: vec![],
+            data: vec![],
+        });
         sub_state.sstore_clears_count = 5.into();
         sub_state.suicides.insert(10u64.into());
 
         let mut sub_state_2 = Substate::new();
         sub_state_2.contracts_created.push(2u64.into());
         sub_state_2.logs.push(LogEntry {
-                                  address: 1u64.into(),
-                                  topics: vec![],
-                                  data: vec![],
-                              });
+            address: 1u64.into(),
+            topics: vec![],
+            data: vec![],
+        });
         sub_state_2.sstore_clears_count = 7.into();
 
         sub_state.accrue(sub_state_2);

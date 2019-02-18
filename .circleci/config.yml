@@ -107,7 +107,7 @@ alias:
 
   - &job-default
     docker:
-      - image: cita/cita-build:ubuntu-18.04-20181009
+      - image: cita/cita-build:ubuntu-18.04-20190107
     working_directory: ~/cita-build
     resource_class: xlarge
 
@@ -218,7 +218,7 @@ jobs:
       HASH_ALGO: sm3hash
       CRYPTO_ALGO: sm2
 
-  "Integrate Test":
+  "Integrate Test Part-1":
     <<: *job-default
     steps:
       - restore_cache: *restore-source-codes-cache
@@ -230,6 +230,13 @@ jobs:
       - run:
           name: Basic Tls Integrate Test
           command: ./tests/integrate_test/cita_tls_basic.sh
+
+  "Integrate Test Part-2":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
           name: JSON-RPC Mock Test in Quota Mode
           command: ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota
@@ -244,8 +251,14 @@ jobs:
       - run:
           name: Test Executor Process SignProposal/BlockWithProof
           command: ./tests/integrate_test/box_executor_test.sh
+      - run:
+          name: Test Snapshot Taking And Restoring
+          command: ./tests/integrate_test/cita_snapshot_test.sh
+      - run:
+          name: Test Amend
+          command: ./tests/integrate_test/cita_amend_test.sh
 
-  "Byzantine Test":
+  "Byzantine Test in Quota Mode":
     <<: *job-default
     steps:
       - restore_cache: *restore-source-codes-cache
@@ -254,6 +267,13 @@ jobs:
       - run:
           name: Byzantine Test in Quota Mode
           command: ./tests/integrate_test/cita_byzantinetest.sh quota
+
+  "Byzantine Test in Charge Mode":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
           name: Byzantine Test in Charge Mode
           command: ./tests/integrate_test/cita_byzantinetest.sh charge
@@ -295,6 +315,24 @@ jobs:
             cargo tarpaulin -v -p core common-types core-executor evm --ignore-tests | grep -Ev "cita|tools"
       - save_cache: *save-tarpaulin-cache
 
+  "Genesis Test":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Genesis Test
+          command: ./tests/compatibility/check_genesis.sh
+
+  "Passed":
+    docker:
+      - image: alpine:latest
+    steps:
+      - run:
+          name: Passed
+          command: exit 0
+
 workflows:
   version: 2
   "Build & Test":
@@ -304,9 +342,9 @@ workflows:
 
       - "Check Contracts"
 
-      - "Test Coverage":
-          requires:
-          - "Check Basic"
+      # - "Test Coverage":
+      #     requires:
+      #     - "Check Basic"
 
       - "Check Clippy":
           requires:
@@ -319,16 +357,25 @@ workflows:
           requires:
             - "Release"
 
-      - "Integrate Test":
+      - "Integrate Test Part-1":
           requires:
             - "Release"
-      - "Byzantine Test":
+      - "Integrate Test Part-2":
+          requires:
+            - "Release"
+      - "Byzantine Test in Quota Mode":
+          requires:
+            - "Release"
+      - "Byzantine Test in Charge Mode":
           requires:
             - "Release"
       - "Crosschain Test":
           requires:
             - "Release"
       - "Robustness Test":
+          requires:
+            - "Release"
+      - "Genesis Test":
           requires:
             - "Release"
 
@@ -338,3 +385,15 @@ workflows:
       - "Unit Test (sm3 & sm2)":
           requires:
             - "Unit Test (sha3 & secp256k1)"
+
+      - "Passed":
+          requires:
+            - "Integrate Test Part-1"
+            - "Integrate Test Part-2"
+            - "Byzantine Test in Quota Mode"
+            - "Byzantine Test in Charge Mode"
+            - "Crosschain Test"
+            - "Robustness Test"
+            - "Genesis Test"
+            - "Unit Test (blake2b & ed25519)"
+            - "Unit Test (sm3 & sm2)"

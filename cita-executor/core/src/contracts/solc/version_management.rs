@@ -62,7 +62,7 @@ impl<'a> VersionManager<'a> {
     }
 
     pub fn default_version() -> u32 {
-        error!("Use default emergency break state.");
+        error!("Use default version.");
         0
     }
 }

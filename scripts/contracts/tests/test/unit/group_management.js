@@ -10,7 +10,7 @@ const { abi } = group;
 
 // util
 const {
-  logger, web3, getTxReceipt, genContract,
+  logger, getTxReceipt, genContract, appchain,
 } = util;
 
 // group management
@@ -28,9 +28,9 @@ let contract;
 let res;
 
 // test data TODO as a file
-const name = web3.utils.utf8ToHex('testGroup');
-const newName = web3.utils.utf8ToHex('testGroupNewName');
-const newName2 = web3.utils.utf8ToHex('testGroupNewName2');
+const name = appchain.utils.utf8ToHex('testGroup');
+const newName = appchain.utils.utf8ToHex('testGroupNewName');
+const newName2 = appchain.utils.utf8ToHex('testGroupNewName2');
 const { rootGroup, testSender, testAddr } = config;
 const addr = testSender.address;
 
