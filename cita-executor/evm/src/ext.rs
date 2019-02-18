@@ -16,14 +16,14 @@
 
 //! Interface for Evm externalities.
 
-use env_info::*;
-use return_data::ReturnData;
-use error::Result;
-use Schedule;
 use call_type::CallType;
+use cita_types::{Address, H256, U256};
+use env_info::*;
+use error::Result;
+use return_data::ReturnData;
 use std::sync::Arc;
 use util::*;
-use cita_types::{Address, H256, U256};
+use Schedule;
 
 /// Result of externalities create function.
 pub enum ContractCreateResult {
@@ -88,7 +88,17 @@ pub trait Ext {
     /// Otherwise returns call_result which contains gas left
     /// and true if subcall was successfull.
     #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
-    fn call(&mut self, gas: &U256, sender_address: &Address, receive_address: &Address, value: Option<U256>, data: &[u8], code_address: &Address, output: &mut [u8], call_type: CallType) -> MessageCallResult;
+    fn call(
+        &mut self,
+        gas: &U256,
+        sender_address: &Address,
+        receive_address: &Address,
+        value: Option<U256>,
+        data: &[u8],
+        code_address: &Address,
+        output: &mut [u8],
+        call_type: CallType,
+    ) -> MessageCallResult;
 
     /// Returns code at given address
     fn extcode(&self, address: &Address) -> Result<Arc<Bytes>>;
@@ -128,7 +138,14 @@ pub trait Ext {
     }
 
     /// Trace the finalised execution of a single instruction.
-    fn trace_executed(&mut self, _gas_used: U256, _stack_push: &[U256], _mem_diff: Option<(usize, &[u8])>, _store_diff: Option<(U256, U256)>) {}
+    fn trace_executed(
+        &mut self,
+        _gas_used: U256,
+        _stack_push: &[U256],
+        _mem_diff: Option<(usize, &[u8])>,
+        _store_diff: Option<(U256, U256)>,
+    ) {
+    }
 
     /// Check if running in static context.
     fn is_static(&self) -> bool;

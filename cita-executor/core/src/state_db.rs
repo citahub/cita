@@ -18,9 +18,10 @@
 // Remove some hf code.
 
 use byteorder::{ByteOrder, LittleEndian};
+use cita_db::{DBTransaction, HashDB, JournalDB, KeyValueDB};
 use cita_types::{Address, H256};
 use db::COL_ACCOUNT_BLOOM;
-use ethcore_bloom_journal::*;
+use ethcore_bloom_journal::{Bloom, BloomJournal};
 use header::BlockNumber;
 use lru_cache::LruCache;
 use state::backend::*;
@@ -28,7 +29,7 @@ use state::Account;
 use std::collections::{HashSet, VecDeque};
 use std::sync::Arc;
 use util::cache::MemoryLruCache;
-use util::{DBTransaction, HashDB, JournalDB, KeyValueDB, Mutex, UtilError};
+use util::{Mutex, UtilError};
 
 /// Value used to initialize bloom bitmap size.
 ///
@@ -92,8 +93,8 @@ pub struct StateDB {
     account_cache: Arc<Mutex<AccountCache>>,
     /// DB Code cache. Maps code hashes to shared bytes.
     code_cache: Arc<Mutex<MemoryLruCache<H256, Arc<Vec<u8>>>>>,
-    /// Local dirty cache.
-    local_cache: Vec<CacheQueueItem>,
+    /// Local dirty account cache.
+    local_account_cache: Vec<CacheQueueItem>,
     /// Shared account bloom. Does not handle chain reorganizations.
     account_bloom: Arc<Mutex<Bloom>>,
     cache_size: usize,
@@ -120,7 +121,7 @@ impl StateDB {
                 modifications: VecDeque::new(),
             })),
             code_cache: Arc::new(Mutex::new(MemoryLruCache::new(code_cache_size))),
-            local_cache: Vec::new(),
+            local_account_cache: Vec::new(),
             account_bloom: Arc::new(Mutex::new(bloom)),
             cache_size,
             parent_hash: None,
@@ -212,143 +213,13 @@ impl StateDB {
         self.db.mark_canonical(batch, now, id)
     }
 
-    /// Propagate local cache into the global cache and synchonize
-    /// the global cache with the best block state.
-    /// This function updates the global cache by removing entries
-    /// that are invalidated by chain reorganization. `sync_cache`
-    /// should be called after the block has been committed and the
-    /// blockchain route has ben calculated.
-    pub fn sync_cache(&mut self, enacted: &[H256], retracted: &[H256], is_best: bool) {
-        trace!(
-            "sync_cache id = (#{:?}, {:?}), parent={:?}, best={}",
-            self.commit_number,
-            self.commit_hash,
-            self.parent_hash,
-            is_best
-        );
-        let mut cache = self.account_cache.lock();
-        let cache = &mut *cache;
-
-        // Purge changes from re-enacted and retracted blocks.
-        // Filter out commiting block if any.
-        let mut clear = false;
-        for block in enacted
-            .iter()
-            .filter(|h| self.commit_hash.as_ref().map_or(true, |p| *h != p))
-        {
-            clear = clear || {
-                if let Some(ref mut m) = cache.modifications.iter_mut().find(|m| &m.hash == block) {
-                    trace!("Reverting enacted block {:?}", block);
-                    m.is_canon = true;
-                    for a in &m.accounts {
-                        trace!("Reverting enacted address {:?}", a);
-                        cache.accounts.remove(a);
-                    }
-                    false
-                } else {
-                    true
-                }
-            };
-        }
-
-        for block in retracted {
-            clear = clear || {
-                if let Some(ref mut m) = cache.modifications.iter_mut().find(|m| &m.hash == block) {
-                    trace!("Retracting block {:?}", block);
-                    m.is_canon = false;
-                    for a in &m.accounts {
-                        trace!("Retracted address {:?}", a);
-                        cache.accounts.remove(a);
-                    }
-                    false
-                } else {
-                    true
-                }
-            };
-        }
-        if clear {
-            // We don't know anything about the block; clear everything
-            trace!("Wiping cache");
-            cache.accounts.clear();
-            cache.modifications.clear();
-        }
-
-        // Propagate cache only if committing on top of the latest canonical state
-        // blocks are ordered by number and only one block with a given number is marked as canonical
-        // (contributed to canonical state cache)
-        if let (Some(ref number), Some(ref hash), Some(ref parent)) =
-            (self.commit_number, self.commit_hash, self.parent_hash)
-        {
-            if cache.modifications.len() == STATE_CACHE_BLOCKS {
-                cache.modifications.pop_back();
-            }
-            let mut modifications = HashSet::new();
-            trace!("committing {} cache entries", self.local_cache.len());
-            for account in self.local_cache.drain(..) {
-                if account.modified {
-                    modifications.insert(account.address);
-                }
-                if is_best {
-                    let acc = account.account.0;
-                    if let Some(&mut Some(ref mut existing)) =
-                        cache.accounts.get_mut(&account.address)
-                    {
-                        if let Some(new) = acc {
-                            if account.modified {
-                                existing.overwrite_with(new);
-                            }
-                            continue;
-                        }
-                    }
-                    cache.accounts.insert(account.address, acc);
-                }
-            }
-
-            // Save modified accounts. These are ordered by the block number.
-            let block_changes = BlockChanges {
-                accounts: modifications,
-                number: *number,
-                hash: *hash,
-                is_canon: is_best,
-                parent: *parent,
-            };
-            let insert_at = cache
-                .modifications
-                .iter()
-                .enumerate()
-                .find(|&(_, m)| m.number < *number)
-                .map(|(i, _)| i);
-            trace!("inserting modifications at {:?}", insert_at);
-            if let Some(insert_at) = insert_at {
-                cache.modifications.insert(insert_at, block_changes);
-            } else {
-                cache.modifications.push_back(block_changes);
-            }
-        }
-    }
-
-    /// Clone the database.
-    pub fn boxed_clone(&self) -> StateDB {
-        StateDB {
-            db: self.db.boxed_clone(),
-            account_cache: self.account_cache.clone(),
-            code_cache: self.code_cache.clone(),
-            local_cache: Vec::new(),
-            account_bloom: self.account_bloom.clone(),
-            cache_size: self.cache_size,
-            parent_hash: None,
-            commit_hash: None,
-            commit_number: None,
-        }
-    }
-
     /// Clone the database for a canonical state.
     pub fn boxed_clone_canon(&self, parent: &H256) -> StateDB {
         StateDB {
             db: self.db.boxed_clone(),
             account_cache: self.account_cache.clone(),
             code_cache: self.code_cache.clone(),
-            local_cache: Vec::new(),
+            local_account_cache: Vec::new(),
             account_bloom: self.account_bloom.clone(),
             cache_size: self.cache_size,
             parent_hash: Some(*parent),
@@ -432,7 +303,7 @@ impl Backend for StateDB {
     }
 
     fn add_to_account_cache(&mut self, address: Address, data: Option<Account>, modified: bool) {
-        self.local_cache.push(CacheQueueItem {
+        self.local_account_cache.push(CacheQueueItem {
             address,
             account: SyncAccount(data),
             modified,
@@ -482,6 +353,73 @@ impl Backend for StateDB {
     fn is_known_null(&self, address: &Address) -> bool {
         trace!(target: "account_bloom", "Check account bloom: {:?}", address);
         !self.account_bloom.lock().check(address)
+    }
+
+    /// Propagate local cache into the global cache.
+    /// `sync_cache` should be called after the block has been committed.
+    fn sync_account_cache(&mut self) {
+        trace!(
+            "sync_cache id = (#{:?}, {:?}), parent={:?}",
+            self.commit_number,
+            self.commit_hash,
+            self.parent_hash,
+        );
+        let mut cache = self.account_cache.lock();
+        let cache = &mut *cache;
+
+        // Propagate cache only if committing on top of the latest canonical state
+        // blocks are ordered by number and only one block with a given number is marked as canonical
+        // (contributed to canonical state cache)
+        if let (Some(ref number), Some(ref hash), Some(ref parent)) =
+            (self.commit_number, self.commit_hash, self.parent_hash)
+        {
+            if cache.modifications.len() == STATE_CACHE_BLOCKS {
+                cache.modifications.pop_back();
+            }
+            let mut modifications = HashSet::new();
+            trace!(
+                "committing {} cache entries",
+                self.local_account_cache.len()
+            );
+            for account in self.local_account_cache.drain(..) {
+                if account.modified {
+                    modifications.insert(account.address);
+                }
+
+                let acc = account.account.0;
+                if let Some(&mut Some(ref mut existing)) = cache.accounts.get_mut(&account.address)
+                {
+                    if let Some(new) = acc {
+                        if account.modified {
+                            existing.overwrite_with(new);
+                        }
+                        continue;
+                    }
+                }
+                cache.accounts.insert(account.address, acc);
+            }
+
+            // Save modified accounts. These are ordered by the block number.
+            let block_changes = BlockChanges {
+                accounts: modifications,
+                number: *number,
+                hash: *hash,
+                is_canon: true,
+                parent: *parent,
+            };
+            let insert_at = cache
+                .modifications
+                .iter()
+                .enumerate()
+                .find(|&(_, m)| m.number < *number)
+                .map(|(i, _)| i);
+            trace!("inserting modifications at {:?}", insert_at);
+            if let Some(insert_at) = insert_at {
+                cache.modifications.insert(insert_at, block_changes);
+            } else {
+                cache.modifications.push_back(block_changes);
+            }
+        }
     }
 }
 

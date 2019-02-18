@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_db::trie;
 use cita_types::{Address, H256, U256};
 use state::backend::Backend;
 use state::State;
-use util::trie;
 
 pub fn set_storage<B>(
     state: &mut State<B>,

@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,14 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#![feature(try_from)]
-#![cfg_attr(test, feature(test))]
-#![feature(tool_lints)]
-
 extern crate bincode;
 extern crate byteorder;
-#[macro_use]
+extern crate cita_crypto_trait;
 extern crate libproto;
+extern crate snappy;
 #[macro_use]
 extern crate logger;
 extern crate lru_cache;
@@ -30,10 +27,15 @@ extern crate proof;
 extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
+extern crate cita_merklehash;
+extern crate db as cita_db;
+extern crate hashable;
 #[cfg_attr(test, macro_use)]
 extern crate serde_json;
-#[macro_use]
 extern crate util;
+
+#[macro_use]
+extern crate crossbeam_channel;
 
 #[macro_use]
 extern crate rlp_derive;
@@ -57,8 +59,6 @@ extern crate transient_hashmap;
 extern crate cita_crypto;
 extern crate core;
 extern crate ethabi;
-#[cfg(test)]
-extern crate test;
 
 extern crate grpc;
 #[cfg(feature = "privatetx")]
@@ -72,6 +72,8 @@ extern crate num;
 extern crate rand;
 
 pub mod account_db;
+#[cfg(test)]
+pub mod benches;
 pub mod builtin;
 pub mod executed;
 pub mod executive;
@@ -88,13 +90,14 @@ pub mod engines;
 pub mod error;
 pub mod substate;
 
+pub mod authentication;
 pub mod contracts;
 pub mod libexecutor;
 pub mod snapshot;
 
 mod spec;
 
+pub use cita_db::journaldb;
 pub use evm::Error;
 pub use factory::*;
 pub use types::*;
-pub use util::journaldb;

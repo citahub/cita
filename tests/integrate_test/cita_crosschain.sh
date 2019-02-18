@@ -8,7 +8,7 @@ PADDR="2e988a386a799f506693793c6a5af6b54dfaabfb"
 
 # Chain Manager Contract
 CMC_ADDR="ffffffffffffffffffffffffffffffffff020002"
-CMC="scripts/contracts/src/system/chain_manager.sol"
+CMC="scripts/contracts/src/system/ChainManager.sol"
 CMC_ABI=
 
 # Base dir for import contract files
@@ -20,7 +20,7 @@ JSONRPC_BLOCKHEADER='{"jsonrpc":"2.0","method":"getBlockHeader","params":["0x%x"
 JSONRPC_STATEPROOF='{"jsonrpc":"2.0","method":"getStateProof","params":["0x%s","0x%s","0x%x"],"id":1}'
 
 # Test contract file
-CONTRACT_DEMO="scripts/contracts/tests/contracts/cross_chain_token.sol"
+CONTRACT_DEMO="scripts/contracts/tests/contracts/MyToken.sol"
 DEMO_ABI=
 
 # Global variables which are set in functions
@@ -498,11 +498,11 @@ function main () {
     done
     local side_auths=$(ls address[0-4] | sort | xargs -I {} cat {} \
         | tr '\n' ',' | rev | cut -c 2- | rev)
-    rm address[0-4]
     local main_auths=$(cat mainchain/template/authorities.list \
         | xargs -I {} printf "%s," "{}" | rev | cut -c 2- | rev)
     ./scripts/create_cita_config.py create --chain_name sidechain \
         --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" \
+        --nodes "127.0.0.1:24000,127.0.0.1:24001,127.0.0.1:24002,127.0.0.1:24003" \
         --authorities "${side_auths}" \
         --jsonrpc_port 21337 --ws_port 24337 --grpc_port 25000 \
         --contract_arguments "SysConfig.chainId=${side_chain_id}" \
@@ -520,13 +520,10 @@ function main () {
     send_contract main "${CMC_ADDR}" "${CMC_ABI}" \
         "newSideChain" "${side_chain_id}, [${side_auths}]"
 
-    title "Create side chain configs ..."
+    title "Complete side chain configs ..."
     for ((id=0;id<4;id++)); do
-        ./scripts/create_cita_config.py append \
-            --chain_name sidechain \
-            --node "127.0.0.1:$((24000+${id}))" \
-            --signer "$(cat secret${id})"
-        rm -f secret${id}
+        cat "secret${id}" > "sidechain/${id}/privkey"
+        rm -f "secret${id}" "address${id}"
     done
 
     start_chain side 4

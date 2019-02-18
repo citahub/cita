@@ -30,7 +30,7 @@ use evm::action_params::{ActionParams, ActionValue};
 use evm::env_info::EnvInfo;
 use evm::{Factory, VMType};
 use executive::Executive;
-use libexecutor::executor::EconomicalModel;
+use libexecutor::economical_model::EconomicalModel;
 use state::Substate;
 use trace::{ExecutiveTracer, ExecutiveVMTracer};
 use util::BytesRef;
@@ -129,8 +129,6 @@ fn call_vm(params: ActionParams) -> evm::Result<evm::FinalizationResult> {
         &native_factory,
         false,
         EconomicalModel::Quota,
-        false,
-        Address::from(0),
     );
     let mut out = vec![];
     ex.call(

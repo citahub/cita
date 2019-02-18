@@ -16,10 +16,11 @@
 
 use super::super::instructions;
 use bit_set::BitSet;
-use std::sync::Arc;
 use cita_types::H256;
-use util::{HeapSizeOf, Mutex, HASH_EMPTY};
+use hashable::HASH_EMPTY;
+use std::sync::Arc;
 use util::cache::MemoryLruCache;
+use util::{HeapSizeOf, Mutex};
 
 const DEFAULT_CACHE_SIZE: usize = 4 * 1024 * 1024;
 
@@ -42,7 +43,9 @@ impl SharedCache {
     /// Create a jump destinations cache with a maximum size in bytes
     /// to cache.
     pub fn new(max_size: usize) -> Self {
-        SharedCache { jump_destinations: Mutex::new(MemoryLruCache::new(max_size)) }
+        SharedCache {
+            jump_destinations: Mutex::new(MemoryLruCache::new(max_size)),
+        }
     }
 
     /// Get jump destinations bitmap for a contract.
@@ -56,7 +59,9 @@ impl SharedCache {
         }
 
         let d = Self::find_jump_destinations(code);
-        self.jump_destinations.lock().insert(*code_hash, Bits(Arc::clone(&d)));
+        self.jump_destinations
+            .lock()
+            .insert(*code_hash, Bits(Arc::clone(&d)));
 
         d
     }

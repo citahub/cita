@@ -16,14 +16,15 @@
 
 //! Transaction execution format module.
 
+use cita_db::trie;
+use cita_types::{Address, U256, U512};
 use evm;
+use receipt::ReceiptError;
 use std::fmt;
-use trace::{VMTrace, FlatTrace};
+use trace::{FlatTrace, VMTrace};
 use types::log_entry::LogEntry;
 use types::state_diff::StateDiff;
-use cita_types::{U256, Address, U512};
-use util::{Bytes, trie};
-use receipt::ReceiptError;
+use util::Bytes;
 
 /// Transaction execution receipt.
 #[derive(Debug, PartialEq, Clone)]
@@ -68,7 +69,7 @@ pub struct Executed {
     /// The state diff, if we traced it.
     pub state_diff: Option<StateDiff>,
     /// Transaction sender account nonce
-    pub account_nonce: U256
+    pub account_nonce: U256,
 }
 
 /// Result of executing the transaction.

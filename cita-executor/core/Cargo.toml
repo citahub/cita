@@ -7,6 +7,9 @@ authors = ["Parity Technologies <admin@parity.io>", "Cryptape Technologies <cont
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 byteorder = { version = "1", default-features = false }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 bincode = "0.8.0"
 serde = "1.0"
 serde_derive = "1.0"
@@ -23,16 +26,17 @@ lazy_static = "0.2"
 bit-set = "0.4"
 rust-crypto = "0.2.34"
 num = "0.1"
-num_cpus = "1.2"
 rand = "0.3"
 time = "0.1"
 crossbeam = "0.2"
+crossbeam-channel = "0.2"
 transient-hashmap = "0.4.0"
 
 cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-crypto-trait = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../../cita-chain/types" }
@@ -43,6 +47,7 @@ ethabi = "4.2.0"
 zktx = { git = "https://github.com/cryptape/zktx.git", optional = true }
 enum_primitive = "0.1.1"
 largest-remainder-method = "0.1"
+db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [dev-dependencies]
 rand = "0.3"
@@ -51,12 +56,12 @@ tempdir = "0.3.7"
 
 [features]
 default = ["secp256k1", "sha3hash"]
-secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1", "proof/secp256k1", "jsonrpc-types/secp256k1"]
-ed25519 = ["cita-crypto/ed25519", "libproto/ed25519", "proof/ed25519", "jsonrpc-types/ed25519"]
-sm2 = ["cita-crypto/sm2", "libproto/sm2", "proof/sm2", "jsonrpc-types/sm2"]
-sha3hash = ["util/sha3hash", "libproto/sha3hash", "proof/sha3hash", "jsonrpc-types/sha3hash"]
-blake2bhash = ["util/blake2bhash", "libproto/blake2bhash", "proof/blake2bhash", "jsonrpc-types/blake2bhash"]
-sm3hash = ["util/sm3hash", "libproto/sm3hash", "proof/sm3hash", "jsonrpc-types/sm3hash"]
+secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1", "proof/secp256k1"]
+ed25519 = ["cita-crypto/ed25519", "libproto/ed25519", "proof/ed25519"]
+sm2 = ["cita-crypto/sm2", "libproto/sm2", "proof/sm2"]
+sha3hash = ["hashable/sha3hash", "libproto/sha3hash", "proof/sha3hash"]
+blake2bhash = ["hashable/blake2bhash", "libproto/blake2bhash", "proof/blake2bhash"]
+sm3hash = ["hashable/sm3hash", "libproto/sm3hash", "proof/sm3hash"]
 privatetx = ["zktx"]
 evm-debug = ["evm/evm-debug"]
 evm-debug-tests = ["evm-debug", "evm/evm-debug-tests"]

@@ -1,6 +1,6 @@
 # <img src="https://github.com/cryptape/assets/blob/master/CITA-logo.png?raw=true" width="256">
 
-[![Build Status](https://travis-ci.org/cryptape/cita.svg?branch=develop)](https://travis-ci.org/cryptape/cita)
+[![Build Status](https://travis-ci.com/cryptape/cita.svg?branch=develop)](https://travis-ci.com/cryptape/cita)
 
 English | [简体中文](./README-CN.md)
 
@@ -26,7 +26,7 @@ CITA is a fast and scalable blockchain for enterprises. CITA supports both nativ
 
 - **Engineering Experience**: There're many CITA networks running in banks, payment and insurance production environment, with Cryptape or CITA Integration Provider's technical support.  CITA has accumulated a lot of engineering experience.
 
-## White Paper
+## Whitepaper
 
 For more details please check the white paper.
 
@@ -35,8 +35,8 @@ For more details please check the white paper.
 
 ## Document
 
-- [English](https://cryptape.github.io/cita/#/en-US/latest/index)
-- [Chinese](https://cryptape.github.io/cita/)
+- [English](https://docs.citahub.com/en-US/cita/cita-intro)
+- [Chinese](https://docs.citahub.com/zh-CN/cita/cita-intro)
 
 ## API/SDK
 
@@ -44,9 +44,10 @@ CITA supports JSON-RPC and WebSocket (experimental) API/v1.
 
 For CITA API/v1, You can use any HTTP client, or following SDKs:
 
-* [Java](https://github.com/cryptape/nervosj)
-* [Rust](https://github.com/cryptape/rust-web3)
-* [JavaScript](https://github.com/cryptape/nervos.js)
+* [Java](https://github.com/cryptape/cita-sdk-java)
+* [JavaScript](https://github.com/cryptape/cita-sdk-js)
+* [Swift](https://github.com/cryptape/cita-sdk-swift)
+* [Ruby](https://github.com/cryptape/cita-sdk-ruby)
 
 ## Contributing
 
@@ -74,4 +75,4 @@ CITA is created by Cryptape team with :heart:.
 
 ## Contact us
 
-[Telegram Group](https://t.me/joinchat/E7dJKFL8xTwCe8MaiZWdhw)
+Email: <contact@cryptape.com>

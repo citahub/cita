@@ -89,11 +89,15 @@ This is the primary script for controlling the $SCRIPT node.
 
  SCRIPTING COMMANDS
     backup <node>
-        Backup the data and logs into backup directory. Prints the specified
+        Backup the node's data and logs into backup directory, which actually
+        copy that data and logs into backup directory. Prints the specified
         backup commands. When the node is running, prints:
         "Node is already running!"
 
-    clean <node> (deprecated, use 'backup' instead)
+    clean <node>
+        Clean the node's data and logs, which actually move that data and logs
+        into backup directory. Prints the specified backup commands. When the
+        node is running, prints: "Node is already running!"
 
     logrotate <node>
         Archives the current node logs, starts fresh logs. Prints the archived
@@ -229,8 +233,8 @@ do_status() {
     done
 }
 
-do_backup() {
-    # Backup empty node always successfully
+do_clean() {
+    # Clean empty node always successfully
     if [[ ! -d ${NODE_DATA_DIR} || ! -d ${NODE_LOGS_DIR} ]]; then
         echo "Node ${NODE_NAME} has no data and logs directories"
         exit 0
@@ -246,6 +250,26 @@ do_backup() {
     if [ -e ${NODE_LOGS_DIR} ] ; then
         echo "mv ${NODE_LOGS_DIR} ${backup_dir}/"
         mv ${NODE_LOGS_DIR} ${backup_dir}/
+    fi
+}
+
+do_backup() {
+    # Backup empty node always successfully
+    if [[ ! -d ${NODE_DATA_DIR} || ! -d ${NODE_LOGS_DIR} ]]; then
+        echo "Node ${NODE_NAME} has no data and logs directories"
+        exit 0
+    fi
+
+    # Copy data/ and logs/ into backup directory
+    backup_dir="$(pwd)/backup.$(date -Iseconds)"
+    mkdir -p ${backup_dir}
+    if [ -e ${NODE_DATA_DIR} ] ; then
+        echo "cp -r ${NODE_DATA_DIR} ${backup_dir}/"
+        cp -r ${NODE_DATA_DIR} ${backup_dir}/
+    fi
+    if [ -e ${NODE_LOGS_DIR} ] ; then
+        echo "cp -r ${NODE_LOGS_DIR} ${backup_dir}/"
+        cp -r ${NODE_LOGS_DIR} ${backup_dir}/
     fi
 }
 
@@ -405,9 +429,9 @@ case "${COMMAND}" in
         do_backup
         ;;
 
-    clean) # deprecated, use 'backup' instead
+    clean)
         node_down_check
-        do_backup
+        do_clean
         ;;
 
     help)

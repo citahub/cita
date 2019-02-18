@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2018 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -20,20 +20,25 @@ extern crate tempdir;
 
 use self::rustc_serialize::hex::FromHex;
 use self::tempdir::TempDir;
-use cita_crypto::KeyPair;
+use cita_crypto::PrivKey;
+use cita_db::kvdb::{self, Database, DatabaseConfig};
+use cita_db::KeyValueDB;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, U256};
 use core::libchain::chain;
+use crossbeam_channel::{Receiver, Sender};
 use db;
 use journaldb;
-use libexecutor::block::{Block, BlockBody};
-use libexecutor::executor::{Config, Executor};
+use libexecutor::block::{Block, BlockBody, ClosedBlock, OpenBlock};
+use libexecutor::command;
+use libexecutor::executor::Executor;
 use libexecutor::genesis::Genesis;
 use libexecutor::genesis::Spec;
 use libproto::blockchain;
 use serde_json;
 use state::State;
 use state_db::*;
+use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
@@ -41,22 +46,20 @@ use std::path::Path;
 use std::process::{Command, Output};
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
+use types::header::OpenHeader;
 use types::transaction::SignedTransaction;
-use util::crypto::CreateKey;
-use util::kvdb::{Database, DatabaseConfig};
 use util::AsMillis;
-use util::KeyValueDB;
 
-const EXECUTOR_CONFIG: &str = "executor.toml";
 const CHAIN_CONFIG: &str = "chain.toml";
 const SCRIPTS_DIR: &str = "../../scripts";
+
 pub fn get_temp_state() -> State<StateDB> {
-    let journal_db = get_temp_state_db();
-    State::new(journal_db, 0.into(), Default::default())
+    let state_db = get_temp_state_db();
+    State::new(state_db, 0.into(), Default::default())
 }
 
 fn new_db() -> Arc<KeyValueDB> {
-    Arc::new(::util::kvdb::in_memory(8))
+    Arc::new(kvdb::in_memory(8))
 }
 
 pub fn get_temp_state_db() -> StateDB {
@@ -93,7 +96,6 @@ pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
         .expect("failed to open deploy code file!")
         .read_to_string(&mut content)
         .expect("failed to read binary");
-    trace!("deploy code: {}", content);
     let deploy_code = content.as_str().from_hex().unwrap();
 
     // read runtime code
@@ -102,16 +104,33 @@ pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
         .expect("failed to open deploy code file!")
         .read_to_string(&mut content)
         .expect("failed to read binary");
-    trace!("runtime code: {}", content);
     let runtime_code = content.from_hex().unwrap();
     (deploy_code, runtime_code)
 }
 
-pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Arc<Executor> {
-    let tempdir = TempDir::new("init_executor").unwrap().into_path();
-    let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-    let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
+pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Executor {
+    let (_fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
+    let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
+    let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
+    let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
+    init_executor2(
+        contract_arguments,
+        fsm_req_receiver,
+        fsm_resp_sender,
+        command_req_receiver,
+        command_resp_sender,
+    )
+}
 
+pub fn init_executor2(
+    contract_arguments: Vec<(&str, &str)>,
+    fsm_req_receiver: Receiver<OpenBlock>,
+    fsm_resp_sender: Sender<ClosedBlock>,
+    command_req_receiver: Receiver<command::Command>,
+    command_resp_sender: Sender<command::CommandResp>,
+) -> Executor {
+    // FIXME temp dir should be removed automatically, but at present it is not
+    let tempdir = TempDir::new("init_executor").unwrap().into_path();
     let create_init_data_py = Path::new(SCRIPTS_DIR).join("config_tool/create_init_data.py");
     let create_genesis_py = Path::new(SCRIPTS_DIR).join("config_tool/create_genesis.py");
     let contracts_dir = Path::new(SCRIPTS_DIR).join("contracts");
@@ -170,17 +189,26 @@ pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Arc<Executor> {
     println!("genesis_json: {}", genesis_json.to_str().unwrap());
     let genesis_file = File::open(genesis_json.to_str().unwrap()).unwrap();
     let spec: Spec = serde_json::from_reader(genesis_file).expect("Failed to load genesis.");
-    let genesis = Genesis {
-        spec: spec,
+    let _genesis = Genesis {
+        spec,
         block: Block::default(),
     };
 
-    let executor_config = Config::new(EXECUTOR_CONFIG);
-    Arc::new(Executor::init_executor(
-        Arc::new(db),
-        genesis,
-        &executor_config,
-    ))
+    let mut data_path = tempdir.clone();
+    data_path.push("data");
+    env::set_var("DATA_PATH", data_path);
+    let executor = Executor::init(
+        genesis_json.to_str().unwrap(),
+        "archive",
+        5 * 1024 * 1024,
+        tempdir.to_str().unwrap().to_string(),
+        fsm_req_receiver,
+        fsm_resp_sender,
+        command_req_receiver,
+        command_resp_sender,
+        false,
+    );
+    executor
 }
 
 pub fn init_chain() -> Arc<chain::Chain> {
@@ -191,18 +219,22 @@ pub fn init_chain() -> Arc<chain::Chain> {
     Arc::new(chain::Chain::init_chain(Arc::new(db), &chain_config))
 }
 
-pub fn create_block(executor: &Executor, to: Address, data: &Vec<u8>, nonce: (u32, u32)) -> Block {
-    let mut block = Block::new();
+pub fn create_block(
+    executor: &Executor,
+    to: Address,
+    data: &Vec<u8>,
+    nonce: (u32, u32),
+    privkey: &PrivKey,
+) -> OpenBlock {
+    let mut block = OpenBlock::default();
 
     block.set_parent_hash(executor.get_current_hash());
     block.set_timestamp(AsMillis::as_millis(&UNIX_EPOCH.elapsed().unwrap()));
     block.set_number(executor.get_current_height() + 1);
     // header.proof= ?;
 
-    let mut body = BlockBody::new();
+    let mut body = BlockBody::default();
     let mut txs = Vec::new();
-    let keypair = KeyPair::gen_keypair();
-    let privkey = keypair.privkey();
 
     for i in nonce.0..nonce.1 {
         let mut tx = blockchain::Transaction::new();
@@ -217,10 +249,54 @@ pub fn create_block(executor: &Executor, to: Address, data: &Vec<u8>, nonce: (u3
         tx.set_quota(1844674);
 
         let stx = tx.sign(*privkey);
-        let new_tx = SignedTransaction::new(&stx).unwrap();
+        let new_tx = SignedTransaction::create(&stx).unwrap();
         txs.push(new_tx);
     }
     body.set_transactions(txs);
     block.set_body(body);
     block
+}
+
+pub fn generate_contract() -> Vec<u8> {
+    let source = r#"
+            pragma solidity ^0.4.8;
+            contract ConstructSol {
+                uint a;
+                event LogCreate(address contractAddr);
+                event A(uint);
+                function ConstructSol(){
+                    LogCreate(this);
+                }
+                function set(uint _a) {
+                    a = _a;
+                    A(a);
+                }
+                function get() returns (uint) {
+                    return a;
+                }
+            }
+        "#;
+    let (data, _) = solc("ConstructSol", source);
+    data
+}
+
+pub fn generate_block_header() -> OpenHeader {
+    OpenHeader::default()
+}
+
+pub fn generate_block_body() -> BlockBody {
+    let mut stx = SignedTransaction::default();
+    use types::transaction::SignedTransaction;
+    stx.data = vec![1; 200];
+    let transactions = vec![stx; 200];
+    BlockBody { transactions }
+}
+
+pub fn generate_default_block() -> OpenBlock {
+    let block_body = generate_block_body();
+    let block_header = generate_block_header();
+    OpenBlock {
+        body: block_body,
+        header: block_header,
+    }
 }

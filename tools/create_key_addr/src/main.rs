@@ -16,13 +16,13 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate cita_crypto as crypto;
-extern crate util;
+extern crate hashable;
 
 use crypto::{CreateKey, KeyPair, PubKey};
+use hashable::Hashable;
 use std::env;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
-use util::hashable::Hashable;
 
 fn to_hex_string(data: &[u8]) -> String {
     let strs: Vec<String> = data.into_iter().map(|a| format!("{:02x}", a)).collect();

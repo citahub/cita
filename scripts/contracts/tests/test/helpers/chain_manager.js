@@ -7,7 +7,7 @@ const { genContract, genTxParams } = util;
 const { superAdmin } = config;
 const { chainManager } = config.contract;
 
-const abi = JSON.parse(fs.readFileSync('abi/ChainManager.abi'));
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/ChainManager.abi'));
 const contract = genContract(abi, chainManager);
 
 // tmp

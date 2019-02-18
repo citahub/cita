@@ -9,7 +9,7 @@ const { expect } = chai;
 
 // util
 const {
-  logger, web3, getTxReceipt, genContract,
+  logger, getTxReceipt, genContract, appchain,
 } = util;
 
 const { abi } = permission;
@@ -34,10 +34,10 @@ let contract;
 
 // test data
 // const name = 'testPermission';
-const name = web3.utils.utf8ToHex('testPermission');
-const newName = web3.utils.utf8ToHex('testPermissionNewName');
-const nameA = web3.utils.utf8ToHex('testPermissionA');
-const nameB = web3.utils.utf8ToHex('testPermissionB');
+const name = appchain.utils.utf8ToHex('testPermission');
+const newName = appchain.utils.utf8ToHex('testPermissionNewName');
+const nameA = appchain.utils.utf8ToHex('testPermissionA');
+const nameB = appchain.utils.utf8ToHex('testPermissionB');
 const { testAddr, testFunc, permissions } = config;
 const cont = '0x1a702A25C6bCA72B67987968f0BfB3a3213c5603';
 const func = '0xf036ed59';

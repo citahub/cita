@@ -16,7 +16,7 @@
 
 //! `TraceDB` errors.
 
-use std::fmt::{Display, Formatter, Error as FmtError};
+use std::fmt::{Display, Error as FmtError, Formatter};
 
 const RESYNC_ERR: &str = "Your current parity installation has synced without transaction tracing.
 To use Parity with transaction tracing, you'll need to resync with tracing.

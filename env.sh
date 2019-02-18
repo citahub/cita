@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOCKER_IMAGE="cita/cita-build:ubuntu-18.04-20181009"
+DOCKER_IMAGE="cita/cita-build:ubuntu-18.04-20190107"
 if [[ `uname` == 'Darwin' ]]
 then
     cp /etc/localtime $PWD/localtime
@@ -36,9 +36,7 @@ mkdir -p ${HOME}/.docker_cargo/git
 mkdir -p ${HOME}/.docker_cargo/registry
 
 docker ps | grep ${CONTAINER_NAME} > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-    echo "docker container ${CONTAINER_NAME} is already running"
-else
+if [ $? -ne 0 ]; then
     echo "Start docker container ${CONTAINER_NAME} ..."
     docker rm ${CONTAINER_NAME} > /dev/null 2>&1
 

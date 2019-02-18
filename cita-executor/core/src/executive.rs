@@ -16,6 +16,7 @@
 
 //! Transaction Execution environment.
 
+use authentication::check_permission;
 use builtin::Builtin;
 use cita_types::{Address, H160, H256, U256, U512};
 use contracts::{
@@ -28,7 +29,6 @@ use contracts::{
         service_registry,
     },
     native::factory::{Contract as NativeContract, Factory as NativeFactory},
-    solc::{permission_management::contains_resource, Resource},
 };
 use crossbeam;
 use engines::Engine;
@@ -39,11 +39,12 @@ use evm::env_info::EnvInfo;
 use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
 pub use executed::{Executed, ExecutionResult};
 use externalities::*;
-use libexecutor::executor::EconomicalModel;
+use hashable::{Hashable, HASH_EMPTY};
+use libexecutor::economical_model::EconomicalModel;
+use libexecutor::sys_config::BlockSysConfig;
 use state::backend::Backend as StateBackend;
 use state::{State, Substate};
 use std::cmp;
-use std::collections::HashMap;
 use std::error::Error;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -92,226 +93,6 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
     From::from(stream.out().crypt_hash())
 }
 
-/// Check the sender's permission
-#[allow(unknown_lints, clippy::implicit_hasher)] // TODO clippy
-pub fn check_permission(
-    group_accounts: &HashMap<Address, Vec<Address>>,
-    account_permissions: &HashMap<Address, Vec<Resource>>,
-    t: &SignedTransaction,
-    options: TransactOptions,
-) -> Result<(), ExecutionError> {
-    let sender = *t.sender();
-
-    if options.check_send_tx_permission {
-        check_send_tx(group_accounts, account_permissions, &sender)?;
-    }
-
-    match t.action {
-        Action::Create => {
-            if options.check_create_contract_permission {
-                check_create_contract(group_accounts, account_permissions, &sender)?;
-            }
-        }
-        Action::Call(address) => {
-            if options.check_permission {
-                let group_management_addr =
-                    Address::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
-                trace!("t.data {:?}", t.data);
-
-                if t.data.is_empty() {
-                    // Transfer transaction, no function call
-                    return Ok(());
-                }
-
-                if t.data.len() < 4 {
-                    return Err(ExecutionError::TransactionMalformed(
-                        "The length of transaction data is less than four bytes".to_string(),
-                    ));
-                }
-
-                if address == group_management_addr {
-                    if t.data.len() < 36 {
-                        return Err(ExecutionError::TransactionMalformed(
-                            "Data should have at least one parameter".to_string(),
-                        ));
-                    }
-                    check_origin_group(
-                        account_permissions,
-                        &sender,
-                        &address,
-                        &t.data[0..4],
-                        &H160::from(&t.data[16..36]),
-                    )?;
-                }
-
-                check_call_contract(
-                    group_accounts,
-                    account_permissions,
-                    &sender,
-                    &address,
-                    &t.data[0..4],
-                )?;
-            }
-        }
-        _ => {}
-    }
-
-    Ok(())
-}
-
-/// Check permission: send transaction
-fn check_send_tx(
-    group_accounts: &HashMap<Address, Vec<Address>>,
-    account_permissions: &HashMap<Address, Vec<Resource>>,
-    account: &Address,
-) -> Result<(), ExecutionError> {
-    let cont = Address::from_str(reserved_addresses::PERMISSION_SEND_TX).unwrap();
-    let func = vec![0; 4];
-    let has_permission = has_resource(
-        group_accounts,
-        account_permissions,
-        account,
-        &cont,
-        &func[..],
-    );
-
-    trace!("has send tx permission: {:?}", has_permission);
-
-    if *account != Address::zero() && !has_permission {
-        return Err(ExecutionError::NoTransactionPermission);
-    }
-
-    Ok(())
-}
-
-/// Check permission: create contract
-fn check_create_contract(
-    group_accounts: &HashMap<Address, Vec<Address>>,
-    account_permissions: &HashMap<Address, Vec<Resource>>,
-    account: &Address,
-) -> Result<(), ExecutionError> {
-    let cont = Address::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap();
-    let func = vec![0; 4];
-    let has_permission = has_resource(
-        group_accounts,
-        account_permissions,
-        account,
-        &cont,
-        &func[..],
-    );
-
-    trace!("has create contract permission: {:?}", has_permission);
-
-    if *account != Address::zero() && !has_permission {
-        return Err(ExecutionError::NoContractPermission);
-    }
-
-    Ok(())
-}
-
-/// Check permission: call contract
-fn check_call_contract(
-    group_accounts: &HashMap<Address, Vec<Address>>,
-    account_permissions: &HashMap<Address, Vec<Resource>>,
-    account: &Address,
-    cont: &Address,
-    func: &[u8],
-) -> Result<(), ExecutionError> {
-    let has_permission = has_resource(group_accounts, account_permissions, account, cont, func);
-
-    trace!("has call contract permission: {:?}", has_permission);
-
-    if !has_permission {
-        return Err(ExecutionError::NoCallPermission);
-    }
-
-    Ok(())
-}
-
-/// Check permission with parameter: origin group
-fn check_origin_group(
-    account_permissions: &HashMap<Address, Vec<Resource>>,
-    account: &Address,
-    cont: &Address,
-    func: &[u8],
-    param: &Address,
-) -> Result<(), ExecutionError> {
-    let has_permission = contains_resource(account_permissions, account, *cont, func);
-
-    trace!("Sender has call contract permission: {:?}", has_permission);
-
-    if !has_permission && !contains_resource(account_permissions, param, *cont, func) {
-        return Err(ExecutionError::NoCallPermission);
-    }
-
-    Ok(())
-}
-
-/// Check the account has resource
-/// 1. Check the account has resource
-/// 2. Check all account's groups has resource
-fn has_resource(
-    group_accounts: &HashMap<Address, Vec<Address>>,
-    account_permissions: &HashMap<Address, Vec<Resource>>,
-    account: &Address,
-    cont: &Address,
-    func: &[u8],
-) -> bool {
-    let groups = get_groups(group_accounts, account);
-
-    if !contains_resource(account_permissions, account, *cont, func) {
-        for group in groups {
-            if contains_resource(account_permissions, &group, *cont, func) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    true
-}
-
-/// Get all sender's groups
-fn get_groups(group_accounts: &HashMap<Address, Vec<Address>>, account: &Address) -> Vec<Address> {
-    let mut groups: Vec<Address> = vec![];
-
-    for (group, accounts) in group_accounts {
-        if accounts.contains(account) {
-            groups.push(*group);
-        }
-    }
-
-    groups
-}
-
-/// Check the quota while processing the transaction
-/*pub fn check_quota(
-    gas_used: U256,
-    gas_limit: U256,
-    account_gas_limit: U256,
-    t: &SignedTransaction,
-) -> Result<(), ExecutionError> {
-    let sender = *t.sender();
-
-    // validate if transaction fits into given block
-    if sender != Address::zero() && gas_used + t.gas > gas_limit {
-        return Err(ExecutionError::BlockGasLimitReached {
-            gas_limit: gas_limit,
-            gas_used: gas_used,
-            gas: t.gas,
-        });
-    }
-    if sender != Address::zero() && t.gas > account_gas_limit {
-        return Err(ExecutionError::AccountGasLimitReached {
-            gas_limit: account_gas_limit,
-            gas: t.gas,
-        });
-    }
-
-    Ok(())
-}*/
-
 /// Transaction execution options.
 #[derive(Default, Copy, Clone, PartialEq)]
 pub struct TransactOptions {
@@ -319,14 +100,6 @@ pub struct TransactOptions {
     pub tracing: bool,
     /// Enable VM tracing.
     pub vm_tracing: bool,
-    /// Check permission before execution.
-    pub check_permission: bool,
-    /// Check account gas limit
-    pub check_quota: bool,
-    /// Check sender's send_tx permission
-    pub check_send_tx_permission: bool,
-    /// Check sender's create_contract permission
-    pub check_create_contract_permission: bool,
 }
 
 /// Transaction executor.
@@ -340,8 +113,6 @@ pub struct Executive<'a, B: 'a + StateBackend> {
     native_factory: &'a NativeFactory,
     /// Check EconomicalModel
     economical_model: EconomicalModel,
-    check_fee_back_platform: bool,
-    chain_owner: Address,
 }
 
 impl<'a, B: 'a + StateBackend> Executive<'a, B> {
@@ -355,8 +126,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         native_factory: &'a NativeFactory,
         static_flag: bool,
         economical_model: EconomicalModel,
-        check_fee_back_platform: bool,
-        chain_owner: Address,
     ) -> Self {
         Executive {
             state,
@@ -367,8 +136,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             depth: 0,
             static_flag,
             economical_model,
-            check_fee_back_platform,
-            chain_owner,
         }
     }
 
@@ -387,8 +154,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         parent_depth: usize,
         static_flag: bool,
         economical_model: EconomicalModel,
-        check_fee_back_platform: bool,
-        chain_owner: Address,
     ) -> Self {
         Executive {
             state,
@@ -399,8 +164,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             depth: parent_depth + 1,
             static_flag,
             economical_model,
-            check_fee_back_platform,
-            chain_owner,
         }
     }
 
@@ -415,8 +178,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         vm_tracer: &'any mut V,
         static_call: bool,
         economical_model: EconomicalModel,
-        check_fee_back_platform: bool,
-        chain_owner: Address,
     ) -> Externalities<'any, T, V, B>
     where
         T: Tracer,
@@ -437,8 +198,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             vm_tracer,
             is_static,
             economical_model,
-            check_fee_back_platform,
-            chain_owner,
         )
     }
 
@@ -447,21 +206,22 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         &'a mut self,
         t: &SignedTransaction,
         options: TransactOptions,
+        conf: &BlockSysConfig,
     ) -> Result<Executed, ExecutionError> {
         match (options.tracing, options.vm_tracing) {
             (true, true) => self.transact_with_tracer(
                 t,
-                options,
                 ExecutiveTracer::default(),
                 ExecutiveVMTracer::toplevel(),
+                conf,
             ),
             (true, false) => {
-                self.transact_with_tracer(t, options, ExecutiveTracer::default(), NoopVMTracer)
+                self.transact_with_tracer(t, ExecutiveTracer::default(), NoopVMTracer, conf)
             }
             (false, true) => {
-                self.transact_with_tracer(t, options, NoopTracer, ExecutiveVMTracer::toplevel())
+                self.transact_with_tracer(t, NoopTracer, ExecutiveVMTracer::toplevel(), conf)
             }
-            (false, false) => self.transact_with_tracer(t, options, NoopTracer, NoopVMTracer),
+            (false, false) => self.transact_with_tracer(t, NoopTracer, NoopVMTracer, conf),
         }
     }
 
@@ -527,9 +287,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     pub fn transact_with_tracer<T, V>(
         &'a mut self,
         t: &SignedTransaction,
-        options: TransactOptions,
         mut tracer: T,
         mut vm_tracer: V,
+        conf: &BlockSysConfig,
     ) -> Result<Executed, ExecutionError>
     where
         T: Tracer,
@@ -540,13 +300,16 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         self.state.inc_nonce(&sender)?;
 
-        trace!("permission should be check: {}", options.check_permission);
+        trace!(
+            "call contract permission should be check: {}",
+            (*conf).check_options.call_permission
+        );
 
         check_permission(
-            &self.state.group_accounts,
-            &self.state.account_permissions,
+            &conf.group_accounts,
+            &conf.account_permissions,
             t,
-            options,
+            conf.check_options,
         )?;
 
         let schedule = Schedule::new_v1();
@@ -565,7 +328,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }
 
         if t.action == Action::AmendData {
-            if let Some(admin) = self.state.super_admin_account {
+            if let Some(admin) = conf.super_admin_account {
                 if *t.sender() != admin {
                     return Err(ExecutionError::NoTransactionPermission);
                 }
@@ -738,6 +501,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             output,
             tracer.traces(),
             vm_tracer.drain(),
+            (*conf).chain_owner,
+            (*conf).check_options.fee_back_platform,
         )?)
     }
 
@@ -760,8 +525,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         if (self.depth + 1) % depth_threshold != 0 {
             let vm_factory = self.vm_factory;
             let economical_model = self.economical_model;
-            let check_fee_back_platform = self.check_fee_back_platform;
-            let chain_owner = self.chain_owner;
             let mut ext = self.as_externalities(
                 OriginInfo::from(params),
                 unconfirmed_substate,
@@ -770,8 +533,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 vm_tracer,
                 static_call,
                 economical_model,
-                check_fee_back_platform,
-                chain_owner,
             );
             return vm_factory
                 .create(params.gas)
@@ -785,8 +546,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         crossbeam::scope(|scope| {
             let vm_factory = self.vm_factory;
             let economical_model = self.economical_model;
-            let check_fee_back_platform = self.check_fee_back_platform;
-            let chain_owner = self.chain_owner;
             let mut ext = self.as_externalities(
                 OriginInfo::from(params),
                 unconfirmed_substate,
@@ -795,8 +554,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 vm_tracer,
                 static_call,
                 economical_model,
-                check_fee_back_platform,
-                chain_owner,
             );
 
             scope.spawn(move || {
@@ -838,6 +595,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let static_call = params.call_type == CallType::StaticCall;
 
         // at first, transfer value to destination
+        // TODO Keep it for compatibility. Remove it later.
         if let (true, ActionValue::Transfer(val)) = (self.payment_required(), &params.value) {
             self.state
                 .transfer_balance(&params.sender, &params.address, &val)?
@@ -1001,9 +759,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let response = if is_create {
             service_registry::enable_contract(address);
-            create_grpc_contract(self.info, &params, self.state, true, true, &connect_info)
+            create_grpc_contract(self.info, &params, self.state, true, &connect_info)
         } else {
-            invoke_grpc_contract(self.info, &params, self.state, true, true, &connect_info)
+            invoke_grpc_contract(self.info, &params, self.state, true, &connect_info)
         };
         match response {
             Ok(invoke_response) => {
@@ -1172,8 +930,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             let mut tracer = NoopTracer;
             let mut vmtracer = NoopVMTracer;
             let economical_model = self.economical_model;
-            let check_fee_back_platform = self.check_fee_back_platform;
-            let chain_owner = self.chain_owner;
             let mut ext = self.as_externalities(
                 OriginInfo::from(&params),
                 &mut unconfirmed_substate,
@@ -1182,8 +938,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 &mut vmtracer,
                 static_call,
                 economical_model,
-                check_fee_back_platform,
-                chain_owner,
             );
             contract.exec(&params, &mut ext).finalize(ext)
         };
@@ -1210,8 +964,21 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             return Err(evm::Error::OutOfGas);
         }
         trace!(
-            "Executive::create(params={:?}) self.env_info={:?}, static={}",
-            params,
+            "Executive::create(
+                params.code_address={:?}, params.code_hash={:?},
+                params.address={:?}, params.sender={:?}, params.origin={:?}
+                params.gas={:?}, params.gas_price={:?}, params.value={:?}
+            )
+            self.env_info={:?},
+            static={}",
+            params.code_address,
+            params.code_hash,
+            params.address,
+            params.sender,
+            params.origin,
+            params.gas,
+            params.gas_price,
+            params.value,
             self.info,
             self.static_flag
         );
@@ -1236,6 +1003,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let nonce_offset = if schedule.no_empty {1} else {0}.into();*/
         let nonce_offset = U256::from(0);
         let prev_bal = self.state.balance(&params.address)?;
+        // TODO Keep it for compatibility. Remove it later.
         if let (true, &ActionValue::Transfer(val)) = (self.payment_required(), &params.value) {
             self.state.sub_balance(&params.sender, &val)?;
             self.state
@@ -1294,6 +1062,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         output: Bytes,
         trace: Vec<FlatTrace>,
         vm_trace: Option<VMTrace>,
+        chain_owner: Address,
+        fee_back_platform: bool,
     ) -> ExecutionResult {
         /*
         let schedule = self.engine.schedule(self.info);
@@ -1351,15 +1121,15 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         );
 
         if let EconomicalModel::Charge = self.economical_model {
-            if self.check_fee_back_platform {
+            if fee_back_platform {
                 // check_fee_back_platform is true, but chain_owner not set, fee still back to author(miner)
-                if self.chain_owner == Address::from(0) {
+                if chain_owner == Address::from(0) {
                     self.state
                         .add_balance(&self.info.author, &fees_value)
                         .expect("Add balance to author(miner) must success");
                 } else {
                     self.state
-                        .add_balance(&self.chain_owner, &fees_value)
+                        .add_balance(&chain_owner, &fees_value)
                         .expect("Add balance to chain owner must success");
                 }
             } else {
@@ -1462,6 +1232,7 @@ mod tests {
     use evm::env_info::EnvInfo;
     use evm::Schedule;
     use evm::{Factory, VMType};
+    use libexecutor::sys_config::BlockSysConfig;
     use state::Substate;
     use std::ops::Deref;
     use std::str::FromStr;
@@ -1508,18 +1279,12 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Charge,
-                false,
-                Address::from(0),
             );
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
-                check_permission: false,
-                check_quota: true,
-                check_send_tx_permission: false,
-                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, opts, &BlockSysConfig::default())
         };
 
         let schedule = Schedule::new_v1();
@@ -1573,18 +1338,12 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Charge,
-                false,
-                Address::from(0),
             );
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
-                check_permission: false,
-                check_quota: true,
-                check_send_tx_permission: false,
-                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts).unwrap()
+            ex.transact(&t, opts, &BlockSysConfig::default()).unwrap()
         };
 
         let schedule = Schedule::new_v1();
@@ -1637,18 +1396,12 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Charge,
-                false,
-                Address::from(0),
             );
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
-                check_permission: false,
-                check_quota: true,
-                check_send_tx_permission: false,
-                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, opts, &BlockSysConfig::default())
         };
 
         match result {
@@ -1693,18 +1446,12 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
-                check_permission: false,
-                check_quota: true,
-                check_send_tx_permission: false,
-                check_create_contract_permission: false,
             };
-            ex.transact(&t, opts)
+            ex.transact(&t, opts, &BlockSysConfig::default())
         };
 
         assert!(result.is_ok());
@@ -1757,8 +1504,6 @@ contract HelloWorld {
             &native_factory,
             false,
             EconomicalModel::Quota,
-            false,
-            Address::from(0),
         );
         let res = ex.create(&params, &mut substate, &mut tracer, &mut vm_tracer);
         assert!(res.is_err());
@@ -1814,8 +1559,6 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let _ = ex.create(&params, &mut substate, &mut tracer, &mut vm_tracer);
         }
@@ -1878,8 +1621,6 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let mut out = vec![];
             let _ = ex.call(
@@ -1958,8 +1699,6 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let mut out = vec![];
             let res = ex.call(
@@ -2043,8 +1782,6 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let mut out = vec![];
             let res = ex.call(
@@ -2144,8 +1881,6 @@ contract FakePermissionManagement {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
-                false,
-                Address::from(0),
             );
             let mut out = vec![];
             let res = ex.call(

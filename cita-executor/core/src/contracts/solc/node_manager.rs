@@ -21,7 +21,8 @@ use super::ContractCallExt;
 use cita_types::{Address, H160};
 use contracts::tools::{decode as decode_tools, method as method_tools};
 use largest_remainder_method::apportion;
-use libexecutor::executor::{EconomicalModel, Executor};
+use libexecutor::economical_model::EconomicalModel;
+use libexecutor::executor::Executor;
 use rand::{Rng, SeedableRng, StdRng};
 use std::iter;
 use std::str::FromStr;
@@ -112,7 +113,9 @@ impl<'a> NodeManager<'a> {
 
     pub fn stake_nodes(&self, block_id: BlockId) -> Option<Vec<Address>> {
         self.nodes(block_id).and_then(|nodes| {
-            if let EconomicalModel::Quota = *self.executor.economical_model.read() {
+            if let EconomicalModel::Quota =
+                self.executor.sys_config.block_sys_config.economical_model
+            {
                 Some(nodes)
             } else {
                 self.stakes(block_id).map(|stakes| {

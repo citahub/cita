@@ -19,8 +19,10 @@
 
 //! Single account in the system.
 
+use cita_db::{trie, DBValue, HashDB, Trie, TrieFactory};
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
+use hashable::{Hashable, HASH_EMPTY, HASH_NULL_RLP};
 use lru_cache::LruCache;
 use pod_account::*;
 use rlp::*;
@@ -471,20 +473,21 @@ impl Account {
             self.code_hash,
             self.code_cache.lower_hex()
         );
-        self.code_size.is_some() || if self.code_hash != HASH_EMPTY {
-            match db.get(&self.code_hash) {
-                Some(x) => {
-                    self.code_size = Some(x.len());
-                    true
+        self.code_size.is_some()
+            || if self.code_hash != HASH_EMPTY {
+                match db.get(&self.code_hash) {
+                    Some(x) => {
+                        self.code_size = Some(x.len());
+                        true
+                    }
+                    _ => {
+                        warn!("Failed get code of {}", self.code_hash);
+                        false
+                    }
                 }
-                _ => {
-                    warn!("Failed get code of {}", self.code_hash);
-                    false
-                }
+            } else {
+                false
             }
-        } else {
-            false
-        }
     }
 
     /// Provide a database to get `abi_size`. Should not be called if it is a contract without abi.
@@ -496,20 +499,21 @@ impl Account {
             self.abi_hash,
             self.abi_cache.lower_hex()
         );
-        self.abi_size.is_some() || if self.abi_hash != HASH_EMPTY {
-            match db.get(&self.abi_hash) {
-                Some(x) => {
-                    self.abi_size = Some(x.len());
-                    true
+        self.abi_size.is_some()
+            || if self.abi_hash != HASH_EMPTY {
+                match db.get(&self.abi_hash) {
+                    Some(x) => {
+                        self.abi_size = Some(x.len());
+                        true
+                    }
+                    _ => {
+                        warn!("Failed get abi of {}", self.abi_hash);
+                        false
+                    }
                 }
-                _ => {
-                    warn!("Failed get abi of {}", self.abi_hash);
-                    false
-                }
+            } else {
+                false
             }
-        } else {
-            false
-        }
     }
 
     /// Determine whether there are any un-`commit()`-ed storage-setting operations.
@@ -593,12 +597,6 @@ impl Account {
 
     /// Commit any unsaved code. `code_hash` will always return the hash of the `code_cache` after this.
     pub fn commit_code(&mut self, db: &mut HashDB) {
-        trace!(
-            "Commiting code of {:?} - {:?}, {:?}",
-            self,
-            self.code_filth == Filth::Dirty,
-            self.code_cache.is_empty()
-        );
         match (self.code_filth == Filth::Dirty, self.code_cache.is_empty()) {
             (true, true) => {
                 self.code_size = Some(0);
@@ -615,12 +613,6 @@ impl Account {
 
     /// Commit any unsaved abi. `abi_hash` will always return the hash of the `abi_cache` after this.
     pub fn commit_abi(&mut self, db: &mut HashDB) {
-        trace!(
-            "Commiting abi of {:?} - {:?}, {:?}",
-            self,
-            self.abi_filth == Filth::Dirty,
-            self.abi_cache.is_empty()
-        );
         match (self.abi_filth == Filth::Dirty, self.abi_cache.is_empty()) {
             (true, true) => {
                 self.abi_size = Some(0);
@@ -716,6 +708,7 @@ impl fmt::Debug for Account {
 mod tests {
     use super::*;
     use account_db::*;
+    use cita_db::MemoryDB;
     use rlp::{Compressible, RlpType, UntrustedRlp};
 
     #[test]

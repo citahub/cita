@@ -31,14 +31,11 @@ use super::{BlockRebuilder, ManifestData, RestorationStatus};
 use cita_types::H256;
 use error::Error;
 
-use util::kvdb::{Database, DatabaseConfig};
-use util::snappy;
+use cita_db::kvdb::{Database, DatabaseConfig};
+use snappy;
 use util::Bytes;
 use util::UtilError;
 use util::{Mutex, RwLock, RwLockReadGuard};
-
-use state_db::StateDB;
-use util::journaldb::{self, Algorithm};
 
 use libchain::chain::{get_chain, get_chain_body_height, Chain};
 
@@ -61,20 +58,12 @@ impl DatabaseRestore for Chain {
     fn restore_db(&self, new_db: &str) -> Result<(), Error> {
         info!("Replacing client database with {:?}", new_db);
 
-        let mut state_db = self.state_db.write();
-
         let db = self.db.write();
         db.restore(new_db)?;
 
-        *state_db = StateDB::new(journaldb::new(
-            db.clone(),
-            Algorithm::Archive,
-            ::db::COL_STATE,
-        ));
-
         // replace chain
         //*chain = Arc::new(BlockChain::new(self.config.blockchain.clone(), &[], db.clone()));
-        let header = get_chain(&*db.clone()).unwrap_or_default();
+        let header = get_chain(&*db.clone()).expect("Get chain failed");
 
         let current_height = header.number();
 
@@ -147,7 +136,7 @@ struct RestorationParams<'a> {
 
 impl Restoration {
     // make a new restoration using the given parameters.
-    fn new(params: RestorationParams) -> Result<Self, Error> {
+    fn create(params: RestorationParams) -> Result<Self, Error> {
         let manifest = params.manifest;
 
         let block_chunks = manifest.block_hashes.iter().cloned().collect();
@@ -244,7 +233,7 @@ pub struct Service {
 
 impl Service {
     /// Create a new snapshot service from the given parameters.
-    pub fn new(params: ServiceParams) -> Result<Self, Error> {
+    pub fn create(params: ServiceParams) -> Result<Self, Error> {
         let mut service = Service {
             restoration: Mutex::new(None),
             snapshot_root: params.snapshot_root,
@@ -281,7 +270,7 @@ impl Service {
             }
         }
 
-        let reader = LooseReader::new(service.snapshot_dir()).ok();
+        let reader = LooseReader::create(service.snapshot_dir()).ok();
         *service.reader.get_mut() = reader;
 
         Ok(service)
@@ -370,7 +359,7 @@ impl Service {
 
         // make new restoration.
         let writer = if recover {
-            Some(LooseWriter::new(self.temp_recovery_dir())?)
+            Some(LooseWriter::create(self.temp_recovery_dir())?)
         } else {
             None
         };
@@ -386,7 +375,7 @@ impl Service {
 
         let block_chunks = params.manifest.block_hashes.len();
 
-        *res = Some(Restoration::new(params)?);
+        *res = Some(Restoration::create(params)?);
 
         *self.status.lock() = RestorationStatus::Ongoing {
             block_chunks: block_chunks as u32,
@@ -427,7 +416,7 @@ impl Service {
             trace!("copying restored snapshot files over");
             fs::rename(self.temp_recovery_dir(), &snapshot_dir)?;
 
-            *reader = Some(LooseReader::new(snapshot_dir)?);
+            *reader = Some(LooseReader::create(snapshot_dir)?);
         }
 
         fs::remove_dir_all(&self.snapshot_root)?;

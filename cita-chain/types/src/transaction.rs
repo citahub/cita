@@ -108,21 +108,21 @@ impl Encodable for Action {
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// crypto type.
 pub enum CryptoType {
-    SECP,
-    SM2,
+    DEFAULT,
+    RESERVED,
 }
 
 impl Default for CryptoType {
     fn default() -> CryptoType {
-        CryptoType::SECP
+        CryptoType::DEFAULT
     }
 }
 
 impl Decodable for CryptoType {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         match rlp.as_val::<u8>()? {
-            0 => Ok(CryptoType::SECP),
-            1 => Ok(CryptoType::SM2),
+            0 => Ok(CryptoType::DEFAULT),
+            1 => Ok(CryptoType::RESERVED),
             _ => Err(DecoderError::Custom("Unknown Type.")),
         }
     }
@@ -131,8 +131,8 @@ impl Decodable for CryptoType {
 impl Encodable for CryptoType {
     fn rlp_append(&self, s: &mut RlpStream) {
         match *self {
-            CryptoType::SECP => s.append_internal(&(0u8)),
-            CryptoType::SM2 => s.append_internal(&(1u8)),
+            CryptoType::DEFAULT => s.append_internal(&(0u8)),
+            CryptoType::RESERVED => s.append_internal(&(1u8)),
         };
     }
 }
@@ -140,8 +140,8 @@ impl Encodable for CryptoType {
 impl From<ProtoCrypto> for CryptoType {
     fn from(c: ProtoCrypto) -> CryptoType {
         match c {
-            ProtoCrypto::SECP => CryptoType::SECP,
-            ProtoCrypto::SM2 => CryptoType::SM2,
+            ProtoCrypto::DEFAULT => CryptoType::DEFAULT,
+            ProtoCrypto::RESERVED => CryptoType::RESERVED,
         }
     }
 }
@@ -210,7 +210,7 @@ impl Encodable for Transaction {
 
 impl Transaction {
     // Should never return Error
-    pub fn new(plain_transaction: &ProtoTransaction) -> Result<Self, Error> {
+    pub fn create(plain_transaction: &ProtoTransaction) -> Result<Self, Error> {
         if plain_transaction.get_value().len() > 32 {
             return Err(Error::ParseError);
         }
@@ -392,13 +392,13 @@ impl Encodable for UnverifiedTransaction {
 }
 
 impl UnverifiedTransaction {
-    fn new(utx: &ProtoUnverifiedTransaction, hash: H256) -> Result<Self, Error> {
+    fn create(utx: &ProtoUnverifiedTransaction, hash: H256) -> Result<Self, Error> {
         if utx.get_signature().len() != SIGNATURE_BYTES_LEN {
             return Err(Error::InvalidSignature);
         }
 
         Ok(UnverifiedTransaction {
-            unsigned: Transaction::new(utx.get_transaction())?,
+            unsigned: Transaction::create(utx.get_transaction())?,
             signature: Signature::from(utx.get_signature()),
             crypto_type: CryptoType::from(utx.get_crypto()),
             hash,
@@ -432,8 +432,8 @@ impl UnverifiedTransaction {
         untx.set_signature(self.signature.to_vec());
 
         match self.crypto_type {
-            CryptoType::SECP => untx.set_crypto(ProtoCrypto::SECP),
-            CryptoType::SM2 => untx.set_crypto(ProtoCrypto::SM2),
+            CryptoType::DEFAULT => untx.set_crypto(ProtoCrypto::DEFAULT),
+            CryptoType::RESERVED => untx.set_crypto(ProtoCrypto::RESERVED),
         }
         untx
     }
@@ -532,7 +532,7 @@ impl DerefMut for SignedTransaction {
 
 impl SignedTransaction {
     /// Try to verify transaction and recover sender.
-    pub fn new(stx: &ProtoSignedTransaction) -> Result<Self, Error> {
+    pub fn create(stx: &ProtoSignedTransaction) -> Result<Self, Error> {
         if stx.get_tx_hash().len() != HASH_BYTES_LEN {
             return Err(Error::InvalidHash);
         }
@@ -545,7 +545,7 @@ impl SignedTransaction {
         let public = PubKey::from_slice(stx.get_signer());
         let sender = pubkey_to_address(&public);
         Ok(SignedTransaction {
-            transaction: UnverifiedTransaction::new(stx.get_transaction_with_sig(), tx_hash)?,
+            transaction: UnverifiedTransaction::create(stx.get_transaction_with_sig(), tx_hash)?,
             sender,
             public,
         })
@@ -604,7 +604,7 @@ mod tests {
         stx.gas = U256::from(u64::max_value() / 100000);
         let stx_rlp = rlp::encode(&stx);
         let stx_proto = stx.protobuf();
-        let stx = SignedTransaction::new(&stx_proto).unwrap();
+        let stx = SignedTransaction::create(&stx_proto).unwrap();
         let stx_encoded = rlp::encode(&stx).into_vec();
         let stx: SignedTransaction = rlp::decode(&stx_encoded);
         let stx_encoded = rlp::encode(&stx).into_vec();
@@ -617,7 +617,7 @@ mod tests {
         let mut plain_transaction = ProtoTransaction::new();
         plain_transaction.set_value(vec![0; 100]);
 
-        let res = Transaction::new(&plain_transaction);
+        let res = Transaction::create(&plain_transaction);
 
         assert!(res.is_err());
     }

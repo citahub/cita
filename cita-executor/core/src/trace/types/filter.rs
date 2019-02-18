@@ -18,11 +18,11 @@
 
 use super::trace::{Action, Res};
 use basic_types::LogBloom;
-use bloomchain::{Filter as BloomFilter, Bloom, Number};
+use bloomchain::{Bloom, Filter as BloomFilter, Number};
+use cita_types::traits::BloomTools;
+use cita_types::Address;
 use std::ops::Range;
 use trace::flat::FlatTrace;
-use cita_types::Address;
-use cita_types::traits::BloomTools;
 
 /// Addresses filter.
 ///
@@ -54,7 +54,10 @@ impl AddressesFilter {
         if self.list.is_empty() {
             vec![LogBloom::default()]
         } else {
-            self.list.iter().map(|address| LogBloom::from_raw(&address)).collect()
+            self.list
+                .iter()
+                .map(|address| LogBloom::from_raw(&address))
+                .collect()
         }
     }
 
@@ -63,15 +66,19 @@ impl AddressesFilter {
         if self.list.is_empty() {
             blooms
         } else {
-            blooms.into_iter()
-                  .flat_map(|bloom| {
-                      self.list.iter().map(|address| {
-                          let mut bloom = bloom;
-                          bloom.accrue_raw(&address);
-                          bloom
-                      }).collect::<Vec<_>>()
-                  })
-                  .collect()
+            blooms
+                .into_iter()
+                .flat_map(|bloom| {
+                    self.list
+                        .iter()
+                        .map(|address| {
+                            let mut bloom = bloom;
+                            bloom.accrue_raw(&address);
+                            bloom
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect()
         }
     }
 }
@@ -91,7 +98,10 @@ pub struct Filter {
 
 impl BloomFilter for Filter {
     fn bloom_possibilities(&self) -> Vec<Bloom> {
-        self.bloom_possibilities().into_iter().map(|b| Bloom::from(b.0)).collect()
+        self.bloom_possibilities()
+            .into_iter()
+            .map(|b| Bloom::from(b.0))
+            .collect()
     }
 
     fn range(&self) -> Range<Number> {
@@ -117,7 +127,9 @@ impl Filter {
                 let from_matches = self.from_address.matches(&create.from);
 
                 let to_matches = match trace.result {
-                    Res::Create(ref create_result) => self.to_address.matches(&create_result.address),
+                    Res::Create(ref create_result) => {
+                        self.to_address.matches(&create_result.address)
+                    }
                     _ => false,
                 };
 
@@ -134,13 +146,13 @@ impl Filter {
 
 #[cfg(test)]
 mod tests {
-    use cita_types::traits::BloomTools;
-    use evm::call_type::CallType;
-    use trace::{Filter, AddressesFilter, TraceError};
-    use trace::flat::FlatTrace;
-    use trace::trace::{Action, Call, Res, Create, CreateResult, Suicide};
-    use cita_types::Address;
     use basic_types::LogBloom;
+    use cita_types::traits::BloomTools;
+    use cita_types::Address;
+    use evm::call_type::CallType;
+    use trace::flat::FlatTrace;
+    use trace::trace::{Action, Call, Create, CreateResult, Res, Suicide};
+    use trace::{AddressesFilter, Filter, TraceError};
 
     #[test]
     fn empty_trace_filter_bloom_possibilities() {
@@ -278,13 +290,13 @@ mod tests {
 
         let trace = FlatTrace {
             action: Action::Call(Call {
-                                     from: 1.into(),
-                                     to: 2.into(),
-                                     value: 3.into(),
-                                     gas: 4.into(),
-                                     input: vec![0x5],
-                                     call_type: CallType::Call,
-                                 }),
+                from: 1.into(),
+                to: 2.into(),
+                value: 3.into(),
+                gas: 4.into(),
+                input: vec![0x5],
+                call_type: CallType::Call,
+            }),
             result: Res::FailedCall(TraceError::OutOfGas),
             trace_address: vec![0].into_iter().collect(),
             subtraces: 0,
@@ -300,16 +312,16 @@ mod tests {
 
         let trace = FlatTrace {
             action: Action::Create(Create {
-                                       from: 1.into(),
-                                       value: 3.into(),
-                                       gas: 4.into(),
-                                       init: vec![0x5],
-                                   }),
+                from: 1.into(),
+                value: 3.into(),
+                gas: 4.into(),
+                init: vec![0x5],
+            }),
             result: Res::Create(CreateResult {
-                                    gas_used: 10.into(),
-                                    code: vec![],
-                                    address: 2.into(),
-                                }),
+                gas_used: 10.into(),
+                code: vec![],
+                address: 2.into(),
+            }),
             trace_address: vec![0].into_iter().collect(),
             subtraces: 0,
         };
@@ -324,10 +336,10 @@ mod tests {
 
         let trace = FlatTrace {
             action: Action::Suicide(Suicide {
-                                        address: 1.into(),
-                                        refund_address: 2.into(),
-                                        balance: 3.into(),
-                                    }),
+                address: 1.into(),
+                refund_address: 2.into(),
+                balance: 3.into(),
+            }),
             result: Res::None,
             trace_address: vec![].into_iter().collect(),
             subtraces: 0,

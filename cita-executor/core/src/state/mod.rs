@@ -19,8 +19,8 @@
 //! Unconfirmed sub-states are managed with `checkpoint`s which may be canonicalized
 //! or rolled back.
 
+use cita_db::{trie, HashDB, Trie, TrieError};
 use cita_types::{Address, H256, U256};
-use contracts::solc::Resource;
 use engines::Engine;
 use error::{Error, ExecutionError};
 use evm::env_info::EnvInfo;
@@ -28,7 +28,9 @@ use evm::Error as EvmError;
 use evm::Schedule;
 use executive::{Executive, TransactOptions};
 use factory::Factories;
-use libexecutor::executor::{CheckOptions, EconomicalModel};
+use hashable::HASH_EMPTY;
+use libexecutor::economical_model::EconomicalModel;
+use libexecutor::sys_config::BlockSysConfig;
 use receipt::{Receipt, ReceiptError};
 use rlp::{self, Encodable};
 use std::cell::{Ref, RefCell, RefMut};
@@ -39,7 +41,6 @@ use std::fmt;
 use std::sync::Arc;
 use trace::FlatTrace;
 use types::transaction::SignedTransaction;
-use util::trie;
 use util::*;
 
 pub mod account;
@@ -47,7 +48,6 @@ pub mod backend;
 
 pub use self::account::Account;
 use self::backend::*;
-use state_db::*;
 pub use substate::Substate;
 
 /// Used to return information about an `State::apply` operation.
@@ -104,17 +104,6 @@ impl AccountEntry {
 
     fn exists_and_is_null(&self) -> bool {
         self.account.as_ref().map_or(false, |a| a.is_null())
-    }
-
-    /// Clone dirty data into new `AccountEntry`. This includes
-    /// basic account data and modified storage keys.
-    /// Returns None if clean.
-    fn clone_if_dirty(&self) -> Option<AccountEntry> {
-        if self.is_dirty() {
-            Some(self.clone_dirty())
-        } else {
-            None
-        }
     }
 
     /// Clone dirty data into new `AccountEntry`. This includes
@@ -264,8 +253,6 @@ pub struct State<B: Backend> {
     checkpoints: RefCell<Vec<HashMap<Address, Option<AccountEntry>>>>,
     account_start_nonce: U256,
     factories: Factories,
-    pub account_permissions: HashMap<Address, Vec<Resource>>,
-    pub group_accounts: HashMap<Address, Vec<Address>>,
     pub super_admin_account: Option<Address>,
 }
 
@@ -276,17 +263,6 @@ enum RequireCache {
     Code,
     AbiSize,
     Abi,
-}
-
-/// Mode of dealing with null accounts.
-#[derive(PartialEq)]
-pub enum CleanupMode<'a> {
-    /// Create accounts which would be null.
-    ForceCreate,
-    /// Don't delete null accounts upon touching, but also don't create them.
-    NoEmpty,
-    /// Add encountered null accounts to the provided kill-set, to be deleted later.
-    KillEmpty(&'a mut HashSet<Address>),
 }
 
 const SEC_TRIE_DB_UNWRAP_STR: &str =
@@ -300,7 +276,7 @@ impl<B: Backend> State<B> {
     pub fn new(mut db: B, account_start_nonce: U256, factories: Factories) -> State<B> {
         let mut root = H256::new();
         {
-            // init trie and reset root too null
+            // init trie and reset root to null
             let _ = factories.trie.create(db.as_hashdb_mut(), &mut root);
         }
 
@@ -311,8 +287,6 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce,
             factories,
-            account_permissions: HashMap::new(),
-            group_accounts: HashMap::new(),
             super_admin_account: None,
         }
     }
@@ -339,8 +313,6 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce,
             factories,
-            account_permissions: HashMap::new(),
-            group_accounts: HashMap::new(),
             super_admin_account: None,
         };
 
@@ -772,17 +744,11 @@ impl<B: Backend> State<B> {
         engine: &Engine,
         t: &SignedTransaction,
         tracing: bool,
-        economical_model: EconomicalModel,
-        chain_owner: Address,
-        check_options: &CheckOptions,
+        conf: &BlockSysConfig,
     ) -> ApplyResult {
         let options = TransactOptions {
             tracing,
             vm_tracing: false,
-            check_permission: check_options.permission,
-            check_quota: check_options.quota,
-            check_send_tx_permission: check_options.send_tx_permission,
-            check_create_contract_permission: check_options.create_contract_permission,
         };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
@@ -794,11 +760,9 @@ impl<B: Backend> State<B> {
             &vm_factory,
             &native_factory,
             false,
-            economical_model,
-            check_options.fee_back_platform,
-            chain_owner,
+            conf.economical_model,
         )
-        .transact(t, options)
+        .transact(t, options, conf)
         {
             Ok(e) => {
                 // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
@@ -866,7 +830,7 @@ impl<B: Backend> State<B> {
                     ),
                 };
 
-                if economical_model == EconomicalModel::Charge {
+                if (*conf).economical_model == EconomicalModel::Charge {
                     let fee_value = tx_gas_used * t.gas_price();
                     let sender_balance = self.balance(&sender).unwrap();
 
@@ -879,7 +843,8 @@ impl<B: Backend> State<B> {
                         error!("Sub balance from error transaction sender failed, tx_fee_value={}, error={:?}", tx_fee_value, err);
                     }
 
-                    if check_options.fee_back_platform && chain_owner != Address::from(0) {
+                    let chain_owner = (*conf).chain_owner;
+                    if (*conf).check_options.fee_back_platform && chain_owner != Address::from(0) {
                         self.add_balance(&chain_owner, &tx_fee_value)
                             .expect("Add balance to chain owner must success");
                     } else {
@@ -968,6 +933,7 @@ impl<B: Backend> State<B> {
             self.db
                 .add_to_account_cache(address, a.account, a.state == AccountState::Committed);
         }
+        self.db.sync_account_cache();
     }
 
     /// Clear state cache
@@ -1228,34 +1194,6 @@ impl<B: Backend> fmt::Debug for State<B> {
     }
 }
 
-// TODO: cloning for `State` shouldn't be possible in general; Remove this and use
-// checkpoints where possible.
-impl Clone for State<StateDB> {
-    fn clone(&self) -> State<StateDB> {
-        let cache = {
-            let mut cache: HashMap<Address, AccountEntry> = HashMap::new();
-            for (key, val) in self.cache.borrow().iter() {
-                if let Some(entry) = val.clone_if_dirty() {
-                    cache.insert(*key, entry);
-                }
-            }
-            cache
-        };
-
-        State {
-            db: self.db.boxed_clone(),
-            root: self.root,
-            cache: RefCell::new(cache),
-            checkpoints: RefCell::new(Vec::new()),
-            account_start_nonce: self.account_start_nonce,
-            factories: self.factories.clone(),
-            account_permissions: self.account_permissions.clone(),
-            group_accounts: self.group_accounts.clone(),
-            super_admin_account: self.super_admin_account,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     extern crate libproto;
@@ -1267,13 +1205,14 @@ mod tests {
     use self::rustc_hex::FromHex;
     use super::*;
     use cita_crypto::KeyPair;
+    use cita_crypto_trait::CreateKey;
     use cita_types::traits::LowerHex;
     use cita_types::{Address, H256};
     use engines::NullEngine;
     use evm::env_info::EnvInfo;
+    use libexecutor::sys_config::BlockSysConfig;
     use std::sync::Arc;
     use tests::helpers::*;
-    use util::crypto::CreateKey;
 
     #[test]
     #[ignore]
@@ -1326,7 +1265,7 @@ mod tests {
         let stx = tx.sign(*privkey);
 
         // 4) signed
-        let signed = SignedTransaction::new(&stx).unwrap();
+        let signed = SignedTransaction::create(&stx).unwrap();
 
         // 5)
         let mut state = get_temp_state();
@@ -1345,23 +1284,8 @@ mod tests {
 
         println!("contract_address {:?}", contract_address);
 
-        let check_options = CheckOptions {
-            permission: false,
-            quota: false,
-            fee_back_platform: false,
-            send_tx_permission: false,
-            create_contract_permission: false,
-        };
         let result = state
-            .apply(
-                &info,
-                &engine,
-                &signed,
-                true,
-                Default::default(),
-                Address::from(0),
-                &check_options,
-            )
+            .apply(&info, &engine, &signed, true, &BlockSysConfig::default())
             .unwrap();
         println!(
             "{:?}",
@@ -1387,22 +1311,6 @@ mod tests {
             state.abi(&contract_address).unwrap().unwrap(),
             Arc::new(vec![])
         );
-    }
-
-    #[test]
-    fn should_work_when_cloned() {
-        let a = Address::zero();
-
-        let mut state = {
-            let mut state = get_temp_state();
-            assert_eq!(state.exists(&a).unwrap(), false);
-            state.inc_nonce(&a).unwrap();
-            state.commit().unwrap();
-            state.clone()
-        };
-
-        state.inc_nonce(&a).unwrap();
-        state.commit().unwrap();
     }
 
     #[test]
@@ -1704,19 +1612,4 @@ mod tests {
 
         assert_eq!(state.root().lower_hex(), expected);
     }
-
-    #[test]
-    fn should_not_panic_on_state_diff_with_storage() {
-        let mut state = get_temp_state();
-
-        let a: Address = 0xa.into();
-        state.init_code(&a, b"abcdefg".to_vec()).unwrap();;
-        state.set_storage(&a, 0xb.into(), 0xc.into()).unwrap();
-
-        let mut new_state = state.clone();
-        new_state.set_storage(&a, 0xb.into(), 0xd.into()).unwrap();
-
-        // new_state.diff_from(state).unwrap();
-    }
-
 }

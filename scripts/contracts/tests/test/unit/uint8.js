@@ -3,7 +3,7 @@ const util = require('../helpers/util');
 
 const { expect } = chai;
 const {
-  nervos, logger, genTxParams, genContract, getTxReceipt,
+  appchain, logger, genTxParams, genContract, getTxReceipt,
 } = util;
 
 // tmp
@@ -35,7 +35,7 @@ const test = 'test';
 describe('\n\nDeploy a contract\n\n', () => {
   it('should send a tx: deploy_contract', async () => {
     param = await genTxParams();
-    res = await nervos.appchain.deploy(
+    res = await appchain.base.deploy(
       bin,
       param,
     );

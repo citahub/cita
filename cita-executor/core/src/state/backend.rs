@@ -16,9 +16,9 @@
 
 use std::sync::Arc;
 
+use cita_db::HashDB;
 use cita_types::{Address, H256};
 use state::Account;
-use util::*;
 
 /// State backend. See module docs for more details.
 pub trait Backend: Send {
@@ -30,6 +30,9 @@ pub trait Backend: Send {
 
     /// Add an account entry to the cache.
     fn add_to_account_cache(&mut self, addr: Address, data: Option<Account>, modified: bool);
+
+    /// Sync all account entries from backend's local cache to global cache.
+    fn sync_account_cache(&mut self);
 
     /// Add a global code cache entry. This doesn't need to worry about canonicality because
     /// it simply maps hashes to raw code and will always be correct in the absence of

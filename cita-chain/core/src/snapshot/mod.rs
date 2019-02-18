@@ -16,8 +16,6 @@
 
 //! Snapshot format and creation.
 
-extern crate num_cpus;
-
 //pub mod service;
 pub mod error;
 pub mod io;
@@ -39,8 +37,10 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use util::kvdb::{DBTransaction, KeyValueDB};
-use util::{snappy, Bytes, Hashable, Mutex, BLOCKLIMIT};
+use cita_db::kvdb::{DBTransaction, KeyValueDB};
+use hashable::Hashable;
+use snappy;
+use util::{Bytes, Mutex, BLOCKLIMIT};
 
 use basic_types::{LogBloom, LogBloomGroup};
 use bloomchain::group::BloomGroupChain;
@@ -473,7 +473,7 @@ impl BlockRebuilder {
                 return Err(Error::RestorationAborted.into());
             }
 
-            let mut block = Block::new();
+            let mut block = Block::default();
             let pair = rlp.at(idx)?;
             //let block_rlp = pair.at(0)?.as_raw().to_owned();
             //let block: Block = ::rlp::decode(block_rlp.as_slice());
@@ -497,17 +497,19 @@ impl BlockRebuilder {
 
             // TODO: abridged_block
             /*let receipts_root = ordered_trie_root(pair.at(1)?.iter().map(|r| r.as_raw()));
-            
             let block = abridged_block.to_block(parent_hash, cur_number, receipts_root)?;
             let block_bytes = block.rlp_bytes();*/
 
             let is_best = cur_number == self.best_number;
 
             if is_best {
-                if header.hash() != self.best_hash {
-                    return Err(
-                        Error::WrongBlockHash(cur_number, self.best_hash, header.hash()).into(),
-                    );
+                if header.hash().unwrap() != self.best_hash {
+                    return Err(Error::WrongBlockHash(
+                        cur_number,
+                        self.best_hash,
+                        header.hash().unwrap(),
+                    )
+                    .into());
                 }
 
                 if header.state_root() != &self.best_root {
@@ -545,7 +547,7 @@ impl BlockRebuilder {
         is_best: bool,
     ) {
         let header = block.header();
-        let hash = header.hash();
+        let hash = header.hash().unwrap();
         let height = header.number();
 
         // store block in db
@@ -651,7 +653,6 @@ impl BlockRebuilder {
         info: &BlockInfo,
     ) -> HashMap<H256, TransactionAddress> {
         let transaction_hashes = block.body().transaction_hashes();
-    
         transaction_hashes
             .into_iter()
             .enumerate()
@@ -744,7 +745,6 @@ impl BlockRebuilder {
 
         /*for (first_num, first_hash) in self.disconnected.drain(..) {
             let parent_num = first_num - 1;
-        
             // check if the parent is even in the chain.
             // since we don't restore every single block in the chain,
             // the first block of the first chunks has nothing to connect to.
@@ -760,7 +760,10 @@ impl BlockRebuilder {
             block_hash: genesis_hash,
             proof: vec![],
         });*/
-        let genesis_block = self.chain.block_by_height(0).unwrap_or_default();
+        let genesis_block = self
+            .chain
+            .block_by_height(0)
+            .expect("Get genesis block failed");
         batch.write(COL_HEADERS, &0, &genesis_block.header.clone());
 
         batch.write(COL_BODIES, &0, &genesis_block.body.clone());
