@@ -46,6 +46,7 @@ For CITA API/v1, You can use any HTTP client, or following SDKs:
 * [JavaScript](https://github.com/cryptape/cita-sdk-js)
 * [Swift](https://github.com/cryptape/cita-sdk-swift)
 * [Ruby](https://github.com/cryptape/cita-sdk-ruby)
+* [Rust](https://github.com/cryptape/cita-common/tree/develop/cita-web3)
 
 ## Contributing
 
