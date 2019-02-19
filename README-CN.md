@@ -68,6 +68,7 @@ CITA 支持 JSON-RPC 和 WebSocket (experimental) API/v1。
 * [JavaScript](https://github.com/cryptape/cita-sdk-js)
 * [Swift](https://github.com/cryptape/cita-sdk-swift)
 * [Ruby](https://github.com/cryptape/cita-sdk-ruby)
+* [Rust](https://github.com/cryptape/cita-common/tree/develop/cita-web3)
 
 ## 社区贡献
 
