@@ -1,6 +1,6 @@
 # <img src="https://github.com/cryptape/assets/blob/master/CITA-logo.png?raw=true" width="256">
 
-[![Build Status](https://travis-ci.com/cryptape/cita.svg?branch=develop)](https://travis-ci.com/cryptape/cita)
+[![Circle CI Status](https://circleci.com/gh/cryptape/cita.svg?branch=develop)](https://circleci.com/gh/cryptape/cita)
 
 English | [简体中文](./README-CN.md)
 
