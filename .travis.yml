@@ -11,8 +11,6 @@ services:
 git:
   depth: 1
 stages:
-  - Format
-  - UnitTest
   - Release
   - IntegrateTest
 before_install:
@@ -20,26 +18,7 @@ before_install:
 jobs:
   include:
 
-    - stage: Format
-      before_script:
-        - cd $TRAVIS_BUILD_DIR
-      script: ./env.sh make fmt
-
-    - &stage-unit-test
-      stage: UnitTest
-      env: HASH_ALGO=sha3hash    CRYPTO_ALGO=secp256k1
-      before_script:
-        - cd $TRAVIS_BUILD_DIR
-        - ./scripts/replace_default_feature.sh ./ sha3hash  ${HASH_ALGO}
-        - ./scripts/replace_default_feature.sh ./ secp256k1 ${CRYPTO_ALGO}
-      script: ./env.sh make test
-    - <<: *stage-unit-test
-      env: HASH_ALGO=blake2bhash CRYPTO_ALGO=ed25519
-    - <<: *stage-unit-test
-      env: HASH_ALGO=sm3hash     CRYPTO_ALGO=sm2
-
-    - &stage-release
-      stage: Release
+    - stage: Release
       cache:
         directories:
           - $TRAVIS_BUILD_DIR/target/release-cache
@@ -53,65 +32,20 @@ jobs:
         - cd $TRAVIS_BUILD_DIR
         - rm -rf target/release-cache
         - mv -vf target/install target/release-cache
-    - <<: *stage-release
-      env: HASH_ALGO=blake2bhash CRYPTO_ALGO=ed25519
-    - <<: *stage-release
-      env: HASH_ALGO=sm3hash     CRYPTO_ALGO=sm2
 
-    - <<: *stage-release
+    - &stage-contract-test-sha3-secp256k1
+      stage: IntegrateTest
+      name: Unit Group
       language: node_js
       node_js:
         - lts/*
-
-    - &stage-integrate-test-sha3-secp256k1
-      stage: IntegrateTest
       cache:
         directories:
           - $TRAVIS_BUILD_DIR/target/release-cache
-      env: HASH_ALGO=sha3hash    CRYPTO_ALGO=secp256k1
       before_install:
         - cd $TRAVIS_BUILD_DIR
         - rm -rf target/install
         - cp -rv target/release-cache target/install
-      script: ./env.sh ./tests/integrate_test/cita_basic.sh
-    - &stage-integrate-test-blake2b-ed25519
-      <<: *stage-integrate-test-sha3-secp256k1
-      env: HASH_ALGO=blake2bhash CRYPTO_ALGO=ed25519
-      script: ./env.sh ./tests/integrate_test/cita_basic.sh
-    - &stage-integrate-test-sm3-sm2
-      <<: *stage-integrate-test-sha3-secp256k1
-      env: HASH_ALGO=sm3hash     CRYPTO_ALGO=sm2
-      script: ./env.sh ./tests/integrate_test/cita_basic.sh
-    - <<: *stage-integrate-test-sha3-secp256k1
-      script: ./env.sh ./tests/integrate_test/cita_byzantinetest.sh quota
-    - <<: *stage-integrate-test-blake2b-ed25519
-      script: ./env.sh ./tests/integrate_test/cita_byzantinetest.sh quota
-    - <<: *stage-integrate-test-sm3-sm2
-      script: ./env.sh ./tests/integrate_test/cita_byzantinetest.sh quota
-    - <<: *stage-integrate-test-sha3-secp256k1
-      script: ./env.sh ./tests/integrate_test/cita_byzantinetest.sh charge
-    - <<: *stage-integrate-test-blake2b-ed25519
-      script: ./env.sh ./tests/integrate_test/cita_byzantinetest.sh charge
-    - <<: *stage-integrate-test-sm3-sm2
-      script: ./env.sh ./tests/integrate_test/cita_byzantinetest.sh charge
-
-    - <<: *stage-integrate-test-sha3-secp256k1
-      name: Basic Integrate Test with TLS support
-      script: ./env.sh ./tests/integrate_test/cita_tls_basic.sh
-      name: JSONRPC Schema Mock Test (Quota)
-      script: ./env.sh ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota
-    - <<: *stage-integrate-test-sha3-secp256k1
-      name: Transfer Value Test (Charge)
-      script: ./env.sh ./tests/integrate_test/cita_charge_mode.sh
-    - <<: *stage-integrate-test-sha3-secp256k1
-      name: Crosschain Test
-      script: ./env.sh ./tests/integrate_test/cita_crosschain.sh
-
-    - &stage-contract-test-sha3-secp256k1
-      <<: *stage-integrate-test-sha3-secp256k1
-      language: node_js
-      node_js:
-        - lts/*
       install:
         - rm -rf /opt/cita-run/test-chain
         - cd $TRAVIS_BUILD_DIR/target/install
