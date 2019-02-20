@@ -15,7 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::{Address, clean_0x};
 use serde_derive::Deserialize;
+use std::fs::File;
+use std::io::Read;
+use std::str::FromStr;
 use util::parse_config;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -35,6 +39,24 @@ pub struct PeerConfig {
 impl NetConfig {
     pub fn new(path: &str) -> Self {
         parse_config!(NetConfig, path)
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct AddressConfig {
+    pub addr: Address,
+}
+
+impl AddressConfig {
+    pub fn new(path: &str) -> Self {
+        let mut buffer = String::new();
+        File::open(path)
+            .and_then(|mut f| f.read_to_string(&mut buffer))
+            .unwrap_or_else(|err| panic!("Error while loading PrivateKey: [{}]", err));
+
+        let addr = Address::from_str(clean_0x(&buffer)).unwrap();
+
+        AddressConfig { addr }
     }
 }
 
