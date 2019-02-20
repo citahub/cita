@@ -86,7 +86,7 @@ pub mod node_manager;
 pub mod p2p_protocol;
 pub mod synchronizer;
 
-use crate::config::NetConfig;
+use crate::config::{AddressConfig, NetConfig};
 use crate::mq_client::MqClient;
 use crate::network::{LocalMessage, Network};
 use crate::node_manager::{BroadcastReq, NodesManager, DEFAULT_PORT};
@@ -124,6 +124,7 @@ fn main() {
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
+        .args_from_usage("-a, --address=[FILE] 'Sets a address file'")
         .get_matches();
 
     let config_path = matches.value_of("config").unwrap_or("config");
@@ -133,6 +134,10 @@ fn main() {
     let config = NetConfig::new(&config_path);
     debug!("network config is {:?}", config);
     // <<<< End init config
+
+    let addr_path = matches.value_of("address").unwrap_or("address");
+    let own_addr = AddressConfig::new(&addr_path);
+    debug!("node address is {:?}", own_addr.addr);
 
     // >>>> Init pubsub
     // New transactions use a special channel, all new transactions come from:
@@ -175,7 +180,7 @@ fn main() {
     // <<<< End init pubsub
 
     // >>>> Init p2p protocols
-    let mut nodes_mgr = NodesManager::from_config(config.clone());
+    let mut nodes_mgr = NodesManager::from_config(config.clone(), own_addr.addr);
     let mut synchronizer_mgr = Synchronizer::new(mq_client.clone(), nodes_mgr.client());
     let mut network_mgr = Network::new(
         mq_client.clone(),
@@ -184,16 +189,20 @@ fn main() {
     );
     let discovery_meta =
         DiscoveryProtocolMeta::new(0, NodesAddressManager::new(nodes_mgr.client()));
-    let transfer_meta = TransferProtocolMeta::new(1, network_mgr.client());
+    let transfer_meta = TransferProtocolMeta::new(1, network_mgr.client(), nodes_mgr.client());
 
-    let mut service = ServiceBuilder::default()
+    let mut service_cfg = ServiceBuilder::default()
         .insert_protocol(discovery_meta)
         .insert_protocol(transfer_meta)
-        .forever(true)
-        .key_pair(SecioKeyPair::secp256k1_generated())
+        .forever(true);
+    if nodes_mgr.is_enable_tls() {
+        service_cfg = service_cfg.key_pair(SecioKeyPair::secp256k1_generated());
+    }
+    let mut service = service_cfg
         .build(SHandle::new(nodes_mgr.client()));
+
     let addr = format!("/ip4/0.0.0.0/tcp/{}", config.port.unwrap_or(DEFAULT_PORT));
-    let _ = service.listen(&addr.parse().unwrap());
+    let _ = service.listen(addr.parse().unwrap());
     nodes_mgr.set_service_task_sender(service.control().clone());
     // <<<< End init p2p protocols
 
