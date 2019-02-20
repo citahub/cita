@@ -20,14 +20,15 @@ use crate::config::NetConfig;
 use bytes::BytesMut;
 use crossbeam_channel;
 use crossbeam_channel::{select, tick, unbounded};
+use cita_types::Address;
 use discovery::RawAddr;
 use fnv::FnvHashMap;
 use libproto::{Message as ProtoMessage, TryInto};
 use log::{debug, error, trace, warn};
-use p2p::{context::ServiceControl, multiaddr::ToMultiaddr, SessionId};
-use rand::{thread_rng, Rng};
+use p2p::{context::ServiceControl, multiaddr::ToMultiaddr, SessionId, SessionType};
 use std::{
     collections::HashMap,
+    convert::Into,
     net::{SocketAddr, ToSocketAddrs},
     time::{Duration, Instant},
 };
@@ -36,18 +37,19 @@ pub const DEFAULT_MAX_CONNECTS: usize = 4;
 pub const DEFAULT_PORT: usize = 4000;
 pub const CHECK_CONNECTED_NODES: Duration = Duration::from_secs(3);
 
-pub type PeerKey = u64;
-
 pub struct NodesManager {
     check_connected_nodes: crossbeam_channel::Receiver<Instant>,
     known_addrs: FnvHashMap<RawAddr, i32>,
     connected_addrs: HashMap<SessionId, RawAddr>,
-    connected_peer_keys: HashMap<PeerKey, SessionId>,
+    connected_peer_keys: HashMap<Address, SessionId>,
     max_connects: usize,
     nodes_manager_client: NodesManagerClient,
     nodes_manager_service_receiver: crossbeam_channel::Receiver<NodesManagerMessage>,
     service_ctrl: Option<ServiceControl>,
-    peer_key: PeerKey,
+    peer_key: Address,
+    enable_tls: bool,
+    dialing_node: Option<SocketAddr>,
+    repeated_connections: HashMap<SessionId, bool>,
 }
 
 impl NodesManager {
@@ -57,11 +59,15 @@ impl NodesManager {
         node_mgr
     }
 
-    pub fn from_config(cfg: NetConfig) -> Self {
+    pub fn from_config(cfg: NetConfig, key: Address) -> Self {
         let mut node_mgr = NodesManager::default();
         let max_connects = cfg.max_connects.unwrap_or(DEFAULT_MAX_CONNECTS);
         node_mgr.max_connects = max_connects;
+        node_mgr.peer_key = key;
 
+        if let Some(enable_tls) = cfg.enable_tls {
+            node_mgr.enable_tls = enable_tls;
+        }
         if let Some(known_addrs) = cfg.peers {
             for addr in known_addrs {
                 if let (Some(ip), Some(port)) = (addr.ip, addr.port) {
@@ -132,6 +138,7 @@ impl NodesManager {
                     debug!("[dial_nodes] Connect to {:?}", key.socket_addr());
 
                     if let Some(ref mut ctrl) = self.service_ctrl {
+                        self.dialing_node = Some(key.socket_addr());
                         match ctrl.dial(key.socket_addr().to_multiaddr().unwrap()) {
                             Ok(_) => {
                                 debug!("[dial_nodes] Dail success");
@@ -150,6 +157,10 @@ impl NodesManager {
     pub fn set_service_task_sender(&mut self, ctrl: ServiceControl) {
         self.service_ctrl = Some(ctrl);
     }
+
+    pub fn is_enable_tls(&self) -> bool {
+        self.enable_tls
+    }
 }
 
 impl Default for NodesManager {
@@ -157,8 +168,8 @@ impl Default for NodesManager {
         let (tx, rx) = unbounded();
         let ticker = tick(CHECK_CONNECTED_NODES);
         let client = NodesManagerClient { sender: tx };
-        let peer_key = thread_rng().gen::<u64>();
 
+        // Set enable_tls = true as default.
         NodesManager {
             check_connected_nodes: ticker,
             known_addrs: FnvHashMap::default(),
@@ -168,7 +179,10 @@ impl Default for NodesManager {
             nodes_manager_client: client,
             nodes_manager_service_receiver: rx,
             service_ctrl: None,
-            peer_key,
+            peer_key: Address::zero(),
+            enable_tls: true,
+            dialing_node: None,
+            repeated_connections: HashMap::default(),
         }
     }
 }
@@ -215,6 +229,14 @@ impl NodesManagerClient {
         self.send_req(NodesManagerMessage::GetPeerCount(req));
     }
 
+    pub fn network_init(&self, req: NetworkInitReq) {
+        self.send_req(NodesManagerMessage::NetworkInit(req));
+    }
+
+    pub fn add_connected_key(&self, req: AddConnectedKeyReq) {
+        self.send_req(NodesManagerMessage::AddConnectedKey(req));
+    }
+
     fn send_req(&self, req: NodesManagerMessage) {
         match self.sender.try_send(req) {
             Ok(_) => {
@@ -237,6 +259,8 @@ pub enum NodesManagerMessage {
     Broadcast(BroadcastReq),
     SingleTxReq(SingleTxReq),
     GetPeerCount(GetPeerCountReq),
+    NetworkInit(NetworkInitReq),
+    AddConnectedKey(AddConnectedKeyReq),
 }
 
 impl NodesManagerMessage {
@@ -250,41 +274,124 @@ impl NodesManagerMessage {
             NodesManagerMessage::Broadcast(req) => req.handle(service),
             NodesManagerMessage::SingleTxReq(req) => req.handle(service),
             NodesManagerMessage::GetPeerCount(req) => req.handle(service),
+            NodesManagerMessage::NetworkInit(req) => req.handle(service),
+            NodesManagerMessage::AddConnectedKey(req) => req.handle(service),
         }
     }
 }
 
 #[derive(Default, Clone)]
 pub struct InitMsg {
-    chain_id: u64,
-    peer_key: PeerKey,
+    pub chain_id: u64,
+    pub peer_key: Address,
 }
 
 impl Into<Vec<u8>> for InitMsg {
     fn into(self) -> Vec<u8> {
         let mut out = Vec::new();
+        let mut key_data: [u8; 20] = Default::default();
+        self.peer_key.copy_to(&mut key_data[..]);
         out.extend_from_slice(&self.chain_id.to_be_bytes());
-        out.extend_from_slice(&self.peer_key.to_be_bytes());
+        out.extend_from_slice(&key_data);
         out
     }
 }
 
-#[derive(Default)]
-pub struct InitMsgReq {
+impl From<Vec<u8>> for InitMsg {
+    fn from(data: Vec<u8>) -> InitMsg {
+        let mut chain_id_data : [u8; 8] = Default::default();
+        chain_id_data.copy_from_slice(&data[..8]);
+
+        let chain_id = u64::from_be_bytes(chain_id_data);
+        let peer_key = Address::from_slice(&data[8..]);
+
+        InitMsg {
+            chain_id,
+            peer_key,
+        }
+    }
+}
+
+pub struct AddConnectedKeyReq {
     session_id: SessionId,
+    ty: SessionType,
     init_msg: InitMsg,
 }
 
-impl InitMsgReq {
-    pub fn new(session_id: SessionId, chain_id: u64, peer_key: PeerKey) -> Self {
-        let init_msg = InitMsg { chain_id, peer_key };
-        InitMsgReq {
-            session_id,
-            init_msg,
-        }
+impl AddConnectedKeyReq {
+    pub fn new(session_id: SessionId, ty: SessionType, init_msg: InitMsg) -> Self {
+        AddConnectedKeyReq { session_id, ty, init_msg }
     }
 
-    pub fn handle(self, _service: &mut NodesManager) {}
+    pub fn handle(self, service: &mut NodesManager) {
+        // Repeated connected, disconnect it.
+        if let Some(repeated_id) = service.connected_peer_keys.get(&self.init_msg.peer_key) {
+            if let Some(ref mut ctrl) = service.service_ctrl {
+                debug!("[AddConnectedAddressReq] New session [{:?}] repeated with [{:?}]", self.session_id, *repeated_id);
+                if self.ty == SessionType::Client {
+                    service.repeated_connections.insert(self.session_id, true);
+                    debug!("[AddConnectedAddressReq] Disconnected session [{:?}], address: {:?}", self.session_id, self.init_msg.peer_key);
+                    let _ = ctrl.disconnect(self.session_id);
+                }
+            }
+        } else if service.peer_key == self.init_msg.peer_key {
+            // Connected Self
+            debug!("[AddConnectedAddressReq] Connected Self, Delete {:?} from know_addrs", service.dialing_node);
+            service.known_addrs.remove(&RawAddr::from(service.dialing_node.unwrap()));
+            if let Some(ref mut ctrl) = service.service_ctrl {
+                let _ = ctrl.disconnect(self.session_id);
+            }
+        } else {
+            let _ = service
+                .connected_peer_keys
+                .insert(self.init_msg.peer_key, self.session_id);
+        }
+
+        // End of dealing with the dialing
+        if self.ty == SessionType::Client {
+            service.dialing_node = None;
+        }
+        for key in service.connected_peer_keys.keys() {
+            debug!("[AddConnectedAddressReq] Address in connected : {:?}", key);
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct NetworkInitReq {
+    session_id: SessionId,
+}
+
+impl NetworkInitReq {
+    pub fn new(session_id: SessionId) -> Self {
+        NetworkInitReq { session_id }
+    }
+
+    pub fn handle(self, service: &mut NodesManager) {
+        let peer_key = service.peer_key.clone();
+
+        let send_key = "network.init".to_string();
+        let init_msg = InitMsg {
+            chain_id: 0,
+            peer_key,
+        };
+        let msg_bytes: Vec<u8> = init_msg.into();
+
+        let mut buf = BytesMut::with_capacity(4 + 4 + 1 + send_key.len() + msg_bytes.len());
+        pubsub_message_to_network_message(&mut buf, Some((send_key, msg_bytes)));
+
+
+        if let Some(ref mut ctrl) = service.service_ctrl {
+            //FIXME: handle the error!
+            let ret = ctrl.send_message(Some(vec![self.session_id]), 1, buf.to_vec());
+            debug!(
+                "[NetworkInitReq] Send network init message!, id: {:?}, peer_addr: {:?}, ret: {:?}",
+                self.session_id,
+                peer_key,
+                ret,
+            );
+        }
+    }
 }
 
 pub struct AddNodeReq {
@@ -362,24 +469,10 @@ impl AddConnectedNodeReq {
 
     pub fn handle(self, service: &mut NodesManager) {
         // FIXME: If have reached to max_connects, disconnected this node.
-        let peer_key = service.peer_key;
+        debug!("[AddConnectedAddressReq] Add session [{:?}], address: {:?} to Connected_addrs.", self.session_id, self.addr);
         service
             .connected_addrs
             .insert(self.session_id, RawAddr::from(self.addr));
-
-        let send_key = "init".to_string();
-        let init_msg = InitMsg {
-            chain_id: 0,
-            peer_key,
-        };
-        let msg_bytes: Vec<u8> = init_msg.into();
-
-        let mut buf = BytesMut::with_capacity(4 + 4 + 1 + send_key.len() + msg_bytes.len());
-        pubsub_message_to_network_message(&mut buf, Some((send_key, msg_bytes)));
-        if let Some(ref mut ctrl) = service.service_ctrl {
-            //FIXME: handle the error!
-            let _ = ctrl.send_message(Some(vec![self.session_id]), 1, buf.to_vec());
-        }
     }
 }
 
@@ -393,7 +486,21 @@ impl DelConnectedNodeReq {
     }
 
     pub fn handle(self, service: &mut NodesManager) {
+        // Do not need to remove anything for disconnected a repeated connection.
+        if let Some(_is_repeated) = service.repeated_connections.remove(&self.session_id) {
+            return;
+        }
+        debug!("[DelConnectedNodeReq] Remove session [{:?}] from Connected_addrs.", self.session_id);
         service.connected_addrs.remove(&self.session_id);
+
+        for (key, value) in service.connected_peer_keys.iter() {
+            if self.session_id == *value {
+                debug!("[DelConnectedNodeReq] Remove session [{:?}] from connected_peer_keys.", *key);
+                service.connected_peer_keys.remove(&key.clone());
+                break;
+            }
+        }
+
     }
 }
 

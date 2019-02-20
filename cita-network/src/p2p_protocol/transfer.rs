@@ -17,9 +17,10 @@
 
 use crate::citaprotocol::network_message_to_pubsub_message;
 use crate::network::{NetworkClient, RemoteMessage};
+use crate::node_manager::{InitMsg, NetworkInitReq, NodesManagerClient, AddConnectedKeyReq};
 use bytes::BytesMut;
 use libproto::{Message as ProtoMessage, TryFrom, TryInto};
-use log::info;
+use log::{debug, info};
 use p2p::{
     context::{ServiceContext, SessionContext},
     traits::{ProtocolMeta, ServiceProtocol},
@@ -30,11 +31,16 @@ use tokio::codec::length_delimited::LengthDelimitedCodec;
 pub struct TransferProtocolMeta {
     id: ProtocolId,
     network_client: NetworkClient,
+    nodes_mgr_client: NodesManagerClient,
 }
 
 impl TransferProtocolMeta {
-    pub fn new(id: ProtocolId, network_client: NetworkClient) -> Self {
-        TransferProtocolMeta { id, network_client }
+    pub fn new(
+        id: ProtocolId,
+        network_client: NetworkClient,
+        nodes_mgr_client: NodesManagerClient,
+    ) -> Self {
+        TransferProtocolMeta { id, network_client, nodes_mgr_client }
     }
 }
 
@@ -50,6 +56,7 @@ impl ProtocolMeta<LengthDelimitedCodec> for TransferProtocolMeta {
             proto_id: self.id,
             connected_session_ids: Vec::default(),
             network_client: self.network_client.clone(),
+            nodes_mgr_client: self.nodes_mgr_client.clone(),
         });
         Some(handle)
     }
@@ -59,6 +66,7 @@ struct TransferProtocol {
     proto_id: ProtocolId,
     connected_session_ids: Vec<SessionId>,
     network_client: NetworkClient,
+    nodes_mgr_client: NodesManagerClient,
 }
 
 impl ServiceProtocol for TransferProtocol {
@@ -75,6 +83,10 @@ impl ServiceProtocol for TransferProtocol {
             self.proto_id, session.id, session.address, session.ty, version
         );
         self.connected_session_ids.push(session.id);
+
+        let req = NetworkInitReq::new(session.id);
+        self.nodes_mgr_client.network_init(req);
+
         info!(
             "[connected] connected sessions: {:?}",
             self.connected_session_ids
@@ -98,11 +110,22 @@ impl ServiceProtocol for TransferProtocol {
 
     fn received(&mut self, _env: &mut ServiceContext, session: &SessionContext, data: Vec<u8>) {
         let mut data = BytesMut::from(data);
+
         if let Some((key, message)) = network_message_to_pubsub_message(&mut data) {
+            debug!("[received] Received network message!key: {:?}", key);
+            if key.eq(&"network.init".to_string()) {
+                let msg = InitMsg::from(message);
+                let req = AddConnectedKeyReq::new(session.id, session.ty, msg);
+                self.nodes_mgr_client.add_connected_key(req);
+                return;
+            }
+
             let mut msg = ProtoMessage::try_from(&message).unwrap();
             msg.set_origin(session.id as u32);
             self.network_client
                 .handle_remote_message(RemoteMessage::new(key, msg.try_into().unwrap()));
+        } else {
+            debug!("[received] Cannot convert network message to pubsub message!");
         }
     }
 }
