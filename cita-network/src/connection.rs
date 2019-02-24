@@ -219,11 +219,13 @@ impl Connections {
             Manager::new(connect_task_sender, connect_receiver, enable_tls).run()
         });
 
-        if let Some(peers) = config.peers.as_ref() {
-            config_peer(&peers).into_iter().for_each(|config| {
-                connect_sender.send(config).unwrap();
-            });
-        }
+        let init_connect_sender = connect_sender.clone();
+        let init_config = config.clone();
+        thread::spawn(move || {
+            if let Some(peers) = init_config.peers.clone() {
+                init_config_peer(peers, init_connect_sender)
+            }
+        });
 
         (
             Connections {
@@ -427,7 +429,7 @@ pub fn manage_connect(config_path: &str, rx: Receiver<DebouncedEvent>, task_send
 
 fn config_peer(config: &[PeerConfig]) -> Vec<(u32, SocketAddr, String)> {
     config
-        .into_iter()
+        .iter()
         .filter_map(|peer| {
             if let (Some(id_card), Some(ip), Some(port)) =
                 (peer.id_card, peer.ip.clone(), peer.port)
@@ -452,6 +454,44 @@ fn config_peer(config: &[PeerConfig]) -> Vec<(u32, SocketAddr, String)> {
             }
         })
         .collect()
+}
+
+fn init_config_peer(config: Vec<PeerConfig>, connect_sender: Sender<(u32, SocketAddr, String)>) {
+    let mut peers = config;
+
+    loop {
+        let mut unread_peers = vec![];
+
+        for peer in peers {
+            if let (Some(id_card), Some(ip), Some(port)) =
+                (peer.id_card, peer.ip.clone(), peer.port)
+            {
+                match format!("{}:{}", ip, port).to_socket_addrs() {
+                    Ok(mut result) => {
+                        if let Some(addr) = result.next() {
+                            connect_sender
+                                .send((id_card, addr, peer.common_name.clone().unwrap_or_default()))
+                                .unwrap()
+                        }
+                    }
+                    Err(e) => {
+                        unread_peers.push(peer.clone());
+                        error!("Can't convert to socket address, error: {}", e);
+                    }
+                }
+
+            } else {
+                error!("Invalid peer config: {:?}", peer);
+            }
+        }
+
+        if unread_peers.is_empty() {
+            return
+        }
+
+        peers = unread_peers.clone();
+        thread::sleep(Duration::from_secs(1));
+    }
 }
 
 #[cfg(test)]
