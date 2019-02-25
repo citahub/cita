@@ -133,7 +133,7 @@ pub fn to_fat_rlps(
         }
 
         account_stream.begin_unbounded_list();
-        if account_stream.len() > target_chunk_size {
+        if account_stream.size() > target_chunk_size {
             // account does not fit, push an empty record to mark a new chunk
             target_chunk_size = max_chunk_size;
             chunks.push(Vec::new());

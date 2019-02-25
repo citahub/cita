@@ -43,7 +43,7 @@ impl OldAuthorityManage {
         let mut authority_manage = Self {
             authorities: Vec::new(),
             authority_n: 0,
-            authorities_log: Wal::new(&*logpath).unwrap(),
+            authorities_log: Wal::create(&*logpath).unwrap(),
             authorities_old: Vec::new(),
             authority_n_old: 0,
             authority_h_old: 0,
