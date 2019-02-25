@@ -223,7 +223,7 @@ impl Connections {
         let init_config = config.clone();
         thread::spawn(move || {
             if let Some(peers) = init_config.peers.clone() {
-                init_config_peer(peers, init_connect_sender)
+                init_config_peer(peers, &init_connect_sender)
             }
         });
 
@@ -456,7 +456,7 @@ fn config_peer(config: &[PeerConfig]) -> Vec<(u32, SocketAddr, String)> {
         .collect()
 }
 
-fn init_config_peer(config: Vec<PeerConfig>, connect_sender: Sender<(u32, SocketAddr, String)>) {
+fn init_config_peer(config: Vec<PeerConfig>, connect_sender: &Sender<(u32, SocketAddr, String)>) {
     let mut peers = config;
 
     loop {
