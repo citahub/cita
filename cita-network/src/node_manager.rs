@@ -28,6 +28,7 @@ use log::{debug, error, trace, warn};
 use p2p::{context::ServiceControl, multiaddr::ToMultiaddr, SessionId, SessionType};
 use std::{
     collections::HashMap,
+    collections::HashSet,
     convert::Into,
     net::{SocketAddr, ToSocketAddrs},
     time::{Duration, Instant},
@@ -49,7 +50,7 @@ pub struct NodesManager {
     peer_key: Address,
     enable_tls: bool,
     dialing_node: Option<SocketAddr>,
-    repeated_connections: HashMap<SessionId, bool>,
+    repeated_connections: HashSet<SessionId>,
 }
 
 impl NodesManager {
@@ -182,7 +183,7 @@ impl Default for NodesManager {
             peer_key: Address::zero(),
             enable_tls: true,
             dialing_node: None,
-            repeated_connections: HashMap::default(),
+            repeated_connections: HashSet::default(),
         }
     }
 }
@@ -329,7 +330,11 @@ impl AddConnectedKeyReq {
             if let Some(ref mut ctrl) = service.service_ctrl {
                 debug!("[AddConnectedAddressReq] New session [{:?}] repeated with [{:?}]", self.session_id, *repeated_id);
                 if self.ty == SessionType::Client {
-                    service.repeated_connections.insert(self.session_id, true);
+                    // Need to replace key for its connected address.
+                    if let Some(value) = service.connected_addrs.remove(&self.session_id) {
+                        service.connected_addrs.insert(*repeated_id, value);
+                    }
+                    service.repeated_connections.insert(self.session_id);
                     debug!("[AddConnectedAddressReq] Disconnected session [{:?}], address: {:?}", self.session_id, self.init_msg.peer_key);
                     let _ = ctrl.disconnect(self.session_id);
                 }
@@ -487,7 +492,7 @@ impl DelConnectedNodeReq {
 
     pub fn handle(self, service: &mut NodesManager) {
         // Do not need to remove anything for disconnected a repeated connection.
-        if let Some(_is_repeated) = service.repeated_connections.remove(&self.session_id) {
+        if service.repeated_connections.remove(&self.session_id) {
             return;
         }
         debug!("[DelConnectedNodeReq] Remove session [{:?}] from Connected_addrs.", self.session_id);
