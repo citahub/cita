@@ -479,14 +479,13 @@ fn init_config_peer(config: Vec<PeerConfig>, connect_sender: Sender<(u32, Socket
                         error!("Can't convert to socket address, error: {}", e);
                     }
                 }
-
             } else {
                 error!("Invalid peer config: {:?}", peer);
             }
         }
 
         if unread_peers.is_empty() {
-            return
+            return;
         }
 
         peers = unread_peers.clone();
