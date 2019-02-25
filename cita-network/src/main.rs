@@ -87,6 +87,8 @@ pub mod p2p_protocol;
 pub mod synchronizer;
 
 use crate::config::{AddressConfig, NetConfig};
+use crossbeam_channel;
+use crossbeam_channel::unbounded;
 use crate::mq_client::MqClient;
 use crate::network::{LocalMessage, Network};
 use crate::node_manager::{BroadcastReq, NodesManager, DEFAULT_PORT};
@@ -105,7 +107,6 @@ use libproto::{Message, TryFrom};
 use log::{debug, info, trace};
 use p2p::{builder::ServiceBuilder, SecioKeyPair};
 use pubsub::start_pubsub;
-use std::sync::mpsc::channel;
 use std::thread;
 use util::micro_service_init;
 use util::set_panic_handler;
@@ -143,8 +144,8 @@ fn main() {
     // New transactions use a special channel, all new transactions come from:
     // JsonRpc -> Auth -> Network,
     // So the channel subscribe 'Auth' Request from MQ
-    let (ctx_sub_auth, crx_sub_auth) = channel();
-    let (ctx_pub_auth, crx_pub_auth) = channel();
+    let (ctx_sub_auth, crx_sub_auth) = unbounded();
+    let (ctx_pub_auth, crx_pub_auth) = unbounded();
     start_pubsub(
         "network_auth",
         routing_key!([Auth >> Request, Auth >> GetBlockTxn, Auth >> BlockTxn]),
@@ -153,8 +154,8 @@ fn main() {
     );
 
     // Consensus use a special channel
-    let (ctx_sub_consensus, crx_sub_consensus) = channel();
-    let (ctx_pub_consensus, crx_pub_consensus) = channel();
+    let (ctx_sub_consensus, crx_sub_consensus) = unbounded();
+    let (ctx_pub_consensus, crx_pub_consensus) = unbounded();
     start_pubsub(
         "network_consensus",
         routing_key!([Consensus >> CompactSignedProposal, Consensus >> RawBytes]),
@@ -163,8 +164,8 @@ fn main() {
     );
 
     // Chain, Jsonrpc and Snapshot use a common channel
-    let (ctx_sub, crx_sub) = channel();
-    let (ctx_pub, crx_pub) = channel();
+    let (ctx_sub, crx_sub) = unbounded();
+    let (ctx_pub, crx_pub) = unbounded();
     start_pubsub(
         "network",
         routing_key!([
