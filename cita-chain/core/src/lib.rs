@@ -44,6 +44,7 @@ extern crate cita_types;
 extern crate common_types as types;
 extern crate crossbeam;
 extern crate jsonrpc_types;
+extern crate pubsub;
 extern crate time;
 extern crate transient_hashmap;
 

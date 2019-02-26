@@ -17,7 +17,7 @@
 
 use core::libchain::chain::Chain;
 use libproto::executor::ExecutedResult;
-use std::sync::mpsc::Sender;
+use pubsub::channel::Sender;
 use std::sync::Arc;
 
 /// Processing blocks and transaction storage

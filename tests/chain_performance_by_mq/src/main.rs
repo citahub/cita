@@ -43,7 +43,7 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
 use libproto::TryFrom;
 use pubsub::start_pubsub;
-use std::sync::mpsc::{channel, Sender};
+use pubsub::channel::{unbounded, Sender};
 use std::sync::{Arc, Mutex};
 use std::time;
 
@@ -167,8 +167,8 @@ fn main() {
 
     let mut send_flag = true;
     let mut height = 0;
-    let (tx_sub, rx_sub) = channel();
-    let (tx_pub, rx_pub) = channel();
+    let (tx_sub, rx_sub) = unbounded();
+    let (tx_pub, rx_pub) = unbounded();
     let keypair = KeyPair::gen_keypair();
     let pk = keypair.privkey();
 

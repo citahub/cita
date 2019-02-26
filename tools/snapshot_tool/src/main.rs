@@ -31,9 +31,9 @@ use clap::App;
 use fs2::FileExt;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use postman::Postman;
+use pubsub::channel;
 use pubsub::start_pubsub;
 use std::fs::{self, File, OpenOptions};
-use std::sync::mpsc::channel;
 use util::set_panic_handler;
 
 mod postman;
@@ -68,8 +68,8 @@ fn main() {
     let end_height = cast_height(end_height);
 
     // 3. Start message-bus watcher in background
-    let (mq_req_sender, mq_req_receiver) = channel();
-    let (mq_resp_sender, mq_resp_receiver) = channel();
+    let (mq_req_sender, mq_req_receiver) = channel::unbounded();
+    let (mq_resp_sender, mq_resp_receiver) = channel::unbounded();
     start_pubsub(
         "snapshot",
         routing_key!([
