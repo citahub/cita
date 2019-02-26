@@ -31,6 +31,7 @@ rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "de
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../types" }
 db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [dev-dependencies]
 rand = "0.3"
