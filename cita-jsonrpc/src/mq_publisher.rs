@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::sync::mpsc;
 use std::time::Duration;
 
 use futures::{future::Future, stream::FuturesOrdered, sync::oneshot};
@@ -29,7 +28,7 @@ use tokio_timer::{clock, Delay};
 use crate::helper::{select_topic, RpcMap, TransferType};
 use crate::response::{BatchFutureResponse, PublishFutResponse, SingleFutureResponse};
 use crate::service_error::ServiceError;
-
+use pubsub::channel;
 type HyperResponse = hyper::Response<hyper::Body>;
 
 #[derive(Debug)]
@@ -68,7 +67,7 @@ impl MQRequest {
     }
 }
 
-pub type ProtoReqSender = mpsc::Sender<(String, ProtoRequest)>;
+pub type ProtoReqSender = channel::Sender<(String, ProtoRequest)>;
 
 pub struct Publisher {
     responses: RpcMap,

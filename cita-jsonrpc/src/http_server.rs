@@ -25,7 +25,8 @@ use hyper::{Body, Method, Request, Response, StatusCode};
 use jsonrpc_types::{request::RpcRequest as JsonrpcRequest, rpctypes::Id as RpcId};
 use libproto::request::Request as ProtoRequest;
 use std::net::{SocketAddr, TcpListener};
-use std::sync::{mpsc, Arc};
+use std::sync::Arc;
+use pubsub::channel;
 use std::time::Duration;
 use util::Mutex;
 
@@ -235,7 +236,7 @@ pub struct Server {
 impl Server {
     pub fn create(
         addr: &SocketAddr,
-        tx: mpsc::Sender<(String, ProtoRequest)>,
+        tx: channel::Sender<(String, ProtoRequest)>,
         responses: RpcMap,
         timeout: u64,
         allow_origin: &Option<String>,
@@ -294,7 +295,8 @@ pub fn listener_from_socket_addr(addr: &SocketAddr) -> std::io::Result<TcpListen
 mod integration_test {
     use std::collections::HashMap;
     use std::str::FromStr;
-    use std::sync::mpsc::channel;
+    use pubsub::channel::unbounded;
+    use pubsub::channel;
     use std::thread;
 
     use uuid::Uuid;
@@ -325,14 +327,14 @@ mod integration_test {
 
     fn start_server(
         responses: RpcMap,
-        tx: mpsc::Sender<(String, ProtoRequest)>,
+        tx: channel::Sender<(String, ProtoRequest)>,
         timeout: u64,
         allow_origin: Option<String>,
     ) -> Serve {
         let addr = "127.0.0.1:0".parse().unwrap();
         let tx = tx.clone();
 
-        let (addr_tx, addr_rx) = ::std::sync::mpsc::channel();
+        let (addr_tx, addr_rx) = unbounded();
         let thread_handle = thread::Builder::new()
             .name(format!("test-server-{}", Uuid::new_v4()))
             .spawn(move || {

@@ -116,8 +116,7 @@ use core::contracts::grpc::grpc_vm_adapter;
 use core::libexecutor::executor::Executor;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use postman::Postman;
-use pubsub::start_pubsub;
-use std::sync::mpsc::channel;
+use pubsub::{channel, start_pubsub};
 use std::thread;
 use util::set_panic_handler;
 
@@ -171,8 +170,8 @@ fn main() {
     info!("Config: {:?}", options);
 
     // start pubsub thread
-    let (forward_req_sender, forward_req_receiver) = channel();
-    let (forward_resp_sender, forward_resp_receiver) = channel();
+    let (forward_req_sender, forward_req_receiver) = channel::unbounded();
+    let (forward_resp_sender, forward_resp_receiver) = channel::unbounded();
     let (mq_req_sender, mq_req_receiver) = crossbeam_channel::unbounded();
     let (mq_resp_sender, mq_resp_receiver) = crossbeam_channel::unbounded();
     let (fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();

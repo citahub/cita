@@ -23,7 +23,8 @@ use jsonrpc_types::Error;
 use libproto::request::Request as ProtoRequest;
 use num_cpus;
 use serde_json;
-use std::sync::{mpsc, Arc};
+use std::sync::Arc;
+use pubsub::channel;
 use threadpool::ThreadPool;
 use ws::{self as ws, CloseCode, Factory, Handler};
 
@@ -31,13 +32,13 @@ pub struct WsFactory {
     //TODO 定时清理工作
     responses: RpcMap,
     thread_pool: ThreadPool,
-    tx: mpsc::Sender<(String, ProtoRequest)>,
+    tx: channel::Sender<(String, ProtoRequest)>,
 }
 
 impl WsFactory {
     pub fn new(
         responses: RpcMap,
-        tx: mpsc::Sender<(String, ProtoRequest)>,
+        tx: channel::Sender<(String, ProtoRequest)>,
         thread_num: usize,
     ) -> WsFactory {
         let thread_number = if thread_num == 0 {
@@ -119,5 +120,5 @@ pub struct WsHandler {
     responses: RpcMap,
     thread_pool: ThreadPool,
     sender: ws::Sender,
-    tx: mpsc::Sender<(String, ProtoRequest)>,
+    tx: channel::Sender<(String, ProtoRequest)>,
 }

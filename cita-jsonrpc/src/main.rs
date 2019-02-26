@@ -113,7 +113,7 @@ use libproto::Message;
 use libproto::TryInto;
 use pubsub::start_pubsub;
 use std::collections::HashMap;
-use std::sync::mpsc::{channel, Sender};
+use pubsub::channel::{unbounded, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};
@@ -153,10 +153,10 @@ fn main() {
     set_fd_limit();
 
     // init pubsub
-    let (tx_sub, rx_sub) = channel();
-    let (tx_pub, rx_pub) = channel();
+    let (tx_sub, rx_sub) = unbounded();
+    let (tx_pub, rx_pub) = unbounded();
     //used for buffer message
-    let (tx_relay, rx_relay) = channel();
+    let (tx_relay, rx_relay) = unbounded();
     start_pubsub(
         "jsonrpc",
         routing_key!([
