@@ -18,8 +18,8 @@
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::TryInto;
 use libproto::{BatchRequest, Message, Request};
+use pubsub::channel::{Receiver, Sender};
 use std::convert::Into;
-use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;
 use util::instrument::{unix_now, AsMillis};
