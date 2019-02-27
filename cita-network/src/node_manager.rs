@@ -34,7 +34,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub const DEFAULT_MAX_CONNECTS: usize = 4;
+pub const DEFAULT_MAX_CONNECTS: usize = 666;
 pub const DEFAULT_PORT: usize = 4000;
 pub const CHECK_CONNECTED_NODES: Duration = Duration::from_secs(3);
 type IsTranslated = bool;
