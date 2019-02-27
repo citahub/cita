@@ -37,10 +37,12 @@ use std::{
 pub const DEFAULT_MAX_CONNECTS: usize = 4;
 pub const DEFAULT_PORT: usize = 4000;
 pub const CHECK_CONNECTED_NODES: Duration = Duration::from_secs(3);
+type IsTranslated = bool;
 
 pub struct NodesManager {
     check_connected_nodes: crossbeam_channel::Receiver<Instant>,
     known_addrs: FnvHashMap<RawAddr, i32>,
+    config_addrs: HashMap<String, IsTranslated>,
     connected_addrs: HashMap<SessionId, RawAddr>,
     connected_peer_keys: HashMap<Address, SessionId>,
     max_connects: usize,
@@ -73,22 +75,7 @@ impl NodesManager {
             for addr in known_addrs {
                 if let (Some(ip), Some(port)) = (addr.ip, addr.port) {
                     let addr_str = format!("{}:{}", ip, port);
-                    match addr_str.to_socket_addrs() {
-                        Ok(mut result) => {
-                            if let Some(socket_addr) = result.next() {
-                                let raw_addr = RawAddr::from(socket_addr);
-                                node_mgr.known_addrs.insert(raw_addr, 100);
-                            } else {
-                                error!("[NodeManager] Can't convert to socket address!");
-                            }
-                        }
-                        Err(e) => {
-                            error!(
-                                "[NodeManager] Can't convert to socket address! error: {}",
-                                e
-                            );
-                        }
-                    }
+                    node_mgr.config_addrs.insert(addr_str, false);
                 } else {
                     warn!("[NodeManager] ip(host) & port 'MUST' be set in peers.");
                 }
@@ -123,6 +110,30 @@ impl NodesManager {
     }
 
     pub fn dial_nodes(&mut self) {
+        for (key, value) in self.config_addrs.iter_mut() {
+            // The address has translated.
+            if *value {
+                debug!("[NodeManager] The Address {:?} has been translated.", key);
+                continue;
+            }
+            match key.to_socket_addrs() {
+                Ok(mut result) => {
+                    if let Some(socket_addr) = result.next() {
+                        let raw_addr = RawAddr::from(socket_addr);
+                        self.known_addrs.insert(raw_addr, 100);
+                        *value = true;
+                    } else {
+                        error!("[NodeManager] Can't convert to socket address!");
+                    }
+                }
+                Err(e) => {
+                    error!(
+                        "[NodeManager] Can't convert to socket address! error: {}",
+                        e
+                    );
+                }
+            }
+        }
         debug!("=============================");
         for raw_addr in self.known_addrs.keys() {
             debug!("Node in known: {:?}", raw_addr.socket_addr());
@@ -174,6 +185,7 @@ impl Default for NodesManager {
         NodesManager {
             check_connected_nodes: ticker,
             known_addrs: FnvHashMap::default(),
+            config_addrs: HashMap::default(),
             connected_addrs: HashMap::default(),
             connected_peer_keys: HashMap::default(),
             max_connects: DEFAULT_MAX_CONNECTS,
