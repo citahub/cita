@@ -18,6 +18,7 @@
 use crate::citaprotocol::pubsub_message_to_network_message;
 use crate::config::NetConfig;
 use bytes::BytesMut;
+use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use crossbeam_channel;
 use crossbeam_channel::{select, tick, unbounded};
 use cita_types::Address;
@@ -30,6 +31,7 @@ use std::{
     collections::HashMap,
     collections::HashSet,
     convert::Into,
+    io::Cursor,
     net::{SocketAddr, ToSocketAddrs},
     time::{Duration, Instant},
 };
@@ -303,8 +305,11 @@ impl Into<Vec<u8>> for InitMsg {
     fn into(self) -> Vec<u8> {
         let mut out = Vec::new();
         let mut key_data: [u8; 20] = Default::default();
+        let mut chain_id_data = vec![];
+        chain_id_data.write_u64::<BigEndian>(self.chain_id).unwrap();
         self.peer_key.copy_to(&mut key_data[..]);
-        out.extend_from_slice(&self.chain_id.to_be_bytes());
+
+        out.extend_from_slice(&chain_id_data);
         out.extend_from_slice(&key_data);
         out
     }
@@ -314,8 +319,8 @@ impl From<Vec<u8>> for InitMsg {
     fn from(data: Vec<u8>) -> InitMsg {
         let mut chain_id_data : [u8; 8] = Default::default();
         chain_id_data.copy_from_slice(&data[..8]);
-
-        let chain_id = u64::from_be_bytes(chain_id_data);
+        let mut chain_id_data = Cursor::new(chain_id_data);
+        let chain_id = chain_id_data.read_u64::<BigEndian>().unwrap();
         let peer_key = Address::from_slice(&data[8..]);
 
         InitMsg {
