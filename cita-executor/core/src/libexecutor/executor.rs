@@ -47,7 +47,7 @@ use util::UtilError;
 
 pub struct Executor {
     pub current_header: RwLock<Header>,
-    pub db: RwLock<Arc<KeyValueDB>>,
+    pub db: Arc<KeyValueDB>,
     pub state_db: Arc<RwLock<StateDB>>,
     pub factories: Factories,
 
@@ -102,7 +102,7 @@ impl Executor {
         };
         let mut executor = Executor {
             current_header: RwLock::new(current_header),
-            db: RwLock::new(database),
+            db: database,
             state_db: Arc::new(RwLock::new(state_db)),
             factories,
             sys_config: GlobalSysConfig::default(),
@@ -128,7 +128,7 @@ impl Executor {
         // IMPORTANT: close and release database handler so that it will not
         //            compact data/logs in background, which may effect snapshot
         //            changing database when restore snapshot.
-        self.db.read().close();
+        self.db.close();
 
         info!(
             "executor closed, current_height: {}",
@@ -191,9 +191,9 @@ impl Executor {
             let rollback_hash = self
                 .block_hash(rollback_height)
                 .expect("the target block to roll back should exist");
-            let mut batch = self.db.read().transaction();
+            let mut batch = self.db.transaction();
             batch.write(db::COL_EXTRA, &CurrentHash, &rollback_hash);
-            self.db.read().write(batch).unwrap();
+            self.db.write(batch).unwrap();
         }
 
         let rollback_header = self.block_header_by_height(rollback_height).unwrap();
@@ -205,7 +205,7 @@ impl Executor {
     /// 2. CurrentHash
     /// 3. State
     pub fn write_batch(&self, block: ClosedBlock) {
-        let mut batch = self.db.read().transaction();
+        let mut batch = self.db.transaction();
         let height = block.number();
         let hash = block.hash().unwrap();
         let version = block.version();
@@ -226,20 +226,20 @@ impl Executor {
             .journal_under(&mut batch, height, &hash)
             .expect("DB commit failed");
         // state.sync_cache();
-        self.db.read().write_buffered(batch);
+        self.db.write_buffered(batch);
 
         self.prune_ancient(state).expect("mark_canonical failed");
 
         // Saving in db
         let now = Instant::now();
-        self.db.read().flush().expect("DB write failed.");
+        self.db.flush().expect("DB write failed.");
         let new_now = Instant::now();
         debug!("db write use {:?}", new_now.duration_since(now));
     }
 
     /// Get block hash by number
     fn block_hash(&self, index: BlockNumber) -> Option<H256> {
-        self.db.read().read(db::COL_EXTRA, &index)
+        self.db.read(db::COL_EXTRA, &index)
     }
 
     fn current_state_root(&self) -> H256 {
@@ -282,7 +282,7 @@ impl Executor {
                 return Some(header.clone());
             }
         }
-        self.db.read().read(db::COL_HEADERS, &hash)
+        self.db.read(db::COL_HEADERS, &hash)
     }
 
     #[inline]
@@ -373,7 +373,7 @@ impl Executor {
                         Some(ancient_hash) => {
                             let mut batch = DBTransaction::new();
                             state_db.mark_canonical(&mut batch, era, &ancient_hash)?;
-                            self.db.read().write_buffered(batch);
+                            self.db.write_buffered(batch);
                             state_db.journal_db().flush();
                         }
                         None => debug!(target: "client", "Missing expected hash for block {}", era),
@@ -412,10 +412,7 @@ impl Executor {
 impl<'a> BloomGroupDatabase for Executor {
     fn blooms_at(&self, position: &GroupPosition) -> Option<BloomGroup> {
         let position = LogGroupPosition::from(position.clone());
-        self.db
-            .read()
-            .read(db::COL_EXTRA, &position)
-            .map(Into::into)
+        self.db.read(db::COL_EXTRA, &position).map(Into::into)
     }
 }
 

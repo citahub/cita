@@ -58,12 +58,11 @@ impl DatabaseRestore for Chain {
     fn restore_db(&self, new_db: &str) -> Result<(), Error> {
         info!("Replacing client database with {:?}", new_db);
 
-        let db = self.db.write();
-        db.restore(new_db)?;
+        self.db.restore(new_db)?;
 
         // replace chain
         //*chain = Arc::new(BlockChain::new(self.config.blockchain.clone(), &[], db.clone()));
-        let header = get_chain(&*db.clone()).expect("Get chain failed");
+        let header = get_chain(&*self.db.clone()).expect("Get chain failed");
 
         let current_height = header.number();
 
@@ -73,7 +72,7 @@ impl DatabaseRestore for Chain {
         self.current_height
             .store(current_height as usize, Ordering::SeqCst);
 
-        if let Some(height) = get_chain_body_height(&*db.clone()) {
+        if let Some(height) = get_chain_body_height(&*self.db.clone()) {
             self.max_store_height
                 .store(height as usize, Ordering::SeqCst);
         }
