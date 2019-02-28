@@ -99,9 +99,9 @@ impl<'a, B: 'a + StateBackend> CallEvmImpl<'a, B> {
 
     pub fn save_contract_state(&mut self, executor: &Executor, contract_state: &ContractState) {
         let addr = contract_state.get_address();
-        let mut batch = executor.db.read().transaction();
+        let mut batch = executor.db.transaction();
         batch.write(db::COL_EXTRA, &addr, contract_state);
-        executor.db.read().write(batch).unwrap();
+        executor.db.write(batch).unwrap();
         service_registry::set_enable_contract_height(addr, contract_state.height);
     }
 

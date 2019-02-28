@@ -470,7 +470,7 @@ impl Commander for Executor {
 
     fn clone_executor_reader(&mut self) -> Self {
         let current_header = self.current_header.read().clone();
-        let db = self.db.read().clone();
+        let db = self.db.clone();
         let fake_parent_hash: H256 = Default::default();
         let state_db = self.state_db.read().boxed_clone_canon(&fake_parent_hash);
         let factories = self.factories.clone();
@@ -483,7 +483,7 @@ impl Commander for Executor {
         let eth_compatibility = self.eth_compatibility;
         Executor {
             current_header: RwLock::new(current_header),
-            db: RwLock::new(db),
+            db,
             state_db: Arc::new(RwLock::new(state_db)),
             factories,
             sys_config,
