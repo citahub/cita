@@ -24,7 +24,7 @@ use futures::{
     prelude::*,
     sync::mpsc::{channel, Sender},
 };
-use log::{debug, warn};
+use logger::{debug, warn};
 use tentacle::{
     context::{ServiceContext, SessionContext},
     multiaddr::{Multiaddr, ToMultiaddr},

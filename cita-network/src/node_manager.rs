@@ -25,7 +25,7 @@ use crossbeam_channel::{select, tick, unbounded};
 use discovery::RawAddr;
 use fnv::FnvHashMap;
 use libproto::{Message as ProtoMessage, TryInto};
-use log::{debug, error, trace, warn};
+use logger::{debug, error, trace, warn};
 
 use std::{
     collections::HashMap,

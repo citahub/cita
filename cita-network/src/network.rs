@@ -24,7 +24,7 @@ use libproto::routing_key;
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
 use libproto::{Message as ProtoMessage, Response};
 use libproto::{TryFrom, TryInto};
-use log::{error, info, trace, warn};
+use logger::{error, info, trace, warn};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 

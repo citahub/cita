@@ -104,7 +104,7 @@ use futures::prelude::*;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::{Message, TryFrom};
-use log::{debug, info, trace};
+use logger::{debug, info, trace};
 use pubsub::start_pubsub;
 use std::thread;
 use tentacle::{builder::ServiceBuilder, secio::SecioKeyPair};

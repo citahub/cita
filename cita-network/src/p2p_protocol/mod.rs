@@ -18,7 +18,7 @@
 use crate::node_manager::{
     AddConnectedNodeReq, DelConnectedNodeReq, DelNodeReq, NodesManagerClient,
 };
-use log::{debug, warn};
+use logger::{debug, warn};
 use tentacle::{
     context::ServiceContext,
     error,

@@ -6,12 +6,10 @@ edition = "2018"
 
 [dependencies]
 fnv = "1.0.6"
-log = "0.4"
 discovery = { git = "https://github.com/nervosnetwork/p2p.git" }
 tentacle = { git = "https://github.com/nervosnetwork/p2p.git" }
 tokio = "0.1.14"
 futures = "0.1.25"
-env_logger = "0.6.0"
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

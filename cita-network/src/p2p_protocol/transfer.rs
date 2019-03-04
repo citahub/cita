@@ -20,7 +20,7 @@ use crate::network::{NetworkClient, RemoteMessage};
 use crate::node_manager::{AddConnectedKeyReq, InitMsg, NetworkInitReq, NodesManagerClient};
 use bytes::BytesMut;
 use libproto::{Message as ProtoMessage, TryFrom, TryInto};
-use log::{debug, info};
+use logger::{debug, info};
 use tentacle::{
     context::{ServiceContext, SessionContext},
     traits::{ProtocolMeta, ServiceProtocol},
