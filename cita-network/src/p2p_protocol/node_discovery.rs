@@ -18,19 +18,20 @@
 use crate::node_manager::{AddNodeReq, GetRandomNodesReq, NodesManagerClient};
 use crossbeam_channel;
 use crossbeam_channel::unbounded;
-use discovery::{AddressManager, Direction, Discovery, DiscoveryHandle, Substream};
+use discovery::{AddressManager, Direction, Discovery, DiscoveryHandle, Misbehavior, Substream};
 use fnv::FnvHashMap;
 use futures::{
     prelude::*,
     sync::mpsc::{channel, Sender},
 };
 use log::{debug, warn};
-use p2p::{
+use tentacle::{
     context::{ServiceContext, SessionContext},
     multiaddr::{Multiaddr, ToMultiaddr},
     traits::{ProtocolMeta, ServiceProtocol},
     utils::multiaddr_to_socketaddr,
-    ProtocolId, SessionId, SessionType,
+    yamux::session::SessionType,
+    ProtocolId, SessionId,
 };
 use tokio::codec::length_delimited::LengthDelimitedCodec;
 
@@ -54,7 +55,7 @@ impl AddressManager for NodesAddressManager {
         debug!("[add_new] Add node {:?} to manager", address);
     }
 
-    fn misbehave(&mut self, _addr: Multiaddr, _ty: u64) -> i32 {
+    fn misbehave(&mut self, _addr: Multiaddr, _ty: Misbehavior) -> i32 {
         unimplemented!()
     }
 
@@ -104,7 +105,7 @@ impl ServiceProtocol for DiscoveryProtocol {
                     })
             })
             .unwrap();
-        let _ = control.future_task(discovery_task);
+        control.future_task(discovery_task);
     }
 
     // open a discovery protocol session?

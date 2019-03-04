@@ -17,11 +17,11 @@
 
 use crate::citaprotocol::network_message_to_pubsub_message;
 use crate::network::{NetworkClient, RemoteMessage};
-use crate::node_manager::{InitMsg, NetworkInitReq, NodesManagerClient, AddConnectedKeyReq};
+use crate::node_manager::{AddConnectedKeyReq, InitMsg, NetworkInitReq, NodesManagerClient};
 use bytes::BytesMut;
 use libproto::{Message as ProtoMessage, TryFrom, TryInto};
 use log::{debug, info};
-use p2p::{
+use tentacle::{
     context::{ServiceContext, SessionContext},
     traits::{ProtocolMeta, ServiceProtocol},
     ProtocolId, SessionId,
@@ -40,7 +40,11 @@ impl TransferProtocolMeta {
         network_client: NetworkClient,
         nodes_mgr_client: NodesManagerClient,
     ) -> Self {
-        TransferProtocolMeta { id, network_client, nodes_mgr_client }
+        TransferProtocolMeta {
+            id,
+            network_client,
+            nodes_mgr_client,
+        }
     }
 }
 

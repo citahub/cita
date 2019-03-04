@@ -19,13 +19,13 @@ use crate::node_manager::{
     AddConnectedNodeReq, DelConnectedNodeReq, DelNodeReq, NodesManagerClient,
 };
 use log::{debug, warn};
-use p2p::{
+use tentacle::{
     context::ServiceContext,
     error,
     service::{ServiceError, ServiceEvent},
     traits::ServiceHandle,
     utils::multiaddr_to_socketaddr,
-    SessionType,
+    yamux::session::SessionType,
 };
 
 pub mod node_discovery;
@@ -81,6 +81,16 @@ impl ServiceHandle for SHandle {
                 warn!(
                     "[handle_error] Protocol Error, stream id: {:?}, protocol id: {:?}, error: {:?}",
                     id, proto_id, error
+                );
+            }
+            ServiceError::ProtocolSelectError {
+                proto_name,
+                session_context,
+            } => {
+                // FIXME: handle protocol select error later
+                warn!(
+                    "[handle_error] Protocol SelectError, proto_name: {:?}, session_context: {:?}.",
+                    proto_name, session_context,
                 );
             }
         }

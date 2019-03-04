@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_types::{Address, clean_0x};
+use cita_types::{clean_0x, Address};
 use serde_derive::Deserialize;
 use std::fs::File;
 use std::io::Read;

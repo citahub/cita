@@ -17,16 +17,16 @@
 
 use crate::citaprotocol::pubsub_message_to_network_message;
 use crate::config::NetConfig;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use bytes::BytesMut;
-use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
+use cita_types::Address;
 use crossbeam_channel;
 use crossbeam_channel::{select, tick, unbounded};
-use cita_types::Address;
 use discovery::RawAddr;
 use fnv::FnvHashMap;
 use libproto::{Message as ProtoMessage, TryInto};
 use log::{debug, error, trace, warn};
-use p2p::{context::ServiceControl, multiaddr::ToMultiaddr, SessionId, SessionType};
+
 use std::{
     collections::HashMap,
     collections::HashSet,
@@ -34,6 +34,9 @@ use std::{
     io::Cursor,
     net::{SocketAddr, ToSocketAddrs},
     time::{Duration, Instant},
+};
+use tentacle::{
+    multiaddr::ToMultiaddr, service::ServiceControl, yamux::session::SessionType, SessionId,
 };
 
 pub const DEFAULT_MAX_CONNECTS: usize = 666;
@@ -317,16 +320,13 @@ impl Into<Vec<u8>> for InitMsg {
 
 impl From<Vec<u8>> for InitMsg {
     fn from(data: Vec<u8>) -> InitMsg {
-        let mut chain_id_data : [u8; 8] = Default::default();
+        let mut chain_id_data: [u8; 8] = Default::default();
         chain_id_data.copy_from_slice(&data[..8]);
         let mut chain_id_data = Cursor::new(chain_id_data);
         let chain_id = chain_id_data.read_u64::<BigEndian>().unwrap();
         let peer_key = Address::from_slice(&data[8..]);
 
-        InitMsg {
-            chain_id,
-            peer_key,
-        }
+        InitMsg { chain_id, peer_key }
     }
 }
 
@@ -338,28 +338,43 @@ pub struct AddConnectedKeyReq {
 
 impl AddConnectedKeyReq {
     pub fn new(session_id: SessionId, ty: SessionType, init_msg: InitMsg) -> Self {
-        AddConnectedKeyReq { session_id, ty, init_msg }
+        AddConnectedKeyReq {
+            session_id,
+            ty,
+            init_msg,
+        }
     }
 
     pub fn handle(self, service: &mut NodesManager) {
         // Repeated connected, disconnect it.
         if let Some(repeated_id) = service.connected_peer_keys.get(&self.init_msg.peer_key) {
             if let Some(ref mut ctrl) = service.service_ctrl {
-                debug!("[AddConnectedAddressReq] New session [{:?}] repeated with [{:?}]", self.session_id, *repeated_id);
+                debug!(
+                    "[AddConnectedAddressReq] New session [{:?}] repeated with [{:?}]",
+                    self.session_id, *repeated_id
+                );
                 if self.ty == SessionType::Client {
                     // Need to replace key for its connected address.
                     if let Some(value) = service.connected_addrs.remove(&self.session_id) {
                         service.connected_addrs.insert(*repeated_id, value);
                     }
                     service.repeated_connections.insert(self.session_id);
-                    debug!("[AddConnectedAddressReq] Disconnected session [{:?}], address: {:?}", self.session_id, self.init_msg.peer_key);
+                    debug!(
+                        "[AddConnectedAddressReq] Disconnected session [{:?}], address: {:?}",
+                        self.session_id, self.init_msg.peer_key
+                    );
                     let _ = ctrl.disconnect(self.session_id);
                 }
             }
         } else if service.peer_key == self.init_msg.peer_key {
             // Connected Self
-            debug!("[AddConnectedAddressReq] Connected Self, Delete {:?} from know_addrs", service.dialing_node);
-            service.known_addrs.remove(&RawAddr::from(service.dialing_node.unwrap()));
+            debug!(
+                "[AddConnectedAddressReq] Connected Self, Delete {:?} from know_addrs",
+                service.dialing_node
+            );
+            service
+                .known_addrs
+                .remove(&RawAddr::from(service.dialing_node.unwrap()));
             if let Some(ref mut ctrl) = service.service_ctrl {
                 let _ = ctrl.disconnect(self.session_id);
             }
@@ -390,7 +405,7 @@ impl NetworkInitReq {
     }
 
     pub fn handle(self, service: &mut NodesManager) {
-        let peer_key = service.peer_key.clone();
+        let peer_key = service.peer_key;
 
         let send_key = "network.init".to_string();
         let init_msg = InitMsg {
@@ -402,15 +417,12 @@ impl NetworkInitReq {
         let mut buf = BytesMut::with_capacity(4 + 4 + 1 + send_key.len() + msg_bytes.len());
         pubsub_message_to_network_message(&mut buf, Some((send_key, msg_bytes)));
 
-
         if let Some(ref mut ctrl) = service.service_ctrl {
             //FIXME: handle the error!
             let ret = ctrl.send_message(self.session_id, 1, buf.to_vec());
             debug!(
                 "[NetworkInitReq] Send network init message!, id: {:?}, peer_addr: {:?}, ret: {:?}",
-                self.session_id,
-                peer_key,
-                ret,
+                self.session_id, peer_key, ret,
             );
         }
     }
@@ -491,7 +503,10 @@ impl AddConnectedNodeReq {
 
     pub fn handle(self, service: &mut NodesManager) {
         // FIXME: If have reached to max_connects, disconnected this node.
-        debug!("[AddConnectedAddressReq] Add session [{:?}], address: {:?} to Connected_addrs.", self.session_id, self.addr);
+        debug!(
+            "[AddConnectedAddressReq] Add session [{:?}], address: {:?} to Connected_addrs.",
+            self.session_id, self.addr
+        );
         service
             .connected_addrs
             .insert(self.session_id, RawAddr::from(self.addr));
@@ -512,17 +527,22 @@ impl DelConnectedNodeReq {
         if service.repeated_connections.remove(&self.session_id) {
             return;
         }
-        debug!("[DelConnectedNodeReq] Remove session [{:?}] from Connected_addrs.", self.session_id);
+        debug!(
+            "[DelConnectedNodeReq] Remove session [{:?}] from Connected_addrs.",
+            self.session_id
+        );
         service.connected_addrs.remove(&self.session_id);
 
         for (key, value) in service.connected_peer_keys.iter() {
             if self.session_id == *value {
-                debug!("[DelConnectedNodeReq] Remove session [{:?}] from connected_peer_keys.", *key);
+                debug!(
+                    "[DelConnectedNodeReq] Remove session [{:?}] from connected_peer_keys.",
+                    *key
+                );
                 service.connected_peer_keys.remove(&key.clone());
                 break;
             }
         }
-
     }
 }
 

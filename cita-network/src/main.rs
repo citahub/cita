@@ -87,8 +87,6 @@ pub mod p2p_protocol;
 pub mod synchronizer;
 
 use crate::config::{AddressConfig, NetConfig};
-use crossbeam_channel;
-use crossbeam_channel::unbounded;
 use crate::mq_client::MqClient;
 use crate::network::{LocalMessage, Network};
 use crate::node_manager::{BroadcastReq, NodesManager, DEFAULT_PORT};
@@ -99,15 +97,17 @@ use crate::p2p_protocol::{
 };
 use crate::synchronizer::Synchronizer;
 use clap::App;
+use crossbeam_channel;
+use crossbeam_channel::unbounded;
 use dotenv;
 use futures::prelude::*;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::{Message, TryFrom};
 use log::{debug, info, trace};
-use p2p::{builder::ServiceBuilder, SecioKeyPair};
 use pubsub::start_pubsub;
 use std::thread;
+use tentacle::{builder::ServiceBuilder, secio::SecioKeyPair};
 use util::micro_service_init;
 use util::set_panic_handler;
 
@@ -200,8 +200,7 @@ fn main() {
     if nodes_mgr.is_enable_tls() {
         service_cfg = service_cfg.key_pair(SecioKeyPair::secp256k1_generated());
     }
-    let mut service = service_cfg
-        .build(SHandle::new(nodes_mgr.client()));
+    let mut service = service_cfg.build(SHandle::new(nodes_mgr.client()));
 
     let addr = format!("/ip4/0.0.0.0/tcp/{}", config.port.unwrap_or(DEFAULT_PORT));
     let _ = service.listen(addr.parse().unwrap());
