@@ -188,44 +188,42 @@ impl LocalMessage {
         let mut msg = ProtoMessage::try_from(data).unwrap();
         let req = msg.take_snapshot_req().unwrap();
         let mut resp = SnapshotResp::new();
-        let mut send = false;
 
         match req.cmd {
             Cmd::Snapshot => {
-                info!("[snapshot] receive cmd: Snapshot");
+                info!("[snapshot] receive cmd::Snapshot: {:?}", req);
+                resp.set_resp(Resp::SnapshotAck);
+                resp.set_flag(true);
             }
             Cmd::Begin => {
-                info!("[snapshot] receive cmd: Begin");
+                info!("[snapshot] receive cmd::Begin: {:?}", req);
                 service.is_pause.store(true, Ordering::SeqCst);
                 resp.set_resp(Resp::BeginAck);
                 resp.set_flag(true);
-                send = true;
             }
             Cmd::Restore => {
-                info!("[snapshot] receive cmd: Restore");
+                info!("[snapshot] receive cmd::Restore: {:?}", req);
+                resp.set_resp(Resp::RestoreAck);
+                resp.set_flag(true);
             }
             Cmd::Clear => {
-                info!("[snapshot] receive cmd: Clear");
+                info!("[snapshot] receive cmd::Clear: {:?}", req);
                 resp.set_resp(Resp::ClearAck);
                 resp.set_flag(true);
-                send = true;
             }
             Cmd::End => {
-                info!("[snapshot] receive cmd: End");
+                info!("[snapshot] receive cmd::End: {:?}", req);
                 service.is_pause.store(false, Ordering::SeqCst);
                 resp.set_resp(Resp::EndAck);
                 resp.set_flag(true);
-                send = true;
             }
         }
 
-        if send {
-            let msg: ProtoMessage = resp.into();
-            service.mq_client.send_snapshot_resp(PubMessage::new(
-                routing_key!(Net >> SnapshotResp).into(),
-                (&msg).try_into().unwrap(),
-            ));
-        }
+        let msg: ProtoMessage = resp.into();
+        service.mq_client.send_snapshot_resp(PubMessage::new(
+            routing_key!(Net >> SnapshotResp).into(),
+            (&msg).try_into().unwrap(),
+        ));
     }
 }
 

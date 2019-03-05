@@ -118,14 +118,13 @@ fn main() {
     info!("Version: {}", get_build_info_str(true));
 
     // init app
-    // todo load config
     let matches = App::new("network")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
-        .args_from_usage("-a, --address=[FILE] 'Sets a address file'")
+        .args_from_usage("-a, --address=[FILE] 'Sets an address file'")
         .get_matches();
 
     let config_path = matches.value_of("config").unwrap_or("config");
