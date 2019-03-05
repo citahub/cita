@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOCKER_IMAGE="cita/cita-run:ubuntu-18.04-20181009"
+DOCKER_IMAGE="cita/cita-run:ubuntu-18.04-20190228"
 if [[ `uname` == 'Darwin' ]]
 then
     cp /etc/localtime $PWD/localtime
@@ -26,6 +26,11 @@ CONTAINER_NAME="cita_run${RELEASE_DIR//\//_}"
 WORKDIR=/opt/cita-run
 USER_ID=`id -u $USER`
 USER_NAME="user"
+
+if [[ "${1}" =~ "create_cita_config" ]]; then
+    CONTAINER_NAME="cita_config${RELEASE_DIR//\//_}"
+    DOCKER_IMAGE="cita/cita-run:config-ubuntu-18.04-20190228"
+fi
 
 if [ "${USER_ID}" = "0" ]; then
     USER_NAME="root"
