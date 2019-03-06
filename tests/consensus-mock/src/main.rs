@@ -40,10 +40,10 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
 use libproto::{TryFrom, TryInto};
 use proof::BftProof;
+use pubsub::channel::{self, RecvTimeoutError, Sender};
 use pubsub::start_pubsub;
 use std::collections::HashMap;
 use std::convert::Into;
-use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use types::{Address, H256};
@@ -161,8 +161,8 @@ fn main() {
     let key_pair = KeyPair::gen_keypair();
     let pk_miner = key_pair.privkey();
 
-    let (tx_sub, rx_sub) = channel();
-    let (tx_pub, rx_pub) = channel();
+    let (tx_sub, rx_sub) = channel::unbounded();
+    let (tx_pub, rx_pub) = channel::unbounded();
 
     start_pubsub(
         "consensus",
