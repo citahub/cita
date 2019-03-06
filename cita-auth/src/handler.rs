@@ -34,13 +34,13 @@ use libproto::{
 };
 use libproto::{TryFrom, TryInto};
 use lru::LruCache;
+use pubsub::channel::{Receiver, Sender};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon::ThreadPoolBuilder;
 use serde_json;
 use std::collections::{HashMap, HashSet};
 use std::convert::Into;
 use std::str::FromStr;
-use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 use transaction_verify::Error;
 use util::BLOCKLIMIT;

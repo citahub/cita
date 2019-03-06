@@ -23,8 +23,8 @@ use generate_block::BuildBlock;
 use libproto::{Message, RichStatus, SignedTransaction};
 
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use pubsub::channel::{self, Receiver, Sender};
 use pubsub::start_pubsub;
-use std::sync::mpsc::{channel, Receiver, Sender};
 
 pub type PubType = (String, Vec<u8>);
 pub type SubType = (String, Vec<u8>);
@@ -40,8 +40,8 @@ pub enum Step {
 const GENESIS_TIMESTAMP: u64 = 1_524_000_000;
 
 pub fn run(config: Config) {
-    let (tx_sub, rx_sub) = channel();
-    let (tx_pub, rx_pub) = channel();
+    let (tx_sub, rx_sub) = channel::unbounded();
+    let (tx_pub, rx_pub) = channel::unbounded();
     start_pubsub(
         "consensus",
         routing_key!([Chain >> RichStatus]),

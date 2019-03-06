@@ -20,9 +20,9 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
 use libproto::{Message, Response};
 use libproto::{TryFrom, TryInto};
+use pubsub::channel::Sender;
 use std::convert::Into;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use Source;
 

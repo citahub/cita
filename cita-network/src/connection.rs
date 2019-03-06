@@ -23,6 +23,7 @@ use libproto::TryInto;
 use libproto::{Message, OperateType};
 use native_tls::{self, TlsConnector};
 use notify::DebouncedEvent;
+use pubsub::channel::{self, Receiver, Sender};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io;
@@ -30,7 +31,7 @@ use std::io::{Read, Write};
 use std::net::{Shutdown, TcpStream};
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::Receiver as StdReceiver;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -210,8 +211,8 @@ pub struct Connections {
 impl Connections {
     pub fn create(config: &config::NetConfig) -> (Self, Sender<Task>) {
         let id_card = config.id_card.unwrap();
-        let (task_sender, task_receiver) = channel();
-        let (connect_sender, connect_receiver) = channel();
+        let (task_sender, task_receiver) = channel::unbounded();
+        let (connect_sender, connect_receiver) = channel::unbounded();
 
         let connect_task_sender = task_sender.clone();
         let enable_tls = config.enable_tls.unwrap_or(false);
@@ -402,7 +403,7 @@ impl Connections {
     }
 }
 
-pub fn manage_connect(config_path: &str, rx: Receiver<DebouncedEvent>, task_send: Sender<Task>) {
+pub fn manage_connect(config_path: &str, rx: StdReceiver<DebouncedEvent>, task_send: Sender<Task>) {
     let config = String::from(config_path);
 
     thread::spawn(move || loop {

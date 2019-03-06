@@ -97,8 +97,7 @@ use core::db;
 use core::libchain;
 use forward::Forward;
 use libproto::router::{MsgType, RoutingKey, SubModules};
-use pubsub::start_pubsub;
-use std::sync::mpsc::channel;
+use pubsub::{channel, start_pubsub};
 use std::sync::Arc;
 use std::thread;
 use std::time;
@@ -121,8 +120,8 @@ fn main() {
 
     let config_path = matches.value_of("config").unwrap_or("chain.toml");
 
-    let (tx, rx) = channel();
-    let (ctx_pub, crx_pub) = channel();
+    let (tx, rx) = channel::unbounded();
+    let (ctx_pub, crx_pub) = channel::unbounded();
     start_pubsub(
         "chain",
         routing_key!([
@@ -150,7 +149,7 @@ fn main() {
         &chain_config,
     ));
 
-    let (write_sender, write_receiver) = channel();
+    let (write_sender, write_receiver) = channel::unbounded();
     let forward = Forward::new(Arc::clone(&chain), ctx_pub.clone(), write_sender);
 
     let block_processor = BlockProcessor::new(Arc::clone(&chain), ctx_pub);

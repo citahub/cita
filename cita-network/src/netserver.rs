@@ -18,10 +18,10 @@
 use citaprotocol::{CitaCodec, CitaRequest};
 use futures::Future;
 use native_tls;
+use pubsub::channel::Sender;
 use std::fs::File;
 use std::io;
 use std::net::SocketAddr;
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use tokio;
 use tokio::codec::Decoder;

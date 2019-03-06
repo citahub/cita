@@ -118,6 +118,7 @@ use libproto::TryFrom;
 use netserver::NetServer;
 use network::NetWork;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use pubsub::channel;
 use pubsub::start_pubsub;
 use std::net::SocketAddr;
 use std::sync::mpsc::channel;
@@ -149,8 +150,8 @@ fn main() {
     // init pubsub
 
     // split new_tx with other msg
-    let (ctx_sub_tx, crx_sub_tx) = channel();
-    let (ctx_pub_tx, crx_pub_tx) = channel();
+    let (ctx_sub_tx, crx_sub_tx) = channel::unbounded();
+    let (ctx_pub_tx, crx_pub_tx) = channel::unbounded();
     start_pubsub(
         "network_tx",
         routing_key!([Auth >> Request, Auth >> GetBlockTxn, Auth >> BlockTxn]),
@@ -158,8 +159,8 @@ fn main() {
         crx_pub_tx,
     );
 
-    let (ctx_sub_consensus, crx_sub_consensus) = channel();
-    let (ctx_pub_consensus, crx_pub_consensus) = channel();
+    let (ctx_sub_consensus, crx_sub_consensus) = channel::unbounded();
+    let (ctx_pub_consensus, crx_pub_consensus) = channel::unbounded();
     start_pubsub(
         "network_consensus",
         routing_key!([Consensus >> CompactSignedProposal, Consensus >> RawBytes]),
@@ -167,8 +168,8 @@ fn main() {
         crx_pub_consensus,
     );
 
-    let (ctx_sub, crx_sub) = channel();
-    let (ctx_pub, crx_pub) = channel();
+    let (ctx_sub, crx_sub) = channel::unbounded();
+    let (ctx_pub, crx_pub) = channel::unbounded();
     start_pubsub(
         "network",
         routing_key!([
@@ -181,7 +182,7 @@ fn main() {
         crx_pub,
     );
 
-    let (net_work_tx, net_work_rx) = channel();
+    let (net_work_tx, net_work_rx) = channel::unbounded();
     // start server
     // This brings up our server.
     // all server recv msg directly publish to mq
@@ -198,7 +199,7 @@ fn main() {
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1)).unwrap();
     let _ = watcher.watch(".", RecursiveMode::NonRecursive);
 
-    let (sync_tx, sync_rx) = channel();
+    let (sync_tx, sync_rx) = channel::unbounded();
     let net_work = NetWork::new(
         task_sender.clone(),
         ctx_pub.clone(),
