@@ -42,7 +42,58 @@ All notable changes to this project will be documented in this file. And this pr
 
 [Unreleased]: https://github.com/cryptape/cita/compare/v0.22.0...HEAD
 
-## [v0.21.0]
+## [v0.21.0] - 2019-02-19
+
+### Upgrade Note
+
+Older version upgrades the v0.21 version requires node configuration modifications.
+
+- Adding the following three configurations in each node's `executor.toml`
+
+The old version `executor.toml`:
+
+```toml
+Journaldb_type = "archive"
+Prooftype = 2
+Grpc_port = 5000
+```
+
+The new version `executor.toml`:
+
+```toml
+Journaldb_type = "archive"
+Prooftype = 2
+Grpc_port = 5000
+Genesis_path = "./genesis.json"
+Statedb_cache_size = 5242880
+Eth_compatibility = false
+```
+
+- Modifying cita-execuror configuration item in each node's `forever.toml`:
+
+The old version `forever.toml`:
+
+```toml
+[[process]]
+Name = "cita-executor"
+Command = "cita-executor"
+Args = ["-g","genesis.json","-c","executor.toml"]
+Pidfile = ".cita-executor.pid"
+Respawn = 3
+```
+
+The new version `forever.toml`:
+
+```toml
+[[process]]
+Name = "cita-executor"
+Command = "cita-executor"
+Args = ["-c","executor.toml"]
+Pidfile = ".cita-executor.pid"
+Respawn = 3
+```
+
+After completing the above modifications, following [Upgrade Instructions](https://docs.citahub.com/en-US/cita/protocol-upgrade/overview).
 
 ### CITA-Framework
 
