@@ -304,17 +304,18 @@ class ChainInfo(object):
         node_id = len(self.nodes)
         self.nodes.add_after_check(node['host'], node['port'])
         node_dir = os.path.join(self.output_root, '{}'.format(node_id))
+        config_dir = os.path.join(node_dir, 'configs')
 
-        shutil.copytree(self.configs_dir, node_dir, False)
+        shutil.copytree(self.configs_dir, config_dir, False)
 
-        executor_config = os.path.join(node_dir, 'executor.toml')
+        executor_config = os.path.join(config_dir, 'executor.toml')
         with open(executor_config, 'rt') as stream:
             executor_data = toml.load(stream)
             executor_data['grpc_port'] += node_id
         with open(executor_config, 'wt') as stream:
             toml.dump(executor_data, stream)
 
-        jsonrpc_config = os.path.join(node_dir, 'jsonrpc.toml')
+        jsonrpc_config = os.path.join(config_dir, 'jsonrpc.toml')
         with open(jsonrpc_config, 'rt') as stream:
             jsonrpc_data = toml.load(stream)
             jsonrpc_data['http_config']['listen_port'] \
@@ -334,14 +335,14 @@ class ChainInfo(object):
 
         privkey = node.get('privkey')
         if privkey:
-            privkey_config = os.path.join(node_dir, 'privkey')
+            privkey_config = os.path.join(config_dir, 'privkey')
             with open(privkey_config, 'wt') as stream:
                 stream.write(privkey)
                 stream.write('\n')
 
         address = node.get('address')
         if address:
-            address_config = os.path.join(node_dir, 'address')
+            address_config = os.path.join(config_dir, 'address')
             with open(address_config, 'wt') as stream:
                 stream.write(address)
                 stream.write('\n')
@@ -366,7 +367,7 @@ class ChainInfo(object):
                 stream.write(f'# Current node ip is {current_ip}\n')
                 toml.dump(network_data, stream)
 
-        network_config = os.path.join(node_dir, 'network.toml')
+        network_config = os.path.join(config_dir, 'network.toml')
         with open(network_config, 'rt') as stream:
             network_data = toml.load(stream)
             network_data['id_card'] = node_id
