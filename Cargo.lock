@@ -502,6 +502,7 @@ name = "cita-forever"
 version = "0.1.0"
 dependencies = [
  "clap 2.32.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "serde 1.0.80 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.80 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -752,6 +753,7 @@ dependencies = [
  "logger 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "pubsub 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "rlp_derive 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
