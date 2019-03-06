@@ -19,6 +19,10 @@ jobs:
   include:
 
     - stage: Release
+      name: Release for Integrate Test
+      language: node_js
+      node_js:
+        - lts/*
       cache:
         directories:
           - $TRAVIS_BUILD_DIR/target/release-cache
@@ -42,6 +46,7 @@ jobs:
       cache:
         directories:
           - $TRAVIS_BUILD_DIR/target/release-cache
+      env: HASH_ALGO=sha3hash    CRYPTO_ALGO=secp256k1
       before_install:
         - cd $TRAVIS_BUILD_DIR
         - rm -rf target/install
