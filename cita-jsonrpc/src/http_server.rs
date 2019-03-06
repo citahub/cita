@@ -24,8 +24,9 @@ use hyper::service::{MakeService, Service};
 use hyper::{Body, Method, Request, Response, StatusCode};
 use jsonrpc_types::{request::RpcRequest as JsonrpcRequest, rpctypes::Id as RpcId};
 use libproto::request::Request as ProtoRequest;
+use pubsub::channel::Sender;
 use std::net::{SocketAddr, TcpListener};
-use std::sync::{mpsc, Arc};
+use std::sync::Arc;
 use std::time::Duration;
 use util::Mutex;
 
@@ -235,7 +236,7 @@ pub struct Server {
 impl Server {
     pub fn create(
         addr: &SocketAddr,
-        tx: mpsc::Sender<(String, ProtoRequest)>,
+        tx: Sender<(String, ProtoRequest)>,
         responses: RpcMap,
         timeout: u64,
         allow_origin: &Option<String>,
@@ -292,9 +293,9 @@ pub fn listener_from_socket_addr(addr: &SocketAddr) -> std::io::Result<TcpListen
 
 #[cfg(test)]
 mod integration_test {
+    use pubsub::channel::{self, Sender};
     use std::collections::HashMap;
     use std::str::FromStr;
-    use std::sync::mpsc::channel;
     use std::thread;
 
     use uuid::Uuid;
@@ -325,14 +326,14 @@ mod integration_test {
 
     fn start_server(
         responses: RpcMap,
-        tx: mpsc::Sender<(String, ProtoRequest)>,
+        tx: Sender<(String, ProtoRequest)>,
         timeout: u64,
         allow_origin: Option<String>,
     ) -> Serve {
         let addr = "127.0.0.1:0".parse().unwrap();
         let tx = tx.clone();
 
-        let (addr_tx, addr_rx) = ::std::sync::mpsc::channel();
+        let (addr_tx, addr_rx) = channel::unbounded();
         let thread_handle = thread::Builder::new()
             .name(format!("test-server-{}", Uuid::new_v4()))
             .spawn(move || {
@@ -373,13 +374,13 @@ mod integration_test {
         use std::io::Write;
 
         // For message forwarding
-        let (tx_relay, rx_relay) = channel();
+        let (tx_relay, rx_relay) = channel::unbounded();
         let backlog_capacity = 256;
         let responses = Arc::new(Mutex::new(HashMap::with_capacity(backlog_capacity)));
         let serve = start_server(responses.clone(), tx_relay, 3, Some(String::from("*")));
 
         let http_responses = responses.clone();
-        let (tx_quit, rx_quit) = channel();
+        let (tx_quit, rx_quit) = channel::unbounded();
         let receiver = thread::spawn(move || loop {
             if let Ok((_topic, req)) = rx_relay.try_recv() {
                 let value = { http_responses.lock().remove(&req.request_id) };

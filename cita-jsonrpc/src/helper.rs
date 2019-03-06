@@ -20,8 +20,8 @@ use jsonrpc_types::request::RequestInfo;
 use jsonrpc_types::response::Output;
 use libproto::request::Request as ProtoRequest;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use pubsub::channel::Sender;
 use std::collections::HashMap;
-use std::sync::mpsc;
 use std::sync::Arc;
 use util::Mutex;
 use ws;
@@ -34,7 +34,7 @@ pub enum TransferType {
 }
 
 pub type RpcMap = Arc<Mutex<HashMap<Vec<u8>, TransferType>>>;
-pub type ReqSender = Mutex<mpsc::Sender<(String, ProtoRequest)>>;
+pub type ReqSender = Mutex<Sender<(String, ProtoRequest)>>;
 
 pub fn select_topic(method: &str) -> String {
     match method {
