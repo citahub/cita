@@ -80,16 +80,16 @@
 
 pub mod citaprotocol;
 pub mod config;
-pub mod mq_client;
+pub mod mq_agent;
 pub mod network;
 pub mod node_manager;
 pub mod p2p_protocol;
 pub mod synchronizer;
 
 use crate::config::{AddressConfig, NetConfig};
-use crate::mq_client::MqClient;
-use crate::network::{LocalMessage, Network};
-use crate::node_manager::{BroadcastReq, NodesManager, DEFAULT_PORT};
+use crate::mq_agent::MqAgent;
+use crate::network::Network;
+use crate::node_manager::{NodesManager, DEFAULT_PORT};
 use crate::p2p_protocol::{
     node_discovery::{DiscoveryProtocolMeta, NodesAddressManager},
     transfer::TransferProtocolMeta,
@@ -98,14 +98,9 @@ use crate::p2p_protocol::{
 use crate::synchronizer::Synchronizer;
 use clap::App;
 use crossbeam_channel;
-use crossbeam_channel::unbounded;
 use dotenv;
 use futures::prelude::*;
-use libproto::router::{MsgType, RoutingKey, SubModules};
-use libproto::routing_key;
-use libproto::{Message, TryFrom};
-use logger::{debug, info, trace};
-use pubsub::start_pubsub;
+use logger::{debug, info};
 use std::thread;
 use tentacle::{builder::ServiceBuilder, secio::SecioKeyPair};
 use util::micro_service_init;
@@ -139,55 +134,18 @@ fn main() {
     let own_addr = AddressConfig::new(&addr_path);
     debug!("node address is {:?}", own_addr.addr);
 
-    // >>>> Init pubsub
-    // New transactions use a special channel, all new transactions come from:
-    // JsonRpc -> Auth -> Network,
-    // So the channel subscribe 'Auth' Request from MQ
-    let (ctx_sub_auth, crx_sub_auth) = unbounded();
-    let (ctx_pub_auth, crx_pub_auth) = unbounded();
-    start_pubsub(
-        "network_auth",
-        routing_key!([Auth >> Request, Auth >> GetBlockTxn, Auth >> BlockTxn]),
-        ctx_sub_auth,
-        crx_pub_auth,
-    );
-
-    // Consensus use a special channel
-    let (ctx_sub_consensus, crx_sub_consensus) = unbounded();
-    let (ctx_pub_consensus, crx_pub_consensus) = unbounded();
-    start_pubsub(
-        "network_consensus",
-        routing_key!([Consensus >> CompactSignedProposal, Consensus >> RawBytes]),
-        ctx_sub_consensus,
-        crx_pub_consensus,
-    );
-
-    // Chain, Jsonrpc and Snapshot use a common channel
-    let (ctx_sub, crx_sub) = unbounded();
-    let (ctx_pub, crx_pub) = unbounded();
-    start_pubsub(
-        "network",
-        routing_key!([
-            Chain >> Status,
-            Chain >> SyncResponse,
-            Jsonrpc >> RequestNet,
-            Snapshot >> SnapshotReq
-        ]),
-        ctx_sub,
-        crx_pub,
-    );
-
-    let mq_client = MqClient::new(ctx_pub_auth, ctx_pub_consensus, ctx_pub);
-    // <<<< End init pubsub
-
-    // >>>> Init p2p protocols
     let mut nodes_mgr = NodesManager::from_config(config.clone(), own_addr.addr);
-    let mut synchronizer_mgr = Synchronizer::new(mq_client.clone(), nodes_mgr.client());
+    let mut mq_agent = MqAgent::default();
+    let mut synchronizer_mgr = Synchronizer::new(mq_agent.client(), nodes_mgr.client());
     let mut network_mgr = Network::new(
-        mq_client.clone(),
+        mq_agent.client(),
         nodes_mgr.client(),
         synchronizer_mgr.client(),
     );
+    mq_agent.set_nodes_mgr_client(nodes_mgr.client());
+    mq_agent.set_network_client(network_mgr.client());
+
+    // >>>> Init p2p protocols
     let discovery_meta =
         DiscoveryProtocolMeta::new(0, NodesAddressManager::new(nodes_mgr.client()));
     let transfer_meta = TransferProtocolMeta::new(1, network_mgr.client(), nodes_mgr.client());
@@ -207,35 +165,7 @@ fn main() {
     // <<<< End init p2p protocols
 
     // >>>> Run system
-    // Thread for handle new transactions from MQ
-    let nodes_manager_client = nodes_mgr.client();
-    thread::spawn(move || loop {
-        let (key, body) = crx_sub_auth.recv().unwrap();
-        let msg = Message::try_from(&body).unwrap();
-
-        // Broadcast the message to other nodes
-        nodes_manager_client.broadcast(BroadcastReq::new(key, msg));
-    });
-
-    //Thread for handle consensus message
-    let nodes_manager_client = nodes_mgr.client();
-    thread::spawn(move || loop {
-        let (key, body) = crx_sub_consensus.recv().unwrap();
-        let msg = Message::try_from(&body).unwrap();
-
-        // Broadcast the message to other nodes
-        nodes_manager_client.broadcast(BroadcastReq::new(key, msg));
-    });
-
-    let network_client = network_mgr.client();
-    thread::spawn(move || loop {
-        let (key, body) = crx_sub.recv().unwrap();
-        trace!("[main] Handle delivery from {} payload {:?}", key, body);
-
-        let msg = LocalMessage::new(key, body);
-        network_client.handle_local_message(msg);
-    });
-
+    mq_agent.run();
     thread::spawn(move || nodes_mgr.run());
     thread::spawn(move || network_mgr.run());
     thread::spawn(move || synchronizer_mgr.run());

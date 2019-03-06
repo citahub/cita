@@ -108,7 +108,6 @@ impl ServiceProtocol for DiscoveryProtocol {
         control.future_task(discovery_task);
     }
 
-    // open a discovery protocol session?
     fn connected(&mut self, control: &mut ServiceContext, session: &SessionContext, _: &str) {
         debug!(
             "protocol [discovery] open session [{}], address: [{}], type: [{:?}]",

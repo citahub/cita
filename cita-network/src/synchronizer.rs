@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::mq_client::{MqClient, PubMessage};
+use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::node_manager::{BroadcastReq, NodesManagerClient, SingleTxReq};
 use crossbeam_channel;
 use crossbeam_channel::unbounded;
@@ -36,7 +36,7 @@ const SYNC_TIME_OUT: u64 = 9;
 
 /// Get messages and determine if need to synchronize or broadcast the current node status
 pub struct Synchronizer {
-    mq_client: MqClient,
+    mq_client: MqAgentClient,
     nodes_mgr_client: NodesManagerClient,
     current_status: Status,
     global_status: Status,
@@ -57,7 +57,7 @@ unsafe impl Sync for Synchronizer {}
 unsafe impl Send for Synchronizer {}
 
 impl Synchronizer {
-    pub fn new(mq_client: MqClient, nodes_mgr_client: NodesManagerClient) -> Self {
+    pub fn new(mq_client: MqAgentClient, nodes_mgr_client: NodesManagerClient) -> Self {
         let (tx, rx) = unbounded();
         let client = SynchronizerClient::new(tx);
         Synchronizer {

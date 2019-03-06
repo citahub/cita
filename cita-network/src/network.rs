@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::mq_client::{MqClient, PubMessage};
+use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::node_manager::{BroadcastReq, GetPeerCountReq, NodesManagerClient};
 use crate::synchronizer::{SynchronizerClient, SynchronizerMessage};
 use crossbeam_channel::{self, unbounded};
@@ -30,7 +30,7 @@ use std::sync::Arc;
 
 pub struct Network {
     is_pause: Arc<AtomicBool>,
-    mq_client: MqClient,
+    mq_client: MqAgentClient,
     network_client: NetworkClient,
     nodes_mgr_client: NodesManagerClient,
     sync_client: SynchronizerClient,
@@ -39,7 +39,7 @@ pub struct Network {
 
 impl Network {
     pub fn new(
-        mq_client: MqClient,
+        mq_client: MqAgentClient,
         nodes_mgr_client: NodesManagerClient,
         sync_client: SynchronizerClient,
     ) -> Self {
