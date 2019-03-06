@@ -20,10 +20,10 @@ use libproto::blockchain::{Block, Status};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{Message, OperateType, SyncRequest, SyncResponse};
 use libproto::{TryFrom, TryInto};
+use pubsub::channel::Sender;
 use rand::{thread_rng, Rng, ThreadRng};
 use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::convert::Into;
-use std::sync::mpsc;
 use std::time::{Duration, Instant};
 use std::u8;
 use Source;
@@ -33,8 +33,8 @@ const SYNC_TIME_OUT: u64 = 9;
 
 /// Get messages and determine if need to synchronize or broadcast the current node status
 pub struct Synchronizer {
-    tx_pub: mpsc::Sender<(String, Vec<u8>)>,
-    task_sender: mpsc::Sender<Task>,
+    tx_pub: Sender<(String, Vec<u8>)>,
+    task_sender: Sender<Task>,
     current_status: Status,
     global_status: Status,
     sync_end_height: u64, //current_status <= sync_end_status
@@ -52,7 +52,7 @@ unsafe impl Sync for Synchronizer {}
 unsafe impl Send for Synchronizer {}
 
 impl Synchronizer {
-    pub fn new(tx_pub: mpsc::Sender<(String, Vec<u8>)>, task_sender: mpsc::Sender<Task>) -> Self {
+    pub fn new(tx_pub: Sender<(String, Vec<u8>)>, task_sender: Sender<Task>) -> Self {
         Synchronizer {
             tx_pub,
             task_sender,
