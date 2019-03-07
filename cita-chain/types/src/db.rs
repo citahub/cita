@@ -36,10 +36,8 @@ pub const COL_EXTRA: Option<u32> = Some(3);
 pub const COL_TRACE: Option<u32> = Some(4);
 /// Column for the empty accounts bloom filter.
 pub const COL_ACCOUNT_BLOOM: Option<u32> = Some(5);
-/// Column for general information from the local node which can persist.
-pub const COL_NODE_INFO: Option<u32> = Some(6);
 /// Number of columns in DB
-pub const NUM_COLUMNS: Option<u32> = Some(7);
+pub const NUM_COLUMNS: Option<u32> = Some(6);
 
 /// Modes for updating caches.
 #[derive(Clone, Copy)]
