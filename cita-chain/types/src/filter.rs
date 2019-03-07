@@ -82,7 +82,7 @@ impl Filter {
                 .into_iter()
                 .flat_map(|bloom| {
                     topics
-                        .into_iter()
+                        .iter()
                         .map(|topic| {
                             let mut b = bloom;
                             b.accrue_raw(topic);

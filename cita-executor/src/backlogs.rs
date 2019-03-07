@@ -352,7 +352,7 @@ impl Backlogs {
         let executed_result = &self.completed[&prev_height];
         let validators = executed_result.get_config().get_validators();
         let proof_checkers: Vec<Address> = validators
-            .into_iter()
+            .iter()
             .map(|vec| Address::from_slice(&vec[..]))
             .collect();
 
