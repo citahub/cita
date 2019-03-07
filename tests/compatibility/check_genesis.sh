@@ -14,5 +14,5 @@ cd ${BINARY_DIR} \
     --super_admin "0x0000000000000000000000000000000000000000" \
     --nodes "127.0.0.1:4000" \
 && python3 ${SOURCE_DIR}/tests/compatibility/check_genesis.py \
-    --genesis test-chain/0/genesis.json \
+    --genesis test-chain/0/configs/genesis.json \
 && rm -rf test-chain genesis

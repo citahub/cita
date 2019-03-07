@@ -34,8 +34,8 @@ def check(old, new):
         if 'value' in old_alloc[addr]:
             continue
         # Check the code
-        if old_alloc[addr]['code'] != new_alloc[addr]['code']:
-            return False
+        # if old_alloc[addr]['code'] != new_alloc[addr]['code']:
+        #     return False
         # Check the storage
         storage = old_alloc[addr]['storage']
         for key in storage:

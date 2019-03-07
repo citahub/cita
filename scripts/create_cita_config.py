@@ -358,7 +358,7 @@ class ChainInfo(object):
 
         for old_id in range(0, node_id):
             old_dir = os.path.join(self.output_root, '{}'.format(old_id))
-            network_config = os.path.join(old_dir, 'network.toml')
+            network_config = os.path.join(old_dir, 'configs/network.toml')
             with open(network_config, 'rt') as stream:
                 network_data = toml.load(stream)
                 network_data['peers'].append(self.create_peer_data(node_id, node))

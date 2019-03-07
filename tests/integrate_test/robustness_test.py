@@ -58,11 +58,11 @@ def modify_forever(node_number):
     node_number: int
     """
     for i in range(node_number + 1):
-        with open(f"./node/{i}/forever.toml", "r") as file:
+        with open(f"./node/{i}/configs/forever.toml", "r") as file:
             forever_conf = toml.load(file)
             forever_conf["process"][-1]["respawn"] = 10000
             forever_conf["process"][-2]["respawn"] = 10000
-        with open(f"./node/{i}/forever.toml", "w") as file:
+        with open(f"./node/{i}/configs/forever.toml", "w") as file:
             toml.dump(forever_conf, file)
 
 
