@@ -21,18 +21,19 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::{Message, TryFrom};
-use logger::trace;
+use logger::{trace, warn};
 use pubsub::start_pubsub;
 use std::thread;
 
+/// MqAgent
 pub struct MqAgent {
     client: MqAgentClient,
     nodes_manager_client: Option<NodesManagerClient>,
     network_client: Option<NetworkClient>,
 
-    crx_sub_auth: Receiver<(String, Vec<u8>)>,
-    crx_sub_consensus: Receiver<(String, Vec<u8>)>,
-    crx_sub: Receiver<(String, Vec<u8>)>,
+    sub_auth: Receiver<(String, Vec<u8>)>,
+    sub_consensus: Receiver<(String, Vec<u8>)>,
+    sub_other_modules: Receiver<(String, Vec<u8>)>,
 }
 
 impl MqAgent {
@@ -60,8 +61,8 @@ impl MqAgent {
         );
 
         // Chain, JSON-RPC and Snapshot use a common channel
-        let (ctx_sub, crx_sub) = unbounded();
-        let (ctx_pub, crx_pub) = unbounded();
+        let (ctx_sub_other_modules, crx_sub_other_modules) = unbounded();
+        let (ctx_pub_other_modules, crx_pub_other_modules) = unbounded();
         start_pubsub(
             "network",
             routing_key!([
@@ -70,18 +71,18 @@ impl MqAgent {
                 Jsonrpc >> RequestNet,
                 Snapshot >> SnapshotReq
             ]),
-            ctx_sub,
-            crx_pub,
+            ctx_sub_other_modules,
+            crx_pub_other_modules,
         );
-        let client = MqAgentClient::new(ctx_pub_auth, ctx_pub_consensus, ctx_pub);
+        let client = MqAgentClient::new(ctx_pub_auth, ctx_pub_consensus, ctx_pub_other_modules);
 
         MqAgent {
             client,
             nodes_manager_client: None,
             network_client: None,
-            crx_sub_auth,
-            crx_sub_consensus,
-            crx_sub,
+            sub_auth: crx_sub_auth,
+            sub_consensus: crx_sub_consensus,
+            sub_other_modules: crx_sub_other_modules,
         }
     }
 
@@ -101,9 +102,9 @@ impl MqAgent {
         if let Some(ref client) = self.nodes_manager_client {
             // Thread for handle new transactions from MQ
             let nodes_manager_client = client.clone();
-            let crx_sub_auth = self.crx_sub_auth.clone();
+            let sub_auth = self.sub_auth.clone();
             thread::spawn(move || loop {
-                let (key, body) = crx_sub_auth.recv().unwrap();
+                let (key, body) = sub_auth.recv().unwrap();
                 let msg = Message::try_from(&body).unwrap();
 
                 // Broadcast the message to other nodes
@@ -112,9 +113,9 @@ impl MqAgent {
 
             // Thread for handle consensus message
             let nodes_manager_client = client.clone();
-            let crx_sub_consensus = self.crx_sub_consensus.clone();
+            let sub_consensus = self.sub_consensus.clone();
             thread::spawn(move || loop {
-                let (key, body) = crx_sub_consensus.recv().unwrap();
+                let (key, body) = sub_consensus.recv().unwrap();
                 let msg = Message::try_from(&body).unwrap();
 
                 // Broadcast the message to other nodes
@@ -124,10 +125,10 @@ impl MqAgent {
 
         if let Some(ref client) = self.network_client {
             let network_client = client.clone();
-            let crx_sub = self.crx_sub.clone();
+            let sub_other_modules = self.sub_other_modules.clone();
             thread::spawn(move || loop {
-                let (key, body) = crx_sub.recv().unwrap();
-                trace!("[main] Handle delivery from {} payload {:?}", key, body);
+                let (key, body) = sub_other_modules.recv().unwrap();
+                trace!("[MqAgent] Handle delivery from {} payload {:?}", key, body);
 
                 let msg = LocalMessage::new(key, body);
                 network_client.handle_local_message(msg);
@@ -144,47 +145,59 @@ impl Default for MqAgent {
 
 #[derive(Clone)]
 pub struct MqAgentClient {
-    auth_sender: Sender<(String, Vec<u8>)>,
-    consensus_sender: Sender<(String, Vec<u8>)>,
-    other_modules_sender: Sender<(String, Vec<u8>)>,
+    pub_auth: Sender<(String, Vec<u8>)>,
+    pub_consensus: Sender<(String, Vec<u8>)>,
+    pub_other_modules: Sender<(String, Vec<u8>)>,
 }
 
 impl MqAgentClient {
     pub fn new(
-        auth_sender: Sender<(String, Vec<u8>)>,
-        consensus_sender: Sender<(String, Vec<u8>)>,
-        other_modules_sender: Sender<(String, Vec<u8>)>,
+        pub_auth: Sender<(String, Vec<u8>)>,
+        pub_consensus: Sender<(String, Vec<u8>)>,
+        pub_other_modules: Sender<(String, Vec<u8>)>,
     ) -> Self {
         MqAgentClient {
-            auth_sender,
-            consensus_sender,
-            other_modules_sender,
+            pub_auth,
+            pub_consensus,
+            pub_other_modules,
         }
     }
 
     pub fn forward_msg_to_auth(&self, msg: PubMessage) {
-        let _ = self.auth_sender.send((msg.key, msg.data));
+        if let Err(e) = self.pub_auth.send((msg.key, msg.data)) {
+            warn!("[MqAgent] Forward message to auth failed: {:?}", e);
+        }
     }
 
     pub fn forward_msg_to_consensus(&self, msg: PubMessage) {
-        let _ = self.consensus_sender.send((msg.key, msg.data));
+        if let Err(e) = self.pub_consensus.send((msg.key, msg.data)) {
+            warn!("[MqAgent] Forward message to consensus failed: {:?}", e);
+        }
     }
 
     pub fn send_peer_count(&self, msg: PubMessage) {
-        let _ = self.other_modules_sender.send((msg.key, msg.data));
+        if let Err(e) = self.pub_other_modules.send((msg.key, msg.data)) {
+            warn!("[MqAgent] Send peer count failed: {:?}", e);
+        }
     }
 
     pub fn send_snapshot_resp(&self, msg: PubMessage) {
-        let _ = self.other_modules_sender.send((msg.key, msg.data));
+        if let Err(e) = self.pub_other_modules.send((msg.key, msg.data)) {
+            warn!("[MqAgent] Send snapshot response failed: {:?}", e);
+        }
     }
 
     // Publish a synchronize request, to start synchronize operation in this node
     pub fn pub_sync_request(&self, msg: PubMessage) {
-        let _ = self.other_modules_sender.send((msg.key, msg.data));
+        if let Err(e) = self.pub_other_modules.send((msg.key, msg.data)) {
+            warn!("[MqAgent] Publish synchronize request failed: {:?}", e);
+        }
     }
 
     pub fn pub_sync_blocks(&self, msg: PubMessage) {
-        let _ = self.other_modules_sender.send((msg.key, msg.data));
+        if let Err(e) = self.pub_other_modules.send((msg.key, msg.data)) {
+            warn!("[MqAgent] Publish synchronize blocks failed: {:?}", e);
+        }
     }
 }
 

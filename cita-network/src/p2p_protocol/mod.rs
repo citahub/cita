@@ -18,7 +18,7 @@
 use crate::node_manager::{
     AddConnectedNodeReq, DelConnectedNodeReq, DelNodeReq, NodesManagerClient,
 };
-use logger::{debug, warn};
+use logger::{info, warn};
 use tentacle::{
     context::ServiceContext,
     error,
@@ -31,20 +31,8 @@ use tentacle::{
 pub mod node_discovery;
 pub mod transfer;
 
-// This handle will be shared with all protocol
-pub struct SHandle {
-    nodes_mgr_client: NodesManagerClient,
-}
-
-impl SHandle {
-    pub fn new(nodes_mgr_client: NodesManagerClient) -> Self {
-        SHandle { nodes_mgr_client }
-    }
-}
-
-impl ServiceHandle for SHandle {
+impl ServiceHandle for NodesManagerClient {
     fn handle_error(&mut self, _env: &mut ServiceContext, error: ServiceError) {
-        debug!("return error {:?}", error);
         match error {
             ServiceError::DialerError { address, error } => {
                 let address = multiaddr_to_socketaddr(&address).unwrap();
@@ -53,14 +41,14 @@ impl ServiceHandle for SHandle {
                 match error {
                     error::Error::RepeatedConnection(session_id) => {
                         let req = AddConnectedNodeReq::new(address, session_id);
-                        self.nodes_mgr_client.add_connected_node(req);
-                        debug!("[handle_error] Connected to the same node : {:?}", address);
+                        self.add_connected_node(req);
+                        info!("[P2pProtocol] Connected to the same node : {:?}", address);
                     }
                     _ => {
-                        //FIXME: Using score for deleting a node from known nodes
+                        // FIXME: Using score for deleting a node from known nodes
                         let req = DelNodeReq::new(address);
-                        self.nodes_mgr_client.del_node(req);
-                        warn!("[handle_error] Error in {:?} : {:?}, delete this address from nodes manager",
+                        self.del_node(req);
+                        warn!("[P2pProtocol] Error in {:?} : {:?}, delete this address from nodes manager",
                               address, error);
                     }
                 }
@@ -68,7 +56,7 @@ impl ServiceHandle for SHandle {
             ServiceError::ListenError { address, error } => {
                 let address = multiaddr_to_socketaddr(&address).unwrap();
                 warn!(
-                    "[handle_error] Listen error on {:?}, error info: {:?}",
+                    "[P2pProtocol] Listen error on {:?}, error info: {:?}",
                     address, error
                 );
             }
@@ -79,7 +67,7 @@ impl ServiceHandle for SHandle {
             } => {
                 // FIXME: handle protocol error later
                 warn!(
-                    "[handle_error] Protocol Error, stream id: {:?}, protocol id: {:?}, error: {:?}",
+                    "[P2pProtocol] Protocol Error, stream id: {:?}, protocol id: {:?}, error: {:?}",
                     id, proto_id, error
                 );
             }
@@ -89,7 +77,7 @@ impl ServiceHandle for SHandle {
             } => {
                 // FIXME: handle protocol select error later
                 warn!(
-                    "[handle_error] Protocol SelectError, proto_name: {:?}, session_context: {:?}.",
+                    "[P2pProtocol] Protocol SelectError, proto_name: {:?}, session_context: {:?}.",
                     proto_name, session_context,
                 );
             }
@@ -105,16 +93,16 @@ impl ServiceHandle for SHandle {
                 public_key,
             } => {
                 let address = multiaddr_to_socketaddr(&address).unwrap();
-                debug!("[handle_event] Service open on : {:?}, session id: {:?}, ty: {:?}, public_key: {:?}",
+                info!("[P2pProtocol] Service open on : {:?}, session id: {:?}, ty: {:?}, public_key: {:?}",
                        address, id, ty, public_key);
                 if ty == SessionType::Client {
                     let req = AddConnectedNodeReq::new(address, id);
-                    self.nodes_mgr_client.add_connected_node(req);
+                    self.add_connected_node(req);
                 }
             }
             ServiceEvent::SessionClose { id } => {
                 let req = DelConnectedNodeReq::new(id);
-                self.nodes_mgr_client.del_connected_node(req);
+                self.del_connected_node(req);
             }
         }
     }

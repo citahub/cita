@@ -17,8 +17,7 @@
 
 use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::node_manager::{BroadcastReq, NodesManagerClient, SingleTxReq};
-use crossbeam_channel;
-use crossbeam_channel::unbounded;
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use libproto::blockchain::{Block, Status};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
@@ -50,7 +49,7 @@ pub struct Synchronizer {
     /// local sync error
     local_sync_count: u8,
     sync_client: SynchronizerClient,
-    msg_receiver: crossbeam_channel::Receiver<SynchronizerMessage>,
+    msg_receiver: Receiver<SynchronizerMessage>,
 }
 
 unsafe impl Sync for Synchronizer {}
@@ -456,11 +455,11 @@ impl Synchronizer {
 
 #[derive(Clone)]
 pub struct SynchronizerClient {
-    sender: crossbeam_channel::Sender<SynchronizerMessage>,
+    sender: Sender<SynchronizerMessage>,
 }
 
 impl SynchronizerClient {
-    pub fn new(sender: crossbeam_channel::Sender<SynchronizerMessage>) -> Self {
+    pub fn new(sender: Sender<SynchronizerMessage>) -> Self {
         SynchronizerClient { sender }
     }
 

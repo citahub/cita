@@ -52,7 +52,7 @@ impl AddressConfig {
         let mut buffer = String::new();
         File::open(path)
             .and_then(|mut f| f.read_to_string(&mut buffer))
-            .unwrap_or_else(|err| panic!("Error while loading PrivateKey: [{}]", err));
+            .unwrap_or_else(|err| panic!("[Config] Error while loading node address: [{}]", err));
 
         let addr = Address::from_str(clean_0x(&buffer)).unwrap();
 

@@ -88,14 +88,14 @@ pub fn pubsub_message_to_network_message(buf: &mut BytesMut, msg: Option<(String
         let length_key = key.len();
         // Use 1 byte to store key length.
         if length_key > u8::max_value() as usize {
-            error!("The MQ message key is too long {}.", key);
+            error!("[CitaProtocol] The MQ message key is too long {}.", key);
             return;
         }
         // Use 1 bytes to store the length for key, then store key, the last part is body.
         let length_full = 1 + length_key + body.len();
         if length_full > u32::max_value() as usize {
             error!(
-                "The MQ message with key {} is too long {}.",
+                "[CitaProtocol] The MQ message with key {} is too long {}.",
                 key,
                 body.len()
             );
@@ -138,12 +138,12 @@ pub fn network_message_to_pubsub_message(buf: &mut BytesMut) -> Option<(String, 
     let length_key = payload_buf[0] as usize;
     let _length_key_buf = payload_buf.split_to(1);
     if length_key == 0 {
-        error!("network message key is empty.");
+        error!("[CitaProtocol] Network message key is empty.");
         return None;
     }
     if length_key > payload_buf.len() {
         error!(
-            "Buffer is not enough for key {} > {}.",
+            "[CitaProtocol] Buffer is not enough for key {} > {}.",
             length_key,
             buf.len()
         );
@@ -152,12 +152,15 @@ pub fn network_message_to_pubsub_message(buf: &mut BytesMut) -> Option<(String, 
     let key_buf = payload_buf.split_to(length_key);
     let key_str_result = str::from_utf8(&key_buf);
     if key_str_result.is_err() {
-        error!("network message parse key error {:?}.", key_buf);
+        error!(
+            "[CitaProtocol] Network message parse key error {:?}.",
+            key_buf
+        );
         return None;
     }
     let key = key_str_result.unwrap().to_string();
     if length_full == 1 + length_key {
-        warn!("network message is empty.");
+        warn!("[CitaProtocol] Network message is empty.");
     }
     Some((key, payload_buf.to_vec()))
 }

@@ -15,17 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::citaprotocol::pubsub_message_to_network_message;
+use crate::cita_protocol::pubsub_message_to_network_message;
 use crate::config::NetConfig;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use bytes::BytesMut;
 use cita_types::Address;
-use crossbeam_channel;
-use crossbeam_channel::{select, tick, unbounded};
+use crossbeam_channel::{select, tick, unbounded, Receiver, Sender};
 use discovery::RawAddr;
 use fnv::FnvHashMap;
 use libproto::{Message as ProtoMessage, TryInto};
-use logger::{debug, error, trace, warn};
+use logger::{debug, error, info, trace, warn};
 
 use std::{
     collections::HashMap,
@@ -45,14 +44,14 @@ pub const CHECK_CONNECTED_NODES: Duration = Duration::from_secs(3);
 type IsTranslated = bool;
 
 pub struct NodesManager {
-    check_connected_nodes: crossbeam_channel::Receiver<Instant>,
+    check_connected_nodes: Receiver<Instant>,
     known_addrs: FnvHashMap<RawAddr, i32>,
     config_addrs: HashMap<String, IsTranslated>,
     connected_addrs: HashMap<SessionId, RawAddr>,
     connected_peer_keys: HashMap<Address, SessionId>,
     max_connects: usize,
     nodes_manager_client: NodesManagerClient,
-    nodes_manager_service_receiver: crossbeam_channel::Receiver<NodesManagerMessage>,
+    nodes_manager_service_receiver: Receiver<NodesManagerMessage>,
     service_ctrl: Option<ServiceControl>,
     peer_key: Address,
     enable_tls: bool,
@@ -86,7 +85,7 @@ impl NodesManager {
                 }
             }
         } else {
-            warn!("NodeManager] Does not set any peers in config file!");
+            warn!("[NodeManager] Does not set any peers in config file!");
         }
 
         node_mgr
@@ -100,7 +99,7 @@ impl NodesManager {
                         Ok(data) => {
                             data.handle(self);
                         },
-                        Err(err) => debug!("Error in {:?}", err),
+                        Err(err) => error!("[NodeManager] Receive data error {:?}", err),
                     }
                 }
                 recv(self.check_connected_nodes) -> _ => {
@@ -128,40 +127,36 @@ impl NodesManager {
                         self.known_addrs.insert(raw_addr, 100);
                         *value = true;
                     } else {
-                        error!("[NodeManager] Can't convert to socket address!");
+                        error!("[NodeManager] Can not convert to socket address!");
                     }
                 }
                 Err(e) => {
                     error!(
-                        "[NodeManager] Can't convert to socket address! error: {}",
+                        "[NodeManager] Can not convert to socket address! error: {}",
                         e
                     );
                 }
             }
         }
-        debug!("=============================");
-        for raw_addr in self.known_addrs.keys() {
-            debug!("Node in known: {:?}", raw_addr.socket_addr());
-        }
-        debug!("-----------------------------");
-        for raw_addr in self.connected_addrs.values() {
-            debug!("Node in connected: {:?}", raw_addr.socket_addr());
-        }
-        debug!("=============================");
+        debug!("[NodeManager] Addresses in known: {:?}", self.known_addrs);
+        debug!(
+            "[NodeManager] Addresses in connected: {:?}",
+            self.connected_addrs
+        );
 
         if self.connected_addrs.len() < self.max_connects {
             for key in self.known_addrs.keys() {
                 if !self.connected_addrs.values().any(|value| *value == *key) {
-                    debug!("[dial_nodes] Connect to {:?}", key.socket_addr());
+                    info!("[NodeManager] Connect to {:?}", key.socket_addr());
 
                     if let Some(ref mut ctrl) = self.service_ctrl {
                         self.dialing_node = Some(key.socket_addr());
                         match ctrl.dial(key.socket_addr().to_multiaddr().unwrap()) {
                             Ok(_) => {
-                                debug!("[dial_nodes] Dail success");
+                                debug!("[NodeManager] Dail success");
                             }
                             Err(err) => {
-                                warn!("[dial_nodes] Dail failed : {:?}", err);
+                                warn!("[NodeManager] Dail failed : {:?}", err);
                             }
                         }
                     }
@@ -186,7 +181,7 @@ impl Default for NodesManager {
         let ticker = tick(CHECK_CONNECTED_NODES);
         let client = NodesManagerClient { sender: tx };
 
-        // Set enable_tls = true as default.
+        // Set enable_tls = false as default.
         NodesManager {
             check_connected_nodes: ticker,
             known_addrs: FnvHashMap::default(),
@@ -207,11 +202,11 @@ impl Default for NodesManager {
 
 #[derive(Clone, Debug)]
 pub struct NodesManagerClient {
-    sender: crossbeam_channel::Sender<NodesManagerMessage>,
+    sender: Sender<NodesManagerMessage>,
 }
 
 impl NodesManagerClient {
-    pub fn new(sender: crossbeam_channel::Sender<NodesManagerMessage>) -> Self {
+    pub fn new(sender: Sender<NodesManagerMessage>) -> Self {
         NodesManagerClient { sender }
     }
 
@@ -256,13 +251,11 @@ impl NodesManagerClient {
     }
 
     fn send_req(&self, req: NodesManagerMessage) {
-        match self.sender.try_send(req) {
-            Ok(_) => {
-                debug!("Send message to node manager Success");
-            }
-            Err(err) => {
-                warn!("Send message to node manager failed : {:?}", err);
-            }
+        if let Err(e) = self.sender.try_send(req) {
+            warn!(
+                "[NodesManager] Send message to node manager failed : {:?}",
+                e
+            );
         }
     }
 }
@@ -349,8 +342,8 @@ impl AddConnectedKeyReq {
         // Repeated connected, disconnect it.
         if let Some(repeated_id) = service.connected_peer_keys.get(&self.init_msg.peer_key) {
             if let Some(ref mut ctrl) = service.service_ctrl {
-                debug!(
-                    "[AddConnectedAddressReq] New session [{:?}] repeated with [{:?}]",
+                info!(
+                    "[NodeManager] New session [{:?}] repeated with [{:?}]",
                     self.session_id, *repeated_id
                 );
                 if self.ty == SessionType::Client {
@@ -359,17 +352,16 @@ impl AddConnectedKeyReq {
                         service.connected_addrs.insert(*repeated_id, value);
                     }
                     service.repeated_connections.insert(self.session_id);
-                    debug!(
-                        "[AddConnectedAddressReq] Disconnected session [{:?}], address: {:?}",
+                    info!(
+                        "[NodeManager] Disconnected session [{:?}], address: {:?}",
                         self.session_id, self.init_msg.peer_key
                     );
                     let _ = ctrl.disconnect(self.session_id);
                 }
             }
         } else if service.peer_key == self.init_msg.peer_key {
-            // Connected Self
             debug!(
-                "[AddConnectedAddressReq] Connected Self, Delete {:?} from know_addrs",
+                "[NodeManager] Connected Self, Delete {:?} from know_addrs",
                 service.dialing_node
             );
             service
@@ -388,9 +380,10 @@ impl AddConnectedKeyReq {
         if self.ty == SessionType::Client {
             service.dialing_node = None;
         }
-        for key in service.connected_peer_keys.keys() {
-            debug!("[AddConnectedAddressReq] Address in connected : {:?}", key);
-        }
+        debug!(
+            "[NodeManager] Address in connected : {:?}",
+            service.connected_peer_keys
+        );
     }
 }
 
@@ -418,10 +411,10 @@ impl NetworkInitReq {
         pubsub_message_to_network_message(&mut buf, Some((send_key, msg_bytes)));
 
         if let Some(ref mut ctrl) = service.service_ctrl {
-            //FIXME: handle the error!
+            // FIXME: handle the error!
             let ret = ctrl.send_message(self.session_id, 1, buf.to_vec());
-            debug!(
-                "[NetworkInitReq] Send network init message!, id: {:?}, peer_addr: {:?}, ret: {:?}",
+            info!(
+                "[NodeManager] Send network init message!, id: {:?}, peer_addr: {:?}, ret: {:?}",
                 self.session_id, peer_key, ret,
             );
         }
@@ -461,11 +454,11 @@ impl DelNodeReq {
 
 pub struct GetRandomNodesReq {
     num: usize,
-    return_channel: crossbeam_channel::Sender<Vec<SocketAddr>>,
+    return_channel: Sender<Vec<SocketAddr>>,
 }
 
 impl GetRandomNodesReq {
-    pub fn new(num: usize, return_channel: crossbeam_channel::Sender<Vec<SocketAddr>>) -> Self {
+    pub fn new(num: usize, return_channel: Sender<Vec<SocketAddr>>) -> Self {
         GetRandomNodesReq {
             num,
             return_channel,
@@ -480,13 +473,11 @@ impl GetRandomNodesReq {
             .map(|addr| addr.socket_addr())
             .collect();
 
-        match self.return_channel.try_send(addrs) {
-            Ok(_) => {
-                debug!("Get random n nodes and send them success");
-            }
-            Err(err) => {
-                warn!("Get random n nodes, send them failed : {:?}", err);
-            }
+        if let Err(e) = self.return_channel.try_send(addrs) {
+            warn!(
+                "[NodeManager] Get random n nodes, send them failed : {:?}",
+                e
+            );
         }
     }
 }
@@ -503,8 +494,8 @@ impl AddConnectedNodeReq {
 
     pub fn handle(self, service: &mut NodesManager) {
         // FIXME: If have reached to max_connects, disconnected this node.
-        debug!(
-            "[AddConnectedAddressReq] Add session [{:?}], address: {:?} to Connected_addrs.",
+        info!(
+            "[NodeManager] Add session [{:?}], address: {:?} to Connected_addrs.",
             self.session_id, self.addr
         );
         service
@@ -527,16 +518,16 @@ impl DelConnectedNodeReq {
         if service.repeated_connections.remove(&self.session_id) {
             return;
         }
-        debug!(
-            "[DelConnectedNodeReq] Remove session [{:?}] from Connected_addrs.",
+        info!(
+            "[NodeManager] Remove session [{:?}] from Connected_addrs.",
             self.session_id
         );
         service.connected_addrs.remove(&self.session_id);
 
         for (key, value) in service.connected_peer_keys.iter() {
             if self.session_id == *value {
-                debug!(
-                    "[DelConnectedNodeReq] Remove session [{:?}] from connected_peer_keys.",
+                info!(
+                    "[NodeManager] Remove session [{:?}] from connected_peer_keys.",
                     *key
                 );
                 service.connected_peer_keys.remove(&key.clone());
@@ -558,7 +549,11 @@ impl BroadcastReq {
     }
 
     pub fn handle(self, service: &mut NodesManager) {
-        trace!("Broadcast msg {:?}, from key {}", self.msg, self.key);
+        trace!(
+            "[NodeManager] Broadcast msg {:?}, from key {}",
+            self.msg,
+            self.key
+        );
         let msg_bytes: Vec<u8> = self.msg.try_into().unwrap();
 
         let mut buf = BytesMut::with_capacity(4 + 4 + 1 + self.key.len() + msg_bytes.len());
@@ -582,7 +577,7 @@ impl SingleTxReq {
 
     pub fn handle(self, service: &mut NodesManager) {
         trace!(
-            "Send msg {:?} to {}, from key {}",
+            "[NodeManager] Send msg {:?} to {}, from key {}",
             self.msg,
             self.dst,
             self.key
@@ -592,34 +587,29 @@ impl SingleTxReq {
         let mut buf = BytesMut::with_capacity(4 + 4 + 1 + self.key.len() + msg_bytes.len());
         pubsub_message_to_network_message(&mut buf, Some((self.key, msg_bytes)));
         if let Some(ref mut ctrl) = service.service_ctrl {
-            //FIXME: handle the error!
+            // FIXME: handle the error!
             let _ = ctrl.send_message(self.dst, 1, buf.to_vec());
         }
     }
 }
 
 pub struct GetPeerCountReq {
-    return_channel: crossbeam_channel::Sender<usize>,
+    return_channel: Sender<usize>,
 }
 
 impl GetPeerCountReq {
-    pub fn new(return_channel: crossbeam_channel::Sender<usize>) -> Self {
+    pub fn new(return_channel: Sender<usize>) -> Self {
         GetPeerCountReq { return_channel }
     }
 
     pub fn handle(self, service: &mut NodesManager) {
         let peer_count = service.connected_addrs.len();
 
-        match self.return_channel.try_send(peer_count) {
-            Ok(_) => {
-                debug!("Get peer count and send it success");
-            }
-            Err(err) => {
-                warn!(
-                    "Get peer count {}, but send it failed : {:?}",
-                    peer_count, err
-                );
-            }
+        if let Err(e) = self.return_channel.try_send(peer_count) {
+            warn!(
+                "[NodeManager] Get peer count {}, but send it failed : {:?}",
+                peer_count, e
+            );
         }
     }
 }

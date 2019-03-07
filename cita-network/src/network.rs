@@ -18,7 +18,7 @@
 use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::node_manager::{BroadcastReq, GetPeerCountReq, NodesManagerClient};
 use crate::synchronizer::{SynchronizerClient, SynchronizerMessage};
-use crossbeam_channel::{self, unbounded};
+use crossbeam_channel::unbounded;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
@@ -79,16 +79,16 @@ impl NetworkClient {
     }
 
     pub fn handle_local_message(&self, msg: LocalMessage) {
-        self.send_msg(NetworkMessage::LocalMessage(msg));
+        self.send_message(NetworkMessage::LocalMessage(msg));
     }
 
     pub fn handle_remote_message(&self, msg: RemoteMessage) {
-        self.send_msg(NetworkMessage::RemoteMessage(msg));
+        self.send_message(NetworkMessage::RemoteMessage(msg));
     }
 
-    fn send_msg(&self, msg: NetworkMessage) {
+    fn send_message(&self, msg: NetworkMessage) {
         self.sender.try_send(msg).unwrap_or_else(|err| {
-            warn!("Send message to network failed : {:?}", err);
+            warn!("[Network] Send message to network failed : {:?}", err);
         });
     }
 }
@@ -118,7 +118,7 @@ impl LocalMessage {
 
     pub fn handle(self, service: &mut Network) {
         let rt_key = RoutingKey::from(&self.key);
-        trace!("Network receive Message from Local/{}", self.key);
+        trace!("[Network] Receive Message from Local/{}", self.key);
 
         if service.is_pause.load(Ordering::SeqCst)
             && rt_key.get_sub_module() != SubModules::Snapshot
@@ -143,11 +143,11 @@ impl LocalMessage {
                 self.reply_rpc(&self.data, service);
             }
             routing_key!(Snapshot >> SnapshotReq) => {
-                info!("Set disconnect and response");
+                info!("[Network] Set disconnect and response");
                 self.snapshot_req(&self.data, service);
             }
             _ => {
-                error!("Unexpected key {} from Local", self.key);
+                error!("[Network] Unexpected key {} from Local", self.key);
             }
         }
     }
@@ -179,7 +179,7 @@ impl LocalMessage {
                     ));
                 }
             } else {
-                warn!("[reply_rpc] Receive unexpected rpc data");
+                warn!("[Network] Receive unexpected rpc data");
             }
         }
     }
@@ -191,28 +191,28 @@ impl LocalMessage {
 
         match req.cmd {
             Cmd::Snapshot => {
-                info!("[snapshot] receive cmd::Snapshot: {:?}", req);
+                info!("[Network] Snapshot receive cmd::Snapshot: {:?}", req);
                 resp.set_resp(Resp::SnapshotAck);
                 resp.set_flag(true);
             }
             Cmd::Begin => {
-                info!("[snapshot] receive cmd::Begin: {:?}", req);
+                info!("[Network] Snapshot receive cmd::Begin: {:?}", req);
                 service.is_pause.store(true, Ordering::SeqCst);
                 resp.set_resp(Resp::BeginAck);
                 resp.set_flag(true);
             }
             Cmd::Restore => {
-                info!("[snapshot] receive cmd::Restore: {:?}", req);
+                info!("[Network] Snapshot receive cmd::Restore: {:?}", req);
                 resp.set_resp(Resp::RestoreAck);
                 resp.set_flag(true);
             }
             Cmd::Clear => {
-                info!("[snapshot] receive cmd::Clear: {:?}", req);
+                info!("[Network] Snapshot receive cmd::Clear: {:?}", req);
                 resp.set_resp(Resp::ClearAck);
                 resp.set_flag(true);
             }
             Cmd::End => {
-                info!("[snapshot] receive cmd::End: {:?}", req);
+                info!("[Network] Snapshot receive cmd::End: {:?}", req);
                 service.is_pause.store(false, Ordering::SeqCst);
                 resp.set_resp(Resp::EndAck);
                 resp.set_flag(true);
@@ -239,7 +239,7 @@ impl RemoteMessage {
 
     pub fn handle(self, service: &mut Network) {
         let rt_key = RoutingKey::from(&self.key);
-        trace!("Network receive Message from Remote/{}", self.key);
+        trace!("[Network] Receive Message from Remote/{}", self.key);
 
         if service.is_pause.load(Ordering::SeqCst)
             && rt_key.get_sub_module() != SubModules::Snapshot
@@ -286,7 +286,7 @@ impl RemoteMessage {
                 service.mq_client.forward_msg_to_auth(msg);
             }
             _ => {
-                error!("Unexpected key {} from Remote", self.key);
+                error!("[Network] Unexpected key {} from Remote", self.key);
             }
         }
     }

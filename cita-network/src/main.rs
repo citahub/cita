@@ -78,7 +78,7 @@
 //! [`network_message_to_pubsub_message`]: ./citaprotocol/fn.network_message_to_pubsub_message.html
 //!
 
-pub mod citaprotocol;
+pub mod cita_protocol;
 pub mod config;
 pub mod mq_agent;
 pub mod network;
@@ -90,14 +90,9 @@ use crate::config::{AddressConfig, NetConfig};
 use crate::mq_agent::MqAgent;
 use crate::network::Network;
 use crate::node_manager::{NodesManager, DEFAULT_PORT};
-use crate::p2p_protocol::{
-    node_discovery::{DiscoveryProtocolMeta, NodesAddressManager},
-    transfer::TransferProtocolMeta,
-    SHandle,
-};
+use crate::p2p_protocol::{node_discovery::DiscoveryProtocolMeta, transfer::TransferProtocolMeta};
 use crate::synchronizer::Synchronizer;
 use clap::App;
-use crossbeam_channel;
 use dotenv;
 use futures::prelude::*;
 use logger::{debug, info};
@@ -125,14 +120,14 @@ fn main() {
     let config_path = matches.value_of("config").unwrap_or("config");
 
     // >>>> Init config
-    debug!("config path {:?}", config_path);
+    debug!("Config path {:?}", config_path);
     let config = NetConfig::new(&config_path);
-    debug!("network config is {:?}", config);
-    // <<<< End init config
+    debug!("Network config is {:?}", config);
 
     let addr_path = matches.value_of("address").unwrap_or("address");
     let own_addr = AddressConfig::new(&addr_path);
-    debug!("node address is {:?}", own_addr.addr);
+    debug!("Node address is {:?}", own_addr.addr);
+    // <<<< End init config
 
     let mut nodes_mgr = NodesManager::from_config(config.clone(), own_addr.addr);
     let mut mq_agent = MqAgent::default();
@@ -146,8 +141,7 @@ fn main() {
     mq_agent.set_network_client(network_mgr.client());
 
     // >>>> Init p2p protocols
-    let discovery_meta =
-        DiscoveryProtocolMeta::new(0, NodesAddressManager::new(nodes_mgr.client()));
+    let discovery_meta = DiscoveryProtocolMeta::new(0, nodes_mgr.client());
     let transfer_meta = TransferProtocolMeta::new(1, network_mgr.client(), nodes_mgr.client());
 
     let mut service_cfg = ServiceBuilder::default()
@@ -157,7 +151,7 @@ fn main() {
     if nodes_mgr.is_enable_tls() {
         service_cfg = service_cfg.key_pair(SecioKeyPair::secp256k1_generated());
     }
-    let mut service = service_cfg.build(SHandle::new(nodes_mgr.client()));
+    let mut service = service_cfg.build(nodes_mgr.client());
 
     let addr = format!("/ip4/0.0.0.0/tcp/{}", config.port.unwrap_or(DEFAULT_PORT));
     let _ = service.listen(addr.parse().unwrap());

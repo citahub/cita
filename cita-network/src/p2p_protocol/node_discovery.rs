@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::node_manager::{AddNodeReq, GetRandomNodesReq, NodesManagerClient};
-use crossbeam_channel;
 use crossbeam_channel::unbounded;
 use discovery::{AddressManager, Direction, Discovery, DiscoveryHandle, Misbehavior, Substream};
 use fnv::FnvHashMap;
@@ -24,7 +23,7 @@ use futures::{
     prelude::*,
     sync::mpsc::{channel, Sender},
 };
-use logger::{debug, warn};
+use logger::{debug, info, warn};
 use tentacle::{
     context::{ServiceContext, SessionContext},
     multiaddr::{Multiaddr, ToMultiaddr},
@@ -35,24 +34,15 @@ use tentacle::{
 };
 use tokio::codec::length_delimited::LengthDelimitedCodec;
 
-#[derive(Clone, Debug)]
-pub struct NodesAddressManager {
-    pub nodes_mgr_client: NodesManagerClient,
-}
-
-impl NodesAddressManager {
-    pub fn new(nodes_mgr_client: NodesManagerClient) -> Self {
-        NodesAddressManager { nodes_mgr_client }
-    }
-}
+type NodesAddressManager = NodesManagerClient;
 
 impl AddressManager for NodesAddressManager {
     fn add_new(&mut self, addr: Multiaddr) {
         let address = multiaddr_to_socketaddr(&addr).unwrap();
         let req = AddNodeReq::new(address);
-        self.nodes_mgr_client.add_node(req);
+        self.add_node(req);
 
-        debug!("[add_new] Add node {:?} to manager", address);
+        info!("[NodeDiscovery] Add node {:?} to manager", address);
     }
 
     fn misbehave(&mut self, _addr: Multiaddr, _ty: Misbehavior) -> i32 {
@@ -63,11 +53,14 @@ impl AddressManager for NodesAddressManager {
         let (tx, rx) = unbounded();
 
         let req = GetRandomNodesReq::new(n, tx);
-        self.nodes_mgr_client.get_random_nodes(req);
+        self.get_random_nodes(req);
 
         let ret = rx.recv().unwrap();
 
-        debug!("[get_random] Get address : {:?} from nodes manager.", ret);
+        info!(
+            "[NodeDiscovery] Get random address : {:?} from nodes manager.",
+            ret
+        );
 
         ret.into_iter()
             .map(|addr| addr.to_multiaddr().unwrap())
@@ -84,23 +77,23 @@ pub struct DiscoveryProtocol {
 
 impl ServiceProtocol for DiscoveryProtocol {
     fn init(&mut self, control: &mut ServiceContext) {
-        debug!("protocol [discovery({})]: init", self.id);
+        info!("[NodeDiscovery] Protocol [discovery({})]: init", self.id);
 
         let discovery_task = self
             .discovery
             .take()
             .map(|discovery| {
-                debug!("Start discovery future_task");
+                debug!("[NodeDiscovery] Start discovery future_task");
                 discovery
                     .for_each(|()| {
-                        debug!("discovery.for_each()");
+                        debug!("[NodeDiscovery] Discovery.for_each()");
                         Ok(())
                     })
                     .map_err(|err| {
-                        warn!("discovery stream error: {:?}", err);
+                        warn!("[NodeDiscovery] Discovery stream error: {:?}", err);
                     })
                     .then(|_| {
-                        warn!("End of discovery");
+                        warn!("[NodeDiscovery] End of discovery");
                         Ok(())
                     })
             })
@@ -109,12 +102,12 @@ impl ServiceProtocol for DiscoveryProtocol {
     }
 
     fn connected(&mut self, control: &mut ServiceContext, session: &SessionContext, _: &str) {
-        debug!(
-            "protocol [discovery] open session [{}], address: [{}], type: [{:?}]",
+        info!(
+            "[NodeDiscovery] Protocol [discovery] open session [{}], address: [{}], type: [{:?}]",
             session.id, session.address, session.ty
         );
 
-        debug!("listen list: {:?}", control.listens());
+        info!("[NodeDiscovery] Listen list: {:?}", control.listens());
         let direction = if session.ty == SessionType::Server {
             Direction::Inbound
         } else {
@@ -136,29 +129,31 @@ impl ServiceProtocol for DiscoveryProtocol {
 
         match self.discovery_handle.substream_sender.try_send(substream) {
             Ok(_) => {
-                debug!("Send substream success");
+                debug!("[NodeDiscovery] Send substream success");
             }
             Err(err) => {
-                warn!("Send substream failed: {:?}", err);
+                warn!("[NodeDiscovery] Send substream failed: {:?}", err);
             }
         }
     }
 
     fn disconnected(&mut self, _control: &mut ServiceContext, session: &SessionContext) {
         self.discovery_senders.remove(&session.id);
-        debug!("protocol [discovery] close on session [{}]", session.id);
+        info!(
+            "[NodeDiscovery] Protocol [discovery] close on session [{}]",
+            session.id
+        );
     }
 
     fn received(&mut self, _control: &mut ServiceContext, session: &SessionContext, data: Vec<u8>) {
-        debug!("[received message]: length={}", data.len());
         if let Some(ref mut sender) = self.discovery_senders.get_mut(&session.id) {
             if let Err(err) = sender.try_send(data) {
                 if err.is_full() {
-                    warn!("channel is full");
+                    warn!("[NodeDiscovery] Channel is full");
                 } else if err.is_disconnected() {
-                    warn!("channel is disconnected");
+                    warn!("[NodeDiscovery] Channel is disconnected");
                 } else {
-                    warn!("other channel error {:?}", err);
+                    warn!("[NodeDiscovery] Other channel error {:?}", err);
                 }
             }
         }

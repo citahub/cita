@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::citaprotocol::network_message_to_pubsub_message;
+use crate::cita_protocol::network_message_to_pubsub_message;
 use crate::network::{NetworkClient, RemoteMessage};
 use crate::node_manager::{AddConnectedKeyReq, InitMsg, NetworkInitReq, NodesManagerClient};
 use bytes::BytesMut;
 use libproto::{Message as ProtoMessage, TryFrom, TryInto};
-use logger::{debug, info};
+use logger::{info, warn};
 use tentacle::{
     context::{ServiceContext, SessionContext},
     traits::{ProtocolMeta, ServiceProtocol},
@@ -83,7 +83,7 @@ impl ServiceProtocol for TransferProtocol {
         version: &str,
     ) {
         info!(
-            "[connected] proto id [{}] open on session [{}], address: [{}], type: [{:?}], version: {}",
+            "[Transfer] Connected proto id [{}] open on session [{}], address: [{}], type: [{:?}], version: {}",
             self.proto_id, session.id, session.address, session.ty, version
         );
         self.connected_session_ids.push(session.id);
@@ -92,7 +92,7 @@ impl ServiceProtocol for TransferProtocol {
         self.nodes_mgr_client.network_init(req);
 
         info!(
-            "[connected] connected sessions: {:?}",
+            "[Transfer] Connected sessions: {:?}",
             self.connected_session_ids
         );
     }
@@ -107,7 +107,7 @@ impl ServiceProtocol for TransferProtocol {
         self.connected_session_ids = new_list;
 
         info!(
-            "[disconnected] proto id [{}] close on session [{}]",
+            "[Transfer] Disconnected proto id [{}] close on session [{}]",
             self.proto_id, session.id
         );
     }
@@ -116,7 +116,6 @@ impl ServiceProtocol for TransferProtocol {
         let mut data = BytesMut::from(data);
 
         if let Some((key, message)) = network_message_to_pubsub_message(&mut data) {
-            debug!("[received] Received network message!key: {:?}", key);
             if key.eq(&"network.init".to_string()) {
                 let msg = InitMsg::from(message);
                 let req = AddConnectedKeyReq::new(session.id, session.ty, msg);
@@ -129,7 +128,7 @@ impl ServiceProtocol for TransferProtocol {
             self.network_client
                 .handle_remote_message(RemoteMessage::new(key, msg.try_into().unwrap()));
         } else {
-            debug!("[received] Cannot convert network message to pubsub message!");
+            warn!("[Transfer] Cannot convert network message to pubsub message!");
         }
     }
 }
