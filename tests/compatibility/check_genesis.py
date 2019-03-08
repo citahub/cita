@@ -20,11 +20,25 @@ def parse_arguments():
         required=True,
         help='The genesis file to be checked.')
 
+    check_code_parser = parser.add_mutually_exclusive_group(required=False)
+    check_code_parser.add_argument(
+        '--check_code',
+        dest='check_code',
+        action='store_true',
+        help='Check genesis contract code.')
+    check_code_parser.add_argument(
+        '--no_check_code',
+        dest='check_code',
+        action='store_false',
+        help='Do not check genesis contract code.'
+    )
+    parser.set_defaults(check_code=False)
+
     args = parser.parse_args()
     return args
 
 
-def check(old, new):
+def check(old, new, check_code):
     """ Check the new genesis is not changed. """
     old_alloc = old['alloc']
     new_alloc = new['alloc']
@@ -34,7 +48,7 @@ def check(old, new):
         if 'value' in old_alloc[addr]:
             continue
         # Check the code
-        if old_alloc[addr]['code'] != new_alloc[addr]['code']:
+        if check_code and old_alloc[addr]['code'] != new_alloc[addr]['code']:
             return False
         # Check the storage
         storage = old_alloc[addr]['storage']
@@ -58,7 +72,7 @@ def main():
     with open(args.genesis, 'r') as gene:
         new = json.load(gene)
 
-    assert check(old, new)
+    assert check(old, new, args.check_code)
 
 
 if __name__ == '__main__':
