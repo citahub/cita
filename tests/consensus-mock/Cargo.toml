@@ -8,14 +8,14 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_yaml = "0.8.6"
 bincode = "0.8.0"
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 clap = "2"
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 chrono = "0.4.2"
 
 [features]

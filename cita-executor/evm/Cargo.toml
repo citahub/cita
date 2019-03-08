@@ -4,13 +4,13 @@ version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>", "Cryptape Technologies <contact@cryptape.com>"]
 
 [dependencies]
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 lazy_static = "0.2"
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 bit-set = "0.4"
 common-types = { path = "../../cita-chain/types" }
-rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 rustc-hex = "1.0"
 
 [features]

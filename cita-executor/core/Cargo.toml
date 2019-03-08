@@ -4,21 +4,21 @@ version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>", "Cryptape Technologies <contact@cryptape.com>"]
 
 [dependencies]
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 byteorder = { version = "1", default-features = false }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 bincode = "0.8.0"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 rustc-hex = "1.0"
 grpc = "0.5.0"
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 rustc-serialize = "0.3"
 lru-cache = "0.1.1"
-rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-ethcore-bloom-journal = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
+rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
+ethcore-bloom-journal = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 lazy_static = "0.2"
 bit-set = "0.4"
 rust-crypto = "0.2.34"
@@ -29,16 +29,16 @@ time = "0.1"
 crossbeam = "0.2"
 transient-hashmap = "0.4.0"
 
-cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
+cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
 evm = { path = "../evm" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.20.3" }
 ethabi = "4.2.0"
 zktx = { git = "https://github.com/cryptape/zktx.git", optional = true }
 enum_primitive = "0.1.1"
