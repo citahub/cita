@@ -249,11 +249,14 @@ impl Backlogs {
             wrap_height(present_bft_height)
         );
 
-        assert!(
-            self.is_proof_ok(present_bft_proof.height as u64, &present_proof),
-            "{}-th present bft proof is invalid",
-            wrap_height(present_bft_proof.height)
-        );
+        if !self.is_proof_ok(present_bft_proof.height as u64, &present_proof) {
+            warn!(
+                "{}-th present bft proof is invalid",
+                wrap_height(present_bft_proof.height)
+            );
+            return false;
+        }
+
         self.insert_open(
             block_height,
             Priority::BlockWithProof,
@@ -341,11 +344,12 @@ impl Backlogs {
         }
 
         let prev_height = height - 1;
-        let executed_result = self
-            .completed
-            .get(&prev_height)
-            .unwrap_or_else(|| panic!("{}-th ExecutedResult exist by outside", prev_height));
+        if !self.completed.contains_key(&prev_height) {
+            warn!("{}-th ExecutedResult not exist", prev_height);
+            return false;
+        }
 
+        let executed_result = &self.completed[&prev_height];
         let validators = executed_result.get_config().get_validators();
         let proof_checkers: Vec<Address> = validators
             .into_iter()
