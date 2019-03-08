@@ -34,13 +34,22 @@ use tentacle::{
 };
 use tokio::codec::length_delimited::LengthDelimitedCodec;
 
-type NodesAddressManager = NodesManagerClient;
+#[derive(Clone, Debug)]
+pub struct NodesAddressManager {
+    pub nodes_mgr_client: NodesManagerClient,
+}
+
+impl NodesAddressManager {
+    pub fn new(nodes_mgr_client: NodesManagerClient) -> Self {
+        NodesAddressManager { nodes_mgr_client }
+    }
+}
 
 impl AddressManager for NodesAddressManager {
     fn add_new(&mut self, addr: Multiaddr) {
         let address = multiaddr_to_socketaddr(&addr).unwrap();
         let req = AddNodeReq::new(address);
-        self.add_node(req);
+        self.nodes_mgr_client.add_node(req);
 
         info!("[NodeDiscovery] Add node {:?} to manager", address);
     }
@@ -53,7 +62,7 @@ impl AddressManager for NodesAddressManager {
         let (tx, rx) = unbounded();
 
         let req = GetRandomNodesReq::new(n, tx);
-        self.get_random_nodes(req);
+        self.nodes_mgr_client.get_random_nodes(req);
 
         let ret = rx.recv().unwrap();
 

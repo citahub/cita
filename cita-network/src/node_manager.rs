@@ -193,7 +193,7 @@ impl Default for NodesManager {
             nodes_manager_service_receiver: rx,
             service_ctrl: None,
             peer_key: Address::zero(),
-            enable_tls: true,
+            enable_tls: false,
             dialing_node: None,
             repeated_connections: HashSet::default(),
         }

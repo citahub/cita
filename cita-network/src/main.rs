@@ -90,7 +90,10 @@ use crate::config::{AddressConfig, NetConfig};
 use crate::mq_agent::MqAgent;
 use crate::network::Network;
 use crate::node_manager::{NodesManager, DEFAULT_PORT};
-use crate::p2p_protocol::{node_discovery::DiscoveryProtocolMeta, transfer::TransferProtocolMeta};
+use crate::p2p_protocol::{
+    node_discovery::DiscoveryProtocolMeta, node_discovery::NodesAddressManager,
+    transfer::TransferProtocolMeta, SHandle,
+};
 use crate::synchronizer::Synchronizer;
 use clap::App;
 use dotenv;
@@ -141,7 +144,8 @@ fn main() {
     mq_agent.set_network_client(network_mgr.client());
 
     // >>>> Init p2p protocols
-    let discovery_meta = DiscoveryProtocolMeta::new(0, nodes_mgr.client());
+    let discovery_meta =
+        DiscoveryProtocolMeta::new(0, NodesAddressManager::new(nodes_mgr.client()));
     let transfer_meta = TransferProtocolMeta::new(1, network_mgr.client(), nodes_mgr.client());
 
     let mut service_cfg = ServiceBuilder::default()
@@ -151,7 +155,7 @@ fn main() {
     if nodes_mgr.is_enable_tls() {
         service_cfg = service_cfg.key_pair(SecioKeyPair::secp256k1_generated());
     }
-    let mut service = service_cfg.build(nodes_mgr.client());
+    let mut service = service_cfg.build(SHandle::new(nodes_mgr.client()));
 
     let addr = format!("/ip4/0.0.0.0/tcp/{}", config.port.unwrap_or(DEFAULT_PORT));
     let _ = service.listen(addr.parse().unwrap());

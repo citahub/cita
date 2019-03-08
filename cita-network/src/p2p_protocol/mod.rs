@@ -31,7 +31,18 @@ use tentacle::{
 pub mod node_discovery;
 pub mod transfer;
 
-impl ServiceHandle for NodesManagerClient {
+// This handle will be shared with all protocol
+pub struct SHandle {
+    nodes_mgr_client: NodesManagerClient,
+}
+
+impl SHandle {
+    pub fn new(nodes_mgr_client: NodesManagerClient) -> Self {
+        SHandle { nodes_mgr_client }
+    }
+}
+
+impl ServiceHandle for SHandle {
     fn handle_error(&mut self, _env: &mut ServiceContext, error: ServiceError) {
         match error {
             ServiceError::DialerError { address, error } => {
@@ -41,13 +52,13 @@ impl ServiceHandle for NodesManagerClient {
                 match error {
                     error::Error::RepeatedConnection(session_id) => {
                         let req = AddConnectedNodeReq::new(address, session_id);
-                        self.add_connected_node(req);
+                        self.nodes_mgr_client.add_connected_node(req);
                         info!("[P2pProtocol] Connected to the same node : {:?}", address);
                     }
                     _ => {
                         // FIXME: Using score for deleting a node from known nodes
                         let req = DelNodeReq::new(address);
-                        self.del_node(req);
+                        self.nodes_mgr_client.del_node(req);
                         warn!("[P2pProtocol] Error in {:?} : {:?}, delete this address from nodes manager",
                               address, error);
                     }
@@ -97,12 +108,12 @@ impl ServiceHandle for NodesManagerClient {
                        address, id, ty, public_key);
                 if ty == SessionType::Client {
                     let req = AddConnectedNodeReq::new(address, id);
-                    self.add_connected_node(req);
+                    self.nodes_mgr_client.add_connected_node(req);
                 }
             }
             ServiceEvent::SessionClose { id } => {
                 let req = DelConnectedNodeReq::new(id);
-                self.del_connected_node(req);
+                self.nodes_mgr_client.del_connected_node(req);
             }
         }
     }
