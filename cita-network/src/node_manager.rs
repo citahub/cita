@@ -360,15 +360,17 @@ impl AddConnectedKeyReq {
                 }
             }
         } else if service.peer_key == self.init_msg.peer_key {
-            debug!(
-                "[NodeManager] Connected Self, Delete {:?} from know_addrs",
-                service.dialing_node
-            );
-            service
-                .known_addrs
-                .remove(&RawAddr::from(service.dialing_node.unwrap()));
-            if let Some(ref mut ctrl) = service.service_ctrl {
-                let _ = ctrl.disconnect(self.session_id);
+            // This logic would be entry twice:
+            // one as server, and the other one as client.
+            if let Some(dialing_node) = service.dialing_node {
+                debug!(
+                    "[NodeManager] Connected Self, Delete {:?} from know_addrs",
+                    dialing_node
+                );
+                service.known_addrs.remove(&RawAddr::from(dialing_node));
+                if let Some(ref mut ctrl) = service.service_ctrl {
+                    let _ = ctrl.disconnect(self.session_id);
+                }
             }
         } else {
             let _ = service
