@@ -122,7 +122,7 @@ fn main() {
 
     let config_path = matches.value_of("config").unwrap_or("config");
 
-    // >>>> Init config
+    // Init config
     debug!("Config path {:?}", config_path);
     let config = NetConfig::new(&config_path);
     debug!("Network config is {:?}", config);
@@ -130,7 +130,7 @@ fn main() {
     let addr_path = matches.value_of("address").unwrap_or("address");
     let own_addr = AddressConfig::new(&addr_path);
     debug!("Node address is {:?}", own_addr.addr);
-    // <<<< End init config
+    // End init config
 
     let mut nodes_mgr = NodesManager::from_config(config.clone(), own_addr.addr);
     let mut mq_agent = MqAgent::default();
@@ -143,7 +143,7 @@ fn main() {
     mq_agent.set_nodes_mgr_client(nodes_mgr.client());
     mq_agent.set_network_client(network_mgr.client());
 
-    // >>>> Init p2p protocols
+    // Init p2p protocols
     let discovery_meta =
         DiscoveryProtocolMeta::new(0, NodesAddressManager::new(nodes_mgr.client()));
     let transfer_meta = TransferProtocolMeta::new(1, network_mgr.client(), nodes_mgr.client());
@@ -160,13 +160,13 @@ fn main() {
     let addr = format!("/ip4/0.0.0.0/tcp/{}", config.port.unwrap_or(DEFAULT_PORT));
     let _ = service.listen(addr.parse().unwrap());
     nodes_mgr.set_service_task_sender(service.control().clone());
-    // <<<< End init p2p protocols
+    // End init p2p protocols
 
-    // >>>> Run system
+    // Run system
     mq_agent.run();
     thread::spawn(move || nodes_mgr.run());
     thread::spawn(move || network_mgr.run());
     thread::spawn(move || synchronizer_mgr.run());
     tokio::run(service.for_each(|_| Ok(())));
-    // <<<< End run system
+    // End run system
 }
