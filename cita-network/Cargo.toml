@@ -6,8 +6,8 @@ edition = "2018"
 
 [dependencies]
 fnv = "1.0.6"
-discovery = { git = "https://github.com/nervosnetwork/p2p.git" }
-tentacle = { git = "https://github.com/nervosnetwork/p2p.git" }
+discovery = { git = "https://github.com/nervosnetwork/p2p.git", rev = "562adc40e374be4ae1776bb38b070688c24e37d3" }
+tentacle = { git = "https://github.com/nervosnetwork/p2p.git", rev = "562adc40e374be4ae1776bb38b070688c24e37d3" }
 tokio = "0.1.14"
 futures = "0.1.25"
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
