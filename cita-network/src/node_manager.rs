@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::cita_protocol::pubsub_message_to_network_message;
+use crate::cita_protocol::{pubsub_message_to_network_message, CITA_FRAME_HEADER_LEN};
 use crate::config::NetConfig;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use bytes::BytesMut;
@@ -409,7 +409,8 @@ impl NetworkInitReq {
         };
         let msg_bytes: Vec<u8> = init_msg.into();
 
-        let mut buf = BytesMut::with_capacity(4 + 4 + 1 + send_key.len() + msg_bytes.len());
+        let mut buf =
+            BytesMut::with_capacity(CITA_FRAME_HEADER_LEN + send_key.len() + msg_bytes.len());
         pubsub_message_to_network_message(&mut buf, Some((send_key, msg_bytes)));
 
         if let Some(ref mut ctrl) = service.service_ctrl {

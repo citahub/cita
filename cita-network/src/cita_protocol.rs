@@ -55,6 +55,11 @@ pub struct CitaCodec;
 // Start of network messages.
 const NETMSG_START: u64 = 0xDEAD_BEEF_0000_0000;
 
+// According to CITA frame, defines its frame header length as:
+// "Symbol for Start" + "Length of Full Payload" + "Length of Key",
+// And this will consume "4 + 4 + 1" fixed-lengths of the frame.
+pub const CITA_FRAME_HEADER_LEN: usize = 4 + 4 + 1;
+
 fn opt_bytes_extend(buf: &mut BytesMut, data: &[u8]) {
     buf.reserve(data.len());
     unsafe {
