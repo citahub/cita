@@ -55,7 +55,8 @@ impl AddressManager for NodesAddressManager {
     }
 
     fn misbehave(&mut self, _addr: Multiaddr, _ty: Misbehavior) -> i32 {
-        unimplemented!()
+        warn!("[NodeDiscovery] Has not handled misbehave in this version!");
+        0
     }
 
     fn get_random(&mut self, n: usize) -> Vec<Multiaddr> {
