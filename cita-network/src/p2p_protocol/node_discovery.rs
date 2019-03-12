@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::node_manager::{AddNodeReq, GetRandomNodesReq, NodesManagerClient};
-use crossbeam_channel::unbounded;
 use discovery::{AddressManager, Direction, Discovery, DiscoveryHandle, Misbehavior, Substream};
 use fnv::FnvHashMap;
 use futures::{
@@ -24,6 +23,7 @@ use futures::{
     sync::mpsc::{channel, Sender},
 };
 use logger::{debug, info, warn};
+use pubsub::channel::unbounded;
 use tentacle::{
     context::{ServiceContext, SessionContext},
     multiaddr::{Multiaddr, ToMultiaddr},

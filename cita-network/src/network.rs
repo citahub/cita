@@ -18,13 +18,13 @@
 use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::node_manager::{BroadcastReq, GetPeerCountReq, NodesManagerClient};
 use crate::synchronizer::{SynchronizerClient, SynchronizerMessage};
-use crossbeam_channel::unbounded;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
 use libproto::{Message as ProtoMessage, Response};
 use libproto::{TryFrom, TryInto};
 use logger::{error, info, trace, warn};
+use pubsub::channel::{unbounded, Receiver, Sender};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -34,7 +34,7 @@ pub struct Network {
     network_client: NetworkClient,
     nodes_mgr_client: NodesManagerClient,
     sync_client: SynchronizerClient,
-    msg_receiver: crossbeam_channel::Receiver<NetworkMessage>,
+    msg_receiver: Receiver<NetworkMessage>,
 }
 
 impl Network {
@@ -70,11 +70,11 @@ impl Network {
 
 #[derive(Clone, Debug)]
 pub struct NetworkClient {
-    sender: crossbeam_channel::Sender<NetworkMessage>,
+    sender: Sender<NetworkMessage>,
 }
 
 impl NetworkClient {
-    pub fn new(sender: crossbeam_channel::Sender<NetworkMessage>) -> Self {
+    pub fn new(sender: Sender<NetworkMessage>) -> Self {
         NetworkClient { sender }
     }
 

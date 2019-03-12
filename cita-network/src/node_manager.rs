@@ -20,11 +20,11 @@ use crate::config::NetConfig;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use bytes::BytesMut;
 use cita_types::Address;
-use crossbeam_channel::{select, tick, unbounded, Receiver, Sender};
 use discovery::RawAddr;
 use fnv::FnvHashMap;
 use libproto::{Message as ProtoMessage, TryInto};
 use logger::{debug, error, info, trace, warn};
+use pubsub::channel::{select, tick, unbounded, Receiver, Sender};
 
 use std::{
     collections::HashMap,

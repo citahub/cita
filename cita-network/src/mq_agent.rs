@@ -17,11 +17,11 @@
 
 use crate::network::{LocalMessage, NetworkClient};
 use crate::node_manager::{BroadcastReq, NodesManagerClient};
-use crossbeam_channel::{unbounded, Receiver, Sender};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::{Message, TryFrom};
 use logger::{trace, warn};
+use pubsub::channel::{unbounded, Receiver, Sender};
 use pubsub::start_pubsub;
 use std::thread;
 
