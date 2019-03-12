@@ -52,9 +52,19 @@ impl ProtocolMeta<LengthDelimitedCodec> for TransferProtocolMeta {
     fn id(&self) -> ProtocolId {
         self.id
     }
+
+    fn name(&self) -> String {
+        "/cita/transfer".to_owned()
+    }
+
+    fn support_versions(&self) -> Vec<String> {
+        vec!["0.0.1".to_owned()]
+    }
+
     fn codec(&self) -> LengthDelimitedCodec {
         LengthDelimitedCodec::new()
     }
+
     fn service_handle(&self) -> Option<Box<dyn ServiceProtocol + Send + 'static>> {
         let handle = Box::new(TransferProtocol {
             proto_id: self.id,

@@ -185,6 +185,14 @@ impl ProtocolMeta<LengthDelimitedCodec> for DiscoveryProtocolMeta {
         self.id
     }
 
+    fn name(&self) -> String {
+        "/cita/discovery".to_owned()
+    }
+
+    fn support_versions(&self) -> Vec<String> {
+        vec!["0.0.1".to_owned()]
+    }
+
     fn codec(&self) -> LengthDelimitedCodec {
         LengthDelimitedCodec::new()
     }
