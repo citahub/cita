@@ -154,15 +154,15 @@ fn main() {
 
     let block_processor = BlockProcessor::new(Arc::clone(&chain), ctx_pub);
 
-    //chain 读写分离
-    //chain 读数据 => 查询数据
+    // Two threads, one for reading, one for writing
+    // Read: dispatch msg
     thread::spawn(move || loop {
         if let Ok((key, msg)) = rx.recv() {
             forward.dispatch_msg(&key, &msg);
         }
     });
 
-    //chain 写数据 => 添加块
+    // Write: add block
     thread::spawn(move || {
         let mut timeout_factor = 0u8;
         loop {
