@@ -74,11 +74,11 @@ mod tests {
         max_connects = 4
         id_card = 9
         [[peers]]
-            ip = "0.0.0.0"
+            ip = "127.0.0.1"
             port = 4001
             common_name = "test1.cita"
         [[peers]]
-            ip = "0.0.0.0"
+            ip = "127.0.0.1"
             port = 4002
         "#;
 
