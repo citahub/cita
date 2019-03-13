@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use cita_types::{clean_0x, Address};
+use logger::info;
 use serde_derive::Deserialize;
 use std::fs::File;
 use std::io::Read;
@@ -50,11 +51,12 @@ pub struct AddressConfig {
 impl AddressConfig {
     pub fn new(path: &str) -> Self {
         let mut buffer = String::new();
-        File::open(path)
-            .and_then(|mut f| f.read_to_string(&mut buffer))
-            .unwrap_or_else(|err| panic!("[Config] Error while loading node address: [{}]", err));
-
-        let addr = Address::from_str(clean_0x(&buffer)).unwrap();
+        let mut addr = Address::random();
+        if let Ok(_sizes) = File::open(path).and_then(|mut f| f.read_to_string(&mut buffer)) {
+            addr = Address::from_str(clean_0x(&buffer)).unwrap();
+        } else {
+            info!("[Config] Cannot find address file, using a random Address instead.");
+        }
 
         AddressConfig { addr }
     }
