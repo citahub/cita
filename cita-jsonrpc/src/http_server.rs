@@ -18,7 +18,8 @@
 use futures::future::{self as future, Future};
 use hyper::header::{
     HeaderMap as Headers, HeaderName, HeaderValue, ACCEPT, ACCESS_CONTROL_ALLOW_HEADERS,
-    ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_MAX_AGE, CONTENT_TYPE, ORIGIN, USER_AGENT,
+    ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_MAX_AGE,
+    CONTENT_TYPE, ORIGIN, USER_AGENT,
 };
 use hyper::service::{MakeService, Service};
 use hyper::{Body, Method, Request, Response, StatusCode};
@@ -249,7 +250,7 @@ impl Server {
 
         let mut http_headers = Headers::new();
         http_headers.insert(CONTENT_TYPE, json);
-        http_headers.insert(ORIGIN, allow_origin);
+        http_headers.insert(ACCESS_CONTROL_ALLOW_ORIGIN, allow_origin);
 
         let make_jsonrpc_svc = JsonrpcMakeService {
             inner: Arc::new(Inner {
