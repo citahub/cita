@@ -34,6 +34,11 @@ invalid_data=-32600
 invalid_jsonrpc_method=-32601
 
 ./cita_start.sh
+
+# Check JSON-RPC CORS: Access-Control-Allow-Origin should be existed.
+has_cors=$(curl -i -X POST -d '{"jsonrpc":"2.0","method":"peerCount","params":[],"id":2}'  $IP:$PORT 2>/dev/null | grep -ic "^access-control-allow-origin: ")
+assert ${has_cors} 1 "Check JSON-RPC CORS"
+
 ## request of invalid http method
 err_code=`curl -s -X GET -d '{"jsonrpc":"2.0","method":"peerCount","params":[],"id":2}' $IP:$PORT | jq ".error.code"`
 assert $err_code $invalid_http_method "request of invalid http method"
