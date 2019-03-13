@@ -29,7 +29,6 @@ use tokio_timer::{clock, Delay};
 use crate::helper::{select_topic, RpcMap, TransferType};
 use crate::response::{BatchFutureResponse, PublishFutResponse, SingleFutureResponse};
 use crate::service_error::ServiceError;
-
 type HyperResponse = hyper::Response<hyper::Body>;
 
 #[derive(Debug)]

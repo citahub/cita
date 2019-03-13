@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,26 +15,28 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use connection::Task;
+use crate::mq_agent::{MqAgentClient, PubMessage};
+use crate::node_manager::{BroadcastReq, NodesManagerClient, SingleTxReq};
 use libproto::blockchain::{Block, Status};
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::routing_key;
 use libproto::{Message, OperateType, SyncRequest, SyncResponse};
 use libproto::{TryFrom, TryInto};
-use pubsub::channel::Sender;
+use logger::{debug, error, info, warn};
+use pubsub::channel::{unbounded, Receiver, Sender};
 use rand::{thread_rng, Rng, ThreadRng};
 use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::convert::Into;
 use std::time::{Duration, Instant};
 use std::u8;
-use Source;
 
 const SYNC_STEP: u64 = 20;
 const SYNC_TIME_OUT: u64 = 9;
 
 /// Get messages and determine if need to synchronize or broadcast the current node status
 pub struct Synchronizer {
-    tx_pub: Sender<(String, Vec<u8>)>,
-    task_sender: Sender<Task>,
+    mq_client: MqAgentClient,
+    nodes_mgr_client: NodesManagerClient,
     current_status: Status,
     global_status: Status,
     sync_end_height: u64, //current_status <= sync_end_status
@@ -46,16 +48,20 @@ pub struct Synchronizer {
     remote_sync_time_out: Instant,
     /// local sync error
     local_sync_count: u8,
+    sync_client: SynchronizerClient,
+    msg_receiver: Receiver<SynchronizerMessage>,
 }
 
 unsafe impl Sync for Synchronizer {}
 unsafe impl Send for Synchronizer {}
 
 impl Synchronizer {
-    pub fn new(tx_pub: Sender<(String, Vec<u8>)>, task_sender: Sender<Task>) -> Self {
+    pub fn new(mq_client: MqAgentClient, nodes_mgr_client: NodesManagerClient) -> Self {
+        let (tx, rx) = unbounded();
+        let client = SynchronizerClient::new(tx);
         Synchronizer {
-            tx_pub,
-            task_sender,
+            mq_client,
+            nodes_mgr_client,
             current_status: Status::new(),
             global_status: Status::new(),
             latest_status_lists: BTreeMap::new(),
@@ -65,7 +71,21 @@ impl Synchronizer {
             rand: thread_rng(),
             remote_sync_time_out: (Instant::now() - Duration::from_secs(SYNC_TIME_OUT)),
             local_sync_count: 0,
+            sync_client: client,
+            msg_receiver: rx,
         }
+    }
+
+    pub fn run(&mut self) {
+        loop {
+            if let Ok(msg) = self.msg_receiver.recv() {
+                msg.handle(self);
+            }
+        }
+    }
+
+    pub fn client(&self) -> SynchronizerClient {
+        self.sync_client.clone()
     }
 
     /// After receiving the `Chain >> Status`, it is processed as follows:
@@ -227,32 +247,6 @@ impl Synchronizer {
         self.submit_blocks();
     }
 
-    pub fn receive(&mut self, _from: Source, payload: (String, Vec<u8>)) {
-        let (key, body) = payload;
-        let mut msg = Message::try_from(&body).unwrap();
-        let origin = msg.get_origin();
-        match RoutingKey::from(&key) {
-            routing_key!(Chain >> Status) => {
-                if let Some(status) = msg.take_status() {
-                    self.update_current_status(status);
-                };
-            }
-            routing_key!(Synchronizer >> Status) => {
-                if let Some(status) = msg.take_status() {
-                    self.update_global_status(&status, origin);
-                };
-            }
-            routing_key!(Synchronizer >> SyncResponse) => {
-                if let Some(blocks) = msg.take_sync_response() {
-                    self.process_sync(blocks);
-                };
-            }
-            _ => {
-                error!("receive: unexpected data key = {:?}", key);
-            }
-        }
-    }
-
     // Initiate a sync request
     fn start_sync_req(&mut self, start_height: u64) {
         debug!(
@@ -335,12 +329,12 @@ impl Synchronizer {
             let mut sync_req = SyncRequest::new();
             sync_req.set_heights(heights);
             let msg = Message::init(OperateType::Single, origin, sync_req.into());
-            self.task_sender
-                .send(Task::Broadcast((
-                    routing_key!(Synchronizer >> SyncRequest).into(),
-                    msg,
-                )))
-                .unwrap();
+
+            self.nodes_mgr_client.send_message(SingleTxReq::new(
+                origin as usize,
+                routing_key!(Synchronizer >> SyncRequest).into(),
+                msg,
+            ));
         }
     }
 
@@ -351,12 +345,11 @@ impl Synchronizer {
             self.current_status.get_hash()
         );
         let msg: Message = self.current_status.clone().into();
-        self.task_sender
-            .send(Task::Broadcast((
-                routing_key!(Synchronizer >> Status).into(),
-                msg,
-            )))
-            .unwrap();
+
+        self.nodes_mgr_client.broadcast(BroadcastReq::new(
+            routing_key!(Synchronizer >> Status).into(),
+            msg,
+        ));
     }
 
     // Submit synchronization information
@@ -420,7 +413,7 @@ impl Synchronizer {
             let mut sync_res = SyncResponse::new();
             sync_res.set_blocks(blocks.into());
             let msg: Message = sync_res.into();
-            let _ = self.tx_pub.send((
+            self.mq_client.pub_sync_blocks(PubMessage::new(
                 routing_key!(Net >> SyncResponse).into(),
                 msg.try_into().unwrap(),
             ));
@@ -457,5 +450,76 @@ impl Synchronizer {
     /// Prune block on btreemap
     fn prune_block_list_cache(&mut self, height: u64) {
         self.block_lists = self.block_lists.split_off(&height);
+    }
+}
+
+#[derive(Clone)]
+pub struct SynchronizerClient {
+    sender: Sender<SynchronizerMessage>,
+}
+
+impl SynchronizerClient {
+    pub fn new(sender: Sender<SynchronizerMessage>) -> Self {
+        SynchronizerClient { sender }
+    }
+
+    pub fn handle_local_status(&self, msg: SynchronizerMessage) {
+        self.send_msg(msg);
+    }
+
+    pub fn handle_remote_status(&self, msg: SynchronizerMessage) {
+        self.send_msg(msg);
+    }
+
+    pub fn handle_remote_response(&self, msg: SynchronizerMessage) {
+        self.send_msg(msg);
+    }
+
+    fn send_msg(&self, msg: SynchronizerMessage) {
+        match self.sender.try_send(msg) {
+            Ok(_) => {
+                debug!("Send message to Synchronizer Success");
+            }
+            Err(err) => {
+                warn!("Send message to Synchronizer failed : {:?}", err);
+            }
+        }
+    }
+}
+
+pub struct SynchronizerMessage {
+    key: String,
+    data: Vec<u8>,
+}
+
+impl SynchronizerMessage {
+    pub fn new(key: String, data: Vec<u8>) -> Self {
+        SynchronizerMessage { key, data }
+    }
+
+    pub fn handle(self, service: &mut Synchronizer) {
+        let mut msg = Message::try_from(&self.data).unwrap();
+        let origin = msg.get_origin();
+        let rt_key = RoutingKey::from(&self.key);
+        match rt_key {
+            routing_key!(Chain >> Status) => {
+                if let Some(status) = msg.take_status() {
+                    service.update_current_status(status);
+                };
+            }
+            routing_key!(Synchronizer >> Status) => {
+                if let Some(status) = msg.take_status() {
+                    service.update_global_status(&status, origin);
+                };
+            }
+            routing_key!(Synchronizer >> SyncResponse) => {
+                if let Some(blocks) = msg.take_sync_response() {
+                    service.process_sync(blocks);
+                };
+            }
+            _ => {
+                error!("receive: unexpected data key = {:?}", self.key);
+            }
+        }
     }
 }

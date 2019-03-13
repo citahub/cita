@@ -2,31 +2,32 @@
 name = "cita-network"
 version = "0.6.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
+edition = "2018"
 
 [dependencies]
-clap = "2"
-serde = "1.0"
-serde_derive = "1.0"
-futures = "0.1"
-byteorder = "1.0.0"
-dotenv = "0.13.0"
-bytes = "0.4"
-notify = "4.0.0"
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+fnv = "1.0.6"
+discovery = { git = "https://github.com/nervosnetwork/p2p.git", rev = "562adc40e374be4ae1776bb38b070688c24e37d3" }
+tentacle = { git = "https://github.com/nervosnetwork/p2p.git", rev = "562adc40e374be4ae1776bb38b070688c24e37d3" }
+tokio = "0.1.14"
+futures = "0.1.25"
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-rand = "0.3.*"
-tokio = "0.1.11"
-native-tls = "0.2.1"
-tokio-tls = "0.2"
+serde = "1.0.84"
+serde_derive = "1.0.84"
+clap = "2.32"
+bytes = "0.4"
+byteorder = "1.3"
+rand = "0.4.5"
+dotenv = "0.13.0"
 
 [dev-dependencies]
-tempfile = "2"
+tempfile = "3.0.5"
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
