@@ -2,7 +2,7 @@
 # coding=utf-8
 
 from jsonrpcclient.http_client import HTTPClient
-from url_util import host, endpoint
+from url_util import endpoint
 
 
 def peer_count():

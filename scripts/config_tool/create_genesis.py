@@ -15,7 +15,6 @@ import yaml
 
 from create_init_data import dictlist_to_ordereddict
 
-
 DEFAULT_PREVHASH = '0x{:064x}'.format(0)
 BLOCK_GAS_LIMIT = 471238800
 
@@ -32,6 +31,7 @@ def disable_import_warning():
     class DummyModule(ModuleType):
         def __getattr__(self, key):
             return None
+
         __all__ = []
 
     def filterimport(name, globals=None, locals=None, fromlist=(), level=0):
@@ -55,15 +55,25 @@ def replaceLogRecord():
     import logging
     import re
 
-    def makeRecord(self, name, level, fn, lno, msg, args, exc_info,
-                   func=None, extra=None, sinfo=None):
+    def makeRecord(self,
+                   name,
+                   level,
+                   fn,
+                   lno,
+                   msg,
+                   args,
+                   exc_info,
+                   func=None,
+                   extra=None,
+                   sinfo=None):
         name = re.sub(r'(^|[^a-zA-Z])eth([^a-zA-Z]|$)', r'\1cita\2', name)
-        rv = logging._logRecordFactory(
-            name, level, fn, lno, msg, args, exc_info, func, sinfo)
+        rv = logging._logRecordFactory(name, level, fn, lno, msg, args,
+                                       exc_info, func, sinfo)
         if extra is not None:
             for key in extra:
                 if (key in ["message", "asctime"]) or (key in rv.__dict__):
-                    raise KeyError("Attempt to overwrite %r in LogRecord" % key)
+                    raise KeyError(
+                        "Attempt to overwrite %r in LogRecord" % key)
                 rv.__dict__[key] = extra[key]
         return rv
 
@@ -87,17 +97,18 @@ def function_encode(func_sign):
 
 class GenesisData(object):
     # pylint: disable=too-many-instance-attributes,too-many-arguments
-    def __init__(
-            self, contracts_dir, contracts_docs_dir, init_data_file,
-            timestamp, prevhash):
-        self.timestamp = int(time.time() * 1000) if not timestamp else timestamp
+    def __init__(self, contracts_dir, contracts_docs_dir, init_data_file,
+                 timestamp, prevhash):
+        self.timestamp = int(
+            time.time() * 1000) if not timestamp else timestamp
         self.prevhash = DEFAULT_PREVHASH if not prevhash else prevhash
 
         self.contracts_dir = os.path.join(contracts_dir, 'src')
         self.contracts_docs_dir = contracts_docs_dir
         self.contracts_common_dir = os.path.join(self.contracts_dir, 'common')
         self.contracts_lib_dir = os.path.join(self.contracts_dir, 'lib')
-        self.contracts_interaction_dir = os.path.join(contracts_dir, 'interaction')
+        self.contracts_interaction_dir = os.path.join(contracts_dir,
+                                                      'interaction')
         contracts_list_file = os.path.join(contracts_dir, 'contracts.yml')
         self.load_contracts_list(contracts_list_file)
         self.load_contracts_args(init_data_file)
@@ -144,12 +155,12 @@ class GenesisData(object):
             path,
             combined='bin,abi,userdoc,devdoc,hashes',
             extra_args='common={} lib={} interaction={}'.format(
-                self.contracts_common_dir,
-                self.contracts_lib_dir,
+                self.contracts_common_dir, self.contracts_lib_dir,
                 self.contracts_interaction_dir))
         data = solidity.solidity_get_contract_data(compiled, path, name)
         if not data['bin']:
-            logging.critical('The bin of contract %r is empty. Please check it!', name)
+            logging.critical(
+                'The bin of contract %r is empty. Please check it!', name)
             sys.exit(1)
         return data
 
@@ -160,7 +171,11 @@ class GenesisData(object):
                 doc_file = os.path.join(self.contracts_docs_dir,
                                         '{}-{}.json'.format(name, doc_type))
                 with open(doc_file, 'w') as stream:
-                    json.dump(data[doc_type], stream, separators=(',', ': '), indent=4)
+                    json.dump(
+                        data[doc_type],
+                        stream,
+                        separators=(',', ': '),
+                        indent=4)
 
     def mine_contract_on_chain_tester(self, addr, code):
         """Mine in test chain to get data of a contract."""
@@ -181,12 +196,9 @@ class GenesisData(object):
         """Compile normal contracts from files and construct by arguments.
         """
         flags = [
-            'checkCallPermission',
-            'checkSendTxPermission',
-            'checkCreateContractPermission',
-            'checkQuota',
-            'checkFeeBackPlatform',
-            'autoExec'
+            'checkCallPermission', 'checkSendTxPermission',
+            'checkCreateContractPermission', 'checkQuota',
+            'checkFeeBackPlatform', 'autoExec'
         ]
         ncinfo = self.contracts_list['NormalContracts']
         for name, info in ncinfo.items():
@@ -234,7 +246,6 @@ class GenesisData(object):
                 'nonce': '1',
                 'value': value,
             }
-
 
     def save_to_file(self, filepath):
         with open(filepath, 'w') as stream:

@@ -3,8 +3,7 @@
 
 import argparse
 from jsonrpcclient.http_client import HTTPClient
-from url_util import host, endpoint
-from util import findDict
+from url_util import endpoint
 
 
 def block_by_number(params):

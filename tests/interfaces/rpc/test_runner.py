@@ -21,8 +21,9 @@ class FixResolver(jsonschema.RefResolver):
 
 
 def jq_check(assertion, data):
-    output = check_output('echo \'{}\' | jq "{}"'.format(
-        json.dumps(data), assertion), shell=True)
+    output = check_output(
+        'echo \'{}\' | jq "{}"'.format(json.dumps(data), assertion),
+        shell=True)
     return output.strip() == b'true'
 
 
@@ -37,9 +38,8 @@ class TestRunner(object):
     def assertion_fail(self, force=False):
         if self.assertion_fail_count and (force or self.fast_fail):
             print('>> Assertion Failed {}!!!'.format(
-                '' if self.fast_fail else '({}/{} times)'.format(
-                    self.assertion_fail_count,
-                    self.assertion_count)))
+                '' if self.fast_fail else '({}/{} times)'.
+                format(self.assertion_fail_count, self.assertion_count)))
             sys.exit(-1)
 
     def run_all(self, directory):
@@ -111,12 +111,16 @@ class TestRunner(object):
                 assertion['description'], assertion_result))
             if assertion_result is False:
                 print('[receivedResponse]:')
-                print(json.dumps(
-                    assert_data['receivedResponse'].get('result'), indent=2))
+                print(
+                    json.dumps(
+                        assert_data['receivedResponse'].get('result'),
+                        indent=2))
                 print('-' * 10)
                 print('[expectedResponse]:')
-                print(json.dumps(
-                    assert_data['expectedResponse'].get('result'), indent=2))
+                print(
+                    json.dumps(
+                        assert_data['expectedResponse'].get('result'),
+                        indent=2))
                 self.assertion_fail_count += 1
             self.assertion_count += 1
             self.assertion_fail()
