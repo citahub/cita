@@ -5,7 +5,6 @@
 import json
 import argparse
 
-
 NODE_KEYS = [
     '0x98a476f1687bc3d60a2da2adbcba2c46958e61fa2fb4042cd7bc5816a710195b',
     '0x312b5d21c330b0e88e86f3c5440c63bfddde72d1e155eca9c2d5d9929d012e1a'
@@ -16,9 +15,7 @@ def parse_arguments():
     """ parse the arguments: genesis file. """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--genesis',
-        required=True,
-        help='The genesis file to be checked.')
+        '--genesis', required=True, help='The genesis file to be checked.')
 
     check_code_parser = parser.add_mutually_exclusive_group(required=False)
     check_code_parser.add_argument(
@@ -30,8 +27,7 @@ def parse_arguments():
         '--no_check_code',
         dest='check_code',
         action='store_false',
-        help='Do not check genesis contract code.'
-    )
+        help='Do not check genesis contract code.')
     parser.set_defaults(check_code=False)
 
     args = parser.parse_args()

@@ -2,8 +2,8 @@
 # coding=utf-8
 
 from jsonrpcclient.http_client import HTTPClient
-from url_util import host, endpoint
-import binascii
+from url_util import endpoint
+
 
 def block_number():
     try:

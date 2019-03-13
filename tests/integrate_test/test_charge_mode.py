@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 Test cases of transfer and check balances in charge economical mode.
 """
@@ -17,7 +16,13 @@ from jsonrpcclient.http_client import HTTPClient
 LATEST_VERSION = 1
 DEFAULT_QUOTA_PRICE = 1000000
 
-def send_tx(privkey, to_addr, value=0, quota=30000, code="", version=LATEST_VERSION):
+
+def send_tx(privkey,
+            to_addr,
+            value=0,
+            quota=30000,
+            code="",
+            version=LATEST_VERSION):
     """
     Send a transfer transaction to a node
 
@@ -62,6 +67,7 @@ def get_balance(addr):
     """ Get the balance of an address """
     return int(rpc_request('getBalance', [addr, 'pending']), 16)
 
+
 def get_receipt(tx_hash, retry=8):
     """ Get receipt of a transaction """
     while retry > 0:
@@ -71,9 +77,12 @@ def get_receipt(tx_hash, retry=8):
         time.sleep(4)
         retry -= 1
 
-def test_transfer(
-        sender_privkey, receiver_addr, value, version,
-        sender_is_miner=False):
+
+def test_transfer(sender_privkey,
+                  receiver_addr,
+                  value,
+                  version,
+                  sender_is_miner=False):
     """ Transfer and check balances """
     sender_addr = key_address(sender_privkey)
     sender_balance_old = get_balance(sender_addr)
@@ -97,7 +106,8 @@ def test_transfer(
                 sender_balance_old, value, sender_balance_new
             )
     print('> [Sender({}).balance]: {}'.format(sender_addr, sender_balance_new))
-    print('> [Receiver({}).balance]: {}'.format(receiver_addr, receiver_balance_new))
+    print('> [Receiver({}).balance]: {}'.format(receiver_addr,
+                                                receiver_balance_new))
 
 
 def get_miner_with_balance(miner_privkeys):
@@ -135,8 +145,7 @@ def main():
         required=True,
         metavar='PRIVKEY',
         nargs='+',
-        help='Private key list of all miners(authorities/nodes)'
-    )
+        help='Private key list of all miners(authorities/nodes)')
     parser.add_argument(
         "--version", help="Tansaction version.", default=1, type=int)
     args = parser.parse_args()
@@ -155,14 +164,19 @@ def main():
     alice_old_balance = get_balance(alice_address)
 
     # Send 10 * 10000 * DEFAULT_QUOTA_PRICE from miner to alice
-    test_transfer(miner_privkey, alice_address, 10 * 10000 * DEFAULT_QUOTA_PRICE, version,
-                  sender_is_miner=True)
+    test_transfer(
+        miner_privkey,
+        alice_address,
+        10 * 10000 * DEFAULT_QUOTA_PRICE,
+        version,
+        sender_is_miner=True)
     assert get_balance(alice_address) - alice_old_balance == 10 * 10000 * DEFAULT_QUOTA_PRICE, \
         'Alice({}) should receive 10 * 10000 * {} now'.format(alice_address, DEFAULT_QUOTA_PRICE)
 
     # Send 30000 * DEFAULT_QUOTA_PRICE from alice to bob
     bob_old_balance = get_balance(bob_address)
-    test_transfer(alice_privkey, bob_address, 30000 * DEFAULT_QUOTA_PRICE, version)
+    test_transfer(alice_privkey, bob_address, 30000 * DEFAULT_QUOTA_PRICE,
+                  version)
     bob_new_balance = get_balance(bob_address)
     assert bob_new_balance - bob_old_balance == 30000 * DEFAULT_QUOTA_PRICE, \
         'Bob({}) should receive 30000 * {} now'.format(bob_address, DEFAULT_QUOTA_PRICE)

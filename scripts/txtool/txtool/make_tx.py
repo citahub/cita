@@ -79,6 +79,7 @@ def get_chainid():
     logger.debug("final chainId is {}".format(chainid))
     return chainid
 
+
 def get_chainid_v1():
     params = ['latest']
     chainid = 0
@@ -107,11 +108,13 @@ def generate_deploy_data(current_height,
                          newcrypto=False,
                          version=LATEST_VERSION):
     if newcrypto:
-        data = _blake2b_ed25519_deploy_data(current_height, bytecode, value, quota,
-                                            privatekey, version, receiver)
+        data = _blake2b_ed25519_deploy_data(current_height, bytecode, value,
+                                            quota, privatekey, version,
+                                            receiver)
     else:
-        data = _sha3_secp256k1_deploy_data(current_height, bytecode, value, quota,
-                                           privatekey, version, receiver)
+        data = _sha3_secp256k1_deploy_data(current_height, bytecode, value,
+                                           quota, privatekey, version,
+                                           receiver)
 
     return data
 
@@ -238,8 +241,10 @@ def _sha3_secp256k1_deploy_data(current_height,
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--code", help="Compiled contract bytecode.")
-    parser.add_argument("--value", type=int, default=0, help="The value to send.")
-    parser.add_argument("--quota", type=int, default=1000000, help="The quota(gas limit).")
+    parser.add_argument(
+        "--value", type=int, default=0, help="The value to send.")
+    parser.add_argument(
+        "--quota", type=int, default=1000000, help="The quota(gas limit).")
     parser.add_argument(
         "--privkey", help="private key genearted by secp256k1 alogrithm.")
     parser.add_argument("--to", help="transaction to")
@@ -288,9 +293,10 @@ def main():
     logger.debug(blake2b_ed25519)
     bytecode, value, quota, privkey, receiver, version = _params_or_default()
     current_height = int(block_number(), 16)
-    data = generate_deploy_data(
-        current_height, remove_hex_0x(bytecode), value, quota,
-        remove_hex_0x(privkey), remove_hex_0x(receiver), blake2b_ed25519, version)
+    data = generate_deploy_data(current_height, remove_hex_0x(bytecode), value,
+                                quota, remove_hex_0x(privkey),
+                                remove_hex_0x(receiver), blake2b_ed25519,
+                                version)
     logger.info("save deploy code to ../output/transaction/deploycode")
     save_deploy(data)
 

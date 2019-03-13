@@ -10,7 +10,6 @@ from url_util import endpoint
 from util import run_command
 
 
-
 def get_transaction_hash():
     with open("../output/transaction/hash", 'r') as hashfile:
         tx_hash = hashfile.read()
