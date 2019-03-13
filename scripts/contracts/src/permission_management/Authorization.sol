@@ -14,7 +14,7 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
     mapping(address => address[]) permissions;
     mapping(address => address[]) accounts;
 
-    address[] all_accounts;
+    address[] allAccounts;
     ISysConfig sysConfig = ISysConfig(sysConfigAddr);
 
     event AuthSetted(address indexed _account, address indexed _permission);
@@ -30,7 +30,7 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
     }
 
     modifier notSuperAdmin(address _account) {
-        require(_account != all_accounts[0], "not superAdmin");
+        require(_account != allAccounts[0], "not superAdmin");
         _;
     }
 
@@ -86,7 +86,7 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
             AddressArray.remove(_account, accounts[permissions[_account][i]]);
 
         delete permissions[_account];
-        AddressArray.remove(_account, all_accounts);
+        AddressArray.remove(_account, allAccounts);
 
         emit AuthCleared(_account);
         return true;
@@ -137,7 +137,7 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
         view
         returns (address[])
     {
-        return all_accounts;
+        return allAccounts;
     }
 
     /// @notice Check account has a resource(deprecation)
@@ -182,8 +182,8 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
             permissions[_account].push(_permission);
         if (!AddressArray.exist(_account, accounts[_permission]))
             accounts[_permission].push(_account);
-        if (!AddressArray.exist(_account, all_accounts))
-            all_accounts.push(_account);
+        if (!AddressArray.exist(_account, allAccounts))
+            allAccounts.push(_account);
 
         emit AuthSetted(_account, _permission);
         return true;
