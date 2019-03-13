@@ -51,12 +51,13 @@ pub struct AddressConfig {
 impl AddressConfig {
     pub fn new(path: &str) -> Self {
         let mut buffer = String::new();
-        let mut addr = Address::random();
-        if let Ok(_sizes) = File::open(path).and_then(|mut f| f.read_to_string(&mut buffer)) {
-            addr = Address::from_str(clean_0x(&buffer)).unwrap();
-        } else {
-            info!("[Config] Cannot find address file, using a random Address instead.");
-        }
+        let addr = match File::open(path).and_then(|mut f| f.read_to_string(&mut buffer)) {
+            Ok(_) => Address::from_str(clean_0x(&buffer)).unwrap(),
+            Err(_) => {
+                info!("[Config] Cannot find address file, using a random Address instead.");
+                Address::random()
+            }
+        };
 
         AddressConfig { addr }
     }
