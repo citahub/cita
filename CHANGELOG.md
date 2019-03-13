@@ -4,43 +4,75 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+### Upgrade Note
+
+The v0.22.0 version of the node configurations is compatible with the v0.21 version.
+Means that you can run v0.22.0 directly using the v0.21 node configurations.
+However, due to the refactoring of the network, the nodes executed with v0.22.0 are
+incompatible with the original nodes (they have different node discovery and transfer protocols),
+so all nodes need to be upgraded to v0.22.0 at the same time.
+
+Following [Upgrade Instructions](https://docs.citahub.com/en-US/cita/protocol-upgrade/overview) to upgrade the nodes.
+
+### New Feature Description
+
+The new feature of integrating p2p to network service, we add discovery of the network node
+when the original configuration is compatible. But we still need to make some changes to the
+network configuration file definition:
+  
+The old version `network.toml` looks like:
+
+```toml
+port = 4000
+enable_tls = true
+id_card = 9
+[[peers]]
+    ip = "127.0.0.1"
+    port = 4001
+    common_name = "test1.cita"
+[[peers]]
+    ip = "127.0.0.1"
+    port = 4002
+```
+
+In the version of v0.22.0, we will discard the item `id_card` and `common_name`.
+
+In the old version, when a new node is added to the network, we need to change the item `[[peers]]` in all
+nodes' `network.toml` to reconstruct the network. It is a very complicated operation.
+But in v0.22.0, the item `[[peers]]` means `known nodes` in the network, you can set only one
+`[[peers]]`, then it can discovery all the network nodes through a discovery protocol.
+
 ### Framework
+
+- [Optimization] Replace std channel with crossbeam channel. [@kaikai] [@Yaorong]
+- [Optimization] Reconfigure the parameters of rocksdb, and this can greatly reduce the `.sst` files in the database. [@jerry-yu]
 
 ### Executor
 
-### Chain
-
-### Auth
+- [Fix] Executor crashes when receives staled BlockWithProof. [@WPF] [@keroro520]
 
 ### Network
 
+- [Feature] The network service is refactored by using the p2p protocol. [@Yaorong]
+
 ### Consensus
 
-- [Optimization] Replace std channel with crossbeam channel. [@kaikai]
+- [Fix] Consensus goes into `panic` when timer min peek is extremely close to Instant::now(). [@KaoImin]
 
 ### RPC
 
+- [Optimization] Update test token info. [@kaikai]
 - [Feature] Add `from` to `body` of `getBlockByNumber` and `getBlockByHash`. [@CL]
-
-### Forever
-
-- [Optimization] Replace std channel with crossbeam channel. [@kaikai]
-
-### System Contract
 
 ### Scripts
 
-### Test
+- [Optimization] Format Python codes. [@WPF]
 
 ### Doc
 
 - [Doc] Update Rust SDK info in readme. [@u2]
 - [Doc] More info about automatic execution. [@wangfh666]
 - [Doc] Fix start cita command in log management. [@77liyan]
-
-### Tool
-
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.22.0...HEAD
 
 ## [v0.21.0] - 2019-02-19
 
@@ -179,12 +211,14 @@ After completing the above modifications, following [Upgrade Instructions](https
 - [Optimization] Split util module into standalone crates. [@yangby]
 - [Refactor] Combing the snapshot logic and rewrite snapshot_tools. [@keroro520]
 
+[Unreleased]: https://github.com/cryptape/cita/compare/v0.22.0...HEAD
 [v0.21.0]: https://github.com/cryptape/cita/compare/v0.21...HEAD
 
 [@77liyan]: https://github.com/77liyan
 [@CL]: https://github.com/classicalliu
 [@KaoImin]: https://github.com/KaoImin
 [@WPF]: https://github.com/ouwenkg
+[@Yaorong]: https://github.com/leeyr338
 [@driftluo]: https://github.com/driftluo
 [@jerry-yu]: https://github.com/jerry-yu
 [@kaikai]: https://github.com/kaikai1024
