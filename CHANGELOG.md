@@ -19,7 +19,7 @@ Following [Upgrade Instructions](https://docs.citahub.com/en-US/cita/protocol-up
 The new feature of integrating p2p to network service, we add discovery of the network node
 when the original configuration is compatible. But we still need to make some changes to the
 network configuration file definition:
-  
+
 The old version `network.toml` looks like:
 
 ```toml
@@ -63,6 +63,7 @@ But in v0.22.0, the item `[[peers]]` means `known nodes` in the network, you can
 
 - [Optimization] Update test token info. [@kaikai]
 - [Feature] Add `from` to `body` of `getBlockByNumber` and `getBlockByHash`. [@CL]
+- [Fix] Fix the missing CORS header. [@yangby]
 
 ### Scripts
 
