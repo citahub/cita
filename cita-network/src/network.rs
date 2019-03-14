@@ -16,12 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::mq_agent::{MqAgentClient, PubMessage};
-use crate::node_manager::{BroadcastReq, GetPeerCountReq, NodesManagerClient};
+use crate::node_manager::{BroadcastReq, GetPeerCountReq, NodesManagerClient, SingleTxReq};
 use crate::synchronizer::{SynchronizerClient, SynchronizerMessage};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
-use libproto::{Message as ProtoMessage, Response};
+use libproto::{Message as ProtoMessage, OperateType, Response};
 use libproto::{TryFrom, TryInto};
 use logger::{error, info, trace, warn};
 use pubsub::channel::{unbounded, Receiver, Sender};
@@ -134,10 +134,11 @@ impl LocalMessage {
             }
             routing_key!(Chain >> SyncResponse) => {
                 let msg = ProtoMessage::try_from(&self.data).unwrap();
-                service.nodes_mgr_client.broadcast(BroadcastReq::new(
+                send_message(
+                    &service.nodes_mgr_client,
                     routing_key!(Synchronizer >> SyncResponse).into(),
                     msg,
-                ));
+                );
             }
             routing_key!(Jsonrpc >> RequestNet) => {
                 self.reply_rpc(&self.data, service);
@@ -288,6 +289,24 @@ impl RemoteMessage {
             _ => {
                 error!("[Network] Unexpected key {} from Remote", self.key);
             }
+        }
+    }
+}
+
+pub fn send_message(nodes_mgr_client: &NodesManagerClient, key: String, msg: ProtoMessage) {
+    let operate = msg.get_operate();
+
+    match operate {
+        OperateType::Broadcast => {
+            nodes_mgr_client.broadcast(BroadcastReq::new(key, msg));
+        }
+        OperateType::Single => {
+            let dst = msg.get_origin();
+            nodes_mgr_client.send_message(SingleTxReq::new(dst as usize, key, msg));
+        }
+        OperateType::Subtract => {
+            // FIXME: Support subtract broadcast if necessary.
+            warn!("[MqAgent] Subtract broadcast does not support yet!");
         }
     }
 }
