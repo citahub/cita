@@ -9,21 +9,21 @@ dotenv = "0.13.0"
 clap = "2"
 byteorder = { version = "1", default-features = false }
 serde_json = "1.0"
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+error = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
 core = { path = "./core" }
 common-types = { path = "./types" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+db = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
 
 [build-dependencies]
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]

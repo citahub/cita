@@ -4,20 +4,20 @@ version = "0.1.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
 
 [dependencies]
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
 clap = "2"
 parking_lot = "0.6"
 futures = "0.1"
 tokio-core = "0.1"
 hyper = { git = "https://github.com/cryptape/hyper.git", branch = "reuse_port" }
 core = { path = "../../cita-chain/core" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
 ethabi = "4.2.0"
 
 [features]

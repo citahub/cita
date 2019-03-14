@@ -15,28 +15,28 @@ bit-set = "0.4"
 time = "0.1"
 crossbeam = "0.2"
 transient-hashmap = "0.4.0"
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
 common-types = { path = "../types" }
-db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+db = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
 
 [dev-dependencies]
 rand = "0.3"
 cpuprofiler = "0.0.3"
 tempdir = "0.3.7"
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
 
 [features]
 default = ["secp256k1", "sha3hash"]

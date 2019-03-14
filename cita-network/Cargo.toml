@@ -12,10 +12,10 @@ byteorder = "1.0.0"
 dotenv = "0.13.0"
 bytes = "0.4"
 notify = "4.0.0"
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
+logger = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
 rand = "0.3.*"
 tokio = "0.1.11"
 native-tls = "0.2.1"
@@ -25,7 +25,7 @@ tokio-tls = "0.2"
 tempfile = "2"
 
 [build-dependencies]
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "v0.21.1" }
 
 
 [features]
