@@ -145,6 +145,8 @@ mod test {
 
         let allow_methods = vec![Method::POST, Method::GET];
         let ret = headers.insert_vec(ACCESS_CONTROL_ALLOW_METHODS, allow_methods.clone());
+        
+        // Why ret None
         assert_eq!(ret, None);
         assert_eq!(
             headers.get(ACCESS_CONTROL_ALLOW_METHODS),
@@ -152,6 +154,8 @@ mod test {
         );
 
         let ret = headers.insert_vec(ACCESS_CONTROL_ALLOW_METHODS, vec![Method::PATCH]);
+
+        // Why ret not None
         assert_eq!(ret, Some(HeaderValue::from_vec(allow_methods)));
         assert_eq!(
             headers.get(ACCESS_CONTROL_ALLOW_METHODS),
@@ -160,6 +164,8 @@ mod test {
 
         let allow_headers = vec![ORIGIN, ACCEPT];
         let ret = headers.insert_vec(ACCESS_CONTROL_ALLOW_HEADERS, allow_headers.clone());
+
+        // None 
         assert_eq!(ret, None);
         assert_eq!(
             headers.get(ACCESS_CONTROL_ALLOW_HEADERS),
