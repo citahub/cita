@@ -18,7 +18,7 @@
 use hyper::header::{HeaderMap, HeaderName, HeaderValue, InvalidHeaderValue};
 
 pub const ORIGIN_ANY_STR: &str = "*";
-pub const ORIGIN_NULL_STR: &str = "";
+pub const ORIGIN_NULL_STR: &str = "null";
 
 // values come from hyper 0.11
 pub const CONTENT_TYPE_PLAIN_TEXT_STR: &str = "text/plain; charset=utf-8";
@@ -174,7 +174,7 @@ mod test {
 
     #[test]
     fn test_origin_null() {
-        assert_eq!(Origin::null(), HeaderValue::from_static(""));
+        assert_eq!(Origin::null(), HeaderValue::from_static("null"));
     }
 
     #[test]
@@ -192,9 +192,9 @@ mod test {
         vec![
             (Some("*"), HeaderValue::from_static("*")),
             (Some(" * "), HeaderValue::from_static("*")),
-            (None, HeaderValue::from_static("")),
-            (Some(""), HeaderValue::from_static("")),
-            (Some("   null "), HeaderValue::from_static("")),
+            (None, HeaderValue::from_static("null")),
+            (Some(""), HeaderValue::from_static("null")),
+            (Some("   null "), HeaderValue::from_static("null")),
             (Some("abc"), HeaderValue::from_static("abc")),
             (Some(" xyz "), HeaderValue::from_static("xyz")),
         ]
