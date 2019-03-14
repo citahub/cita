@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::network::{LocalMessage, NetworkClient};
-use crate::node_manager::{BroadcastReq, NodesManagerClient};
+use crate::network::{send_message, LocalMessage, NetworkClient};
+use crate::node_manager::NodesManagerClient;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::{Message, TryFrom};
@@ -101,25 +101,23 @@ impl MqAgent {
     pub fn run(&self) {
         if let Some(ref client) = self.nodes_manager_client {
             // Thread for handle new transactions from MQ
-            let nodes_manager_client = client.clone();
+            let nodes_mgr_client = client.clone();
             let sub_auth = self.sub_auth.clone();
             thread::spawn(move || loop {
                 let (key, body) = sub_auth.recv().unwrap();
                 let msg = Message::try_from(&body).unwrap();
 
-                // Broadcast the message to other nodes
-                nodes_manager_client.broadcast(BroadcastReq::new(key, msg));
+                send_message(&nodes_mgr_client, key, msg);
             });
 
             // Thread for handle consensus message
-            let nodes_manager_client = client.clone();
+            let nodes_mgr_client = client.clone();
             let sub_consensus = self.sub_consensus.clone();
             thread::spawn(move || loop {
                 let (key, body) = sub_consensus.recv().unwrap();
                 let msg = Message::try_from(&body).unwrap();
 
-                // Broadcast the message to other nodes
-                nodes_manager_client.broadcast(BroadcastReq::new(key, msg));
+                send_message(&nodes_mgr_client, key, msg);
             });
         }
 

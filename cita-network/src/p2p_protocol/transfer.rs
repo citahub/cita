@@ -28,6 +28,8 @@ use tentacle::{
 };
 use tokio::codec::length_delimited::LengthDelimitedCodec;
 
+pub const TRANSFER_PROTOCOL_ID: ProtocolId = 1;
+
 pub struct TransferProtocolMeta {
     id: ProtocolId,
     network_client: NetworkClient,

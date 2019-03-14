@@ -17,6 +17,7 @@
 
 use crate::cita_protocol::{pubsub_message_to_network_message, CITA_FRAME_HEADER_LEN};
 use crate::config::NetConfig;
+use crate::p2p_protocol::transfer::TRANSFER_PROTOCOL_ID;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use bytes::BytesMut;
 use cita_types::Address;
@@ -415,7 +416,7 @@ impl NetworkInitReq {
 
         if let Some(ref mut ctrl) = service.service_ctrl {
             // FIXME: handle the error!
-            let ret = ctrl.send_message(self.session_id, 1, buf.to_vec());
+            let ret = ctrl.send_message(self.session_id, TRANSFER_PROTOCOL_ID, buf.to_vec());
             info!(
                 "[NodeManager] Send network init message!, id: {:?}, peer_addr: {:?}, ret: {:?}",
                 self.session_id, peer_key, ret,
@@ -563,7 +564,7 @@ impl BroadcastReq {
             BytesMut::with_capacity(CITA_FRAME_HEADER_LEN + self.key.len() + msg_bytes.len());
         pubsub_message_to_network_message(&mut buf, Some((self.key, msg_bytes)));
         if let Some(ref mut ctrl) = service.service_ctrl {
-            let _ = ctrl.filter_broadcast(None, 1, buf.to_vec());
+            let _ = ctrl.filter_broadcast(None, TRANSFER_PROTOCOL_ID, buf.to_vec());
         }
     }
 }
@@ -593,7 +594,7 @@ impl SingleTxReq {
         pubsub_message_to_network_message(&mut buf, Some((self.key, msg_bytes)));
         if let Some(ref mut ctrl) = service.service_ctrl {
             // FIXME: handle the error!
-            let _ = ctrl.send_message(self.dst, 1, buf.to_vec());
+            let _ = ctrl.send_message(self.dst, TRANSFER_PROTOCOL_ID, buf.to_vec());
         }
     }
 }
