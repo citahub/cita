@@ -34,6 +34,8 @@ use tentacle::{
 };
 use tokio::codec::length_delimited::LengthDelimitedCodec;
 
+pub const DISCOVERY_PROTOCOL_ID: ProtocolId = 0;
+
 #[derive(Clone, Debug)]
 pub struct NodesAddressManager {
     pub nodes_mgr_client: NodesManagerClient,
