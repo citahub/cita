@@ -21,15 +21,7 @@ use byteorder::{ByteOrder, NetworkEndian};
 use bytes::BufMut;
 use bytes::BytesMut;
 use logger::{error, warn};
-use std::io;
 use std::str;
-use tokio::codec::{Decoder, Encoder};
-
-pub type CitaRequest = (String, Vec<u8>);
-pub type CitaResponse = Option<(String, Vec<u8>)>;
-
-/// Our multiplexed line-based codec
-pub struct CitaCodec;
 
 /// Implementation of the multiplexed line-based protocol.
 ///
@@ -65,25 +57,6 @@ fn opt_bytes_extend(buf: &mut BytesMut, data: &[u8]) {
     unsafe {
         buf.bytes_mut()[..data.len()].copy_from_slice(data);
         buf.advance_mut(data.len());
-    }
-}
-
-impl Decoder for CitaCodec {
-    type Item = CitaRequest;
-    type Error = io::Error;
-
-    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<Self::Item>, io::Error> {
-        Ok(network_message_to_pubsub_message(buf))
-    }
-}
-
-impl Encoder for CitaCodec {
-    type Item = CitaResponse;
-    type Error = io::Error;
-
-    fn encode(&mut self, msg: Self::Item, buf: &mut BytesMut) -> io::Result<()> {
-        pubsub_message_to_network_message(buf, msg);
-        Ok(())
     }
 }
 
