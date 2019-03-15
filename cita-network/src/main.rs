@@ -92,7 +92,8 @@ use crate::network::Network;
 use crate::node_manager::{NodesManager, DEFAULT_PORT};
 use crate::p2p_protocol::{
     node_discovery::DiscoveryProtocolMeta, node_discovery::NodesAddressManager,
-    transfer::TransferProtocolMeta, SHandle,
+    node_discovery::DISCOVERY_PROTOCOL_ID, transfer::TransferProtocolMeta,
+    transfer::TRANSFER_PROTOCOL_ID, SHandle,
 };
 use crate::synchronizer::Synchronizer;
 use clap::App;
@@ -144,9 +145,15 @@ fn main() {
     mq_agent.set_network_client(network_mgr.client());
 
     // Init p2p protocols
-    let discovery_meta =
-        DiscoveryProtocolMeta::new(0, NodesAddressManager::new(nodes_mgr.client()));
-    let transfer_meta = TransferProtocolMeta::new(1, network_mgr.client(), nodes_mgr.client());
+    let discovery_meta = DiscoveryProtocolMeta::new(
+        DISCOVERY_PROTOCOL_ID,
+        NodesAddressManager::new(nodes_mgr.client()),
+    );
+    let transfer_meta = TransferProtocolMeta::new(
+        TRANSFER_PROTOCOL_ID,
+        network_mgr.client(),
+        nodes_mgr.client(),
+    );
 
     let mut service_cfg = ServiceBuilder::default()
         .insert_protocol(discovery_meta)
