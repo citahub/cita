@@ -153,7 +153,7 @@ fn main() {
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
         .get_matches();
-    let config_path = matches.value_of("config").unwrap_or("config");
+    let config_path = matches.value_of("config").unwrap_or("auth.toml");
 
     let config = Config::new(config_path);
 

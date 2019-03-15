@@ -136,7 +136,7 @@ fn main() {
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
         .get_matches();
 
-    let config_path = matches.value_of("config").unwrap_or("./jsonrpc.toml");
+    let config_path = matches.value_of("config").unwrap_or("jsonrpc.toml");
 
     let config = config::Config::new(config_path);
     info!("CITA:jsonrpc config \n {:?}", config);
