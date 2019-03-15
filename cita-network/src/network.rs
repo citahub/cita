@@ -305,8 +305,9 @@ pub fn send_message(nodes_mgr_client: &NodesManagerClient, key: String, msg: Pro
             nodes_mgr_client.send_message(SingleTxReq::new(dst as usize, key, msg));
         }
         OperateType::Subtract => {
-            // FIXME: Support subtract broadcast if necessary.
-            warn!("[MqAgent] Subtract broadcast does not support yet!");
+            // FIXME: Support subtract broadcast if necessary, just use broadcast instead.
+            warn!("[MqAgent] Subtract broadcast does not support yet, use broadcast instead!");
+            nodes_mgr_client.broadcast(BroadcastReq::new(key, msg));
         }
     }
 }
