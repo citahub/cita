@@ -19,7 +19,6 @@ use crate::cita_protocol::{pubsub_message_to_network_message, CITA_FRAME_HEADER_
 use crate::config::NetConfig;
 use crate::p2p_protocol::transfer::TRANSFER_PROTOCOL_ID;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use bytes::BytesMut;
 use cita_types::Address;
 use discovery::RawAddr;
 use fnv::FnvHashMap;
@@ -410,13 +409,12 @@ impl NetworkInitReq {
         };
         let msg_bytes: Vec<u8> = init_msg.into();
 
-        let mut buf =
-            BytesMut::with_capacity(CITA_FRAME_HEADER_LEN + send_key.len() + msg_bytes.len());
+        let mut buf = Vec::with_capacity(CITA_FRAME_HEADER_LEN + send_key.len() + msg_bytes.len());
         pubsub_message_to_network_message(&mut buf, Some((send_key, msg_bytes)));
 
         if let Some(ref mut ctrl) = service.service_ctrl {
             // FIXME: handle the error!
-            let ret = ctrl.send_message(self.session_id, TRANSFER_PROTOCOL_ID, buf.to_vec());
+            let ret = ctrl.send_message(self.session_id, TRANSFER_PROTOCOL_ID, buf);
             info!(
                 "[NodeManager] Send network init message!, id: {:?}, peer_addr: {:?}, ret: {:?}",
                 self.session_id, peer_key, ret,
@@ -560,11 +558,10 @@ impl BroadcastReq {
         );
         let msg_bytes: Vec<u8> = self.msg.try_into().unwrap();
 
-        let mut buf =
-            BytesMut::with_capacity(CITA_FRAME_HEADER_LEN + self.key.len() + msg_bytes.len());
+        let mut buf = Vec::with_capacity(CITA_FRAME_HEADER_LEN + self.key.len() + msg_bytes.len());
         pubsub_message_to_network_message(&mut buf, Some((self.key, msg_bytes)));
         if let Some(ref mut ctrl) = service.service_ctrl {
-            let _ = ctrl.filter_broadcast(None, TRANSFER_PROTOCOL_ID, buf.to_vec());
+            let _ = ctrl.filter_broadcast(None, TRANSFER_PROTOCOL_ID, buf);
         }
     }
 }
@@ -589,12 +586,11 @@ impl SingleTxReq {
         );
         let msg_bytes: Vec<u8> = self.msg.try_into().unwrap();
 
-        let mut buf =
-            BytesMut::with_capacity(CITA_FRAME_HEADER_LEN + self.key.len() + msg_bytes.len());
+        let mut buf = Vec::with_capacity(CITA_FRAME_HEADER_LEN + self.key.len() + msg_bytes.len());
         pubsub_message_to_network_message(&mut buf, Some((self.key, msg_bytes)));
         if let Some(ref mut ctrl) = service.service_ctrl {
             // FIXME: handle the error!
-            let _ = ctrl.send_message(self.dst, TRANSFER_PROTOCOL_ID, buf.to_vec());
+            let _ = ctrl.send_message(self.dst, TRANSFER_PROTOCOL_ID, buf);
         }
     }
 }
