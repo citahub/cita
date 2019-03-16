@@ -6,13 +6,13 @@
 set -e
 
 # Add cita scripts into system executable paths
-export PATH=$PATH:$(cd $(dirname "$0")/../bin; pwd)
+# export PATH=$PATH:$(cd $(dirname "$0")/../bin; $CITA_HOME)
 
 SERVICES=( forever auth bft chain executor jsonrpc network )
 SCRIPT=`basename $0`
 COMMAND=$1
 NODE_NAME=$2
-NODE_PATH="$(pwd)/${NODE_NAME}"
+NODE_PATH="${CITA_HOME}/${NODE_NAME}"
 NODE_LOGS_DIR="${NODE_PATH}/logs"
 NODE_DATA_DIR="${NODE_PATH}/data"
 TNODE=`echo ${NODE_NAME} | sed 's/\//%2f/g'`
@@ -241,7 +241,7 @@ do_clean() {
     fi
 
     # Move data/ and logs/ into backup directory
-    backup_dir="$(pwd)/backup.$(date -Iseconds)"
+    backup_dir="${CITA_HOME}/backup.$(date -Iseconds)"
     mkdir -p ${backup_dir}
     if [ -e ${NODE_DATA_DIR} ] ; then
         echo "mv ${NODE_DATA_DIR} ${backup_dir}/"
@@ -261,7 +261,7 @@ do_backup() {
     fi
 
     # Copy data/ and logs/ into backup directory
-    backup_dir="$(pwd)/backup.$(date -Iseconds)"
+    backup_dir="${CITA_HOME}/backup.$(date -Iseconds)"
     mkdir -p ${backup_dir}
     if [ -e ${NODE_DATA_DIR} ] ; then
         echo "cp -r ${NODE_DATA_DIR} ${backup_dir}/"

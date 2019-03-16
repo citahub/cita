@@ -42,7 +42,7 @@ done
 #strip                                     target/install/bin/*
 
 # 2) cita
-cp -rf  scripts/cita                       target/install/bin/
+cp -rf scripts/cita/*                      target/install/bin/
 
 # 3) contract
 cp -rf scripts/contracts                   target/install/scripts/
@@ -55,9 +55,11 @@ cp -f   scripts/create_cita_config.py      target/install/scripts/
 cp -rf scripts/txtool                      target/install/scripts/
 
 # 6) docker env
-cp -f scripts/env.sh                       target/install/
-cp -f scripts/daemon.sh                    target/install/
+# cp -f scripts/env.sh                       target/install/
 
 # 7) amend info of system contract
 cp -f scripts/amend_system_contracts.sh    target/install/scripts/
 cp -f scripts/amend_system_contracts.py    target/install/scripts/
+
+# 8) delete building container
+# docker container rm cita_build > /dev/null 2>&1

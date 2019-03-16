@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 
+# HOME
+if [ -z "${CITA_HOME}" ]; then
+    CITA_HOME="$HOME/Library/cita"
+fi
+
+# DOCKER
+# ======
 DOCKER_IMAGE="cita/cita-build:ubuntu-18.04-20190107"
 if [[ `uname` == 'Darwin' ]]
 then
-    cp /etc/localtime $PWD/localtime
-    LOCALTIME_PATH="$PWD/localtime"
+    cp /etc/localtime $CITA_HOME/localtime
+    LOCALTIME_PATH="$CITA_HOME/localtime"
 else
     LOCALTIME_PATH="/etc/localtime"
 fi
@@ -21,8 +28,9 @@ else
     fi
 fi
 
-SOURCE_DIR=`pwd`
-CONTAINER_NAME="cita_build${SOURCE_DIR//\//_}"
+# ENV
+# ===
+CONTAINER_NAME="cita"
 CARGO_HOME=/opt/.cargo
 WORKDIR=/opt/cita
 USER_ID=`id -u $USER`
@@ -32,6 +40,12 @@ if [ "${USER_ID}" = "0" ]; then
     USER_NAME="root"
 fi
 
+if [ -z "${CITA_PATH}" ]; then
+    CITA_PATH="$(dirname $(dirname $(realpath $0)))"
+fi
+
+# VOLUME
+# ======
 mkdir -p ${HOME}/.docker_cargo/git
 mkdir -p ${HOME}/.docker_cargo/registry
 
@@ -51,7 +65,7 @@ if [ $? -ne 0 ]; then
     fi
 
     docker run -d \
-           --volume ${SOURCE_DIR}:${WORKDIR} \
+           --volume ${CITA_PATH}:${WORKDIR} \
            --volume ${HOME}/.docker_cargo/registry:${CARGO_HOME}/registry \
            --volume ${HOME}/.docker_cargo/git:${CARGO_HOME}/git \
            --volume ${LOCALTIME_PATH}:/etc/localtime \
@@ -63,4 +77,17 @@ if [ $? -ne 0 ]; then
     sleep 3
 fi
 
-docker exec -d ${CONTAINER_NAME} /usr/bin/gosu ${USER_NAME} "$@"
+test -t 1 && USE_TTY="-t"
+
+if [ $# -gt 0 ]; then
+    case ${!#} in
+        --d) docker exec -d ${USE_TTY} ${CONTAINER_NAME} /usr/bin/gosu ${USER_NAME} ${@:0:$#}
+             ;;
+        *) docker exec -i ${USE_TTY} ${CONTAINER_NAME} /usr/bin/gosu ${USER_NAME} "$@"
+           ;;
+    esac
+    
+else
+    docker exec -i ${USE_TTY} ${CONTAINER_NAME} \
+        /bin/bash -c "stty cols $(tput cols) rows $(tput lines) && /usr/bin/gosu ${USER_NAME} /bin/bash"
+fi

@@ -1,0 +1,6 @@
+#!/bin/bash
+if [ -z "${CITA_BIN}" ]; then
+    CITA_BIN="$(realpath $(dirname $0))"
+fi
+
+$CITA_BIN/cita_env bin/cita_commander $@

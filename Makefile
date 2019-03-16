@@ -2,11 +2,11 @@ CARGO=RUSTFLAGS='-F warnings' cargo
 
 .PHONY: debug release test test-release bench fmt cov clean clippy security_audit
 
-debug:
+debug: deps 
 	$(CARGO) build --all
 	scripts/release.sh debug
 
-release:
+release: deps
 	$(CARGO) build --all  --release
 	scripts/release.sh release
 
@@ -20,6 +20,10 @@ bench:
 	-rm target/bench.log
 	cargo bench --all --no-run |tee target/bench.log
 	cargo bench --all --jobs 1 |tee -a target/bench.log
+
+deps:
+	git submodule init
+	git submodule update
 
 fmt:
 	cargo fmt --all -- --check

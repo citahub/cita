@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 
+# DOCKER
+# ======
 DOCKER_IMAGE="cita/cita-build:ubuntu-18.04-20190107"
-if [[ `uname` == 'Darwin' ]]
-then
-    cp /etc/localtime $PWD/localtime
-    LOCALTIME_PATH="$PWD/localtime"
-else
-    LOCALTIME_PATH="/etc/localtime"
+
+if [ -z "${CITA_HOME}" ]; then
+    CITA_HOME="${HOME}/Library/cita"
 fi
 
 docker_bin=$(which docker)
@@ -21,8 +20,9 @@ else
     fi
 fi
 
-SOURCE_DIR=`pwd`
-CONTAINER_NAME="cita_build${SOURCE_DIR//\//_}"
+# ENV
+# ===
+CONTAINER_NAME="cita_build"
 CARGO_HOME=/opt/.cargo
 WORKDIR=/opt/cita
 USER_ID=`id -u $USER`
@@ -32,6 +32,12 @@ if [ "${USER_ID}" = "0" ]; then
     USER_NAME="root"
 fi
 
+if [ -z "${CITA_PATH}" ]; then
+    CITA_PATH=`pwd`
+fi
+
+# VOLUME
+# ======
 mkdir -p ${HOME}/.docker_cargo/git
 mkdir -p ${HOME}/.docker_cargo/registry
 
@@ -51,10 +57,9 @@ if [ $? -ne 0 ]; then
     fi
 
     docker run -d \
-           --volume ${SOURCE_DIR}:${WORKDIR} \
+           --volume ${CITA_PATH}:${WORKDIR} \
            --volume ${HOME}/.docker_cargo/registry:${CARGO_HOME}/registry \
            --volume ${HOME}/.docker_cargo/git:${CARGO_HOME}/git \
-           --volume ${LOCALTIME_PATH}:/etc/localtime \
            --env USER_ID=${USER_ID} \
            --workdir ${WORKDIR} \
            --name ${CONTAINER_NAME} ${DOCKER_IMAGE} \
