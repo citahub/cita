@@ -6,7 +6,7 @@ const quota = require('../helpers/quota');
 
 const { expect } = chai;
 const {
-  getTxReceipt, logger, appchain, genTxParams,
+  getTxReceipt, logger, citaSDK, genTxParams,
 } = util;
 const { setDefaultAQL, getDefaultAQL } = quota;
 
@@ -42,7 +42,7 @@ describe('test quota not enough error', () => {
   it('should send a tx with bigger quota and get error msg', async () => {
     const param = await genTxParams();
     // TODO should receive an error
-    appchain.base.sendTransaction(param).catch((e) => {
+    citaSDK.base.sendTransaction(param).catch((e) => {
       logger.log('\nerror:\n', e);
       expect(e).to.equal('QuotaNotEnough');
     });
@@ -71,7 +71,7 @@ describe('test quota not enough error', () => {
 
   it('should send a tx with bigger quota', async () => {
     const param = await genTxParams();
-    const res = await appchain.base.sendTransaction(param);
+    const res = await citaSDK.base.sendTransaction(param);
     logger.debug('\nSend tx ok:\n', JSON.stringify(res));
   });
 });

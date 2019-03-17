@@ -34,7 +34,7 @@
   "author": "Cryptape Technologies <contact@cryptape.com>",
   "license": "GPL-3.0+",
   "dependencies": {
-    "@appchain/base": "^0.20.3",
+    "@cryptape/cita-sdk": "^0.21.2",
     "chai": "^4.2.0",
     "log4js": "^4.0.2",
     "mocha": "^6.0.2"

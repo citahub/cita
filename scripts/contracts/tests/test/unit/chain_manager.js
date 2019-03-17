@@ -1,7 +1,7 @@
+const chai = require('chai');
 const util = require('../helpers/util');
 const chainManager = require('../helpers/chain_manager');
 const config = require('../config');
-const chai = require('chai');
 
 const { expect } = chai;
 const { logger, getTxReceipt } = util;

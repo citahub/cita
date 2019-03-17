@@ -1,16 +1,16 @@
-const Appchain = require('@appchain/base').default;
-const config = require('../config');
+const CITASDK = require('@cryptape/cita-sdk').default;
 const log4js = require('log4js');
+const config = require('../config');
 
 const flag = true;
-let appchain;
+let citaSDK;
 
 if (flag) {
   // Use local server
-  appchain = Appchain(config.localServer);
+  citaSDK = CITASDK(config.localServer);
 } else {
   // Use remote server
-  appchain = Appchain(config.remoteServer);
+  citaSDK = CITASDK(config.remoteServer);
 }
 
 const logger = log4js.getLogger();
@@ -20,11 +20,10 @@ const blockLimit = 100;
 const sender = config.testSender;
 
 const randomInt = () => Math.floor(Math.random() * 100).toString();
-const genContract = (abi, addr) => new appchain.eth.Contract(abi, addr);
+const genContract = (abi, addr) => new citaSDK.eth.Contract(abi, addr);
 
-const getTxReceipt = appchain.listeners.listenToTransactionReceipt;
-const getBlockNumber = appchain.base.getBlockNumber;
-const getMetaData = appchain.base.getMetaData;
+const getTxReceipt = citaSDK.listeners.listenToTransactionReceipt;
+const { getBlockNumber, getMetaData } = citaSDK.base;
 
 const genTxParams = async (_sender = sender) => {
   const current = await getBlockNumber();
@@ -42,7 +41,7 @@ const genTxParams = async (_sender = sender) => {
 };
 
 module.exports = {
-  appchain,
+  citaSDK,
   randomInt,
   quota,
   blockLimit,
