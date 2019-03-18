@@ -41,7 +41,7 @@ mod postman;
 const SNAPSHOT_LOCK: &str = ".cita_snapshot";
 
 fn main() {
-    micro_service_init!("cita-snapshot", "CITA:snapshot");
+    micro_service_init!("cita-snapshot", "CITA:snapshot", false);
 
     // 1. Aquire client's lock
     let locker = lock();

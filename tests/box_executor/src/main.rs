@@ -45,7 +45,7 @@ use std::env;
 fn main() {
     dotenv::dotenv().ok();
     env::set_var("RUST_BACKTRACE", "full");
-    logger::init_config("box_executor");
+    logger::init_config(&logger::LogFavour::File("box_executor"));
     let matches = App::new("mock-consensus")
         .arg(
             clap::Arg::with_name("mock-data")
