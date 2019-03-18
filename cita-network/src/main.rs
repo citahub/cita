@@ -121,7 +121,7 @@ fn main() {
         .args_from_usage("-a, --address=[FILE] 'Sets an address file'")
         .get_matches();
 
-    let config_path = matches.value_of("config").unwrap_or("config");
+    let config_path = matches.value_of("config").unwrap_or("network.toml");
 
     // Init config
     debug!("Config path {:?}", config_path);
