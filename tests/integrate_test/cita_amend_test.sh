@@ -35,8 +35,8 @@ echo "DONE"
 
 ################################################################################
 echo "3) Run node-0"
-${BINARY_DIR}/bin/cita setup ${CHAIN_NAME}/0 > /dev/null
-${BINARY_DIR}/bin/cita start ${CHAIN_NAME}/0 trace
+${BINARY_DIR}/bin/cita bebop setup ${CHAIN_NAME}/0 > /dev/null
+${BINARY_DIR}/bin/cita bebop start ${CHAIN_NAME}/0 trace
 echo "DONE"
 
 sleep 10
@@ -129,7 +129,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"getCode","params":["0xffffffffff
 ################################################################################
 echo "9) Clean Up ..."
 cd ${BINARY_DIR}
-${BINARY_DIR}/bin/cita stop ${CHAIN_NAME}/0
+${BINARY_DIR}/bin/cita bebop stop ${CHAIN_NAME}/0
 
 cleanup
 echo "DONE"

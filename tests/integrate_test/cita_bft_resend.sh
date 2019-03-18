@@ -38,10 +38,10 @@ echo "DONE"
 
 ################################################################################
 echo "3) Start CITA components manually"
-${BINARY_DIR}/bin/cita setup ${CHAIN_NAME}/0
-${BINARY_DIR}/bin/cita start ${CHAIN_NAME}/0 trace
+${BINARY_DIR}/bin/cita bebop setup ${CHAIN_NAME}/0
+${BINARY_DIR}/bin/cita bebop start ${CHAIN_NAME}/0 trace
 sleep 3
-${BINARY_DIR}/bin/cita stop ${CHAIN_NAME}/0
+${BINARY_DIR}/bin/cita bebop stop ${CHAIN_NAME}/0
 
 cd ${CHAIN_NAME}/0
 ${BINARY_DIR}/bin/cita-auth -c auth.toml & auth_pid=$!
@@ -68,7 +68,7 @@ echo "5) Restart CITA"
 kill ${auth_pid} ${bft_pid} ${jsonrpc_pid} ${network_pid}
 
 cd ${BINARY_DIR}
-${BINARY_DIR}/bin/cita start ${CHAIN_NAME}/0 trace
+${BINARY_DIR}/bin/cita bebop start ${CHAIN_NAME}/0 trace
 
 wait_timeout=30
 timeout=`check_height_growth_normal 0 $wait_timeout` || (echo "FAILED"
