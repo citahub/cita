@@ -4,7 +4,7 @@ const config = require('../config');
 
 const { expect } = chai;
 const {
-  appchain, logger, genTxParams, genContract, getTxReceipt,
+  citaSDK, logger, genTxParams, genContract, getTxReceipt,
 } = util;
 
 const { superAdmin } = config;
@@ -32,7 +32,7 @@ const bytes32 = '000000000000000000000000000000000000000000000000000000000000000
 describe('\n\nDeploy a contract\n\n', () => {
   it('should send a tx: deploy_contract', async () => {
     param = await genTxParams(superAdmin);
-    const res = await appchain.base.deploy(
+    const res = await citaSDK.base.deploy(
       bin,
       param,
     );
@@ -53,7 +53,7 @@ describe('\n\ntest batch tx\n\n', () => {
     const tmp = `${addr.substring(2)}${lenTx}${setHash}`;
     const data = `${mulHash}${bytes32}${bytes32}${tmp}${tmp}`;
     logger.debug('\nThe data:\n', JSON.stringify(data));
-    const res = await appchain.base.sendTransaction({
+    const res = await citaSDK.base.sendTransaction({
       ...param,
       to: batchTx,
       data,
