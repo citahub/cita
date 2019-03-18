@@ -96,7 +96,7 @@ where
             self.cache_by_key.remove(k);
 
             let v: Vec<V> = v
-                .into_iter()
+                .iter()
                 .filter(|value| match self.cache_by_value.get(value) {
                     Some(ref key) if key == &k => true,
                     None | Some(_) => false,

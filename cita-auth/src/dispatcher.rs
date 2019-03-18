@@ -153,7 +153,7 @@ impl Dispatcher {
 
     pub fn get_txs(&self, ids: &[H256]) -> Vec<SignedTransaction> {
         let pool = self.txs_pool.borrow();
-        ids.into_iter()
+        ids.iter()
             .map(|id| pool.get(id).cloned())
             .filter(|tx| tx.is_some())
             .map(|tx| tx.unwrap())
