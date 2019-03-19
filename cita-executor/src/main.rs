@@ -157,14 +157,20 @@ impl Options {
 }
 
 fn main() {
-    micro_service_init!("cita-executor", "CITA:executor");
     let matches = App::new("executor")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .arg_from_usage("-c, --config=[FILE] 'Sets a switch config file'")
+        .args_from_usage(
+            "-c, --config=[FILE] 'Sets a switch config file'
+                          -s, --stdout 'Log to console'",
+        )
         .get_matches();
+
+    let stdout = matches.is_present("stdout");
+    micro_service_init!("cita-executor", "CITA:executor", stdout);
+
     let config_path = matches.value_of("config").unwrap_or("executor.toml");
     let options = Options::load(config_path);
     info!("Version: {}", get_build_info_str(true));

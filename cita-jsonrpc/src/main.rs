@@ -124,17 +124,21 @@ use ws_handler::WsFactory;
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 fn main() {
-    micro_service_init!("cita-jsonrpc", "CITA:jsonrpc");
-    info!("Version: {}", get_build_info_str(true));
-
     // todo load config
     let matches = App::new("JsonRpc")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA JSON-RPC by Rust")
-        .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
+        .args_from_usage(
+            "-c, --config=[FILE] 'Sets a custom config file'
+                          -s, --stdout 'Log to console'",
+        )
         .get_matches();
+
+    let stdout = matches.is_present("stdout");
+    micro_service_init!("cita-jsonrpc", "CITA:jsonrpc", stdout);
+    info!("Version: {}", get_build_info_str(true));
 
     let config_path = matches.value_of("config").unwrap_or("jsonrpc.toml");
 

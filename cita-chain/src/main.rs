@@ -107,16 +107,20 @@ use util::set_panic_handler;
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 fn main() {
-    micro_service_init!("cita-chain", "CITA:chain");
-    info!("Version: {}", get_build_info_str(true));
-
     let matches = App::new("chain")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .arg_from_usage("-c, --config=[FILE] 'Sets a chain config file'")
+        .args_from_usage(
+            "-c, --config=[FILE] 'Sets a chain config file'
+                          -s, --stdout 'Log to console'",
+        )
         .get_matches();
+
+    let stdout = matches.is_present("stdout");
+    micro_service_init!("cita-chain", "CITA:chain", stdout);
+    info!("Version: {}", get_build_info_str(true));
 
     let config_path = matches.value_of("config").unwrap_or("chain.toml");
 
