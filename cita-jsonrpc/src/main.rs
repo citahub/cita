@@ -98,6 +98,7 @@ mod http_server;
 mod mq_handler;
 mod mq_publisher;
 mod response;
+mod responser;
 mod service_error;
 mod ws_handler;
 
@@ -113,6 +114,7 @@ use libproto::Message;
 use libproto::TryInto;
 use pubsub::channel::{self, Sender};
 use pubsub::start_pubsub;
+use responser::Responser;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::thread;
@@ -161,6 +163,10 @@ fn main() {
     let (tx_pub, rx_pub) = channel::unbounded();
     //used for buffer message
     let (tx_relay, rx_relay) = channel::unbounded();
+    //used for deal with RequestRpc
+    let (tx, rx) = channel::unbounded();
+    let tx_from_mq = tx_sub.clone();
+
     start_pubsub(
         "jsonrpc",
         routing_key!([
@@ -189,14 +195,19 @@ fn main() {
         loop {
             if let Ok(res) = rx_relay.try_recv() {
                 let (topic, req): (String, reqlib::Request) = res;
-                forward_service(
-                    topic,
-                    req,
-                    &mut new_tx_request_buffer,
-                    &mut time_stamp,
-                    &tx_pub,
-                    &tx_flow_config,
-                );
+                if RoutingKey::from(&topic) == routing_key!(Jsonrpc >> RequestRpc) {
+                    let data: Message = req.into();
+                    tx.send((topic, data.try_into().unwrap())).unwrap();
+                } else {
+                    forward_service(
+                        topic,
+                        req,
+                        &mut new_tx_request_buffer,
+                        &mut time_stamp,
+                        &tx_pub,
+                        &tx_flow_config,
+                    );
+                }
             } else {
                 if !new_tx_request_buffer.is_empty() {
                     batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, &tx_pub);
@@ -204,6 +215,15 @@ fn main() {
                 thread::sleep(Duration::new(0, tx_flow_config.buffer_duration));
             }
         }
+    });
+
+    //response RequestRpc
+    let responser = Responser::new(config.clone(), tx_from_mq);
+    thread::spawn(move || loop {
+        let (key, msg_bytes) = rx.recv().unwrap();
+        let rt_key = RoutingKey::from(&key);
+        let msg: Message = libproto::TryFrom::try_from(msg_bytes).unwrap();
+        responser.reply_request(rt_key, msg);
     });
 
     //ws
