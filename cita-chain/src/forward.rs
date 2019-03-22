@@ -352,7 +352,7 @@ impl Forward {
                 error!("Get messages which should not handle by this function!");
             }
 
-            Request::peercount(_) | Request::un_tx(_) => {
+            Request::peercount(_) | Request::un_tx(_) | Request::software_version(_) => {
                 error!("Get messages which should sent to other micro services!");
             }
             Request::storage_key(skey) => {
