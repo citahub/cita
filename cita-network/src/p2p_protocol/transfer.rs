@@ -17,7 +17,7 @@
 
 use crate::cita_protocol::network_message_to_pubsub_message;
 use crate::network::{NetworkClient, RemoteMessage};
-use crate::node_manager::{AddConnectedKeyReq, InitMsg, NetworkInitReq, NodesManagerClient};
+use crate::node_manager::{AddConnectedNodeReq, InitMsg, NetworkInitReq, NodesManagerClient};
 use bytes::BytesMut;
 use libproto::{Message as ProtoMessage, TryFrom, TryInto};
 use logger::{info, warn};
@@ -130,8 +130,8 @@ impl ServiceProtocol for TransferProtocol {
         if let Some((key, message)) = network_message_to_pubsub_message(&mut data) {
             if key.eq(&"network.init".to_string()) {
                 let msg = InitMsg::from(message);
-                let req = AddConnectedKeyReq::new(session.id, session.ty, msg);
-                self.nodes_mgr_client.add_connected_key(req);
+                let req = AddConnectedNodeReq::new(session.id, session.ty, msg);
+                self.nodes_mgr_client.add_connected_node(req);
                 return;
             }
 
