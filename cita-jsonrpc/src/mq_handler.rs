@@ -44,6 +44,7 @@ impl MqHandler {
             routing_key!(Auth >> Response)
             | routing_key!(Chain >> Response)
             | routing_key!(Executor >> Response)
+            | routing_key!(Jsonrpc >> Response)
             | routing_key!(Net >> Response) => {
                 let content = msg.take_response().ok_or_else(|| {
                     error!("empty response message");

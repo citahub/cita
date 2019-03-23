@@ -40,6 +40,7 @@ pub fn select_topic(method: &str) -> String {
     match method {
         "peerCount" => routing_key!(Jsonrpc >> RequestNet).into(),
         "sendRawTransaction" | "sendTransaction" => routing_key!(Jsonrpc >> RequestNewTx).into(),
+        "getVersion" => routing_key!(Jsonrpc >> RequestRpc).into(),
         _ => routing_key!(Jsonrpc >> Request).into(),
     }
 }

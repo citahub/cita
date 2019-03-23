@@ -21,6 +21,7 @@ use ws::Settings;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub backlog_capacity: usize,
+    pub enable_version: Option<bool>,
     pub profile_config: ProfileConfig,
     pub http_config: HttpConfig,
     pub ws_config: WsConfig,
