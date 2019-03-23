@@ -16,7 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::node_manager::{
-    AddConnectedNodeReq, DelConnectedNodeReq, DelNodeReq, NodesManagerClient,
+    AddRepeatedNodeReq, DelConnectedNodeReq, DelNodeReq, NodesManagerClient,
+    PendingConnectedNodeReq,
 };
 use logger::{info, warn};
 use tentacle::{
@@ -25,7 +26,6 @@ use tentacle::{
     service::{ServiceError, ServiceEvent},
     traits::ServiceHandle,
     utils::multiaddr_to_socketaddr,
-    yamux::session::SessionType,
 };
 
 pub mod node_discovery;
@@ -51,9 +51,13 @@ impl ServiceHandle for SHandle {
                 // If dial to a connected node, need add it to connected address list.
                 match error {
                     error::Error::RepeatedConnection(session_id) => {
-                        let req = AddConnectedNodeReq::new(address, session_id);
-                        self.nodes_mgr_client.add_connected_node(req);
-                        info!("[P2pProtocol] Connected to the same node : {:?}", address);
+                        // Do not need to do something, just log it.
+                        info!(
+                            "[P2pProtocol] Connected to the same node : {:?}, session id: {:?}",
+                            address, session_id
+                        );
+                        let req = AddRepeatedNodeReq::new(address, session_id);
+                        self.nodes_mgr_client.add_repeated_node(req);
                     }
                     _ => {
                         // FIXME: Using score for deleting a node from known nodes
@@ -106,10 +110,9 @@ impl ServiceHandle for SHandle {
                 let address = multiaddr_to_socketaddr(&address).unwrap();
                 info!("[P2pProtocol] Service open on : {:?}, session id: {:?}, ty: {:?}, public_key: {:?}",
                        address, id, ty, public_key);
-                if ty == SessionType::Client {
-                    let req = AddConnectedNodeReq::new(address, id);
-                    self.nodes_mgr_client.add_connected_node(req);
-                }
+
+                let req = PendingConnectedNodeReq::new(id, address, ty);
+                self.nodes_mgr_client.pending_connected_node(req);
             }
             ServiceEvent::SessionClose { id } => {
                 let req = DelConnectedNodeReq::new(id);
