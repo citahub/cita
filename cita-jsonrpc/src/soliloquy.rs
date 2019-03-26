@@ -68,3 +68,143 @@ impl Soliloquy {
         response.into()
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use config::Config;
+    use jsonrpc_types::ErrorCode;
+    use libproto::Message;
+    use libproto::TryInto;
+    use soliloquy::Soliloquy;
+
+    fn get_response(toml_str: String) -> libproto::response::Response {
+        let config = util::parse_config_from_buffer::<Config>(&toml_str)
+            .unwrap_or_else(|err| panic!("Error while parsing config: [{}]", err));
+
+        let mut request = libproto::request::Request::new();
+        request.set_software_version(true);
+        let req_msg: Message = request.into();
+
+        let soliloquy = Soliloquy::new(config.clone());
+        let mut res_msg: Message = soliloquy.handle(&req_msg.try_into().unwrap());
+        res_msg.take_response().unwrap()
+    }
+
+    #[test]
+    pub fn test_disable_get_version() {
+        let toml_str = r#"
+backlog_capacity = 1000
+
+[profile_config]
+flag_prof_start = 0
+enable = false
+flag_prof_duration = 0
+
+[http_config]
+allow_origin = "*"
+timeout = 3
+enable = true
+listen_port = "1337"
+listen_ip = "0.0.0.0"
+
+[ws_config]
+panic_on_internal = true
+fragments_grow = true
+panic_on_protocol = false
+enable = true
+in_buffer_capacity = 2048
+panic_on_queue = false
+fragment_size = 65535
+panic_on_timeout = false
+method_strict = false
+thread_number = 2
+panic_on_capacity = false
+masking_strict = false
+key_strict = false
+max_connections = 800
+listen_ip = "0.0.0.0"
+listen_port = "4337"
+queue_size = 200
+fragments_capacity = 100
+tcp_nodelay = false
+shutdown_on_interrupt = true
+out_buffer_grow = true
+panic_on_io = false
+panic_on_new_connection = false
+out_buffer_capacity = 2048
+encrypt_server = false
+in_buffer_grow = true
+panic_on_shutdown = false
+panic_on_encoding = false
+
+[new_tx_flow_config]
+buffer_duration = 30000000
+count_per_batch = 30
+
+        "#;
+
+        let response = get_response(toml_str.to_string());
+        assert_eq!(response.code, ErrorCode::MethodNotFound.code());
+    }
+
+    #[test]
+    pub fn test_enable_get_version() {
+        let toml_str = r#"
+backlog_capacity = 1000
+enable_version = true
+
+[profile_config]
+flag_prof_start = 0
+enable = false
+flag_prof_duration = 0
+
+[http_config]
+allow_origin = "*"
+timeout = 3
+enable = true
+listen_port = "1337"
+listen_ip = "0.0.0.0"
+
+[ws_config]
+panic_on_internal = true
+fragments_grow = true
+panic_on_protocol = false
+enable = true
+in_buffer_capacity = 2048
+panic_on_queue = false
+fragment_size = 65535
+panic_on_timeout = false
+method_strict = false
+thread_number = 2
+panic_on_capacity = false
+masking_strict = false
+key_strict = false
+max_connections = 800
+listen_ip = "0.0.0.0"
+listen_port = "4337"
+queue_size = 200
+fragments_capacity = 100
+tcp_nodelay = false
+shutdown_on_interrupt = true
+out_buffer_grow = true
+panic_on_io = false
+panic_on_new_connection = false
+out_buffer_capacity = 2048
+encrypt_server = false
+in_buffer_grow = true
+panic_on_shutdown = false
+panic_on_encoding = false
+
+[new_tx_flow_config]
+buffer_duration = 30000000
+count_per_batch = 30
+
+        "#;
+
+        let response = get_response(toml_str.to_string());
+        assert_eq!(
+            response.get_software_version().contains("softwareVersion"),
+            true
+        );
+    }
+}
