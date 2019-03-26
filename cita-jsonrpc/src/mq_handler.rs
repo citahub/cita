@@ -17,7 +17,7 @@
 
 use helper::{RpcMap, TransferType};
 use jsonrpc_proto::response::OutputExt;
-use jsonrpc_types::response::Output;
+use jsonrpc_types::rpc_response::Output;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
 use libproto::TryFrom;

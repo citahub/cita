@@ -18,7 +18,7 @@
 
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
-use jsonrpc_types::rpctypes::Receipt as RpcReceipt;
+use jsonrpc_types::rpc_types::Receipt as RpcReceipt;
 use libproto::executor::{
     Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot,
 };

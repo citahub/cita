@@ -17,7 +17,7 @@
 
 use config::Config;
 use get_build_info_str;
-use jsonrpc_types::rpctypes::SoftwareVersion;
+use jsonrpc_types::rpc_types::SoftwareVersion;
 use jsonrpc_types::ErrorCode;
 use libproto::protos::response::Response;
 use libproto::Message;

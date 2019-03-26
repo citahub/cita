@@ -28,7 +28,7 @@ use engines::NullEngine;
 use error::CallError;
 use evm::env_info::EnvInfo;
 use executive::{Executed, Executive, TransactOptions};
-use jsonrpc_types::rpctypes::{
+use jsonrpc_types::rpc_types::{
     BlockNumber, BlockTag, EconomicalModel as RpcEconomicalModel, MetaData,
 };
 pub use libexecutor::block::*;

@@ -19,7 +19,7 @@
 use cita_types::traits::BloomTools;
 use cita_types::{Address, H256};
 use ids::BlockId;
-use jsonrpc_types::rpctypes::{Filter as RpcFilter, VariadicValue};
+use jsonrpc_types::rpc_types::{Filter as RpcFilter, VariadicValue};
 use log_entry::{LogBloom, LogEntry};
 
 /// Blockchain Filter.

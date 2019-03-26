@@ -23,7 +23,7 @@ use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use dispatcher::Dispatcher;
 use error::ErrorCode;
 use history::HistoryHeights;
-use jsonrpc_types::rpctypes::TxResponse;
+use jsonrpc_types::rpc_types::TxResponse;
 use libproto::auth::{Miscellaneous, MiscellaneousReq};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};

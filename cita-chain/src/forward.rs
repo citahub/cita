@@ -20,7 +20,7 @@ use core::filters::eth_filter::EthFilter;
 use core::libchain::chain::{BlockInQueue, Chain};
 use core::libchain::OpenBlock;
 use error::ErrorCode;
-use jsonrpc_types::rpctypes::{
+use jsonrpc_types::rpc_types::{
     BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
     Log as RpcLog, Receipt as RpcReceipt, RpcBlock,
 };
