@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::node_manager::{
-    AddRepeatedNodeReq, DelConnectedNodeReq, DelNodeReq, NodesManagerClient,
+    AddRepeatedNodeReq, ConnectedSelfReq, DelConnectedNodeReq, DialedErrorReq, NodesManagerClient,
     PendingConnectedNodeReq,
 };
 use logger::{info, warn};
@@ -59,12 +59,16 @@ impl ServiceHandle for SHandle {
                         let req = AddRepeatedNodeReq::new(address, session_id);
                         self.nodes_mgr_client.add_repeated_node(req);
                     }
+                    error::Error::ConnectSelf => {
+                        info!("[P2pProtocol] Connected to self, address: {:?}.", address);
+                        let req = ConnectedSelfReq::new(address);
+                        self.nodes_mgr_client.connected_self(req);
+                    }
                     _ => {
                         // FIXME: Using score for deleting a node from known nodes
-                        let req = DelNodeReq::new(address);
-                        self.nodes_mgr_client.del_node(req);
-                        warn!("[P2pProtocol] Error in {:?} : {:?}, delete this address from nodes manager",
-                              address, error);
+                        let req = DialedErrorReq::new(address);
+                        self.nodes_mgr_client.dialed_error(req);
+                        warn!("[P2pProtocol] Dialed Error in {:?} : {:?}.", address, error);
                     }
                 }
             }
