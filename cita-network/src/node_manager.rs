@@ -27,6 +27,7 @@ use pubsub::channel::{select, tick, unbounded, Receiver, Sender};
 use rand;
 use std::{
     collections::HashMap,
+    collections::HashSet,
     convert::Into,
     io::Cursor,
     net::{SocketAddr, ToSocketAddrs},
@@ -37,11 +38,20 @@ use tentacle::{
 };
 
 pub const DEFAULT_MAX_CONNECTS: usize = 666;
+pub const DEFAULT_MAX_KNOWN_ADDRS: usize = 1000;
 pub const DEFAULT_PORT: usize = 4000;
 pub const CHECK_CONNECTED_NODES: Duration = Duration::from_secs(3);
 
 // Score uses to manage known_nodes list. If a node has too low score, do not dial it again.
-// Maybe some complex algorithm can be designed later.
+// Maybe some complex algorithm can be designed later. But for now, just keeps as simple as below:
+//  1. Deducts 10 score for each Dial;
+//  2. Deducts 25 score for each Dial Error;
+//  3. Deducts 20 score for each Disconnected by server;
+//  4. Add 5 score for every dialing round if the node keep on line; so If a node keep on line,
+//     it will get FULL_SCORE very fast.
+//  5. Gives a Time sugar score (2 : nodes was configured in config file, and 1 : nodes was
+//     discovered by P2P framework ) when a node's score less than MIN_DIALING_SCORE;
+
 // A new node come into known_nodes list has a FULL_SCORE.
 pub const FULL_SCORE: i32 = 100;
 // Score lower than MIN_DIALING_SCORE, stop dialing.
@@ -52,6 +62,10 @@ pub const DIALING_SCORE: i32 = 10;
 pub const SUCCESS_DIALING_SCORE: i32 = 10;
 // A node is refused by server, should need REFUSED_SCORE each time.
 pub const REFUSED_SCORE: i32 = 20;
+// A node is dialed error by client, should need DIALED_ERROR_SCORE each time.
+pub const DIALED_ERROR_SCORE: i32 = 25;
+// A node is dialed error by client, should need DIALED_ERROR_SCORE each time.
+pub const KEEP_ON_LINE_SCORE: i32 = 5;
 
 type IsTranslated = bool;
 
@@ -59,9 +73,11 @@ pub struct NodesManager {
     check_connected_nodes: Receiver<Instant>,
     known_addrs: FnvHashMap<SocketAddr, NodeStatus>,
     config_addrs: HashMap<String, IsTranslated>,
+    translated_addrs: HashSet<SocketAddr>,
     connected_addrs: HashMap<SessionId, SocketAddr>,
     pending_connected_addrs: HashMap<SessionId, SessionInfo>,
     connected_peer_keys: HashMap<Address, SessionId>,
+    repeated_session: HashMap<SessionId, SocketAddr>,
     max_connects: usize,
     nodes_manager_client: NodesManagerClient,
     nodes_manager_service_receiver: Receiver<NodesManagerMessage>,
@@ -69,6 +85,7 @@ pub struct NodesManager {
     peer_key: Address,
     enable_tls: bool,
     dialing_node: Option<SocketAddr>,
+    self_addr: Option<SocketAddr>,
 }
 
 impl NodesManager {
@@ -144,6 +161,13 @@ impl NodesManager {
                         "[NodeManager] Address {:?} has been connected on : {:?}.",
                         *key, session_id
                     );
+
+                    // Node keep on line, reward KEEP_ON_LINE_SCORE.
+                    value.score = if (value.score + KEEP_ON_LINE_SCORE) > FULL_SCORE {
+                        FULL_SCORE as i32
+                    } else {
+                        value.score + KEEP_ON_LINE_SCORE
+                    };
                     continue;
                 }
 
@@ -158,12 +182,30 @@ impl NodesManager {
                     continue;
                 }
 
+                if let Some(self_addr) = self.self_addr {
+                    if *key == self_addr {
+                        debug!(
+                            "[NodeManager] Trying to connected self: {:?}, skip it",
+                            self_addr
+                        );
+                        continue;
+                    }
+                }
+
                 // Score design prevents the client from dialing to a node all the time.
                 if value.score < MIN_DIALING_SCORE {
                     debug!(
                         "[NodeManager] Address {:?} has to low score ({:?}) to dial.",
                         *key, value.score
                     );
+
+                    // The node will get time sugar, the nodes which in config file can get 2, and the
+                    // other nodes which discovered by P2P can get 1.
+                    value.score += if self.translated_addrs.contains(&*key) {
+                        2
+                    } else {
+                        1
+                    };
                     continue;
                 }
 
@@ -218,6 +260,7 @@ impl NodesManager {
                         // An init node from config file, give it FULL_SCORE.
                         let node_status = NodeStatus::new(FULL_SCORE, None);
                         self.known_addrs.insert(socket_addr, node_status);
+                        self.translated_addrs.insert(socket_addr);
                         *value = true;
                     } else {
                         error!("[NodeManager] Can not convert to socket address!");
@@ -245,8 +288,10 @@ impl Default for NodesManager {
             check_connected_nodes: ticker,
             known_addrs: FnvHashMap::default(),
             config_addrs: HashMap::default(),
+            translated_addrs: HashSet::default(),
             connected_addrs: HashMap::default(),
             connected_peer_keys: HashMap::default(),
+            repeated_session: HashMap::default(),
             pending_connected_addrs: HashMap::default(),
             max_connects: DEFAULT_MAX_CONNECTS,
             nodes_manager_client: client,
@@ -255,6 +300,7 @@ impl Default for NodesManager {
             peer_key: Address::zero(),
             enable_tls: false,
             dialing_node: None,
+            self_addr: None,
         }
     }
 }
@@ -302,8 +348,12 @@ impl NodesManagerClient {
         self.send_req(NodesManagerMessage::AddNodeReq(req));
     }
 
-    pub fn del_node(&self, req: DelNodeReq) {
-        self.send_req(NodesManagerMessage::DelNodeReq(req));
+    pub fn dialed_error(&self, req: DialedErrorReq) {
+        self.send_req(NodesManagerMessage::DialedErrorReq(req));
+    }
+
+    pub fn connected_self(&self, req: ConnectedSelfReq) {
+        self.send_req(NodesManagerMessage::ConnectedSelf(req));
     }
 
     pub fn get_random_nodes(&self, req: GetRandomNodesReq) {
@@ -355,7 +405,7 @@ impl NodesManagerClient {
 // Define messages for NodesManager
 pub enum NodesManagerMessage {
     AddNodeReq(AddNodeReq),
-    DelNodeReq(DelNodeReq),
+    DialedErrorReq(DialedErrorReq),
     GetRandomNodesReq(GetRandomNodesReq),
     PendingConnectedNodeReq(PendingConnectedNodeReq),
     DelConnectedNodeReq(DelConnectedNodeReq),
@@ -365,13 +415,14 @@ pub enum NodesManagerMessage {
     NetworkInit(NetworkInitReq),
     AddConnectedNode(AddConnectedNodeReq),
     AddRepeatedNode(AddRepeatedNodeReq),
+    ConnectedSelf(ConnectedSelfReq),
 }
 
 impl NodesManagerMessage {
     pub fn handle(self, service: &mut NodesManager) {
         match self {
             NodesManagerMessage::AddNodeReq(req) => req.handle(service),
-            NodesManagerMessage::DelNodeReq(req) => req.handle(service),
+            NodesManagerMessage::DialedErrorReq(req) => req.handle(service),
             NodesManagerMessage::GetRandomNodesReq(req) => req.handle(service),
             NodesManagerMessage::PendingConnectedNodeReq(req) => req.handle(service),
             NodesManagerMessage::DelConnectedNodeReq(req) => req.handle(service),
@@ -381,6 +432,7 @@ impl NodesManagerMessage {
             NodesManagerMessage::NetworkInit(req) => req.handle(service),
             NodesManagerMessage::AddConnectedNode(req) => req.handle(service),
             NodesManagerMessage::AddRepeatedNode(req) => req.handle(service),
+            NodesManagerMessage::ConnectedSelf(req) => req.handle(service),
         }
     }
 }
@@ -444,14 +496,29 @@ impl AddConnectedNodeReq {
                 self.session_id, *repeated_id
             );
 
+            // It is a repeated_session, but not a repeated node.
+            if self.ty == SessionType::Client {
+                if let Some(dialing_addr) = service.dialing_node {
+                    if self.ty == SessionType::Client {
+                        if let Some(ref mut node_status) =
+                            service.known_addrs.get_mut(&dialing_addr)
+                        {
+                            node_status.session_id = Some(*repeated_id);
+                            node_status.score += SUCCESS_DIALING_SCORE;
+                        }
+                    }
+                    service.repeated_session.insert(*repeated_id, dialing_addr);
+                }
+            }
+
             if let Some(ref mut ctrl) = service.service_ctrl {
                 let _ = ctrl.disconnect(self.session_id);
             }
         } else if service.peer_key == self.init_msg.peer_key {
-            // Connected self, remove this address from known_addrs list.
+            // Connected self, disconnected the session.
             // In P2P encrypted communication mode, the `connected self` will be detected by
-            // P2P framework, handling this situation by sending a `DelNodeReq` message to
-            // NodesManager. See the `handle` in `DelNodeReq` for more detail.
+            // P2P framework, handling this situation by sending a `ConnectedSelfReq` message to
+            // NodesManager. See the `handle` in `ConnectedSelfReq` for more detail.
             // This logic would be entry twice:
             // one as server, and the other one as client.
             if let Some(dialing_node) = service.dialing_node {
@@ -459,7 +526,7 @@ impl AddConnectedNodeReq {
                     "[NodeManager] Connected Self, Delete {:?} from know_addrs",
                     dialing_node
                 );
-                service.known_addrs.remove(&dialing_node);
+                service.self_addr = Some(dialing_node);
                 if let Some(ref mut ctrl) = service.service_ctrl {
                     let _ = ctrl.disconnect(self.session_id);
                 }
@@ -468,7 +535,7 @@ impl AddConnectedNodeReq {
             // Found a successful connection after exchanging `init message`.
             // FIXME: If have reached to max_connects, disconnected this node.
             // Add connected address.
-            if let Some(session_info) = service.pending_connected_addrs.get(&self.session_id) {
+            if let Some(session_info) = service.pending_connected_addrs.remove(&self.session_id) {
                 info!(
                     "[NodeManager] Add session [{:?}], address: {:?} to Connected_addrs.",
                     self.session_id, session_info.addr
@@ -483,16 +550,15 @@ impl AddConnectedNodeReq {
                         node_status.score += SUCCESS_DIALING_SCORE;
                     }
                 }
-
                 service
                     .connected_addrs
                     .insert(self.session_id, session_info.addr);
-            }
 
-            // Add connected peer keys
-            let _ = service
-                .connected_peer_keys
-                .insert(self.init_msg.peer_key, self.session_id);
+                // Add connected peer keys
+                let _ = service
+                    .connected_peer_keys
+                    .insert(self.init_msg.peer_key, self.session_id);
+            }
 
             info!(
                 "[NodeManager] connected_addrs info: {:?}",
@@ -557,6 +623,13 @@ impl AddNodeReq {
     }
 
     pub fn handle(self, service: &mut NodesManager) {
+        if service.known_addrs.len() > DEFAULT_MAX_KNOWN_ADDRS {
+            warn!(
+                "[NodeManager] Known address has reach Max: {:?}",
+                DEFAULT_MAX_KNOWN_ADDRS,
+            );
+            return;
+        }
         // Add a new node, using a default node status.
         let default_node_status = NodeStatus::new(FULL_SCORE, None);
         service
@@ -566,17 +639,19 @@ impl AddNodeReq {
     }
 }
 
-pub struct DelNodeReq {
+pub struct DialedErrorReq {
     addr: SocketAddr,
 }
 
-impl DelNodeReq {
+impl DialedErrorReq {
     pub fn new(addr: SocketAddr) -> Self {
-        DelNodeReq { addr }
+        DialedErrorReq { addr }
     }
 
     pub fn handle(self, service: &mut NodesManager) {
-        service.known_addrs.remove(&self.addr);
+        if let Some(ref mut node_status) = service.known_addrs.get_mut(&self.addr) {
+            node_status.score -= DIALED_ERROR_SCORE;
+        }
 
         // Catch a dial error, this dialing finished
         service.dialing_node = None;
@@ -598,6 +673,12 @@ impl AddRepeatedNodeReq {
             "[NodeManager] Dialing a repeated node [{:?}], on session: {:?}.",
             self.addr, self.session_id
         );
+
+        if let Some(ref mut node_status) = service.known_addrs.get_mut(&self.addr) {
+            node_status.session_id = Some(self.session_id);
+            node_status.score += SUCCESS_DIALING_SCORE;
+        }
+        service.repeated_session.insert(self.session_id, self.addr);
 
         // This dialing is finished.
         service.dialing_node = None;
@@ -669,22 +750,11 @@ impl DelConnectedNodeReq {
         info!("[NodeManager] Disconnected session [{:?}]", self.session_id);
 
         if let Some(addr) = service.connected_addrs.remove(&self.session_id) {
-            // Set the node as disconnected in known_addrs
-            if let Some(ref mut node_status) = service.known_addrs.get_mut(&addr) {
-                if let Some(session_id) = node_status.session_id {
-                    if session_id == self.session_id {
-                        info!("Reset node status of address {:?} to None", addr);
-                        node_status.session_id = None;
-                    } else {
-                        warn!(
-                            "[NodeManager] Expected session id: {:?}, but found: {:?}",
-                            self.session_id, session_id
-                        );
-                    }
-                } else {
-                    error!("[NodeManager] Can not get node status from known_addr, this should not happen!");
-                }
-            }
+            self.reset_node_status(addr, service);
+        }
+
+        if let Some(addr) = service.repeated_session.remove(&self.session_id) {
+            self.reset_node_status(addr, service);
         }
 
         // Remove connected peer keys
@@ -713,6 +783,26 @@ impl DelConnectedNodeReq {
 
                 // Close a session which open as client, end of this dialing.
                 service.dialing_node = None;
+            }
+        }
+    }
+
+    fn reset_node_status(&self, addr: SocketAddr, service: &mut NodesManager) {
+        // Set the node as disconnected in known_addrs
+        if let Some(ref mut node_status) = service.known_addrs.get_mut(&addr) {
+            if let Some(session_id) = node_status.session_id {
+                if session_id == self.session_id {
+                    info!("Reset node status of address {:?} to None", addr);
+                    node_status.score -= REFUSED_SCORE;
+                    node_status.session_id = None;
+                } else {
+                    warn!(
+                        "[NodeManager] Expected session id: {:?}, but found: {:?}",
+                        self.session_id, session_id
+                    );
+                }
+            } else {
+                error!("[NodeManager] Can not get node status from known_addr, this should not happen!");
             }
         }
     }
@@ -792,5 +882,20 @@ impl GetPeerCountReq {
                 peer_count, e
             );
         }
+    }
+}
+
+pub struct ConnectedSelfReq {
+    addr: SocketAddr,
+}
+
+impl ConnectedSelfReq {
+    pub fn new(addr: SocketAddr) -> Self {
+        ConnectedSelfReq { addr }
+    }
+
+    pub fn handle(self, service: &mut NodesManager) {
+        service.self_addr = Some(self.addr);
+        service.dialing_node = None;
     }
 }
