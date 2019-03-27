@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+## [v0.22.0] - 2019-03-27
+
 ### Upgrade Note
 
 The v0.22.0 version of the node configurations is compatible with the v0.21 version.
@@ -643,21 +645,22 @@ Release the first version of CITA.
 [set quota price]: https://docs.citahub.com/zh-CN/cita/system/price
 [sidechain exit mechanism]: https://docs.nervos.org/cita/#/crosschain/crosschain_contract_example
 
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.21.1...HEAD
-[v0.21.1]: https://github.com/cryptape/cita/compare/v0.21...HEAD
-[v0.21.0]: https://github.com/cryptape/cita/compare/v0.20.3...HEAD
-[v0.20.3]: https://github.com/cryptape/cita/compare/v0.20.2...HEAD
-[v0.20.2]: https://github.com/cryptape/cita/compare/v0.20.1...HEAD
-[v0.20.1]: https://github.com/cryptape/cita/compare/v0.20...HEAD
-[v0.20.0]: https://github.com/cryptape/cita/compare/v0.19.1...HEAD
-[v0.19.1]: https://github.com/cryptape/cita/compare/v0.19...HEAD
-[v0.19.0]: https://github.com/cryptape/cita/compare/v0.18...HEAD
-[v0.18.0]: https://github.com/cryptape/cita/compare/v0.17...HEAD
-[v0.17.0]: https://github.com/cryptape/cita/compare/v0.16...HEAD
-[v0.16.0]: https://github.com/cryptape/cita/compare/v0.15...HEAD
-[v0.15.0]: https://github.com/cryptape/cita/compare/v0.13...HEAD
-[v0.13.0]: https://github.com/cryptape/cita/compare/v0.12...HEAD
-[v0.12.0]: https://github.com/cryptape/cita/compare/v0.10...HEAD
+[Unreleased]: https://github.com/cryptape/cita/compare/v0.22.0...HEAD
+[v0.22.0]: https://github.com/cryptape/cita/compare/v0.21...v0.22.0
+[v0.21.1]: https://github.com/cryptape/cita/compare/v0.21...v0.21.1
+[v0.21.0]: https://github.com/cryptape/cita/compare/v0.20...v0.21.0
+[v0.20.3]: https://github.com/cryptape/cita/compare/v0.20.2...v0.20.3
+[v0.20.2]: https://github.com/cryptape/cita/compare/v0.20.1...v0.20.2
+[v0.20.1]: https://github.com/cryptape/cita/compare/v0.20...v0.20.1
+[v0.20.0]: https://github.com/cryptape/cita/compare/v0.19...v0.20
+[v0.19.1]: https://github.com/cryptape/cita/compare/v0.19...v0.19.1
+[v0.19.0]: https://github.com/cryptape/cita/compare/v0.18...v0.19
+[v0.18.0]: https://github.com/cryptape/cita/compare/v0.17...v0.18
+[v0.17.0]: https://github.com/cryptape/cita/compare/v0.16...v0.17
+[v0.16.0]: https://github.com/cryptape/cita/compare/v0.15...v0.16
+[v0.15.0]: https://github.com/cryptape/cita/compare/v0.13...v0.15
+[v0.13.0]: https://github.com/cryptape/cita/compare/v0.12...v0.13
+[v0.12.0]: https://github.com/cryptape/cita/compare/v0.10...v0.12
 [v0.10.0]: https://github.com/cryptape/cita/releases/tag/v0.10
 
 [@77liyan]: https://github.com/77liyan
