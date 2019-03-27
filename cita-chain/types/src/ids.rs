@@ -17,7 +17,7 @@
 //! Unique identifiers.
 
 use cita_types::H256;
-use jsonrpc_types::rpctypes::{BlockNumber as RpcBlockNumber, BlockTag};
+use jsonrpc_types::rpc_types::{BlockNumber as RpcBlockNumber, BlockTag};
 use BlockNumber;
 
 /// Uniquely identifies block.

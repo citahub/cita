@@ -17,7 +17,7 @@
 
 use futures::future::{Future, FutureResult};
 use jsonrpc_proto::complete::CompleteInto;
-use jsonrpc_types::request::{
+use jsonrpc_types::rpc_request::{
     PartialRequest, Request as JsonRequest, RpcRequest as JsonrpcRequest,
 };
 use libproto::request::Request as ProtoRequest;

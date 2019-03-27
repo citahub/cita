@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use hyper::{Body, HeaderMap as Headers, Response, StatusCode};
-use jsonrpc_types::{request::RequestInfo, response::RpcFailure};
+use jsonrpc_types::{rpc_request::RequestInfo, rpc_response::RpcFailure};
 use serde_json;
 
 use crate::response::{HyperResponseExt, IntoResponse};

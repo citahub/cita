@@ -285,7 +285,7 @@ pub fn chunk_state<'a>(
     writer: &Mutex<SnapshotWriter + 'a>,
     progress: &'a Progress,
 ) -> Result<Vec<H256>, Error> {
-    let account_trie = TrieDB::new(db, &root).map_err(|err| *err)?;
+    let account_trie = TrieDB::create(db, &root).map_err(|err| *err)?;
 
     let mut chunker = StateChunker {
         hashes: Vec::new(),

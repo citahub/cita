@@ -18,7 +18,7 @@
 use futures::stream::{Collect, FuturesOrdered};
 use futures::{future::Future, sync::oneshot, Async, Poll};
 use hyper::{HeaderMap as Headers, Response as HyperResponse, StatusCode};
-use jsonrpc_types::response::Output;
+use jsonrpc_types::rpc_response::Output;
 use serde_json;
 
 use crate::service_error::ServiceError;

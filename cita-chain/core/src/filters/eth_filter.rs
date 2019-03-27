@@ -16,7 +16,7 @@
 
 use super::{limit_logs, PollFilter, PollId};
 use cita_types::H256;
-use jsonrpc_types::rpctypes::{Filter, FilterChanges, Log};
+use jsonrpc_types::rpc_types::{Filter, FilterChanges, Log};
 use libchain::chain::Chain;
 use types::filter::Filter as EthcoreFilter;
 use types::ids::BlockId;
