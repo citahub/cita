@@ -1,6 +1,6 @@
 # <img src="https://github.com/cryptape/assets/blob/master/CITA-logo.png?raw=true" width="256">
 
-[![Build Status](https://travis-ci.com/cryptape/cita.svg?branch=develop)](https://travis-ci.com/cryptape/cita)
+[![Circle CI Status](https://circleci.com/gh/cryptape/cita.svg?branch=develop)](https://circleci.com/gh/cryptape/cita)
 
 English | [简体中文](./README-CN.md)
 
@@ -10,9 +10,7 @@ CITA is a fast and scalable blockchain for enterprises. CITA supports both nativ
 
 - **Horizontal scalability**: With the microservice architecture, a logical node can be easily scaled to a cluster of servers. Node administrators can increase system capacity simply by adding more PC servers on high load. The administrator can even use dedicated servers to provide services for hot-spot accounts. Outside one node's boundary, nodes communicate with each other using P2P network; inside each node, microservices communicate with each other by messaging queue (Note this is completely different from Fabric which uses a messaging queue only as consensus process).
 
-![](https://github.com/cryptape/cita-whitepaper/blob/master/en/cita-network.png?raw=true)
-
-![](https://github.com/cryptape/cita-whitepaper/blob/master/en/cita-parallel.png?raw=true)
+![](https://github.com/cryptape/citahub-docs/blob/master/docs/assets/cita-assets/architecture.jpg?raw=true)
 
 - **Customizable and Pluggable Components**: CITA's microservices are loosely coupled and their communications are only via the message queue. Hence, it‘s flexible to improve current components with better algorithms (such as new consensus algorithms) or more appropriate technical solutions (such as new DBs or new privacy solutions). Moreover, business logic is extremely complicated in enterprise applications. With CITA, you can easily customize your blockchain with the certain feature to fit your own business requirements.
 
@@ -48,6 +46,7 @@ For CITA API/v1, You can use any HTTP client, or following SDKs:
 * [JavaScript](https://github.com/cryptape/cita-sdk-js)
 * [Swift](https://github.com/cryptape/cita-sdk-swift)
 * [Ruby](https://github.com/cryptape/cita-sdk-ruby)
+* [Rust](https://github.com/cryptape/cita-common/tree/develop/cita-web3)
 
 ## Contributing
 

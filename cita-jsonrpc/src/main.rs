@@ -111,9 +111,9 @@ use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
 use libproto::TryInto;
+use pubsub::channel::{self, Sender};
 use pubsub::start_pubsub;
 use std::collections::HashMap;
-use std::sync::mpsc::{channel, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};
@@ -136,7 +136,7 @@ fn main() {
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
         .get_matches();
 
-    let config_path = matches.value_of("config").unwrap_or("./jsonrpc.toml");
+    let config_path = matches.value_of("config").unwrap_or("jsonrpc.toml");
 
     let config = config::Config::new(config_path);
     info!("CITA:jsonrpc config \n {:?}", config);
@@ -153,10 +153,10 @@ fn main() {
     set_fd_limit();
 
     // init pubsub
-    let (tx_sub, rx_sub) = channel();
-    let (tx_pub, rx_pub) = channel();
+    let (tx_sub, rx_sub) = channel::unbounded();
+    let (tx_pub, rx_pub) = channel::unbounded();
     //used for buffer message
-    let (tx_relay, rx_relay) = channel();
+    let (tx_relay, rx_relay) = channel::unbounded();
     start_pubsub(
         "jsonrpc",
         routing_key!([

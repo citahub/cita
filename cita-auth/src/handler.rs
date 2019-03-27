@@ -34,13 +34,13 @@ use libproto::{
 };
 use libproto::{TryFrom, TryInto};
 use lru::LruCache;
+use pubsub::channel::{Receiver, Sender};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon::ThreadPoolBuilder;
 use serde_json;
 use std::collections::{HashMap, HashSet};
 use std::convert::Into;
 use std::str::FromStr;
-use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 use transaction_verify::Error;
 use util::BLOCKLIMIT;
@@ -377,7 +377,6 @@ impl MsgHandler {
         // we will send req for all height
         // so don't too frequent
         if check && self.history_heights.is_too_frequent() {
-            warn!("Too frequent to send request!");
             return;
         }
         trace!(
@@ -467,7 +466,6 @@ impl MsgHandler {
                     routing_key!(Consensus >> VerifyBlockReq) => {
                         if !self.is_ready() {
                             info!("Net/Consensus >> CompactProposal: auth is not ready");
-                            return;
                         } else {
                             self.deal_signed_proposal(msg);
                         }
@@ -475,7 +473,6 @@ impl MsgHandler {
                     routing_key!(Net >> BlockTxn) => {
                         if !self.is_ready() || self.verify_block_req.is_none() {
                             info!("Net >> BlockTxn: auth is not ready");
-                            return;
                         } else {
                             let verify_block_req = self.verify_block_req.clone();
                             if let Some(verify_block_req) = verify_block_req {

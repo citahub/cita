@@ -63,7 +63,7 @@ for i in {0..3}; do
     port=$((4000+${id}))
     set_delay_at_port ${port} ${delay}
     timeout1=$(check_height_growth_normal ${refer} 60) ||(echo "FAILED"
-                                                         echo "failed to check_height_growth: ${timeout}"
+                                                         echo "failed to check_height_growth: ${timeout1}"
                                                          exit 1)
     unset_delay_at_port ${port}
     #synch for node ${id}
@@ -85,7 +85,7 @@ for i in {0..3}; do
     set_delay_at_port $((4000+${id2})) ${delay}
 
     timeout1=$(check_height_growth_normal ${refer} 100) ||(echo "FAILED"
-                                                          echo "failed to check_height_growth ${refer}: ${timeout}"
+                                                          echo "failed to check_height_growth ${refer}: ${timeout1}"
                                                           exit 1)
     unset_delay_at_port $((4000+${id1}))
     unset_delay_at_port $((4000+${id2}))

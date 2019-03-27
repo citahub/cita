@@ -33,11 +33,11 @@ use libproto::{
 };
 use libproto::{TryFrom, TryInto};
 use proof::BftProof;
+use pubsub::channel::Sender;
 use serde_json;
 use std::convert::Into;
 use std::mem;
 use std::sync::atomic::Ordering;
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;

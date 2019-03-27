@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::sync::mpsc;
 use std::time::Duration;
 
 use futures::{future::Future, stream::FuturesOrdered, sync::oneshot};
@@ -24,12 +23,12 @@ use jsonrpc_types::{
     request::Request as JsonRequest, response::Output as JsonrpcResponse, rpctypes::Id as JsonrpcId,
 };
 use libproto::request::Request as ProtoRequest;
+use pubsub::channel::Sender;
 use tokio_timer::{clock, Delay};
 
 use crate::helper::{select_topic, RpcMap, TransferType};
 use crate::response::{BatchFutureResponse, PublishFutResponse, SingleFutureResponse};
 use crate::service_error::ServiceError;
-
 type HyperResponse = hyper::Response<hyper::Body>;
 
 #[derive(Debug)]
@@ -68,7 +67,7 @@ impl MQRequest {
     }
 }
 
-pub type ProtoReqSender = mpsc::Sender<(String, ProtoRequest)>;
+pub type ProtoReqSender = Sender<(String, ProtoRequest)>;
 
 pub struct Publisher {
     responses: RpcMap,

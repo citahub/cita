@@ -22,10 +22,10 @@ use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransacti
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
 use libproto::TryInto;
+use pubsub::channel::Sender;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::convert::Into;
-use std::sync::mpsc::Sender;
 use std::thread;
 use tx_pool;
 use txwal::TxWal;

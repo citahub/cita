@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -20,15 +20,8 @@
 use byteorder::{ByteOrder, NetworkEndian};
 use bytes::BufMut;
 use bytes::BytesMut;
-use std::io;
+use logger::{error, warn};
 use std::str;
-use tokio::codec::{Decoder, Encoder};
-
-pub type CitaRequest = (String, Vec<u8>);
-pub type CitaResponse = Option<(String, Vec<u8>)>;
-
-/// Our multiplexed line-based codec
-pub struct CitaCodec;
 
 /// Implementation of the multiplexed line-based protocol.
 ///
@@ -54,7 +47,12 @@ pub struct CitaCodec;
 // Start of network messages.
 const NETMSG_START: u64 = 0xDEAD_BEEF_0000_0000;
 
-fn opt_bytes_extend(buf: &mut BytesMut, data: &[u8]) {
+// According to CITA frame, defines its frame header length as:
+// "Symbol for Start" + "Length of Full Payload" + "Length of Key",
+// And this will consume "4 + 4 + 1" fixed-lengths of the frame.
+pub const CITA_FRAME_HEADER_LEN: usize = 4 + 4 + 1;
+
+fn opt_bytes_extend(buf: &mut Vec<u8>, data: &[u8]) {
     buf.reserve(data.len());
     unsafe {
         buf.bytes_mut()[..data.len()].copy_from_slice(data);
@@ -62,39 +60,20 @@ fn opt_bytes_extend(buf: &mut BytesMut, data: &[u8]) {
     }
 }
 
-impl Decoder for CitaCodec {
-    type Item = CitaRequest;
-    type Error = io::Error;
-
-    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<Self::Item>, io::Error> {
-        Ok(network_message_to_pubsub_message(buf))
-    }
-}
-
-impl Encoder for CitaCodec {
-    type Item = CitaResponse;
-    type Error = io::Error;
-
-    fn encode(&mut self, msg: Self::Item, buf: &mut BytesMut) -> io::Result<()> {
-        pubsub_message_to_network_message(buf, msg);
-        Ok(())
-    }
-}
-
-pub fn pubsub_message_to_network_message(buf: &mut BytesMut, msg: Option<(String, Vec<u8>)>) {
+pub fn pubsub_message_to_network_message(buf: &mut Vec<u8>, msg: Option<(String, Vec<u8>)>) {
     let mut request_id_bytes = [0; 8];
     if let Some((key, body)) = msg {
         let length_key = key.len();
         // Use 1 byte to store key length.
         if length_key > u8::max_value() as usize {
-            error!("The MQ message key is too long {}.", key);
+            error!("[CitaProtocol] The MQ message key is too long {}.", key);
             return;
         }
         // Use 1 bytes to store the length for key, then store key, the last part is body.
         let length_full = 1 + length_key + body.len();
         if length_full > u32::max_value() as usize {
             error!(
-                "The MQ message with key {} is too long {}.",
+                "[CitaProtocol] The MQ message with key {} is too long {}.",
                 key,
                 body.len()
             );
@@ -137,12 +116,12 @@ pub fn network_message_to_pubsub_message(buf: &mut BytesMut) -> Option<(String, 
     let length_key = payload_buf[0] as usize;
     let _length_key_buf = payload_buf.split_to(1);
     if length_key == 0 {
-        error!("network message key is empty.");
+        error!("[CitaProtocol] Network message key is empty.");
         return None;
     }
     if length_key > payload_buf.len() {
         error!(
-            "Buffer is not enough for key {} > {}.",
+            "[CitaProtocol] Buffer is not enough for key {} > {}.",
             length_key,
             buf.len()
         );
@@ -151,12 +130,15 @@ pub fn network_message_to_pubsub_message(buf: &mut BytesMut) -> Option<(String, 
     let key_buf = payload_buf.split_to(length_key);
     let key_str_result = str::from_utf8(&key_buf);
     if key_str_result.is_err() {
-        error!("network message parse key error {:?}.", key_buf);
+        error!(
+            "[CitaProtocol] Network message parse key error {:?}.",
+            key_buf
+        );
         return None;
     }
     let key = key_str_result.unwrap().to_string();
     if length_full == 1 + length_key {
-        warn!("network message is empty.");
+        warn!("[CitaProtocol] Network message is empty.");
     }
     Some((key, payload_buf.to_vec()))
 }
@@ -168,9 +150,9 @@ mod test {
 
     #[test]
     fn convert_empty_message() {
-        let mut buf = BytesMut::with_capacity(4 + 4);
+        let mut buf = Vec::with_capacity(4 + 4);
         pubsub_message_to_network_message(&mut buf, None);
-        let pub_msg_opt = network_message_to_pubsub_message(&mut buf);
+        let pub_msg_opt = network_message_to_pubsub_message(&mut BytesMut::from(buf));
         assert!(pub_msg_opt.is_none());
     }
 
@@ -178,9 +160,9 @@ mod test {
     fn convert_messages() {
         let key = "this-is-the-key".to_string();
         let msg: Vec<u8> = vec![1, 3, 5, 7, 9];
-        let mut buf = BytesMut::with_capacity(4 + 4 + 1 + key.len() + msg.len());
+        let mut buf = Vec::with_capacity(4 + 4 + 1 + key.len() + msg.len());
         pubsub_message_to_network_message(&mut buf, Some((key.clone(), msg.clone())));
-        let pub_msg_opt = network_message_to_pubsub_message(&mut buf);
+        let pub_msg_opt = network_message_to_pubsub_message(&mut BytesMut::from(buf));
         assert!(pub_msg_opt.is_some());
         let (key_new, msg_new) = pub_msg_opt.unwrap();
         assert_eq!(key, key_new);

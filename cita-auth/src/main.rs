@@ -106,8 +106,8 @@ use cpuprofiler::PROFILER;
 use dispatcher::Dispatcher;
 use handler::MsgHandler;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use pubsub::channel;
 use pubsub::start_pubsub;
-use std::sync::mpsc::channel;
 use std::thread;
 use util::set_panic_handler;
 
@@ -153,7 +153,7 @@ fn main() {
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
         .get_matches();
-    let config_path = matches.value_of("config").unwrap_or("config");
+    let config_path = matches.value_of("config").unwrap_or("auth.toml");
 
     let config = Config::new(config_path);
 
@@ -174,8 +174,8 @@ fn main() {
     // which we called micro-service at their running time.
     // All micro-services connect to a MQ, as this design can keep them loose
     // coupling with each other.
-    let (tx_sub, rx_sub) = channel();
-    let (tx_pub, rx_pub) = channel();
+    let (tx_sub, rx_sub) = channel::unbounded();
+    let (tx_pub, rx_pub) = channel::unbounded();
     start_pubsub(
         "auth",
         routing_key!([
@@ -195,7 +195,7 @@ fn main() {
 
     // a single thread to batch forward transactions
     let tx_pub_forward = tx_pub.clone();
-    let (tx_request, rx_request) = channel();
+    let (tx_request, rx_request) = channel::unbounded();
     thread::spawn(move || {
         let mut batch_forward =
             BatchForward::new(count_per_batch, buffer_duration, rx_request, tx_pub_forward);

@@ -3,13 +3,15 @@
 
 import argparse
 from jsonrpcclient.http_client import HTTPClient
-from url_util import host, endpoint
+from url_util import endpoint
 
 
 def build_params(sender, to, data, number):
-    dictionary = {"from": "" if sender is None else sender,
-                  "to": "" if to is None else to,
-                  "data": data}
+    dictionary = {
+        "from": "" if sender is None else sender,
+        "to": "" if to is None else to,
+        "data": data
+    }
     return [dictionary, block_number(number)]
 
 

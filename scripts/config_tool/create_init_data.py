@@ -22,9 +22,9 @@ Contracts:
   - website: https://www.example.com
   - blockInterval: 3000
   - economicalModel: 0
-  - name: Nervos AppChain Test Token
-  - symbol: NATT
-  - avatar: https://cdn.cryptape.com/icon_appchain.png
+  - name: CITA Test Token
+  - symbol: CTT
+  - avatar: https://cdn.cryptape.com/icon_cita.png
   - autoExec: false
 - QuotaManager:
   - admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'

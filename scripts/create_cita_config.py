@@ -14,9 +14,8 @@ import toml
 
 def update_search_paths(work_dir):
     """Add new path to the search path."""
-    sys.path.insert(0,
-                    os.path.abspath(
-                        os.path.join(work_dir, 'scripts/config_tool')))
+    sys.path.insert(
+        0, os.path.abspath(os.path.join(work_dir, 'scripts/config_tool')))
     paths = os.environ['PATH'].split(':')
     paths.insert(0, os.path.abspath(os.path.join(work_dir, 'bin')))
     os.environ['PATH'] = ':'.join(paths)
@@ -145,7 +144,7 @@ class AddressList(list):
         return delimiter.join(self)
 
 
-class ChainInfo(object):
+class ChainInfo():
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, chain_name, output_dir):
@@ -215,10 +214,11 @@ class ChainInfo(object):
 
     def template_load_from_existed(self):
         if not os.path.exists(self.output_root):
-            logging.critical('The chain named `%s` has not been created.'
-                             ' (directory [%s] is not existed)'
-                             ' Please specify an existed chain.',
-                             self.node_prefix, self.output_root)
+            logging.critical(
+                'The chain named `%s` has not been created.'
+                ' (directory [%s] is not existed)'
+                ' Please specify an existed chain.', self.node_prefix,
+                self.output_root)
         with open(self.nodes_list, 'rt') as stream:
             nodes_str = ''.join(stream.readlines()).replace('\n', ',')
         self.nodes = NetworkAddressList.from_str(nodes_str)
@@ -272,9 +272,8 @@ class ChainInfo(object):
 
         for suffix in ('crt', 'csr', 'key'):
             os.remove(f'{node_dir}/{self.node_ca_name}.{suffix}')
-        shutil.copyfile(
-            f'{self.template_dir}/{self.root_ca_name}.crt',
-            f'{node_dir}/{self.root_ca_name}.crt')
+        shutil.copyfile(f'{self.template_dir}/{self.root_ca_name}.crt',
+                        f'{node_dir}/{self.root_ca_name}.crt')
 
     def create_peer_data(self, node_id, node):
         ret = dict(id_card=node_id, ip=node['host'], port=node['port'])
@@ -360,7 +359,8 @@ class ChainInfo(object):
             network_config = os.path.join(old_dir, 'network.toml')
             with open(network_config, 'rt') as stream:
                 network_data = toml.load(stream)
-                network_data['peers'].append(self.create_peer_data(node_id, node))
+                network_data['peers'].append(
+                    self.create_peer_data(node_id, node))
             with open(network_config, 'wt') as stream:
                 current_ip = config[old_id]['ip']
                 stream.write(f'# Current node ip is {current_ip}\n')
@@ -421,9 +421,7 @@ def parse_arguments():
         metavar='{var}[,{var}[,{var}[,{var}[, ...]]]]'.format(var='AUTHORITY'),
         help='Authorities (addresses) list.')
     pcreate.add_argument(
-        '--chain_name',
-        default='test-chain',
-        help='Name of the new chain.')
+        '--chain_name', default='test-chain', help='Name of the new chain.')
 
     pcreate.add_argument(
         '--nodes',
@@ -477,9 +475,7 @@ def parse_arguments():
         SUBCMD_APPEND, help='append a node into a existed chain')
 
     pappend.add_argument(
-        '--chain_name',
-        required=True,
-        help='Name of the existed chain.')
+        '--chain_name', required=True, help='Name of the existed chain.')
 
     pappend.add_argument(
         '--node',
@@ -490,19 +486,21 @@ def parse_arguments():
 
     pappend.add_argument(
         '--address',
-        help='The address of new node. Will generate a new address (with privkey) if not set.')
+        help=
+        'The address of new node. Will generate a new address (with privkey) if not set.'
+    )
 
     args = parser.parse_args()
 
     # Check arguments
     if args.subcmd == SUBCMD_CREATE:
         if len(args.nodes) > 256:
-            logging.critical('The number of nodes exceeds the maximum limit(256).')
+            logging.critical(
+                'The number of nodes exceeds the maximum limit(256).')
             sys.exit(1)
         if not args.super_admin:
             logging.critical('--super_admin is empty, it\'s required'
-                             ' to continue.'
-                            )
+                             ' to continue.')
             sys.exit(1)
         if not args.authorities:
             if not args.nodes:
@@ -512,15 +510,18 @@ def parse_arguments():
             args.nodes.add_privkeys(privkeys)
             setattr(args, 'authorities', authorities)
         elif len(args.nodes) != len(args.authorities):
-            logging.critical('The number of nodes is not equal to the number of authorities.')
+            logging.critical(
+                'The number of nodes is not equal to the number of authorities.'
+            )
             sys.exit(1)
         args.nodes.add_addresses(args.authorities)
         for val in (('authorities', 'NodeManager', 'nodes'),
                     ('chain_name', 'SysConfig', 'chainName')):
             if args.contract_arguments.kkv_get(val[1], val[2]):
-                logging.critical('Please use --%s to instead of specify'
-                                 ' --contract_arguments %s.%s directly',
-                                 val[0], val[1], val[2])
+                logging.critical(
+                    'Please use --%s to instead of specify'
+                    ' --contract_arguments %s.%s directly', val[0], val[1],
+                    val[2])
                 sys.exit(1)
         args.contract_arguments.kkv_set('SysConfig', 'chainName',
                                         args.chain_name)

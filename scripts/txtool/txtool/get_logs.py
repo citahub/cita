@@ -17,11 +17,16 @@ def get_topics():
 def get_logs(topics, from_block, to_block):
     try:
         url = endpoint()
-        response = HTTPClient(url).request("getLogs", [{"topics":topics, "fromBlock":from_block, "toBlock":to_block}])
+        response = HTTPClient(url).request("getLogs", [{
+            "topics": topics,
+            "fromBlock": from_block,
+            "toBlock": to_block
+        }])
     except:
         return None
 
     return response
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -30,6 +35,7 @@ def parse_arguments():
     opts = parser.parse_args()
 
     return opts.fromBlock, opts.toBlock
+
 
 def main():
     from_block, to_block = parse_arguments()

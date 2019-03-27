@@ -257,6 +257,9 @@ jobs:
       - run:
           name: Test Amend
           command: ./tests/integrate_test/cita_amend_test.sh
+      - run:
+          name: Test Executor Process Invalid Proof
+          command: ./tests/integrate_test/cita_bft_resend.sh
 
   "Byzantine Test in Quota Mode":
     <<: *job-default

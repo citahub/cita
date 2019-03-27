@@ -19,7 +19,7 @@ use libproto::blockchain::Proof;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq};
 use libproto::{Message, TryFrom, TryInto};
-use std::sync::mpsc::{Receiver, Sender};
+use pubsub::channel::{Receiver, Sender};
 use std::time::Duration;
 
 enum Ack {

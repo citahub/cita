@@ -46,12 +46,12 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::TryInto;
 use libproto::{BlockTxHashes, FullTransaction, Message};
 use proof::BftProof;
+use pubsub::channel::Sender;
 use receipt::{LocalizedReceipt, Receipt};
 use rlp::{self, Encodable};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::Into;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use types::cache_manager::CacheManager;
 use types::filter::Filter;
@@ -260,7 +260,6 @@ impl BloomGroupDatabase for Chain {
         let position = LogGroupPosition::from(position.clone());
         let result = self
             .db
-            .read()
             .read_with_cache(db::COL_EXTRA, &self.blocks_blooms, &position)
             .map(Into::into);
         self.cache_man
@@ -286,7 +285,7 @@ pub struct Chain {
     pub max_store_height: AtomicUsize,
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
     pub proof_map: RwLock<BTreeMap<u64, ProtoProof>>,
-    pub db: RwLock<Arc<KeyValueDB>>,
+    pub db: Arc<KeyValueDB>,
 
     // block cache
     pub block_headers: RwLock<HashMap<BlockNumber, Header>>,
@@ -394,7 +393,7 @@ impl Chain {
             blocks_blooms: RwLock::new(HashMap::new()),
             block_receipts: RwLock::new(HashMap::new()),
             cache_man: Mutex::new(cache_man),
-            db: RwLock::new(db),
+            db,
             polls_filter: Arc::new(Mutex::new(PollManager::default())),
             nodes: RwLock::new(Vec::new()),
             validators: RwLock::new(Vec::new()),
@@ -451,7 +450,6 @@ impl Chain {
     pub fn block_height_by_hash(&self, hash: H256) -> Option<BlockNumber> {
         let result = self
             .db
-            .read()
             .read_with_cache(db::COL_EXTRA, &self.block_hashes, &hash);
         self.cache_man.lock().note_used(CacheId::BlockHashes(hash));
         result
@@ -606,7 +604,7 @@ impl Chain {
         }
 
         batch.write(db::COL_EXTRA, &CurrentHash, &hash);
-        self.db.read().write(batch).expect("DB write failed.");
+        self.db.write(batch).expect("DB write failed.");
         {
             *self.current_header.write() = hdr;
         }
@@ -774,7 +772,6 @@ impl Chain {
         }
         let result = self
             .db
-            .read()
             .read_with_cache(db::COL_HEADERS, &self.block_headers, &idx);
         self.cache_man.lock().note_used(CacheId::BlockHeaders(idx));
         result
@@ -806,7 +803,6 @@ impl Chain {
     fn block_body_by_height(&self, number: BlockNumber) -> Option<BlockBody> {
         let result = self
             .db
-            .read()
             .read_with_cache(db::COL_BODIES, &self.block_bodies, &number);
         self.cache_man
             .lock()
@@ -831,10 +827,9 @@ impl Chain {
 
     /// Get address of transaction by hash.
     fn transaction_address(&self, hash: TransactionId) -> Option<TransactionAddress> {
-        let result =
-            self.db
-                .read()
-                .read_with_cache(db::COL_EXTRA, &self.transaction_addresses, &hash);
+        let result = self
+            .db
+            .read_with_cache(db::COL_EXTRA, &self.transaction_addresses, &hash);
         self.cache_man
             .lock()
             .note_used(CacheId::TransactionAddresses(hash));
@@ -1076,14 +1071,13 @@ impl Chain {
 
     #[inline]
     pub fn current_block_poof(&self) -> Option<ProtoProof> {
-        self.db.read().read(db::COL_EXTRA, &CurrentProof)
+        self.db.read(db::COL_EXTRA, &CurrentProof)
     }
 
     pub fn save_current_block_poof(&self, proof: &ProtoProof) {
         let mut batch = DBTransaction::new();
         batch.write(db::COL_EXTRA, &CurrentProof, proof);
         self.db
-            .read()
             .write(batch)
             .expect("save_current_block_poof DB write failed.");
     }
@@ -1298,7 +1292,6 @@ impl Chain {
     pub fn block_receipts(&self, hash: H256) -> Option<BlockReceipts> {
         let result = self
             .db
-            .read()
             .read_with_cache(db::COL_EXTRA, &self.block_receipts, &hash);
         self.cache_man
             .lock()
@@ -1406,7 +1399,7 @@ impl Chain {
                 .note_used(CacheId::BlockBodies(height as BlockNumber));
         }
         batch.write(db::COL_EXTRA, &CurrentHeight, &height);
-        let _ = self.db.read().write(batch);
+        let _ = self.db.write(batch);
     }
 
     pub fn compare_status(&self, st: &Status) -> (u64, u64) {

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-
 """
 Amend the code and storage of system contract.
 """
@@ -80,10 +79,11 @@ def amend_code(addr, code, args):
             tx_hash = send_tx(args)
             receipt = get_receipt(tx_hash, args.url)
             if receipt['errorMessage']:
-                logging.critical('amend code of %s error: %s', addr, receipt['errorMessage'])
+                logging.critical('amend code of %s error: %s', addr,
+                                 receipt['errorMessage'])
                 sys.exit(1)
-    except Exception as e:
-        logging.critical('amend code of %s exception: %s', addr, e)
+    except Exception as exception:
+        logging.critical('amend code of %s exception: %s', addr, exception)
         sys.exit(1)
 
 
@@ -96,10 +96,12 @@ def amend_storage(addr, key, val, args):
         tx_hash = send_tx(args)
         receipt = get_receipt(tx_hash, args.url)
         if receipt['errorMessage']:
-            logging.critical('amend storage of %s[%s] error: %s', addr, key, receipt['errorMessage'])
+            logging.critical('amend storage of %s[%s] error: %s', addr, key,
+                             receipt['errorMessage'])
             sys.exit(1)
-    except Exception as e:
-        logging.critical('amend storage of %s[%s] exception: %s', addr, key, e)
+    except Exception as exception:
+        logging.critical('amend storage of %s[%s] exception: %s', addr, key,
+                         exception)
         sys.exit(1)
 
 
@@ -112,18 +114,10 @@ def parse_arguments():
         default=LATEST_VERSION,
         type=int)
     parser.add_argument(
-        '--privkey',
-        required=True,
-        help='The admin private key.')
+        '--privkey', required=True, help='The admin private key.')
     parser.add_argument(
-        '--chain_id',
-        required=True,
-        help='The id of the chain.')
-    parser.add_argument(
-        '--url',
-        required=True,
-        help='The url of the chain.')
-
+        '--chain_id', required=True, help='The id of the chain.')
+    parser.add_argument('--url', required=True, help='The url of the chain.')
 
     args = parser.parse_args()
     return args

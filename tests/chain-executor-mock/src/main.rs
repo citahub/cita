@@ -36,12 +36,12 @@ extern crate serde_yaml;
 
 mod generate_block;
 
+use pubsub::channel::{self, Sender};
 use std::collections::HashMap;
 use std::convert::From;
 use std::env;
 use std::io::Read;
 use std::str::FromStr;
-use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
 use std::time;
 use std::{fs, u8};
@@ -90,8 +90,8 @@ fn main() {
         serde_yaml::from_str(mock_data_string.as_str()).expect("Parse mock data error");
 
     info!("mock-data-path={}", mock_data_path);
-    let (tx_sub, rx_sub) = channel();
-    let (tx_pub, rx_pub) = channel();
+    let (tx_sub, rx_sub) = channel::unbounded();
+    let (tx_pub, rx_pub) = channel::unbounded();
 
     start_pubsub(
         "consensus",
