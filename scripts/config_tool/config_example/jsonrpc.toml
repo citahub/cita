@@ -1,4 +1,5 @@
 backlog_capacity = 1000
+enable_version = false
 
 [profile_config]
 flag_prof_start = 0
