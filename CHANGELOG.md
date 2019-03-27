@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. And this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to this project will be documented in this file. And this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
@@ -12,7 +12,7 @@ However, due to the refactoring of the network, the nodes executed with v0.22.0 
 incompatible with the original nodes (they have different node discovery and transfer protocols),
 so all nodes need to be upgraded to v0.22.0 at the same time.
 
-Following [Upgrade Instructions](https://docs.citahub.com/en-US/cita/protocol-upgrade/overview) to upgrade the nodes.
+Following [Upgrade Instructions] to upgrade the nodes.
 
 ### New Feature Description
 
@@ -75,6 +75,16 @@ But in v0.22.0, the item `[[peers]]` means `known nodes` in the network, you can
 - [Doc] More info about automatic execution. [@wangfh666]
 - [Doc] Fix start cita command in log management. [@77liyan]
 
+## [v0.21.1] - 2019-03-15
+
+Fix the issue about high CPU usage caused by too many sst files.
+Check the details at [#206]
+
+## [v0.20.3] - 2019-03-11
+
+Fix the issue about high CPU usage caused by too many sst files.
+Check the details at [#206]
+
 ## [v0.21.0] - 2019-02-19
 
 ### Upgrade Note
@@ -126,7 +136,7 @@ Pidfile = ".cita-executor.pid"
 Respawn = 3
 ```
 
-After completing the above modifications, following [Upgrade Instructions](https://docs.citahub.com/en-US/cita/protocol-upgrade/overview).
+After completing the above modifications, following [Upgrade Instructions].
 
 ### CITA-Framework
 
@@ -205,15 +215,450 @@ After completing the above modifications, following [Upgrade Instructions](https
 - [Doc] More detail statements about cita-bft consensus. [@KaoImin]
 - [Doc] Update sdk info in readme. [@zhouyun-zoe]
 - [Doc] Add node command description. [@WPF]
-- [Doc] Build a new [documentation website](https://docs.citahub.com/en-US/cita/cita-intro). [@zhouyun-zoe]
+- [Doc] Build a new [documentation website]. [@zhouyun-zoe]
 
 ### Tool
 
 - [Optimization] Split util module into standalone crates. [@yangby]
 - [Refactor] Combing the snapshot logic and rewrite snapshot_tools. [@keroro520]
 
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.22.0...HEAD
-[v0.21.0]: https://github.com/cryptape/cita/compare/v0.21...HEAD
+## [v0.19.1] - 2019-01-31
+
+Fix the bug of version 0.19 that ordinary nodes can't sync blocks from the consensus nodes with a special situation.
+
+Check the details at [#201].
+
+## [v0.20.2] - 2018-11-27
+
+Fixed a bug that getting blockhash in solidity contract will get uncertain result.
+
+```
+pragma solidity ^0.4.24;
+contract Test {
+    bytes32 public hash;
+
+    function testblockhash() public {
+        hash = blockhash(block.number-1);
+    }
+}
+```
+
+Deploy this contract, then send transaction to call testblockhash.
+Once one of the nodes receives the transaction, the chain will stop growing.
+
+## [v0.20.1] - 2018-11-15
+
+Fixed a bug that Network could not process domain names.
+
+## [v0.20.0] - 2018-11-09
+
+### Compatibility
+
+* This new version changes the log format of BFT wal. So it is necessary for each consensus node to be upgraded one by one (the interval should be more than 30s).
+* If you need to upgrade all the nodes at the same time, follow the steps below:
+  * Stop all the nodes;
+  * Upgrade all the nodes;
+  * Use the `bft-wal` tool to manually convert the log format of BFT wal;
+  * Restart all the nodes.
+  ```shell
+  DATA_PATH=./test-chain/0/data ./bin/bft-wal
+  ```
+
+### Protocol
+
+* [Feature] Add the support for `v1` protocol.
+  More details can be found in the document: [Protocol Upgrade From V0 to V1].
+
+### Bootstrap
+
+* [Optimization] Force the use of `--super_admin` to configure the administrator account when using `create_cita_config.py` to create a new chain.
+
+### Framework
+
+* [Upgrade] Upgrade rustc to `nightly-2018-10-05`, and update the docker image (latest image `cita/cita-run:ubuntu-18.04-20181009`).
+
+### Executor
+
+* [Deprecated] Deprecate the use of `delay_block_number`.
+* [Refactor] Use `BlockID` explicitly in methods that require the use of `BlockID` instead of using a fuzzy Default value.
+* [Refactor] Refactor duplicated codes in both of Executor and Chain.
+* [Refactor] Refactor some unsafe codes.
+
+### Chain
+
+* [Upgrade] Upgrade RocksDB.
+
+### Auth
+
+* [Feature] Add the check of the version field in the transaction.
+
+### Network
+
+* [Refactor] Refactor network client.
+* [Upgrade] Upgrade network server.
+* [Feature] Support for TLS communication encryption based on self-signed certificate.
+* [Fix] Parsing will stop immediately when the body of messages between nodes is too large.
+
+### RPC
+
+* [Fix] Fix the problem that the website returned by the [`getMetaData`] interface is incorrect.
+* [Fix] The error information returned by the [`sendRawTransaction`] interface may be inconsistent when there are duplicate transactions.
+* [Feature] Add the pending type in the [`BlockTag`] type.
+* [Fix] The exit code caused by the configuration file exception is corrected to `2`.
+
+### System Contract
+
+* [Fix] Fix user authentication problem inside the group when the permission management is enabled.
+
+### Test
+
+* [Optimization] Optimize the efficiency of system contract testing.
+
+### Doc
+
+* [Docs] Add system contract interface documents.
+* [Docs] Add more English document.
+
+## [v0.19.0] - 2018-09-30
+
+### CITA-Framework
+
+* [refactoring] Improve the user experience of CITA scripts
+
+### Executor
+
+* [feature] Support superadmin to [set quota price]
+* [feature] Support that the block reward can be chosen to [return to the certain address]
+* [optimization] SysConfig reload based on whether there is a parameter change
+* [fix] Fix loading problem of SystemConfig configuration
+* [fix] Fix the situation that the transfer cannot be successful if the charge mode is enabled
+* [fix] Fix the situation that account balance may overflow when transferring in charge mode
+
+### Chain
+
+* [feature] Add the cache_size entry to the configuration file
+
+### Auth
+
+* [feature] Modify the judgment logic of the transaction under emergency braking situation
+
+### RPC
+
+* [feature] [GetMetaData] support query economic model and protocol version number
+* [optimization] Modify some ErrorMessage
+
+### Contract
+
+* [feature] Isolate some permissions (send_tx, create_contract)  to make them can be set separately in configuration
+* [fix] Eliminate compilation warnings for system contracts
+* [fix] Eliminate errors and warnings detected by [Solium] on system contracts
+* [feature] Add [Emergency braking system contract]
+* [feature] Add version control system contract
+* [feature] Add [quota price manager system contract]
+
+### Test
+
+* [ci] Increase the specification check of system contracts
+* [ci] Add clippy for code review
+* [optimization] Clean up smart contract unit tests that are no longer maintained
+* [ci] Fix the problem of sporadic stuck in JSON Mock test
+
+### Doc
+
+* [doc] Replace txtool with [cita-cli] in document
+* [doc] Modify ‘amend’ operation related documents
+
+## [v0.18.0] - 2018-08-30
+
+### CITA-Framework
+
+* [feature] Replaced sha3 with Keccak algorithm library
+* [feature] New Library of China Cryptographic Algorithm
+* [optimize] Remove useless code and dependencies
+* [optimize] Add more CI
+
+### Executor
+
+* [fix] Fix potential deadlock, multi-threaded data inconsistency
+* [fix] Fix state machine state homing problem
+* [fix] Fix Transaction decode logic error
+* [fix] Fix blacklist problems that accounts cannot be removed from blacklist automatically when they come to have tokens
+* [optimize] Add the monitor of chain status
+* [feature] Modify some log levels
+* [fix] Automatic synchronization when the Executor state is inconsistent with Chain
+* [optimize] Optimize state synchronization speed between Executor and Chain
+* [feature] Add the acquisition and verification of the state certificate
+
+### Chain
+
+* [optimize] Add a notification of  Executor status
+* [fix] Fix the problem about saving the latest proof when syncing
+* [fix] Fix some usability issues in the snapshot
+
+### Network
+
+* [refactoring] Refactoring synchronization logic
+* [feature] Output status log
+* [fix] Close the connection to the deleted node when the Network configuration file is hot updated
+
+### Bft
+
+* [fix] Fix the problem about saving temporary proof
+
+### Auth
+
+* [feature] Transaction's value field validation is modified to be required to U256 or [u8;32], otherwise, an invalid value is returned.
+* [fix] Transaction's to field validation is more strict, passing invalid parameters will return an error directly
+
+### RPC
+
+* [feature] Separate the JSON-RPC type definition library for the client to use
+
+### System Contract
+
+* [feature] Add cross-chain management contract to the process of state proof
+* [feature] Supports batch transaction
+
+### Doc
+
+* [feature] Update the cross-chain document with more description about [sidechain exit mechanism].
+
+## [v0.17.0] - 2018-07-18
+
+### CITA-Framework
+
+* [feature] Enable rabbitmq web management
+* [fix] Merge env_cn.sh into env.sh
+* [feature] Add economical model support Public-Permissioned Blockchain
+
+### Executor
+
+* [fix] Fix EVM lost builtin
+* [fix] Fix Executor Result cache
+* [feature] Support contract amend, superadmin can modify the code and data of the contract
+
+### Chain
+
+* [fix] Fix nodes concurrent start failed
+* [fix] Fix block number go down
+* [fix] Fix authorities list shuffle test
+* [feature] Support set value in genesis
+* [fix] Fix infinite loop triggered by sync block
+
+### Auth
+
+* [refactoring] Refactor auth
+
+### Consensus
+
+* [fix] Fix consensus stop after restart all nodes
+
+### Contract
+
+* [fix] Fix quota check
+* [fix] Fix smart contract static call bug
+
+### RPC
+
+* [fix] Rename JSON-RPC methods.
+* [Refactoring] Refactoring JSON-RPC types.
+
+### Test
+
+* [optimize] Speed up CI
+* [optimize] Add solc unit test
+
+### Doc
+
+* [doc] Support multiversion
+* [doc] Adjust table of contents
+
+## [v0.16.0] - 2018-05-15
+
+### CITA-Framework
+
+* [feature] Simple cross-chain protocol.
+* [feature] Add chain_id for different CITA network, to prevent cross chain from replay attack.
+* [feature][WIP] Prepare for public permissioned blockchain.
+
+### Executor
+
+* [feature] Add global account cache.
+
+### Chain
+
+* [optimize] Optimize block synchronization.
+* [fix] Fix pre-execution bugs.
+* [fix] Fix receipt error types.
+
+### Auth
+
+* [fix] Fix transaction broadcasting.
+* [fix] Fix transaction authentication.
+
+### Consensus
+
+* [fix] Fix bft process in some critical conditions.
+
+### Contract
+
+* [feature] Support group-based user management.
+
+### Doc
+
+* [doc] Add more English documents.
+
+## [v0.15.0] - 2018-03-30
+
+### CITA Framework
+
+* [refactoring] Refactor libproto. Send message between services will be more efficient and easy.
+
+### Executor
+
+* [feature] Upgrade EVM to support new instructions. Such as RETURNDATACOPY, RETURNDATASIZE, STATICCALL and REVERT.
+
+### Chain
+
+* [feature] Store contract ABI into Account. So SDK can generate Java/js code even without souce code of contract.
+
+### JSONRPC
+
+* [refactoring] Improve code quality.
+
+### System Contracts
+
+* [feature] Improve role-based permission contract.
+
+### Document
+
+* [doc] New document site
+
+### Toolchain
+
+* [tool] New [CITA docker images]. We recommend to use docker now and we supply some scripts to simplify this task.
+
+## [v0.13.0] - 2018-02-01
+
+### CITA Framework
+
+* [refactoring] Create new [Executor service], better transaction execution customizability.
+* [refactoring] Improve message format and protocols used by microservices.
+* [experimental] [Account model based zero-knowledge proof transaction.] Feature turned off by default.
+
+### Chain
+
+* [fix] fix memory leaking problem
+
+### Auth
+
+* [refactoring] Improve code quality
+* [fix] fix txpool transaction deletion bug
+
+### JSONRPC
+
+* [doc] update documents
+* [fix] fix transaction query bug
+
+### System Contracts
+
+* [feature] Improve role-based permission contract
+* [feature] Support read-only configurations
+
+### Toolchain
+
+* [tool] Update txtool dependencies
+* [tool] Update admintool
+* [tool] Unify configurations to toml format
+
+## [v0.12.0] - 2018-01-18
+
+### CITA Framework
+
+* [feature] Extract transaction pool and transaction preprocessing to new Auth service.
+* [feature] Support log rotating.
+* [refactoring] Move consensus service to its own repository.
+* [optimization] Use clippy to check code quality.
+
+### Consensus
+
+* [optimization] Optimize voting process to reach consensus faster.
+* [optimization] Optimize voting messages to reduce network cost.
+
+### Chain
+
+* [feature] Add chain resource management.
+* [optimization] Preprocess consensus proposal.
+* [optimization] Reduce latency in consensus message handling.
+* [optimization] Optimize block processing.
+* [optimization] Optimize quota management.
+* [optimization] Optimize native contract execution.
+
+### JSONRPC
+
+* [refactoring] Refactor service, rewrite to event-driven model.
+* [feature] Support WebSocket protocol.
+* [feature] Support filter* API.
+* [doc] Update docs.
+
+### Network
+
+* [refactoring] Refactor code
+* [feature] New block synchronization protocol.
+* [optimization] Optimize network message lock.
+* [fix] fix config file watch.
+
+### System Contracts
+
+* [feature] Add role-based user and permission management.
+
+### Toolchain
+
+* [tool] Support more than 16 local variables in solidity function.
+* [tool] Deployment tool for single node environment.
+* [tool] Added new tool cita-forever to monitor microservices.
+
+## [v0.10.0] - 2017-10-26
+
+Release the first version of CITA.
+
+[#201]: https://github.com/cryptape/cita/issues/201
+[#206]: https://github.com/cryptape/cita/issues/206
+[Account model based zero-knowledge proof transaction.]: https://github.com/cryptape/cita/blob/develop/cita-executor/core/src/native/zk_privacy.md
+[CITA docker images]: https://hub.docker.com/r/cita/
+[Emergency braking system contract]: https://docs.citahub.com/zh-CN/cita/system/emergency-brake
+[Executor service]: https://github.com/cryptape/cita/tree/develop/cita-executor
+[GetMetaData]: https://docs.citahub.com/zh-CN/cita/rpc-guide/rpc#getmetadata
+[Protocol Upgrade From V0 to V1]: https://docs.citahub.com/zh-CN/cita/protocol-upgrade/v1
+[Semantic Versioning]: https://semver.org/spec/v2.0.0.html
+[Solium]: https://github.com/duaraghav8/Solium
+[Upgrade Instructions]: https://docs.citahub.com/en-US/cita/protocol-upgrade/overview
+[`BlockTag`]: https://docs.citahub.com/zh-CN/cita/rpc-guide/rpc-types#tag
+[`getMetaData`]: https://docs.nervos.org/cita/#/rpc_guide/rpc?id=getmetadata&version=v0.20
+[`sendRawTransaction`]: https://docs.citahub.com/zh-CN/cita/rpc-guide/rpc#sendrawtransaction
+[cita-cli]: https://github.com/cryptape/cita-cli
+[documentation website]: https://docs.citahub.com/en-US/cita/cita-intro
+[quota price manager system contract]: https://docs.citahub.com/zh-CN/cita/system/price
+[return to the certain address]: https://docs.citahub.com/zh-CN/cita/system/fee-back
+[set quota price]: https://docs.citahub.com/zh-CN/cita/system/price
+[sidechain exit mechanism]: https://docs.nervos.org/cita/#/crosschain/crosschain_contract_example
+
+[Unreleased]: https://github.com/cryptape/cita/compare/v0.21.1...HEAD
+[v0.21.1]: https://github.com/cryptape/cita/compare/v0.21...HEAD
+[v0.21.0]: https://github.com/cryptape/cita/compare/v0.20.3...HEAD
+[v0.20.3]: https://github.com/cryptape/cita/compare/v0.20.2...HEAD
+[v0.20.2]: https://github.com/cryptape/cita/compare/v0.20.1...HEAD
+[v0.20.1]: https://github.com/cryptape/cita/compare/v0.20...HEAD
+[v0.20.0]: https://github.com/cryptape/cita/compare/v0.19.1...HEAD
+[v0.19.1]: https://github.com/cryptape/cita/compare/v0.19...HEAD
+[v0.19.0]: https://github.com/cryptape/cita/compare/v0.18...HEAD
+[v0.18.0]: https://github.com/cryptape/cita/compare/v0.17...HEAD
+[v0.17.0]: https://github.com/cryptape/cita/compare/v0.16...HEAD
+[v0.16.0]: https://github.com/cryptape/cita/compare/v0.15...HEAD
+[v0.15.0]: https://github.com/cryptape/cita/compare/v0.13...HEAD
+[v0.13.0]: https://github.com/cryptape/cita/compare/v0.12...HEAD
+[v0.12.0]: https://github.com/cryptape/cita/compare/v0.10...HEAD
+[v0.10.0]: https://github.com/cryptape/cita/releases/tag/v0.10
 
 [@77liyan]: https://github.com/77liyan
 [@CL]: https://github.com/classicalliu
