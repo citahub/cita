@@ -75,7 +75,7 @@ pub fn to_fat_rlps(
     first_chunk_size: usize,
     max_chunk_size: usize,
 ) -> Result<Vec<Bytes>, Error> {
-    let db = TrieDB::new(acct_db, &acc.storage_root).unwrap();
+    let db = TrieDB::create(acct_db, &acc.storage_root).unwrap();
     let mut chunks = Vec::new();
     let mut db_iter = db.iter().map_err(|err| *err)?;
     let mut target_chunk_size = first_chunk_size;

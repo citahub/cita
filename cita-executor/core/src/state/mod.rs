@@ -905,7 +905,7 @@ impl<B: Backend> State<B> {
             let mut trie = self
                 .factories
                 .trie
-                .from_existing(self.db.as_hashdb_mut(), &mut self.root)
+                .get_from_existing(self.db.as_hashdb_mut(), &mut self.root)
                 .map_err(|err| *err)?;
             for (address, ref mut a) in accounts.iter_mut().filter(|&(_, ref a)| a.is_dirty()) {
                 a.state = AccountState::Committed;

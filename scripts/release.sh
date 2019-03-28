@@ -35,7 +35,6 @@ for binary in \
         consensus-mock \
         chain-executor-mock \
         box_executor \
-        bft-wal \
         ; do
     cp -rf "target/${type}/${binary}" target/install/bin/
 done

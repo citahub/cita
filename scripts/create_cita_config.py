@@ -191,6 +191,15 @@ class ChainInfo():
         with open(executor_config, 'wt') as stream:
             toml.dump(executor_data, stream)
 
+        if args.stdout:
+            forever_config = os.path.join(self.configs_dir, 'forever.toml')
+            with open(forever_config, 'rt') as stream:
+                forever_data = toml.load(stream)
+                for process_data in forever_data['process']:
+                    process_data['args'].append('-s')
+            with open(forever_config, 'wt') as stream:
+                toml.dump(forever_data, stream)
+
         jsonrpc_config = os.path.join(self.configs_dir, 'jsonrpc.toml')
         with open(jsonrpc_config, 'rt') as stream:
             jsonrpc_data = toml.load(stream)
@@ -198,6 +207,8 @@ class ChainInfo():
                 = str(args.jsonrpc_port)
             jsonrpc_data['ws_config']['listen_port'] \
                 = str(args.ws_port)
+            if args.enable_version:
+                jsonrpc_data['enable_version'] = True
         with open(jsonrpc_config, 'wt') as stream:
             toml.dump(jsonrpc_data, stream)
 
@@ -466,6 +477,18 @@ def parse_arguments():
         '--enable_tls',
         action='store_true',
         help='The data is encrypted and transmitted on the network')
+
+    # enable get version
+    pcreate.add_argument(
+        '--enable_version',
+        action='store_true',
+        help='Jsonrpc will return cita version')
+
+    # switch to stdout
+    pcreate.add_argument(
+        '--stdout',
+        action='store_true',
+        help='Logs will output to stdout')
 
     #
     # Subcommand: append

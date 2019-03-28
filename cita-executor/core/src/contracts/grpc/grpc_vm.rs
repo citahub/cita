@@ -42,7 +42,7 @@ use util::Bytes;
 pub fn extract_logs_from_response(sender: Address, response: &InvokeResponse) -> Vec<LogEntry> {
     response
         .get_logs()
-        .into_iter()
+        .iter()
         .map(|log| {
             let mut topics = Vec::new();
             let tdata = log.get_topic();

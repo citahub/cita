@@ -16,8 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use futures::sync::oneshot;
-use jsonrpc_types::request::RequestInfo;
-use jsonrpc_types::response::Output;
+use jsonrpc_types::rpc_request::RequestInfo;
+use jsonrpc_types::rpc_response::Output;
 use libproto::request::Request as ProtoRequest;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::channel::Sender;
@@ -40,6 +40,7 @@ pub fn select_topic(method: &str) -> String {
     match method {
         "peerCount" => routing_key!(Jsonrpc >> RequestNet).into(),
         "sendRawTransaction" | "sendTransaction" => routing_key!(Jsonrpc >> RequestNewTx).into(),
+        "getVersion" => routing_key!(Jsonrpc >> RequestRpc).into(),
         _ => routing_key!(Jsonrpc >> Request).into(),
     }
 }

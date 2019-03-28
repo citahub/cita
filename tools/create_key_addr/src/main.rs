@@ -25,7 +25,7 @@ use std::fs::{File, OpenOptions};
 use std::io::Write;
 
 fn to_hex_string(data: &[u8]) -> String {
-    let strs: Vec<String> = data.into_iter().map(|a| format!("{:02x}", a)).collect();
+    let strs: Vec<String> = data.iter().map(|a| format!("{:02x}", a)).collect();
     strs.join("")
 }
 

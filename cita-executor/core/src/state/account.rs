@@ -580,7 +580,7 @@ impl Account {
         trie_factory: &TrieFactory,
         db: &mut HashDB,
     ) -> trie::Result<()> {
-        let mut t = trie_factory.from_existing(db, &mut self.storage_root)?;
+        let mut t = trie_factory.get_from_existing(db, &mut self.storage_root)?;
         for (k, v) in self.storage_changes.drain() {
             // cast key and value to trait type,
             // so we can call overloaded `to_bytes` method

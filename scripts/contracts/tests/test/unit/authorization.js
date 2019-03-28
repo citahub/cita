@@ -1,7 +1,7 @@
+const chai = require('chai');
 const authorization = require('../helpers/authorization');
 const util = require('../helpers/util');
 const config = require('../config');
-const chai = require('chai');
 
 const { expect } = chai;
 

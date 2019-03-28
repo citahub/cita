@@ -5,7 +5,7 @@ const config = require('../config');
 
 const { expect } = chai;
 const {
-  appchain, logger, genTxParams, genContract, getTxReceipt,
+  citaSDK, logger, genTxParams, genContract, getTxReceipt,
 } = util;
 
 const { superAdmin } = config;
@@ -30,7 +30,7 @@ const abi = [{
 describe('\n\nDeploy a contract\n\n', () => {
   it('should send a tx: deploy_contract', async () => {
     param = await genTxParams(superAdmin);
-    const res = await appchain.base.deploy(
+    const res = await citaSDK.base.deploy(
       bin,
       param,
     );

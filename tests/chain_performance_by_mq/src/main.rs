@@ -121,7 +121,7 @@ fn create_contract(
 }
 
 fn main() {
-    logger::init_config("chain_performance_by_mq");
+    logger::init_config(&logger::LogFavour::File("chain_performance_by_mq"));
     info!("CITA:Chain Performance by MQ");
 
     let matches = App::new("Chain Performance by MQ")

@@ -116,7 +116,7 @@ impl CrossChainVerify {
         if result.is_none() {
             return Err(Error::Internal("decode 2nd param failed".to_string()));
         }
-        let hasher = result.unwrap()[..4].into_iter().take(4).enumerate().fold(
+        let hasher = result.unwrap()[..4].iter().take(4).enumerate().fold(
             [0u8; 4],
             |mut acc, (idx, val)| {
                 acc[idx] = *val;

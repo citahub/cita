@@ -18,7 +18,7 @@
 
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
-use jsonrpc_types::rpctypes::Receipt as RpcReceipt;
+use jsonrpc_types::rpc_types::Receipt as RpcReceipt;
 use libproto::executor::{
     Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot,
 };
@@ -254,12 +254,12 @@ impl From<ProtoReceipt> for Receipt {
 
         let logs = receipt
             .get_logs()
-            .into_iter()
+            .iter()
             .map(|log_entry| {
                 let address: Address = Address::from_slice(log_entry.get_address());
                 let topics: Vec<H256> = log_entry
                     .get_topics()
-                    .into_iter()
+                    .iter()
                     .map(|topic| H256::from_slice(topic))
                     .collect();
                 let data: Bytes = Bytes::from(log_entry.get_data());

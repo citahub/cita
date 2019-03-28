@@ -17,8 +17,8 @@
 
 use helper::{select_topic, RpcMap, TransferType};
 use jsonrpc_proto::complete::CompleteInto;
-use jsonrpc_types::request::{PartialRequest, RequestInfo};
-use jsonrpc_types::response::RpcFailure;
+use jsonrpc_types::rpc_request::{PartialRequest, RequestInfo};
+use jsonrpc_types::rpc_response::RpcFailure;
 use jsonrpc_types::Error;
 use libproto::request::Request as ProtoRequest;
 use num_cpus;

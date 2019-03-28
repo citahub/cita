@@ -24,7 +24,7 @@ use core::libexecutor::economical_model::EconomicalModel;
 use core::receipt::ReceiptError;
 use crossbeam_channel::{Receiver, Sender};
 use error::ErrorCode;
-use jsonrpc_types::rpctypes::{BlockNumber, CountOrCode};
+use jsonrpc_types::rpc_types::{BlockNumber, CountOrCode};
 use libproto::auth::Miscellaneous;
 use libproto::blockchain::{RichStatus, StateSignal};
 use libproto::request::Request_oneof_req as Request;

@@ -23,7 +23,7 @@ use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use dispatcher::Dispatcher;
 use error::ErrorCode;
 use history::HistoryHeights;
-use jsonrpc_types::rpctypes::TxResponse;
+use jsonrpc_types::rpc_types::TxResponse;
 use libproto::auth::{Miscellaneous, MiscellaneousReq};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -548,7 +548,7 @@ impl MsgHandler {
     fn deal_black_list(&mut self, black_list: &BlackList) {
         black_list
             .get_clear_list()
-            .into_iter()
+            .iter()
             .for_each(|clear_list: &Vec<u8>| {
                 self.black_list_cache
                     .remove(&Address::from_slice(clear_list.as_slice()));
@@ -556,7 +556,7 @@ impl MsgHandler {
 
         black_list
             .get_black_list()
-            .into_iter()
+            .iter()
             .for_each(|blacklist: &Vec<u8>| {
                 self.black_list_cache
                     .entry(Address::from_slice(blacklist.as_slice()))
@@ -857,7 +857,7 @@ impl MsgHandler {
     fn deal_get_block_txn(&mut self, get_block_txn: &mut GetBlockTxn, origin: Origin) {
         let short_ids: Vec<H256> = get_block_txn
             .get_short_ids()
-            .into_iter()
+            .iter()
             .map(|id| H256::from(U256::from(id.as_slice())))
             .collect();
         let txs: Vec<UnverifiedTransaction> = self

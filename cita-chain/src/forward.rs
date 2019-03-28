@@ -20,7 +20,7 @@ use core::filters::eth_filter::EthFilter;
 use core::libchain::chain::{BlockInQueue, Chain};
 use core::libchain::OpenBlock;
 use error::ErrorCode;
-use jsonrpc_types::rpctypes::{
+use jsonrpc_types::rpc_types::{
     BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
     Log as RpcLog, Receipt as RpcReceipt, RpcBlock,
 };
@@ -352,7 +352,7 @@ impl Forward {
                 error!("Get messages which should not handle by this function!");
             }
 
-            Request::peercount(_) | Request::un_tx(_) => {
+            Request::peercount(_) | Request::un_tx(_) | Request::software_version(_) => {
                 error!("Get messages which should sent to other micro services!");
             }
             Request::storage_key(skey) => {

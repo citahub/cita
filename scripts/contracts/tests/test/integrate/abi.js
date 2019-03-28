@@ -4,7 +4,7 @@ const config = require('../config');
 
 const { expect } = chai;
 const {
-  appchain, logger, genTxParams,
+  citaSDK, logger, genTxParams,
 } = util;
 
 const abiArray = [{
@@ -23,7 +23,7 @@ let param;
 describe('\n\ntest store/get abi\n\n', () => {
   it('should send a tx: deploy_contract', async () => {
     param = await genTxParams(superAdmin);
-    const res = await appchain.base.deploy(
+    const res = await citaSDK.base.deploy(
       testBin,
       param,
     );
@@ -33,7 +33,7 @@ describe('\n\ntest store/get abi\n\n', () => {
 
   it('should send a tx: store abi', async () => {
     param = await genTxParams(superAdmin);
-    const res = await appchain.base.storeAbi(
+    const res = await citaSDK.base.storeAbi(
       addr,
       abi,
       param,
@@ -42,7 +42,7 @@ describe('\n\ntest store/get abi\n\n', () => {
   });
 
   it('should get the abi', async () => {
-    const res = await appchain.base.getAbi(addr, 'pending');
+    const res = await citaSDK.base.getAbi(addr, 'pending');
     logger.debug('\nabi of test:\n', res);
     expect(res).to.deep.equal(abiArray);
   });

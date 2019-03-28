@@ -1,3 +1,0 @@
-files:
-  - source: /docs/zh-CN/**/*.md
-    translation: /docs/%locale%/**/%original_file_name%
