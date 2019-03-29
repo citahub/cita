@@ -21,7 +21,6 @@ else
     LOCALTIME_PATH="/etc/localtime"
 fi
 
-
 WORKDIR=/opt/cita
 USER_ID=`id -u $USER`
 USER_NAME="user"
@@ -46,8 +45,9 @@ INIT_CMD="${INIT_CMD} while true; do sleep 100;done"
 EXPOSE="1337:1337"
 if [ "$3" == "port" ]; then
     EXPOSE=${@:4}
-    [[ "${EXPOSE}" = "NULL" ]] && EXPOSE="1337:1337"
+    [[ "${EXPOSE}" = "" ]] && EXPOSE="1337:1337"
     docker container stop $CONTAINER_NAME > /dev/null 2>&1
+    echo -e "\033[0;32mExpose ports: ${@}\033[0m"
 fi
 
 # Run container

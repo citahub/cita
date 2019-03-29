@@ -11,7 +11,7 @@ if [ "$1" != "bebop" ]; then
     if [ $? -eq 0 ]; then
         $CITA_BIN/cita-env bin/cita bebop $@
     else
-        echo -e "\033[0;31mPlease run this command after build 🎨";
+        echo -e "\033[0;31mPlease run this command after build 🎨"
         echo -e "\033[0;32mRun \`cita bebop\` to preview help! 🎸 \033[0m\n"
     fi
     exit 0
@@ -49,13 +49,14 @@ usage() {
     cat <<EOF
 Usage: $SCRIPT <command> <node> [options]
 where <command> is one of the following:
-    { help | setup | start | stop | restart | ping
-      top | backup | clean | logs | logrotate }
+    { help | create | port | setup | start | stop | restart
+      ping | top | backup | clean | logs | logrotate }
 Run \`$SCRIPT help\` for more detailed information.
 EOF
 }
 
 
+# INFORMATIONAL COMMANDS
 help() {
     cat <<EOF
 Usage: $SCRIPT <command> <node> [options]
@@ -64,11 +65,12 @@ This is the primary script for controlling the $SCRIPT node.
     help
         You are here.
  BUILDING COMMANDS
-    create <config> (temporarily)
-        Creates blockchains by the following config, use 'cita create -h'
-        to get more information, 'cita-config' has the same function.
-    port <port:port>
-        Sets docker port, for example: 'cita port 1337:1337'
+    create <config>
+        Creates blockchains according to the following config, 
+        use "cita create -h" to get more information. 
+        "cita-config" has the same function.
+    port <ports>
+        Sets docker port, for example: "cita port 1337:1337"
  SERVICE CONTROL COMMANDS
     setup <node>
         Ensuring the required runtime environment for $SCRIPT node, like
@@ -115,14 +117,18 @@ EOF
 
 }
 
-port() {
-    echo -e "\033[0;32mExpose ports: ${@}\033[0m"
-}
 
+# BUILDING COMMANDS
 create() {
     $CITA_SCRIPTS/create_cita_config.py $@
 }
 
+port() {
+    echo -e "\033[0;32mExpose ports: ${@}\033[0m"
+}
+
+
+# SERVICE CONTROL COMMANDS
 start_rabbitmq() {
     # Config and start RabbitMQ
     if [[ `uname` == 'Darwin' ]]
@@ -216,6 +222,8 @@ do_stop() {
     echo "stop...ok"
 }
 
+
+# DIAGNOSTIC COMMANDS
 PING_STATUS=""
 do_ping() {
     for service in forever; do
@@ -251,6 +259,8 @@ do_status() {
     done
 }
 
+
+# SCRIPTING COMMANDS
 do_clean() {
     # Clean empty node always successfully
     if [[ ! -d ${NODE_DATA_DIR} || ! -d ${NODE_LOGS_DIR} ]]; then
@@ -354,7 +364,7 @@ node_up_check() {
     fi
 }
 
-# Commands not depend on NODE_PATH
+# Commands not depend on $NODE_PATH
 case "${COMMAND}" in
     help)
         help
@@ -365,14 +375,14 @@ case "${COMMAND}" in
         usage
         exit 0
         ;;
-    
-    port)
-        port ${@:2}
+
+    create)
+        create $@
         exit 0
         ;;
     
-    create)
-        create $@
+    port)
+        port ${@:2}
         exit 0
 esac
             
