@@ -1,4 +1,4 @@
 [ntp_config]
-enabled = true
+enabled = false
 threshold = 1000
 address = "0.pool.ntp.org:123"
