@@ -17,7 +17,7 @@ if [ "$1" != "bebop" ]; then
     exit 0
 fi
 
-# Delete the `-r` parameter
+# Delete the verbose parameters
 set -- "${@:2}"
 
 # Exit immediately if a command exits with a non-zero status
@@ -121,10 +121,6 @@ EOF
 # BUILDING COMMANDS
 create() {
     $CITA_SCRIPTS/create_cita_config.py $@
-}
-
-port() {
-    echo -e "\033[0;32mExpose ports: ${@}\033[0m"
 }
 
 
@@ -380,10 +376,7 @@ case "${COMMAND}" in
         create $@
         exit 0
         ;;
-    
-    port)
-        port ${@:2}
-        exit 0
+
 esac
             
 if [ $# -lt 2 ]; then
