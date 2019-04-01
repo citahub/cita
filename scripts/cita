@@ -2,8 +2,12 @@
 # -*- tab-width:4;indent-tabs-mode:nil -*-
 # ex: ts=4 sw=4 et
 
-# Commands Paths
-CITA_BIN="$(cd $(dirname "$0") && pwd -P)"
+# Exec-Script Path
+if [ `uname` == 'Darwin' ]; then
+    CITA_BIN="$(dirname $(realpath $0))"
+else
+    CITA_BIN="$(dirname $(readlink -f $0))"
+fi
 CITA_SCRIPTS="$(dirname $CITA_BIN)/scripts"
 
 if [ "$1" != "bebop" ]; then
@@ -181,11 +185,11 @@ do_start() {
 
     # Start cita-forever
     if [ -z ${debug} ]; then
-        cita-forever -c ${config} start 2>&1
+        cita-forever -c ${config} start > /dev/null 2>&1
     else
         RUST_LOG=cita_auth=${debug},cita_chain=${debug},cita_executor=${debug},cita_jsonrpc=${debug},cita_network=${debug},cita_bft=${debug},\
 core_executor=${debug},engine=${debug},jsonrpc_types=${debug},libproto=${debug},proof=${debug},txpool=${debug},core=${debug} \
-        cita-forever -c ${config} start 2>&1
+        cita-forever -c ${config} start /dev/null 2>&1
     fi
 
     # Wait for the node to come up
@@ -195,7 +199,6 @@ core_executor=${debug},engine=${debug},jsonrpc_types=${debug},libproto=${debug},
         sleep 1
         do_ping
         if [ "${PING_STATUS}" == "pong" ]; then
-            echo "start...ok"
             exit 0
         fi
     done
@@ -431,6 +434,7 @@ case "${COMMAND}" in
         do_ping
         if [ "${PING_STATUS}" == "pong" ]; then
             echo "pong"
+            exit 0
         else
             echo "Node '${NODE_NAME}' not responding to pings."
             exit 1

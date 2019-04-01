@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 
-SOURCE_DIR="$(cd $(dirname "$0") && pwd -P)"
+if [ `uname` == 'Darwin' ]; then
+    SYSTEM_NET="bridge"
+    SOURCE_DIR="$(dirname $(realpath $0))"
+else
+    SYSTEM_NET="host"
+    SOURCE_DIR="$(dirname $(readlink -f $0))"
+fi
+
+cp /etc/localtime ${SOURCE_DIR}/localtime
+LOCALTIME_PATH="${SOURCE_DIR}/localtime"
 
 test -f "${SOURCE_DIR}/CODE_OF_CONDUCT.md"
 if [ $? -eq 0 ]; then
@@ -10,15 +19,6 @@ else
     CONTAINER_NAME="cita_run_container"
     DOCKER_IMAGE="cita/cita-run:ubuntu-18.04-20181009"
     SOURCE_DIR="$(dirname $SOURCE_DIR)"
-fi
-
-if [ `uname` == 'Darwin' ]; then
-    cp /etc/localtime ${SOURCE_DIR}/localtime
-    SYSTEM_NET="bridge"
-    LOCALTIME_PATH="${SOURCE_DIR}/localtime"
-else
-    SYSTEM_NET="host"
-    LOCALTIME_PATH="/etc/localtime"
 fi
 
 WORKDIR=/opt/cita
@@ -58,8 +58,8 @@ if [ $? -ne 0 ]; then
     docker run -d \
            --net=${SYSTEM_NET} \
            --volume ${SOURCE_DIR}:${WORKDIR} \
-           --volume ${DOCKER_CARGO}/git:${DOCKER_CARGO}/git \
-           --volume ${DOCKER_CARGO}/registry:${DOCKER_CARGO}/registry \
+           --volume ${DOCKER_CARGO}/git:${CARGO_HOME}/git \
+           --volume ${DOCKER_CARGO}/registry:${CARGO_HOME}/registry \
            --volume ${LOCALTIME_PATH}:/etc/localtime \
            --env USER_ID=${USER_ID} \
            --workdir ${WORKDIR} \
