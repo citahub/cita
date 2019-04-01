@@ -47,8 +47,8 @@ echo "DONE"
 
 ################################################################################
 echo -n "3) just start mock-chain/0  ...  "
-${BINARY_DIR}/bin/cita setup mock-chain/0 > /dev/null
-${BINARY_DIR}/bin/cita start mock-chain/0 trace
+${BINARY_DIR}/bin/cita bebop setup mock-chain/0 > /dev/null
+${BINARY_DIR}/bin/cita bebop start mock-chain/0 trace
 echo "DONE"
 
 ################################################################################
@@ -67,7 +67,7 @@ echo "DONE"
 
 ################################################################################
 echo -n "6) stop mock-chain/0  ...  "
-${BINARY_DIR}/bin/cita stop mock-chain/0
+${BINARY_DIR}/bin/cita bebop stop mock-chain/0
 echo "DONE"
 
 ################################################################################

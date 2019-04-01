@@ -112,11 +112,11 @@ function start_chain () {
     local size=$2
     title "Start chain [${chain}] ..."
     for ((id=0;id<${size};id++)); do
-        bin/cita setup ${chain}chain/${id} && true
+        bin/cita bebop setup ${chain}chain/${id} && true
     done
     for ((id=0;id<${size};id++)); do
-        bin/cita stop  ${chain}chain/${id}>/dev/null 2>&1 || true
-        bin/cita start ${chain}chain/${id} trace>/dev/null 2>&1
+        bin/cita bebop stop  ${chain}chain/${id}>/dev/null 2>&1 || true
+        bin/cita bebop start ${chain}chain/${id} trace>/dev/null 2>&1
     done
 }
 
@@ -125,7 +125,7 @@ function stop_chain () {
     local size=$2
     title "Stop chain [${chain}] ..."
     for ((id=0;id<${size};id++)); do
-        bin/cita stop ${chain}chain/${id}
+        bin/cita bebop stop ${chain}chain/${id}
     done
 }
 

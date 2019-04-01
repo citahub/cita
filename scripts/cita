@@ -2,17 +2,34 @@
 # -*- tab-width:4;indent-tabs-mode:nil -*-
 # ex: ts=4 sw=4 et
 
+# Commands Paths
+CITA_BIN="$(cd $(dirname "$0") && pwd -P)"
+CITA_SCRIPTS="$(dirname $CITA_BIN)/scripts"
+
+if [ "$1" != "bebop" ]; then
+    stat $CITA_BIN/cita-env > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        $CITA_BIN/cita-env bin/cita bebop $@
+    else
+        echo -e "\033[0;31mPlease run this command after build 🎨"
+        echo -e "\033[0;32mRun \`cita bebop\` to preview help! 🎸 \033[0m\n"
+    fi
+    exit 0
+fi
+
+# Delete the verbose parameters
+set -- "${@:2}"
+
 # Exit immediately if a command exits with a non-zero status
 set -e
 
 # Add cita scripts into system executable paths
-export PATH=$PATH:$(cd $(dirname "$0")/../bin; pwd)
-
+export PATH=$CITA_BIN:$PATH
 SERVICES=( forever auth bft chain executor jsonrpc network )
 SCRIPT=`basename $0`
 COMMAND=$1
 NODE_NAME=$2
-NODE_PATH="$(pwd)/${NODE_NAME}"
+NODE_PATH="$(dirname $CITA_BIN)/${NODE_NAME}"
 NODE_LOGS_DIR="${NODE_PATH}/logs"
 NODE_DATA_DIR="${NODE_PATH}/data"
 TNODE=`echo ${NODE_NAME} | sed 's/\//%2f/g'`
@@ -32,73 +49,67 @@ usage() {
     cat <<EOF
 Usage: $SCRIPT <command> <node> [options]
 where <command> is one of the following:
-    { help | setup | start | stop | restart | ping
-      top | backup | clean | logs | logrotate }
-
+    { help | create | port | setup | start | stop | restart
+      ping | top | backup | clean | logs | logrotate }
 Run \`$SCRIPT help\` for more detailed information.
-
 EOF
 }
 
 
+# INFORMATIONAL COMMANDS
 help() {
     cat <<EOF
 Usage: $SCRIPT <command> <node> [options]
 This is the primary script for controlling the $SCRIPT node.
-
  INFORMATIONAL COMMANDS
     help
         You are here.
-
+ BUILDING COMMANDS
+    create <config>
+        Creates blockchains according to the following config, 
+        use "cita create -h" to get more information. 
+        "cita-config" has the same function.
+    port <ports>
+        Sets docker port, for example: "cita port 1337:1337"
  SERVICE CONTROL COMMANDS
     setup <node>
         Ensuring the required runtime environment for $SCRIPT node, like
         RabbitMQ service. You should run this command at the first time
         of running $SCRIPT node.
-
     start <node>
         Starts the $SCRIPT node in the background. If the node is already
         started, you will get the message "Node is already running!" If the
         node is not already running, no output will be given.
-
     stop <node> [debug] [mock]
         Stops the running $SCRIPT node. Prints "ok" when successful.  When
         the node is already stopped or not responding, prints:
         "Node 'NODE_NAME' not responding to pings."
-
     restart <node>
         Stops and then starts the running $SCRIPT node. Prints "ok"
         when successful.  When the node is already stopped or not
         responding, prints: "Node 'NODE_NAME' not responding to
         pings."
-
  DIAGNOSTIC COMMANDS
     ping <node>
         Checks that the $SCRIPT node is running. Prints "pong" when
         successful.  When the node is stopped or not responding, prints:
         "Node 'NODE_NAME' not responding to pings."
-
     top <node>
         Prints services processes information similar
         to the information provided by the \`top\` command.
-
     stat <node> (deprecated, use 'top' instead)
-
     logs <node> <service>
         Fetch the logs of the specified service.
-
  SCRIPTING COMMANDS
     backup <node>
         Backup the node's data and logs into backup directory, which actually
         copy that data and logs into backup directory. Prints the specified
         backup commands. When the node is running, prints:
         "Node is already running!"
-
     clean <node>
         Clean the node's data and logs, which actually move that data and logs
         into backup directory. Prints the specified backup commands. When the
         node is running, prints: "Node is already running!"
-
     logrotate <node>
         Archives the current node logs, starts fresh logs. Prints the archived
         logs path.
@@ -106,6 +117,14 @@ EOF
 
 }
 
+
+# BUILDING COMMANDS
+create() {
+    $CITA_SCRIPTS/create_cita_config.py $@
+}
+
+
+# SERVICE CONTROL COMMANDS
 start_rabbitmq() {
     # Config and start RabbitMQ
     if [[ `uname` == 'Darwin' ]]
@@ -176,6 +195,7 @@ core_executor=${debug},engine=${debug},jsonrpc_types=${debug},libproto=${debug},
         sleep 1
         do_ping
         if [ "${PING_STATUS}" == "pong" ]; then
+            echo "start...ok"
             exit 0
         fi
     done
@@ -195,9 +215,11 @@ do_stop() {
         exit 1
     fi
 
-    echo "ok"
+    echo "stop...ok"
 }
 
+
+# DIAGNOSTIC COMMANDS
 PING_STATUS=""
 do_ping() {
     for service in forever; do
@@ -233,6 +255,8 @@ do_status() {
     done
 }
 
+
+# SCRIPTING COMMANDS
 do_clean() {
     # Clean empty node always successfully
     if [[ ! -d ${NODE_DATA_DIR} || ! -d ${NODE_LOGS_DIR} ]]; then
@@ -336,14 +360,26 @@ node_up_check() {
     fi
 }
 
+# Commands not depend on $NODE_PATH
+case "${COMMAND}" in
+    help)
+        help
+        exit 0
+        ;;
+    
+    usage)
+        usage
+        exit 0
+        ;;
 
-if [ "${COMMAND}" = "help" ]; then
-    help
-    exit 0
-elif [ "${COMMAND}" = "usage" ]; then
-    usage
-    exit 0
-elif [ $# -lt 2 ]; then
+    create)
+        create $@
+        exit 0
+        ;;
+
+esac
+            
+if [ $# -lt 2 ]; then
     usage
     exit 1
 fi
@@ -361,7 +397,6 @@ fi
 pushd . > /dev/null
 cd ${NODE_PATH}
 
-# Check the ${COMMAND} for instructions
 case "${COMMAND}" in
     setup)
         do_setup
@@ -437,6 +472,7 @@ case "${COMMAND}" in
     help)
         help
         ;;
+
     *)
         usage
         ;;
@@ -444,4 +480,3 @@ esac
 popd > /dev/null
 
 exit 0
-

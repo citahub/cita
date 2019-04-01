@@ -39,10 +39,10 @@ echo "DONE"
 ################################################################################
 echo "3) Run node-0, node-1, node-2"
 for id in {0,1,2}; do
-    ${BINARY_DIR}/bin/cita setup ${CHAIN_NAME}/${id} > /dev/null
+    ${BINARY_DIR}/bin/cita bebop setup ${CHAIN_NAME}/${id} > /dev/null
 done
 for id in {0,1,2}; do
-    ${BINARY_DIR}/bin/cita start ${CHAIN_NAME}/${id} trace
+    ${BINARY_DIR}/bin/cita bebop start ${CHAIN_NAME}/${id} trace
 done
 echo "DONE"
 
@@ -60,8 +60,8 @@ echo "${timeout}s DONE"
 
 ################################################################################
 echo "5) Stop node-1 and node-2, so that node-0 cannot grow up via cita-consensus and cita-sync mechanisms"
-${BINARY_DIR}/bin/cita stop ${CHAIN_NAME}/1
-${BINARY_DIR}/bin/cita stop ${CHAIN_NAME}/2
+${BINARY_DIR}/bin/cita bebop stop ${CHAIN_NAME}/1
+${BINARY_DIR}/bin/cita bebop stop ${CHAIN_NAME}/2
 
 # Ensure that the current round of BFT has been finished. So that node-0 will
 # not continue growing up, which means its height stay the same.
@@ -116,8 +116,8 @@ echo "DONE"
 
 ################################################################################
 echo "8) Start node-1 and node-2 and check all grow up ..."
-${BINARY_DIR}/bin/cita start ${CHAIN_NAME}/1 trace
-${BINARY_DIR}/bin/cita start ${CHAIN_NAME}/2 trace
+${BINARY_DIR}/bin/cita bebop start ${CHAIN_NAME}/1 trace
+${BINARY_DIR}/bin/cita bebop start ${CHAIN_NAME}/2 trace
 
 wait_timeout=30
 timeout=`check_height_growth_normal 1 $wait_timeout` || (echo "FAILED"
@@ -131,7 +131,7 @@ echo "DONE"
 ################################################################################
 echo "9) Clean Up ..."
 for id in {0,1,2}; do
-    ${BINARY_DIR}/bin/cita stop ${CHAIN_NAME}/${id}
+    ${BINARY_DIR}/bin/cita bebop stop ${CHAIN_NAME}/${id}
 done
 
 cleanup
