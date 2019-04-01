@@ -16,8 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::mq_agent::{MqAgentClient, PubMessage};
-use crate::node_manager::{BroadcastReq, GetPeerCountReq, NodesManagerClient, SingleTxReq};
+use crate::node_manager::{
+    BroadcastReq, GetPeerCountReq, GetPeersInfoReq, NodesManagerClient, SingleTxReq,
+};
 use crate::synchronizer::{SynchronizerClient, SynchronizerMessage};
+use jsonrpc_types::rpc_types::PeersInfo;
+use jsonrpc_types::ErrorCode;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
@@ -25,6 +29,7 @@ use libproto::{Message as ProtoMessage, OperateType, Response};
 use libproto::{TryFrom, TryInto};
 use logger::{error, info, trace, warn};
 use pubsub::channel::{unbounded, Receiver, Sender};
+use serde_json;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -143,6 +148,9 @@ impl LocalMessage {
             routing_key!(Jsonrpc >> RequestNet) => {
                 self.reply_rpc(&self.data, service);
             }
+            routing_key!(Jsonrpc >> RequestPeersInfo) => {
+                self.reply_peers_info(&self.data, service);
+            }
             routing_key!(Snapshot >> SnapshotReq) => {
                 info!("[Network] Set disconnect and response");
                 self.snapshot_req(&self.data, service);
@@ -181,6 +189,51 @@ impl LocalMessage {
                 }
             } else {
                 warn!("[Network] Receive unexpected rpc data");
+            }
+        }
+    }
+
+    fn reply_peers_info(&self, data: &[u8], service: &mut Network) {
+        let mut msg = ProtoMessage::try_from(data).unwrap();
+
+        let req_opt = msg.take_request();
+        {
+            if let Some(mut req) = req_opt {
+                // Get peer count and send back to JsonRpc from MQ
+                if req.has_peers_info() {
+                    let mut response = Response::new();
+                    response.set_request_id(req.take_request_id());
+
+                    let (tx, rx) = unbounded();
+                    service
+                        .nodes_mgr_client
+                        .get_peers_info(GetPeersInfoReq::new(tx));
+
+                    // Get peers from rx channel
+                    // FIXME: This is a block receive, double check about this
+                    let peers = rx.recv().unwrap();
+
+                    let peers_info = PeersInfo {
+                        amount: peers.len() as u32,
+                        peers: Some(peers),
+                        error_message: None,
+                    };
+
+                    if let Ok(json_peers_info) = serde_json::to_value(peers_info) {
+                        response.set_peers_info(json_peers_info.to_string());
+                    } else {
+                        response.set_code(ErrorCode::InternalError.code());
+                        response.set_error_msg(ErrorCode::InternalError.description());
+                    }
+
+                    let msg: ProtoMessage = response.into();
+                    service.mq_client.send_peer_count(PubMessage::new(
+                        routing_key!(Net >> Response).into(),
+                        msg.try_into().unwrap(),
+                    ));
+                }
+            } else {
+                warn!("[Network] Receive unexpected get peers info data");
             }
         }
     }

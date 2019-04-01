@@ -31,7 +31,8 @@
 //!     | network_consensus | Consensus | RawBytes              |
 //!     | network           | Chain     | Status                |
 //!     | network           | Chain     | SyncResponse          |
-//!     | network           | Jonsonrpc | RequestNet            |
+//!     | network           | Jsonrpc   | RequestNet            |
+//!     | network           | Jsonrpc   | RequestPeersInfo      |
 //!     | network           | Auth      | GetBlockTxn           |
 //!     | network           | Auth      | BlockTxn              |
 //!

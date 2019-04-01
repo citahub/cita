@@ -38,6 +38,7 @@
 //!     | jsonrpc | Jsonrpc   | Auth      | RequestNewTxBatch |
 //!     | jsonrpc | Jsonrpc   | Chain     | Request           |
 //!     | jsonrpc | Jsonrpc   | Net       | RequestNet        |
+//!     | jsonrpc | jsonrpc   | Net       | RequestPeersInfo  |
 //!
 //! ### Key behavior
 //!
