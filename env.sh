@@ -33,13 +33,7 @@ DOCKER_CARGO=${HOME}/.docker_cargo
 mkdir -p ${DOCKER_CARGO}/git
 mkdir -p ${DOCKER_CARGO}/registry
 
-timeout=3
-target=www.google.com
-ret_code=`curl -I -s --connect-timeout $timeout $target -w %{http_code} | tail -n1`
-if [ "x$ret_code" != "x200" ]; then
-    INIT_CMD="echo -e '[source.crates-io]\nregistry = \"https://github.com/rust-lang/crates.io-index\"\nreplace-with = \"ustc\"\n[source.ustc]\nregistry = \"https://mirrors.ustc.edu.cn/crates.io-index\"' | sudo tee /opt/.cargo/config;"
-fi
-INIT_CMD="${INIT_CMD} while true; do sleep 100;done"
+INIT_CMD="sleep infinity"
 
 # Port condition
 EXPOSE="1337:1337"
