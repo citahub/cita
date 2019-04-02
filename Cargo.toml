@@ -14,6 +14,7 @@ members = ["cita-auth"
 ,"tests/chain_performance_by_mq"
 ,"tests/box_executor"
 ,"tests/vm_test"
+,"tests/state_test"
 ]
 
 [profile.bench]
