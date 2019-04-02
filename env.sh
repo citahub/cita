@@ -84,7 +84,7 @@ if [ "$3" == "--daemon"  ]; then
     set "${@:1:2}" "${@:4}"
     docker exec -d ${CONTAINER_NAME} /usr/bin/gosu ${USER_NAME} "$@"
 elif [ $# -gt 0 ]; then
-    docker exec -i ${USE_TTY} ${CONTAINER_NAME} /usr/bin/gosu ${USER_NAME} "$@"
+    docker exec ${USE_TTY} ${CONTAINER_NAME} /usr/bin/gosu ${USER_NAME} "$@"
 else
     docker exec -i ${USE_TTY} ${CONTAINER_NAME} \
         /bin/bash -c "stty cols $(tput cols) rows $(tput lines) && /usr/bin/gosu ${USER_NAME} /bin/bash"
