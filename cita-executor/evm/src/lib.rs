@@ -17,7 +17,7 @@
 //! Ethereum virtual machine.
 
 extern crate bit_set;
-extern crate cita_types;
+pub extern crate cita_types;
 extern crate common_types as types;
 extern crate db as cita_db;
 extern crate hashable;

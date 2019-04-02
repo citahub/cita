@@ -58,7 +58,7 @@ pub struct FakeExt {
     pub blockhashes: HashMap<U256, H256>,
     pub codes: HashMap<Address, Arc<Bytes>>,
     pub logs: Vec<FakeLogEntry>,
-    pub _suicides: HashSet<Address>,
+    pub suicides: HashSet<Address>,
     pub info: EnvInfo,
     pub schedule: Schedule,
     pub balances: HashMap<Address, U256>,
@@ -106,7 +106,7 @@ impl Ext for FakeExt {
     }
 
     fn origin_balance(&self) -> error::Result<U256> {
-        unimplemented!()
+        Ok(U256::from(0))
     }
 
     fn balance(&self, address: &Address) -> error::Result<U256> {
@@ -178,7 +178,8 @@ impl Ext for FakeExt {
     }
 
     fn suicide(&mut self, _refund_address: &Address) -> error::Result<()> {
-        unimplemented!();
+        self.suicides.insert(_refund_address.clone());
+        Ok(())
     }
 
     fn schedule(&self) -> &Schedule {
