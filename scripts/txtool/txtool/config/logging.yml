@@ -5,7 +5,7 @@ formatters:
 handlers:
   console:
     class: logging.FileHandler
-    level:  INFO 
+    level:  INFO
     formatter: simple
     filename: info.log
   console_debug:
