@@ -76,7 +76,7 @@ test -t 1 && USE_TTY="-t"
 # Condition `daemon` to run daemon.
 if [ "$3" == "--daemon"  ]; then
     set "${@:1:2}" "${@:4}"
-    docker exec -d ${CONTAINER_NAME} /usr/bin/gosu ${USER_NAME} "$@"
+    docker exec -d ${CONTAINER_NAME} /bin/bash -c "/usr/bin/gosu ${USER_NAME} $* >/dev/null 2>&1"
 elif [ $# -gt 0 ]; then
     docker exec -i ${USE_TTY} ${CONTAINER_NAME} /usr/bin/gosu ${USER_NAME} "$@"
 else
