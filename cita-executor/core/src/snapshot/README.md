@@ -2,7 +2,7 @@
 
 快照含三部分: block chunks, state chunks, 及manifest.
 
-每个chunk是snappy压缩后的hash. 压缩前的chunks大小为`CHUNK_SIZE`,目前默认4MB. 
+每个chunk是snappy压缩后的hash. 压缩前的chunks大小为`CHUNK_SIZE`,目前默认4MB.
 
 这里的数据结构都需进行RLP编码。
 
@@ -30,14 +30,14 @@
     hash: B_32, // chunk中的第一个区块hash
     [abridged_1: AB, receipts_1: RC], // 第一个block及receipts的RLP编码（区块连续）
     [abridged_2: AB, receipts_2: RC], // 第二个block及receipts的RLP编码
-    [abridged_3: AB, receipts_3: RC], // ... 
+    [abridged_3: AB, receipts_3: RC], // ...
     ...
 ]
 ```
 
 # 状态chunks(State Chunks)
 
-State chunks存储给定区块的状态. 
+State chunks存储给定区块的状态.
 
 每个chunk由list集合构成，每个list含两项：地址的`sha3` hash，及相应的账户结构(ACC).
 
@@ -53,4 +53,4 @@ State chunks存储给定区块的状态.
     storage: [[keyhash1: B_32, val1: B_32], [keyhash2: B_32, val2: B_32], ...]
 ]
 ```
-`storage` 为账户storage的RLP list, 每个元素含两项：`sha3(key)`, 及storage值. 
+`storage` 为账户storage的RLP list, 每个元素含两项：`sha3(key)`, 及storage值.

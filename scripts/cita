@@ -66,8 +66,8 @@ This is the primary script for controlling the $SCRIPT node.
         You are here.
  BUILDING COMMANDS
     create <config>
-        Creates blockchains according to the following config, 
-        use "cita create -h" to get more information. 
+        Creates blockchains according to the following config,
+        use "cita create -h" to get more information.
         "cita-config" has the same function.
     port <ports>
         Sets docker port, for example: "cita port 1337:1337"
@@ -366,7 +366,7 @@ case "${COMMAND}" in
         help
         exit 0
         ;;
-    
+
     usage)
         usage
         exit 0
@@ -378,7 +378,7 @@ case "${COMMAND}" in
         ;;
 
 esac
-            
+
 if [ $# -lt 2 ]; then
     usage
     exit 1
