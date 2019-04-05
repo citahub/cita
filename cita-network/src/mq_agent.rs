@@ -69,6 +69,7 @@ impl MqAgent {
                 Chain >> Status,
                 Chain >> SyncResponse,
                 Jsonrpc >> RequestNet,
+                Jsonrpc >> RequestPeersInfo,
                 Snapshot >> SnapshotReq
             ]),
             ctx_sub_other_modules,

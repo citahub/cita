@@ -352,15 +352,16 @@ impl Forward {
                 error!("Get messages which should not handle by this function!");
             }
 
-            Request::peercount(_) | Request::un_tx(_) | Request::software_version(_) => {
-                error!("Get messages which should sent to other micro services!");
-            }
             Request::storage_key(skey) => {
                 trace!("storage key info is {:?}", skey);
                 self.ctx_pub
                     .send((routing_key!(Chain >> Request).into(), imsg))
                     .unwrap();
                 return;
+            }
+
+            _ => {
+                error!("Get messages which should sent to other micro services!");
             }
         };
         let msg: Message = response.into();

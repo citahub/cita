@@ -384,6 +384,10 @@ impl NodesManagerClient {
         self.send_req(NodesManagerMessage::GetPeerCount(req));
     }
 
+    pub fn get_peers_info(&self, req: GetPeersInfoReq) {
+        self.send_req(NodesManagerMessage::GetPeersInfo(req));
+    }
+
     pub fn network_init(&self, req: NetworkInitReq) {
         self.send_req(NodesManagerMessage::NetworkInit(req));
     }
@@ -416,6 +420,7 @@ pub enum NodesManagerMessage {
     AddConnectedNode(AddConnectedNodeReq),
     AddRepeatedNode(AddRepeatedNodeReq),
     ConnectedSelf(ConnectedSelfReq),
+    GetPeersInfo(GetPeersInfoReq),
 }
 
 impl NodesManagerMessage {
@@ -433,6 +438,7 @@ impl NodesManagerMessage {
             NodesManagerMessage::AddConnectedNode(req) => req.handle(service),
             NodesManagerMessage::AddRepeatedNode(req) => req.handle(service),
             NodesManagerMessage::ConnectedSelf(req) => req.handle(service),
+            NodesManagerMessage::GetPeersInfo(req) => req.handle(service),
         }
     }
 }
@@ -881,6 +887,37 @@ impl GetPeerCountReq {
                 "[NodeManager] Get peer count {}, but send it failed : {:?}",
                 peer_count, e
             );
+        }
+    }
+}
+
+pub struct GetPeersInfoReq {
+    return_channel: Sender<HashMap<Address, String>>,
+}
+
+impl GetPeersInfoReq {
+    pub fn new(return_channel: Sender<HashMap<Address, String>>) -> Self {
+        GetPeersInfoReq { return_channel }
+    }
+
+    pub fn handle(self, service: &mut NodesManager) {
+        let mut peers = HashMap::default();
+
+        for (key, value) in service.connected_peer_keys.iter() {
+            if let Some(socket_addr) = service.connected_addrs.get(&value) {
+                peers.insert(key.clone(), socket_addr.ip().to_string());
+            } else {
+                warn!(
+                    "[NodeManager] Can not get socket address for session {} from connected_addr. It must be something wrong!",
+                    value
+                );
+            }
+        }
+
+        debug!("[NodeManager] get peers info : {:?}", peers);
+
+        if let Err(e) = self.return_channel.try_send(peers) {
+            warn!("[NodeManager] Send peers info failed : {:?}", e);
         }
     }
 }

@@ -1,0 +1,32 @@
+{
+  "title": "peersInfo",
+  "schema": {
+    "$ref": "../schemas/peersInfo.json"
+  },
+  "tests": [
+    {
+      "title": "peersInfo success if enabled",
+      "request": {
+        "method": "peersInfo",
+        "params": []
+      },
+      "expectedResponse": {
+        "result": {
+          "amount": 0,
+	      "peers": {
+            "0xd843d5b89d0fce6b9543fec3092c4ff4c3dceb23":"127.0.0.1",
+	        "0x9136a06f379a3c457df2a97e192633c8d89b28f6":"127.0.0.1",
+	        "0x0455dbff153d0086fae0b66bb62a037d17fa62bd":"127.0.0.1"
+	      },
+	      "errorMessage": null
+        }
+      },
+      "asserts": [
+        {
+          "description": "response should not null",
+          "program": ".receivedResponse.result != null"
+        }
+      ]
+    }
+  ]
+}

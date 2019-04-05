@@ -15,7 +15,9 @@ util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 serde = "1.0.84"
+serde_json = "1.0"
 serde_derive = "1.0.84"
 clap = "2.32"
 bytes = "0.4"
