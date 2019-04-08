@@ -71,7 +71,7 @@ test -t 1 && USE_TTY="-t"
 # $0=`realpath`, $1="bin/cita", $2="bebop",
 # $3="command/--daemon", $4="config/command"
 # Most OS delete $0 default, some linux not.
-[[ "$3" == "start" ]] && set "${@:1:2}" "--daemon" "${@:3}"
+[[ "$3" == "start" ]] || [[ "$3" == "restart" ]] && set "${@:1:2}" "--daemon" "${@:3}"
 
 # Condition `daemon` to run daemon.
 if [ "$3" == "--daemon"  ]; then
