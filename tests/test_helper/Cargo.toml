@@ -1,0 +1,14 @@
+[package]
+name = "test_helper"
+version = "0.1.0"
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
+edition = "2018"
+
+[dependencies]
+ethereum-types = "0.4.0"
+tiny-keccak = "1.4.2"
+hex = "0.3"
+libsecp256k1 = "0.2.2"
+
+core-executor = { path="../../cita-executor/core"}
+evm = { path="../../cita-executor/evm"}

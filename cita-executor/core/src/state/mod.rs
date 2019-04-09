@@ -272,7 +272,6 @@ const SEC_TRIE_DB_UNWRAP_STR: &str =
 
 impl<B: Backend> State<B> {
     /// Creates new state with empty state root
-    #[cfg(test)]
     pub fn new(mut db: B, account_start_nonce: U256, factories: Factories) -> State<B> {
         let mut root = H256::new();
         {

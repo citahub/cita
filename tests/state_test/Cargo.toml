@@ -1,0 +1,21 @@
+[package]
+name = "state_test"
+version = "0.1.0"
+authors = ["Cryptape Technologies <arch@cryptape.com>"]
+edition = "2018"
+
+[dependencies]
+ethereum-types = "0.4.0"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+hex = "0.3"
+libsecp256k1 = "0.2.2"
+tiny-keccak = "1.4.2"
+env_logger = "0.6.1"
+log = "0.4.0"
+
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+core-executor = { path="../../cita-executor/core"}
+evm = { path="../../cita-executor/evm"}
+test_helper = { path="../test_helper"}

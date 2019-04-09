@@ -28,7 +28,7 @@ extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
 extern crate cita_merklehash;
-extern crate db as cita_db;
+pub extern crate db as cita_db;
 extern crate hashable;
 #[cfg_attr(test, macro_use)]
 extern crate serde_json;
@@ -45,7 +45,7 @@ extern crate bit_set;
 extern crate cita_ed25519;
 extern crate cita_secp256k1;
 extern crate cita_types;
-extern crate common_types as types;
+pub extern crate common_types as types;
 extern crate crossbeam;
 extern crate crypto;
 extern crate evm;
