@@ -1,6 +1,6 @@
 # Vm Test
 
-Test the cita vm using [Tests](https://github.com/ethereum/tests/blob/develop/VMTests/)
+Test the cita vm using [Tests](https://github.com/cryptape/cita-testdata/tree/master/VMTests/)
 
 
 ## Usage

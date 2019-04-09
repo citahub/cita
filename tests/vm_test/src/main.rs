@@ -1,7 +1,3 @@
-extern crate core_executor;
-extern crate evm;
-
-mod helper;
 mod json;
 
 use evm::action_params::{ActionParams, ActionValue};
@@ -10,10 +6,10 @@ use evm::factory::{Factory, VMType};
 use evm::fake_tests::FakeExt;
 use evm::return_data::GasLeft;
 use evm::Ext;
-use helper::{string_2_bytes, string_2_h256, string_2_u256};
 use std::fs;
 use std::str;
 use std::sync::Arc;
+use test_helper::{string_2_bytes, string_2_h256, string_2_u256};
 
 fn test_json_file(p: &str) {
     println!("{}", p);
