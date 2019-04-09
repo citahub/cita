@@ -140,7 +140,7 @@ impl Test {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{Address, Test};
     use std::fs;
     #[test]
     fn test_json_tests_parse() {
