@@ -3,7 +3,11 @@
 # ex: ts=4 sw=4 et
 
 # Commands Paths
-CITA_BIN="$(cd $(dirname "$0") && pwd -P)"
+if [ `uname` == 'Darwin' ]; then
+    CITA_BIN="$(dirname $(realpath $0))"
+else
+    CITA_BIN="$(dirname $(readlink -f $0))"
+fi
 CITA_SCRIPTS="$(dirname $CITA_BIN)/scripts"
 
 if [ "$1" != "bebop" ]; then
