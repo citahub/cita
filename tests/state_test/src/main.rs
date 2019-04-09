@@ -111,205 +111,205 @@ fn test_json_path(p: &str) {
     }
 }
 
-fn skip_path(_reason: &str, _name: &str) {}
+fn skip_json_path(_reason: &str, _name: &str) {}
 
 fn main() {
     env_logger::init();
 
     test_json_path(r"./tests/jsondata/GeneralStateTests/stRefundTest");
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stCodeCopyTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stMemExpandingEIP150Calls",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stCallDelegateCodesCallCodeHomestead",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stRevertTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stArgsZeroOneBalance",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stMemoryStressTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stTransactionTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stReturnDataTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stPreCompiledContracts",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stCodeSizeLimit",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stHomesteadSpecific",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stEIP158Specific",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stZeroKnowledge2",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stCreateTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stSStoreTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stTransitionTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stZeroCallsTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stBadOpcode",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stLogTests",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stNonZeroCallsTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stCallDelegateCodesHomestead",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stBugs",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stShift",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stWalletTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stRandom2",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stEWASMTests",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stStaticCall",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stAttackTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stStackTests",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stPreCompiledContracts2",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stInitCodeTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stZeroKnowledge",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stEIP150singleCodeGasPrices",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stChangedEIP150",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stExample",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stSolidityTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stEIP150Specific",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stQuadraticComplexityTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stSystemOperationsTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stZeroCallsRevert",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stRecursiveCreate",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stRandom",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stDelegatecallTestHomestead",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stMemoryTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stCreate2",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stSpecialTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stCallCodes",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stCallCreateCallCodeTest",
     );
-    skip_path(
+    skip_json_path(
         "run tests integration",
         r"./tests/jsondata/GeneralStateTests/stExtCodeHash",
     );
