@@ -1,8 +1,5 @@
-extern crate evm;
-extern crate serde_derive;
-
-use self::evm::cita_types::Address;
-use self::serde_derive::Deserialize;
+use evm::cita_types::Address;
+use serde_derive::Deserialize;
 use std::collections::BTreeMap;
 use std::io::Read;
 
@@ -124,7 +121,7 @@ impl IntoIterator for State {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{Address, Test};
     use std::fs;
 
     #[test]
