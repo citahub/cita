@@ -13,8 +13,7 @@ members = ["cita-auth"
 ,"tests/consensus-mock"
 ,"tests/chain_performance_by_mq"
 ,"tests/box_executor"
-,"tests/vm_test"
-,"tests/state_test"
+,"tests/json_test"
 ]
 
 [profile.bench]

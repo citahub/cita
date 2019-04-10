@@ -3223,7 +3223,6 @@ dependencies = [
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.32 (registry+https://github.com/rust-lang/crates.io-index)",
- "test_helper 0.1.0",
  "tiny-keccak 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -3393,18 +3392,6 @@ dependencies = [
  "libc 0.2.46 (registry+https://github.com/rust-lang/crates.io-index)",
  "redox_syscall 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "redox_termios 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "test_helper"
-version = "0.1.0"
-dependencies = [
- "core-executor 0.1.0",
- "ethereum-types 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "evm 0.1.0",
- "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "libsecp256k1 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "tiny-keccak 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -4014,19 +4001,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "version_check"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "vm_test"
-version = "0.1.0"
-dependencies = [
- "ethereum-types 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "evm 0.1.0",
- "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.32 (registry+https://github.com/rust-lang/crates.io-index)",
- "test_helper 0.1.0",
-]
 
 [[package]]
 name = "void"
