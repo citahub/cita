@@ -30,6 +30,11 @@ use tokio::codec::length_delimited::LengthDelimitedCodec;
 
 pub const TRANSFER_PROTOCOL_ID: ProtocolId = 1;
 
+// Quota (1 byte) = 200,
+// Max 20 block in one transfer.
+// 512M can support BQL set to 2 ** 32 - 1
+pub const MAX_FRAME_LENGTH: usize = 512 * 1024 * 1204;
+
 pub struct TransferProtocolMeta {
     id: ProtocolId,
     network_client: NetworkClient,
@@ -64,7 +69,9 @@ impl ProtocolMeta<LengthDelimitedCodec> for TransferProtocolMeta {
     }
 
     fn codec(&self) -> LengthDelimitedCodec {
-        LengthDelimitedCodec::new()
+        let mut codec = LengthDelimitedCodec::new();
+        codec.set_max_frame_length(MAX_FRAME_LENGTH);
+        codec
     }
 
     fn service_handle(&self) -> Option<Box<dyn ServiceProtocol + Send + 'static>> {
