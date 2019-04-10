@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
-## [v0.22.0] - 2019-03-27
+## [v0.22.0] - 2019-03-29
 
 ### Upgrade Note
 
@@ -52,6 +52,10 @@ But in v0.22.0, the item `[[peers]]` means `known nodes` in the network, you can
 ### Executor
 
 - [Fix] Executor crashes when receives staled BlockWithProof. [@WPF] [@keroro520]
+
+### Auth
+
+- [Fix] Auth crashes when it is not ready. [@Yaorong]
 
 ### Network
 
