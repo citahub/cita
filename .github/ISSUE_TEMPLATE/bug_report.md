@@ -1,4 +1,8 @@
-# Issue Template
+  ---
+name: "Bug Report"
+labels: bug
+assignee: kaikai1024
+  ---
 
 ## Description
 
