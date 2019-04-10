@@ -1,5 +1,5 @@
-mod json;
-
+use crate::helper::{string_2_bytes, string_2_h256, string_2_u256};
+use crate::json::vm::Test;
 use evm::action_params::{ActionParams, ActionValue};
 use evm::env_info::EnvInfo;
 use evm::factory::{Factory, VMType};
@@ -9,12 +9,10 @@ use evm::Ext;
 use std::fs;
 use std::str;
 use std::sync::Arc;
-use test_helper::{string_2_bytes, string_2_h256, string_2_u256};
 
-fn test_json_file(p: &str) {
-    println!("{}", p);
+pub fn test_json_file(p: &str) {
     let f = fs::File::open(p).unwrap();
-    let tests = json::Test::load(f).unwrap();
+    let tests = Test::load(f).unwrap();
     for (_name, vm) in tests.into_iter() {
         // Step one: Init params, env_info
         let mut params = ActionParams::default();
@@ -70,7 +68,7 @@ fn test_json_file(p: &str) {
     }
 }
 
-fn test_json_path(p: &str) {
+pub fn test_json_path(p: &str) {
     let info = fs::metadata(p).unwrap();
     if info.is_dir() {
         for entry in fs::read_dir(p).unwrap() {
@@ -83,16 +81,21 @@ fn test_json_path(p: &str) {
     }
 }
 
-fn main() {
-    test_json_path(r"./tests/jsondata/VMTests/vmArithmeticTest");
-    test_json_path(r"./tests/jsondata/VMTests/vmBitwiseLogicOperation");
-    test_json_path(r"./tests/jsondata/VMTests/vmBlockInfoTest");
-    test_json_path(r"./tests/jsondata/VMTests/vmEnvironmentalInfo");
-    test_json_path(r"./tests/jsondata/VMTests/vmIOandFlowOperations");
-    test_json_path(r"./tests/jsondata/VMTests/vmLogTest");
-    test_json_path(r"./tests/jsondata/VMTests/vmRandomTest");
-    test_json_path(r"./tests/jsondata/VMTests/vmSha3Test");
-    test_json_path(r"./tests/jsondata/VMTests/vmPushDupSwapTest");
-    test_json_path(r"./tests/jsondata/VMTests/vmSystemOperations");
-    test_json_path(r"./tests/jsondata/VMTests/vmTests");
+#[cfg(test)]
+mod tests {
+    use super::test_json_path;
+    #[test]
+    fn test_json_vm() {
+        test_json_path(r"../jsondata/VMTests/vmArithmeticTest");
+        test_json_path(r"../jsondata/VMTests/vmBitwiseLogicOperation");
+        test_json_path(r"../jsondata/VMTests/vmBlockInfoTest");
+        test_json_path(r"../jsondata/VMTests/vmEnvironmentalInfo");
+        test_json_path(r"../jsondata/VMTests/vmIOandFlowOperations");
+        test_json_path(r"../jsondata/VMTests/vmLogTest");
+        test_json_path(r"../jsondata/VMTests/vmRandomTest");
+        test_json_path(r"../jsondata/VMTests/vmSha3Test");
+        test_json_path(r"../jsondata/VMTests/vmPushDupSwapTest");
+        test_json_path(r"../jsondata/VMTests/vmSystemOperations");
+        test_json_path(r"../jsondata/VMTests/vmTests");
+    }
 }
