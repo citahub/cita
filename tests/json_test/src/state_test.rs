@@ -16,12 +16,12 @@ pub fn test_json_file(p: &str) {
     let f = fs::File::open(p).unwrap();
     let tests = Test::load(f).unwrap();
     for (_name, test) in tests.into_iter() {
-        let data_post_byzantium = test.post.unwrap().byzantium;
-        if data_post_byzantium.is_none() {
+        let data_post_homestead = test.post.unwrap().homestead;
+        if data_post_homestead.is_none() {
             continue;
         }
 
-        for (_i, postdata) in data_post_byzantium.unwrap().into_iter().enumerate() {
+        for (_i, postdata) in data_post_homestead.unwrap().into_iter().enumerate() {
             // Init state
             let mut state = get_temp_state();
             for (address, account) in test.pre.clone().unwrap() {
