@@ -100,27 +100,64 @@ impl ServiceHandle for SHandle {
                     proto_name, session_context,
                 );
             }
+
+            ServiceError::SessionTimeout { session_context } => {
+                warn!(
+                    "[P2pProtocol] SessionTimeout Sessionid {:?} ",
+                    session_context.id
+                );
+                let req = DelConnectedNodeReq::new(session_context.id);
+                self.nodes_mgr_client.del_connected_node(req);
+            }
+
+            ServiceError::MuxerError {
+                session_context,
+                error,
+            } => {
+                warn!(
+                    "[P2pProtocol] ServiceError::MuxerError Sessionid {:?}--{:?}",
+                    session_context.id, error
+                );
+            }
+
+            ServiceError::ProtocolHandleError { error, proto_id } => {
+                warn!(
+                    "[P2pProtocol] ServiceError::ProtocolHandleError proto_id {:?}--{:?}",
+                    proto_id, error
+                );
+            }
         }
     }
 
     fn handle_event(&mut self, _env: &mut ServiceContext, event: ServiceEvent) {
         match event {
-            ServiceEvent::SessionOpen {
-                id,
-                address,
-                ty,
-                public_key,
-            } => {
-                let address = multiaddr_to_socketaddr(&address).unwrap();
-                info!("[P2pProtocol] Service open on : {:?}, session id: {:?}, ty: {:?}, public_key: {:?}",
-                       address, id, ty, public_key);
-
-                let req = PendingConnectedNodeReq::new(id, address, ty);
-                self.nodes_mgr_client.pending_connected_node(req);
+            ServiceEvent::SessionOpen { session_context } => {
+                if let Some(sock_addr) = multiaddr_to_socketaddr(&session_context.address) {
+                    info!("[P2pProtocol] Service open on : {:?}, session id: {:?}, ty: {:?}, public_key: {:?}",
+                          sock_addr, session_context.id, session_context.ty, session_context.remote_pubkey);
+                    let req = PendingConnectedNodeReq::new(
+                        session_context.id,
+                        sock_addr,
+                        session_context.ty,
+                    );
+                    self.nodes_mgr_client.pending_connected_node(req);
+                } else {
+                    info!(
+                        "[P2pProtocol] Service open multiaddr {:?} transform failed",
+                        session_context.address
+                    );
+                }
             }
-            ServiceEvent::SessionClose { id } => {
-                let req = DelConnectedNodeReq::new(id);
+            ServiceEvent::SessionClose { session_context } => {
+                let req = DelConnectedNodeReq::new(session_context.id);
                 self.nodes_mgr_client.del_connected_node(req);
+            }
+            ServiceEvent::ListenClose { address } => {
+                panic!("ListenClose, address {:?}", address);
+            }
+
+            ServiceEvent::ListenStarted { address } => {
+                info!("ListenStarted, address {:?}", address);
             }
         }
     }
