@@ -1,8 +1,11 @@
-  ---
-name: "General Question"
+---
+name: Custom issue template
 about: Any question that isn't answered in docs or forum
-assignee: kaikai1024
-  ---
+title: ''
+labels: ''
+assignees: ''
+
+---
 
 ## Description
 
