@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
-SOURCE_DIR="$(cd $(dirname "$0") && pwd -P)"
+if [ `uname` == 'Darwin' ]; then
+    SOURCE_DIR="$(dirname $(realpath $0))"
+else
+    SOURCE_DIR="$(dirname $(readlink -f $0))"
+fi
 
 test -f "${SOURCE_DIR}/CODE_OF_CONDUCT.md"
 if [ $? -eq 0 ]; then
