@@ -1,8 +1,11 @@
-  ---
-name: "Bug Report"
+---
+name: Bug report
+about: Create a report to help us improve
+title: ''
 labels: bug
-assignee: kaikai1024
-  ---
+assignees: kaikai1024
+
+---
 
 ## Description
 
