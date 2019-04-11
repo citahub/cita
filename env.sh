@@ -6,7 +6,7 @@ else
     SOURCE_DIR="$(dirname $(readlink -f $0))"
 fi
 
-test -f "${SOURCE_DIR}/CODE_OF_CONDUCT.md"
+test -f "${SOURCE_DIR}/Cargo.toml"
 if [ $? -eq 0 ]; then
     CONTAINER_NAME="cita_build_container"
     DOCKER_IMAGE="cita/cita-build:ubuntu-18.04-20190304"
