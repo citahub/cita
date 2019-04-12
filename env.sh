@@ -56,8 +56,8 @@ if [ $? -ne 0 ]; then
     docker run -d \
            --net=${SYSTEM_NET} \
            --volume ${SOURCE_DIR}:${WORKDIR} \
-           --volume ${DOCKER_CARGO}/git:${DOCKER_CARGO}/git \
-           --volume ${DOCKER_CARGO}/registry:${DOCKER_CARGO}/registry \
+           --volume ${DOCKER_CARGO}/git:${CARGO_HOME}/git \
+           --volume ${DOCKER_CARGO}/registry:${CARGO_HOME}/registry \
            --volume ${LOCALTIME_PATH}:/etc/localtime \
            --env USER_ID=${USER_ID} \
            --workdir ${WORKDIR} \
