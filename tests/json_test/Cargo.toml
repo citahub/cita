@@ -18,3 +18,12 @@ log = "0.4.0"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 core-executor = { path="../../cita-executor/core"}
 evm = { path="../../cita-executor/evm"}
+
+[features]
+default = ["secp256k1", "sha3hash"]
+secp256k1 = []
+ed25519 = []
+sm2 = []
+sha3hash = []
+blake2bhash = []
+sm3hash = []
