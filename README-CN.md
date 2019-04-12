@@ -72,7 +72,7 @@ CITA 支持 JSON-RPC 和 WebSocket (experimental) API/v1。
 
 ## 社区贡献
 
-CITA 目前仍在紧张的开发中，欢迎大家为 CITA 贡献自己的一份力量。更详细的信息可以参考[贡献指南](CONTRIBUTING.md)。
+CITA 目前仍在紧张的开发中，欢迎大家为 CITA 贡献自己的一份力量。更详细的信息可以参考[贡献指南](.github/CONTRIBUTING.md)。
 
 ## 关注我们
 

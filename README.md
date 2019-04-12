@@ -52,7 +52,7 @@ For CITA API/v1, You can use any HTTP client, or following SDKs:
 
 CITA is still in active development. Building a blockchain platform is a huge task, we need your help. Any contribution is welcome.
 
-Please check [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+Please check [CONTRIBUTING](.github/CONTRIBUTING.md) for more details.
 
 ## Follow us
 
