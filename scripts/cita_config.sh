@@ -9,3 +9,4 @@ if [ -e $CITA_SCRIPTS/create_cita_config.py ]; then
     $CITA_SCRIPTS/create_cita_config.py $@
 else
     echo -e "\033[0;31mPlease run this command after build 🎨"
+fi
