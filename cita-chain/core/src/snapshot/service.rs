@@ -378,7 +378,7 @@ impl Service {
         let recover = rest.as_ref().map_or(false, |rest| rest.writer.is_some());
 
         // destroy the restoration before replacing databases and snapshot.
-        rest.take().map(|r| r.finalize()).unwrap_or(Ok(()))?;
+        rest.take().map(Restoration::finalize).unwrap_or(Ok(()))?;
 
         self.replace_client_db()?;
 

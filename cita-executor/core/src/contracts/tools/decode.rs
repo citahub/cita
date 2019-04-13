@@ -17,7 +17,7 @@
 
 use cita_types::{Address, H256, U256};
 use contracts::solc::permission_management::Resource;
-use ethabi::{decode, ParamType};
+use ethabi::{decode, ParamType, Token};
 
 /// Parse solidity return data `address[]` to rust `Vec<Address>`
 pub fn to_address_vec(output: &[u8]) -> Option<Vec<Address>> {
@@ -27,7 +27,7 @@ pub fn to_address_vec(output: &[u8]) -> Option<Vec<Address>> {
         decode(&[ParamType::Array(Box::new(ParamType::Address))], output)
             .ok()
             .and_then(|decoded| decoded.first().cloned())
-            .and_then(|decoded| decoded.to_array())
+            .and_then(Token::to_array)
             .and_then(|addrs| {
                 let mut v = Vec::new();
                 for x in addrs {
@@ -50,7 +50,7 @@ pub fn to_u256_vec(output: &[u8]) -> Option<Vec<U256>> {
         decode(&[ParamType::Array(Box::new(ParamType::Uint(256)))], output)
             .ok()
             .and_then(|decoded| decoded.first().cloned())
-            .and_then(|decoded| decoded.to_array())
+            .and_then(Token::to_array)
             .and_then(|uints| {
                 let mut v = Vec::new();
                 for x in uints {
@@ -68,12 +68,12 @@ pub fn to_u256_vec(output: &[u8]) -> Option<Vec<U256>> {
 
 /// Parse solidity return data `uint256[]` to rust `Vec<u64>`
 pub fn to_u64_vec(output: &[u8]) -> Option<Vec<u64>> {
-    to_u256_vec(output).map(|x| x.iter().map(|i| i.low_u64()).collect())
+    to_u256_vec(output).map(|x| x.iter().map(U256::low_u64).collect())
 }
 
 /// Parse solidity return data `uint256[]` to rust `Vec<u32>`
 pub fn to_u32_vec(output: &[u8]) -> Option<Vec<u32>> {
-    to_u256_vec(output).map(|x| x.iter().map(|i| i.low_u32()).collect())
+    to_u256_vec(output).map(|x| x.iter().map(U256::low_u32).collect())
 }
 
 /// Parse solidity return data `uint256` to rust `U256`
@@ -81,7 +81,7 @@ pub fn to_u256(output: &[u8]) -> Option<U256> {
     decode(&[ParamType::Uint(256)], output)
         .ok()
         .and_then(|decoded| decoded.first().cloned())
-        .and_then(|decoded| decoded.to_uint())
+        .and_then(Token::to_uint)
         .map(H256::from)
         .map(U256::from)
 }

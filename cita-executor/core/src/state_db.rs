@@ -324,7 +324,7 @@ impl Backend for StateDB {
         cache
             .accounts
             .get_mut(addr)
-            .and_then(|a| a.as_ref().map(|a| a.clone_basic()))
+            .and_then(|a| a.as_ref().map(Account::clone_basic))
     }
 
     fn get_cached<F, U>(&self, a: &Address, f: F) -> Option<U>

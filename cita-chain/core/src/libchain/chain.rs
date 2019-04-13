@@ -1124,7 +1124,7 @@ impl Chain {
                         receipts.len(),
                         hashes.len()
                     );
-                    assert!(false);
+                    unreachable!();
                 }
                 log_index = receipts
                     .iter()

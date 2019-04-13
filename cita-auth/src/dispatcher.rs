@@ -153,11 +153,7 @@ impl Dispatcher {
 
     pub fn get_txs(&self, ids: &[H256]) -> Vec<SignedTransaction> {
         let pool = self.txs_pool.borrow();
-        ids.iter()
-            .map(|id| pool.get(id).cloned())
-            .filter(|tx| tx.is_some())
-            .map(|tx| tx.unwrap())
-            .collect()
+        ids.iter().filter_map(|id| pool.get(id).cloned()).collect()
     }
 
     pub fn check_missing(&self, ids: Vec<H256>) -> Vec<H256> {
