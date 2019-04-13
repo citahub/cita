@@ -378,7 +378,7 @@ impl Commander for Executor {
                     .shuffled_stake_nodes(block_id)
                     .map(|validators| {
                         metadata.validators =
-                            validators.into_iter().map(|x| x.into()).collect::<Vec<_>>()
+                            validators.into_iter().map(Into::into).collect::<Vec<_>>()
                     })
                     .ok_or_else(|| "Query validators failed".to_owned())?;
                 sys_config

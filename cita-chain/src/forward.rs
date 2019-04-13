@@ -238,7 +238,7 @@ impl Forward {
                 }) {
                     let filter: Filter = rpc_filter.into();
                     let logs = self.chain.get_logs(&filter);
-                    let rpc_logs: Vec<RpcLog> = logs.into_iter().map(|x| x.into()).collect();
+                    let rpc_logs: Vec<RpcLog> = logs.into_iter().map(Into::into).collect();
                     response.set_logs(serde_json::to_string(&rpc_logs).unwrap());
                 };
             }

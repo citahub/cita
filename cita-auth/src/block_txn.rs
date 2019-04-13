@@ -132,11 +132,11 @@ impl BlockTxnMessage {
             })
             .collect();
 
-        if results.iter().any(|result| result.is_none()) {
+        if results.iter().any(Option::is_none) {
             return Err(Error::BadTxSignature);
         };
 
-        Ok(results.into_iter().map(|x| x.unwrap()).collect())
+        Ok(results.into_iter().map(Option::unwrap).collect())
     }
 }
 

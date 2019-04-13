@@ -377,7 +377,7 @@ impl Into<RpcReceipt> for LocalizedReceipt {
             logs: self.logs.into_iter().map(Into::into).collect(),
             state_root: self.state_root.map(Into::into),
             logs_bloom: self.log_bloom,
-            error_message: self.error.map(|error| error.description()),
+            error_message: self.error.map(ReceiptError::description),
         }
     }
 }

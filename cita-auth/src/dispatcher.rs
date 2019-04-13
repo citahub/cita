@@ -155,8 +155,7 @@ impl Dispatcher {
         let pool = self.txs_pool.borrow();
         ids.iter()
             .map(|id| pool.get(id).cloned())
-            .filter(|tx| tx.is_some())
-            .map(|tx| tx.unwrap())
+            .filter_map(Option::is_some)
             .collect()
     }
 

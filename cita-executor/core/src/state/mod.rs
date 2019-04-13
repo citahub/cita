@@ -103,7 +103,7 @@ impl AccountEntry {
     }
 
     fn exists_and_is_null(&self) -> bool {
-        self.account.as_ref().map_or(false, |a| a.is_null())
+        self.account.as_ref().map_or(false, Account::is_null)
     }
 
     /// Clone dirty data into new `AccountEntry`. This includes

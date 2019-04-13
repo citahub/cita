@@ -363,7 +363,7 @@ impl Service {
         trace!("finalizing restoration");
 
         // destroy the restoration before replacing databases and snapshot.
-        rest.take().map(|r| r.finalize()).unwrap_or(Ok(()))?;
+        rest.take().map(Restoration::finalize).unwrap_or(Ok(()))?;
 
         *self.status.lock() = RestorationStatus::Inactive;
         Ok(())

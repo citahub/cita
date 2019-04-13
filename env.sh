@@ -11,13 +11,12 @@ else
     SOURCE_DIR="$(dirname "$(readlink -f "$0")")"
 fi
 
-# Source Directory
 if test -f "${SOURCE_DIR}/Cargo.toml"; then
     readonly CONTAINER_NAME='cita_build_container'
-    readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20190304'
+    readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20190413'
 else
     readonly CONTAINER_NAME='cita_run_container'
-    readonly DOCKER_IMAGE='cita/cita-run:ubuntu-18.04-20181009'
+    readonly DOCKER_IMAGE='cita/cita-run:ubuntu-18.04-20190419'
     readonly SOURCE_DIR="$(dirname "$SOURCE_DIR")"
 fi
 
@@ -77,10 +76,10 @@ if [[ "$3" == '--daemon' ]]; then
     # ATTENTION:
     # (docker commands) (parameters) /bin/bash -c (full-string docker arguments || sepreate them on by one)
     # `bin/bash -c` is local commands.
-    docker exec -d "${CONTAINER_NAME}" /bin/bash -c "/usr/bin/gosu ${USER_NAME} ${*} >/dev/null 2>&1"
+    docker exec -d "${CONTAINER_NAME}" /bin/bash -c "/usr/sbin/gosu ${USER_NAME} ${*} >/dev/null 2>&1"
 elif [[ $# -gt 0 ]]; then
-    docker exec -i "${USE_TTY}" "${CONTAINER_NAME}" /bin/bash -c "/usr/bin/gosu ${USER_NAME} ${*}"
+    docker exec -i "${USE_TTY}" "${CONTAINER_NAME}" /bin/bash -c "/usr/sbin/gosu ${USER_NAME} ${*}"
 else
     docker exec -i ${USE_TTY} ${CONTAINER_NAME} \
-        /bin/bash -c "stty cols $(tput cols) rows $(tput lines) && /usr/bin/gosu ${USER_NAME} /bin/bash"
+        /bin/bash -c "stty cols $(tput cols) rows $(tput lines) && /usr/sbin/gosu ${USER_NAME} /bin/bash"
 fi
