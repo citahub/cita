@@ -9,7 +9,7 @@ Test CITA using [Tests](https://github.com/cryptape/cita-testdata/)
 ```sh
 $ cd cita
 
-$ cargo test state_test::tests::test_json_state
+$ cargo test --features sha3hash state_test::tests::test_json_state
 ```
 
 ### VM Tests
