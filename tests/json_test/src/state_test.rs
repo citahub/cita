@@ -11,6 +11,7 @@ use evm::cita_types::U256;
 use evm::env_info::EnvInfo;
 use libproto::blockchain::Transaction as ProtoTransaction;
 use std::fs;
+use std::sync::Arc;
 
 pub fn test_json_file(p: &str) {
     let f = fs::File::open(p).unwrap();
@@ -50,6 +51,8 @@ pub fn test_json_file(p: &str) {
             env_info.timestamp = string_2_u256(test.env.current_timestamp.clone()).low_u64();
             env_info.gas_limit = string_2_u256(test.env.current_gas_limit.clone());
             env_info.author = test.env.current_coinbase;
+            let previous_hash = string_2_h256(test.env.previous_hash.clone());
+            Arc::make_mut(&mut env_info.last_hashes).push(previous_hash);
 
             let engine = NullEngine::cita();
             let mut config = BlockSysConfig::default();
@@ -170,8 +173,8 @@ mod tests {
             "version above homestead",
             r"../jsondata/GeneralStateTests/stCallCreateCallCodeTest",
         );
-        skip_json_path("something panic", r"../jsondata/GeneralStateTests/stRandom");
 
+        test_json_path(r"../jsondata/GeneralStateTests/stRandom");
         test_json_path(r"../jsondata/GeneralStateTests/stSystemOperationsTest");
         test_json_path(r"../jsondata/GeneralStateTests/stRecursiveCreate");
         test_json_path(r"../jsondata/GeneralStateTests/stLogTests");
