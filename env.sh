@@ -5,10 +5,10 @@
 # OS
 if [[ $(uname) == 'Darwin' ]]; then
     SYSTEM_NET="bridge"
-    SOURCE_DIR="$(dirname "$(realpath "$0")")"
+    SOURCE_DIR=$(dirname "$(realpath "$0")")
 else
     SYSTEM_NET="host"
-    SOURCE_DIR="$(dirname "$(readlink -f "$0")")"
+    SOURCE_DIR=$(dirname "$(readlink -f "$0")")
 fi
 
 # Source Directory
@@ -20,7 +20,7 @@ if [[ "$ret" -eq 0 ]]; then
 else
     CONTAINER_NAME="cita_run_container"
     DOCKER_IMAGE="cita/cita-run:ubuntu-18.04-20181009"
-    SOURCE_DIR="$(dirname "$SOURCE_DIR")"
+    SOURCE_DIR=$(dirname "$SOURCE_DIR")
 fi
 
 # Patch from crates.io.
@@ -45,26 +45,26 @@ USER_NAME="user"
 
 cp /etc/localtime "$SOURCE_DIR"/localtime
 LOCALTIME_PATH="$SOURCE_DIR"/localtime
-[[ "$USER_ID" = "0" ]] && USER_NAME="root"
+[[ ${USER_ID} = "0" ]] && USER_NAME="root"
 
 INIT_CMD="sleep infinity"
 
 # Run Docker
-docker ps | grep "${CONTAINER_NAME}" > /dev/null 2>&1
+docker ps | grep ${CONTAINER_NAME} > /dev/null 2>&1
 ret="$?"
 if [[ "$ret" -ne 0 ]]; then
     echo "Start docker container $CONTAINER_NAME ..."
-    docker rm "$CONTAINER_NAME" > /dev/null 2>&1
+    docker rm ${CONTAINER_NAME} > /dev/null 2>&1
     docker run -d \
-           --net="$SYSTEM_NET" \
+           --net=${SYSTEM_NET} \
            --volume "$SOURCE_DIR":"$WORKDIR" \
            --volume "$DOCKER_CARGO"/git:"$CARGO_HOME"/git \
            --volume "$DOCKER_CARGO"/registry:"$CARGO_HOME"/registry \
            --volume "$LOCALTIME_PATH":/etc/localtime \
            --env USER_ID="$USER_ID" \
-           --workdir "$WORKDIR" \
-           --name "$CONTAINER_NAME" \
-           -p $EXPOSE "$DOCKER_IMAGE" \
+           --workdir ${WORKDIR} \
+           --name ${CONTAINER_NAME} \
+           -p ${EXPOSE} ${DOCKER_IMAGE} \
            /bin/bash -c "$INIT_CMD"
     # Wait entrypoint.sh to finish
     sleep 3
@@ -78,7 +78,7 @@ test -t 1 && USE_TTY="-t"
 
 if [[ "$3" == "--daemon" ]]; then
     set "${@:1:2}" "${@:4}"
-    docker exec -d ${CONTAINER_NAME} /bin/bash -c "/usr/bin/gosu ${USER_NAME} $* >/dev/null 2>&1"
+    docker exec -d ${CONTAINER_NAME} /bin/bash -c /usr/bin/gosu ${USER_NAME} "$@" >/dev/null 2>&1
 elif [[ $# -gt 0 ]]; then
     docker exec -i ${USE_TTY} ${CONTAINER_NAME} /usr/bin/gosu ${USER_NAME} "$@"
 else
