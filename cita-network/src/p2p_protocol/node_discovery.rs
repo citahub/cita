@@ -91,5 +91,7 @@ pub fn create_discovery_meta(nodes_mgr_client: NodesManagerClient) -> ProtocolMe
             let discovery = Discovery::new(addr_mgr.clone(), Some(timeout));
             ProtocolHandle::Callback(Box::new(DiscoveryProtocol::new(discovery)))
         })
+        .name(|_| "/cita/discovery".to_owned())
+        .support_versions(vec!["0.0.2".to_owned()])
         .build()
 }

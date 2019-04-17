@@ -119,6 +119,6 @@ pub fn create_transfer_meta(
             ProtocolHandle::Callback(handle)
         })
         .name(|_| "/cita/transfer".to_owned())
-        .support_versions(vec!["0.0.1".to_owned()])
+        .support_versions(vec!["0.0.2".to_owned()])
         .build()
 }
