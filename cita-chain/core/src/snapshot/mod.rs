@@ -286,11 +286,6 @@ impl<'a> BlockChunker<'a> {
             }
 
             let mut s = RlpStream::new();
-            /*let block = self.chain
-                .block_by_hash(self.current_hash)
-                .ok_or(Error::BlockNotFound(self.current_hash))?;
-            block.rlp_append(&mut s);
-            let block_rlp = s.out();*/
             let header = self
                 .chain
                 .block_header_by_hash(self.current_hash)
@@ -646,28 +641,6 @@ impl BlockRebuilder {
         log_blooms
     }
 
-    /// This function returns modified transaction addresses.
-    /*fn prepare_transaction_addresses_update(
-        &self,
-        block: &Block,
-        info: &BlockInfo,
-    ) -> HashMap<H256, TransactionAddress> {
-        let transaction_hashes = block.body().transaction_hashes();
-        transaction_hashes
-            .into_iter()
-            .enumerate()
-            .map(|(i, tx_hash)| {
-                (
-                    tx_hash,
-                    TransactionAddress {
-                        block_hash: info.hash,
-                        index: i,
-                    },
-                )
-            })
-            .collect()
-    }*/
-
     fn prepare_update(&self, batch: &mut DBTransaction, update: ExtrasUpdate, is_best: bool) {
         {
             let mut write_receipts = self.chain.block_receipts.write();
@@ -683,18 +656,6 @@ impl BlockRebuilder {
             let mut write_blocks_blooms = self.chain.blocks_blooms.write();
             // update best block
             // update all existing blooms groups
-            /*for (key, value) in update.blocks_blooms {
-                match write_blocks_blooms.entry(key) {
-                    hash_map::Entry::Occupied(mut entry) => {
-                        entry.get_mut().accrue_bloom_group(&value);
-                        batch.write(COL_EXTRA, entry.key(), entry.get());
-                    },
-                    hash_map::Entry::Vacant(entry) => {
-                        batch.write(COL_EXTRA, entry.key(), &value);
-                        entry.insert(value);
-                    },
-                }
-            }*/
             batch.extend_with_cache(
                 COL_EXTRA,
                 &mut *write_blocks_blooms,
@@ -708,21 +669,10 @@ impl BlockRebuilder {
         {
             if is_best {
                 batch.write(COL_EXTRA, &CurrentHash, &update.info.hash);
-                //batch.write(COL_EXTRA, &CurrentProof, &update.info.hash);
                 batch.write(COL_EXTRA, &CurrentHeight, &update.info.number);
             }
 
             let mut write_hashes = self.chain.block_hashes.write();
-            //let mut write_txs = self.chain.transaction_addresses.write();
-            //let mut write_hashes = HashMap::new();
-            //let mut write_txs = HashMap::new();
-
-            /*batch.extend_with_cache(
-                COL_EXTRA,
-                &mut *write_hashes,
-                update.block_hashes,
-                CacheUpdatePolicy::Overwrite,
-            );*/
             batch.write_with_cache(
                 COL_EXTRA,
                 &mut *write_hashes,
@@ -730,12 +680,6 @@ impl BlockRebuilder {
                 update.info.number as BlockNumber,
                 CacheUpdatePolicy::Overwrite,
             );
-            /*batch.extend_with_cache(
-                COL_EXTRA,
-                &mut *write_txs,
-                update.transactions_addresses,
-                CacheUpdatePolicy::Overwrite,
-            );*/
         }
     }
 
@@ -743,23 +687,6 @@ impl BlockRebuilder {
     fn finalize(&self) -> Result<(), ::error::Error> {
         let mut batch = self.db.transaction();
 
-        /*for (first_num, first_hash) in self.disconnected.drain(..) {
-            let parent_num = first_num - 1;
-            // check if the parent is even in the chain.
-            // since we don't restore every single block in the chain,
-            // the first block of the first chunks has nothing to connect to.
-            if let Some(parent_hash) = self.chain.block_hash(parent_num) {
-                // if so, add the child to it.
-                self.chain.add_child(&mut batch, parent_hash, first_hash);
-            }
-        }*/
-
-        /*let genesis_hash = self.chain.genesis_hash();
-        self.chain.insert_epoch_transition(&mut batch, 0, ::engines::EpochTransition {
-            block_number: 0,
-            block_hash: genesis_hash,
-            proof: vec![],
-        });*/
         let genesis_block = self
             .chain
             .block_by_height(0)
@@ -767,14 +694,6 @@ impl BlockRebuilder {
         batch.write(COL_HEADERS, &0, &genesis_block.header.clone());
 
         batch.write(COL_BODIES, &0, &genesis_block.body.clone());
-        /*let mut write_bodies: HashMap<BlockNumber, BlockBody> = HashMap::new();
-        batch.write_with_cache(
-            COL_BODIES,
-            &mut write_bodies,
-            0 as BlockNumber,
-            genesis_block.body.clone(),
-            CacheUpdatePolicy::Overwrite,
-        );*/
         batch.write(COL_EXTRA, &CurrentProof, &self.cur_proof);
 
         self.db.write_buffered(batch);

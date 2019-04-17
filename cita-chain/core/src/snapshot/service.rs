@@ -24,7 +24,6 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::usize::MAX;
 
-//use super::{SnapshotService};
 use super::io::{LooseReader, LooseWriter, SnapshotReader, SnapshotWriter};
 use super::{BlockRebuilder, ManifestData, RestorationStatus};
 
@@ -41,12 +40,6 @@ use libchain::chain::{get_chain, get_chain_body_height, Chain};
 
 use filters::PollManager;
 
-/// Number of blocks in an ethash snapshot.
-// make dependent on difficulty incrment divisor?
-//const SNAPSHOT_BLOCKS: u64 = 5000;
-/// Maximum number of blocks allowed in an ethash snapshot.
-//const MAX_SNAPSHOT_BLOCKS: u64 = 30000;
-
 /// External database restoration handler
 pub trait DatabaseRestore: Send + Sync {
     /// Restart with a new backend. Takes ownership of passed database and moves it to a new location.
@@ -61,7 +54,6 @@ impl DatabaseRestore for Chain {
         self.db.restore(new_db)?;
 
         // replace chain
-        //*chain = Arc::new(BlockChain::new(self.config.blockchain.clone(), &[], db.clone()));
         let header = get_chain(&*self.db.clone()).expect("Get chain failed");
 
         let current_height = header.number();
@@ -119,18 +111,15 @@ struct Restoration {
     block_chunks_left: HashSet<H256>,
     secondary: Box<BlockRebuilder>,
     writer: Option<LooseWriter>,
-    //guard: Guard,
     db: Arc<Database>,
 }
 
 struct RestorationParams<'a> {
-    manifest: ManifestData, // manifest to base restoration on.
-    //pruning: Algorithm,            // pruning algorithm for the database.
+    manifest: ManifestData,        // manifest to base restoration on.
     db_path: PathBuf,              // database path
     db_config: &'a DatabaseConfig, // configuration for the database.
     writer: Option<LooseWriter>,   // writer for recovered snapshot..
     chain: Arc<Chain>,
-    //guard: Guard,                  // guard for the restoration directory.
 }
 
 impl Restoration {
@@ -157,7 +146,6 @@ impl Restoration {
             block_chunks_left: block_chunks,
             secondary: Box::new(block_rebuilder),
             writer: params.writer,
-            //guard: params.guard,
             db: raw_db,
         })
     }
@@ -193,7 +181,6 @@ impl Restoration {
             writer.finish(self.manifest)?;
         }
 
-        //self.guard.disarm();
         Ok(())
     }
 
@@ -237,7 +224,6 @@ impl Service {
             restoration: Mutex::new(None),
             snapshot_root: params.snapshot_root,
             db_config: params.db_config,
-            //pruning: params.pruning,
             status: Mutex::new(RestorationStatus::Inactive),
             reader: RwLock::new(None),
             block_chunks: AtomicUsize::new(0),
@@ -331,7 +317,6 @@ impl Service {
         }
 
         let _p = &self.progress;
-        //info!("Snapshot: {} accounts {} bytes", p.accounts(), p.size());
     }
 
     /// Initialize the restoration synchronously.
@@ -369,7 +354,6 @@ impl Service {
             db_path: self.restoration_db(),
             db_config: &self.db_config,
             writer,
-            //guard: Guard::new(rest_dir),
         };
 
         let block_chunks = params.manifest.block_hashes.len();
@@ -480,10 +464,6 @@ impl Service {
 }
 
 impl SnapshotService for Service {
-    //fn manifest(&self) -> Option<ManifestData> {
-    //self.reader.read().as_ref().map(|r| r.manifest().clone())
-    //}
-
     fn chunk(&self, hash: H256) -> Option<Bytes> {
         self.reader.read().as_ref().and_then(|r| r.chunk(hash).ok())
     }
@@ -496,40 +476,22 @@ impl SnapshotService for Service {
         } = *cur_status
         {
             *block_chunks_done = self.block_chunks.load(Ordering::SeqCst) as u32;
-            //*block_chunks_done = self.block_chunks.load(Ordering::SeqCst) as u32;
         }
 
         *cur_status
     }
-    /*
-    fn begin_restore(&self, manifest: ManifestData) {
-        if let Err(e) = self.io_channel.lock().send(ClientIoMessage::BeginRestoration(manifest)) {
-            trace!("Error sending snapshot service message: {:?}", e);
-        }
-    }
-    */
 
     fn abort_restore(&self) {
         self.restoring_snapshot.store(false, Ordering::SeqCst);
         *self.restoration.lock() = None;
         *self.status.lock() = RestorationStatus::Inactive;
     }
-    /*
-    fn restore_state_chunk(&self, hash: H256, chunk: Bytes) {
-        if let Err(e) = self.io_channel.lock().send(ClientIoMessage::FeedStateChunk(hash, chunk)) {
-            trace!("Error sending snapshot service message: {:?}", e);
-        }
-    }
-    */
 }
 /// The interface for a snapshot network service.
 /// This handles:
 ///    - restoration of snapshots to temporary databases.
 ///    - responding to queries for snapshot manifests and chunks
 pub trait SnapshotService: Sync + Send {
-    /// Query the most recent manifest data.
-    //fn manifest(&self) -> Option<&ManifestData>;
-
     /// Get raw chunk for a given hash.
     fn chunk(&self, hash: H256) -> Option<Bytes>;
 

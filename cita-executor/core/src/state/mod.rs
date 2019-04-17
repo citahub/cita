@@ -1216,16 +1216,6 @@ mod tests {
     #[test]
     #[ignore]
     fn should_apply_create_transaction() {
-        /*
-        pragma solidity ^0.4.8;
-        contract AbiTest {
-          uint balance;
-          function AbiTest() {}
-          function setValue(uint value) {
-            balance = value;
-          }
-        }
-        */
         logger::silent();
 
         // 1) tx = (to, data(code), nonce, valid_until_block)
