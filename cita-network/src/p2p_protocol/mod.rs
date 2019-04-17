@@ -74,7 +74,7 @@ impl ServiceHandle for SHandle {
             }
             ServiceError::ListenError { address, error } => {
                 let address = multiaddr_to_socketaddr(&address).unwrap();
-                warn!(
+                panic!(
                     "[P2pProtocol] Listen error on {:?}, error info: {:?}",
                     address, error
                 );
@@ -153,7 +153,7 @@ impl ServiceHandle for SHandle {
                 self.nodes_mgr_client.del_connected_node(req);
             }
             ServiceEvent::ListenClose { address } => {
-                panic!("ListenClose, address {:?}", address);
+                warn!("ListenClose, address {:?}", address);
             }
 
             ServiceEvent::ListenStarted { address } => {

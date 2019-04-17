@@ -104,7 +104,11 @@ pub fn create_transfer_meta(
 ) -> ProtocolMeta {
     MetaBuilder::default()
         .id(TRANSFER_PROTOCOL_ID)
-        .codec(|| Box::new(LengthDelimitedCodec::new()))
+        .codec(|| {
+            let mut lcodec = LengthDelimitedCodec::new();
+            lcodec.set_max_frame_length(MAX_FRAME_LENGTH);
+            Box::new(lcodec)
+        })
         .service_handle(move || {
             let handle = Box::new(TransferProtocol {
                 proto_id: TRANSFER_PROTOCOL_ID,
@@ -114,5 +118,7 @@ pub fn create_transfer_meta(
             });
             ProtocolHandle::Callback(handle)
         })
+        .name(|_| "/cita/transfer".to_owned())
+        .support_versions(vec!["0.0.1".to_owned()])
         .build()
 }
