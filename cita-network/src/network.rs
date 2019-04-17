@@ -354,8 +354,8 @@ pub fn send_message(nodes_mgr_client: &NodesManagerClient, key: String, msg: Pro
             nodes_mgr_client.broadcast(BroadcastReq::new(key, msg));
         }
         OperateType::Single => {
-            let dst = msg.get_origin();
-            nodes_mgr_client.send_message(SingleTxReq::new(dst as usize, key, msg));
+            let dst = msg.get_origin() as usize;
+            nodes_mgr_client.send_message(SingleTxReq::new(dst.into(), key, msg));
         }
         OperateType::Subtract => {
             // FIXME: Support subtract broadcast if necessary, just use broadcast instead.
