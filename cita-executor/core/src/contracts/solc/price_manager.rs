@@ -59,3 +59,19 @@ impl<'a> PriceManagement<'a> {
         U256::from(1)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::PriceManagement;
+    use cita_types::U256;
+    use tests::helpers::init_executor;
+    use types::ids::BlockId;
+
+    #[test]
+    fn test_state() {
+        let executor = init_executor(vec![]);
+        let price_management = PriceManagement::new(&executor);
+        let price = price_management.quota_price(BlockId::Pending).unwrap();
+        assert_eq!(price, U256::from(100_0000));
+    }
+}

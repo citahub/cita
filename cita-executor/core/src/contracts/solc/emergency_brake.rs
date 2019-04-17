@@ -59,3 +59,18 @@ impl<'a> EmergencyBrake<'a> {
         false
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::EmergencyBrake;
+    use tests::helpers::init_executor;
+    use types::ids::BlockId;
+
+    #[test]
+    fn test_state() {
+        let executor = init_executor(vec![]);
+        let emergency_brake = EmergencyBrake::new(&executor);
+        let state = emergency_brake.state(BlockId::Pending).unwrap();
+        assert_eq!(state, false);
+    }
+}
