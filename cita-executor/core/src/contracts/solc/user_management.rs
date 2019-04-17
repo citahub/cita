@@ -76,7 +76,7 @@ impl<'a> UserManagement<'a> {
     }
 
     pub fn default_all_groups() -> Vec<Address> {
-        error!("Use default all groups.");
+        info!("Use default all groups.");
         Vec::new()
     }
 
@@ -89,7 +89,7 @@ impl<'a> UserManagement<'a> {
     }
 
     pub fn default_accounts() -> Vec<Address> {
-        error!("Use default accounts.");
+        info!("Use default accounts.");
         Vec::new()
     }
 }

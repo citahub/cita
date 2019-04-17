@@ -103,7 +103,7 @@ impl<'a> SysConfig<'a> {
     }
 
     pub fn default_delay_block_number() -> u64 {
-        error!("Use default delay block number.");
+        info!("Use default delay block number.");
         1
     }
 
@@ -119,7 +119,7 @@ impl<'a> SysConfig<'a> {
     }
 
     pub fn default_call_permission_check() -> bool {
-        error!("Use default permission check.");
+        info!("Use default permission check.");
         false
     }
 
@@ -134,7 +134,7 @@ impl<'a> SysConfig<'a> {
     }
 
     pub fn default_send_tx_permission_check() -> bool {
-        error!("Use default send tx permission check.");
+        info!("Use default send tx permission check.");
         false
     }
 
@@ -149,7 +149,7 @@ impl<'a> SysConfig<'a> {
     }
 
     pub fn default_create_contract_permission_check() -> bool {
-        error!("Use default create contract permission check.");
+        info!("Use default create contract permission check.");
         false
     }
 
@@ -161,7 +161,7 @@ impl<'a> SysConfig<'a> {
     }
 
     pub fn default_quota_check() -> bool {
-        error!("Use default quota check.");
+        info!("Use default quota check.");
         false
     }
 
@@ -177,7 +177,7 @@ impl<'a> SysConfig<'a> {
     }
 
     pub fn default_fee_back_platform_check() -> bool {
-        warn!("Use default fee back platform check.");
+        info!("Use default fee back platform check.");
         false
     }
 
@@ -190,7 +190,7 @@ impl<'a> SysConfig<'a> {
     }
 
     pub fn default_chain_owner() -> Address {
-        warn!("Use default chain owner.");
+        info!("Use default chain owner.");
         Address::from([0u8; 20])
     }
 

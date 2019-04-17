@@ -107,7 +107,7 @@ impl<'a> NodeManager<'a> {
     }
 
     pub fn default_shuffled_stake_nodes() -> Vec<Address> {
-        error!("Use default shuffled stake nodes.");
+        info!("Use default shuffled stake nodes.");
         Vec::new()
     }
 

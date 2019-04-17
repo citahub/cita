@@ -55,7 +55,7 @@ impl<'a> EmergencyBrake<'a> {
     }
 
     pub fn default_state() -> bool {
-        error!("Use default emergency break state.");
+        info!("Use default emergency break state.");
         false
     }
 }

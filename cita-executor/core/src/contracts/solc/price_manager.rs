@@ -55,7 +55,7 @@ impl<'a> PriceManagement<'a> {
     }
 
     pub fn default_quota_price() -> U256 {
-        error!("Use default quota price");
+        info!("Use default quota price");
         U256::from(1)
     }
 }
