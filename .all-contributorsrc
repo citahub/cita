@@ -433,6 +433,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "timmyz",
+      "name": "Timmy Zhang",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/795528?v=4",
+      "profile": "https://github.com/timmyz",
+      "contributions": [
+        "ideas"
+      ]
     }
   ],
   "contributorsPerLine": 7
