@@ -1,0 +1,439 @@
+{
+  "projectName": "cita",
+  "projectOwner": "cryptape",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md",
+    "README-CN.md"
+  ],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "none",
+  "contributors": [
+    {
+      "login": "kaikai1024",
+      "name": "kaikai",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/8768261?v=4",
+      "profile": "https://github.com/kaikai1024",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "u2",
+      "name": "zhangyaning",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/161756?v=4",
+      "profile": "https://twitter.com/zhangyaning1985",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "yangby-cryptape",
+      "name": "Boyu Yang",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/30993023?v=4",
+      "profile": "https://yangby-cryptape.github.io/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "rink1969",
+      "name": "zhiwei",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1633038?v=4",
+      "profile": "https://github.com/rink1969",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "driftluo",
+      "name": "漂流",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19374080?v=4",
+      "profile": "https://www.driftluo.com",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "ouwenkg",
+      "name": "AsceticBear",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/11801722?v=4",
+      "profile": "https://ouwenkg.github.io/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "jerry-yu",
+      "name": "yubo",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/2151472?v=4",
+      "profile": "https://github.com/jerry-yu",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "zhouyun-zoe",
+      "name": "zhouyun-zoe",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/36949326?v=4",
+      "profile": "https://github.com/zhouyun-zoe",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "volzkzg",
+      "name": "Bicheng Gao",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/2860864?v=4",
+      "profile": "https://github.com/volzkzg",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "EighteenZi",
+      "name": "lhf",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/31607114?v=4",
+      "profile": "https://github.com/EighteenZi",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "TheWaWaR",
+      "name": "LinFeng Qian",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/1160419?v=4",
+      "profile": "http://ahorn.me",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "keroro520",
+      "name": "keroro",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/1870648?v=4",
+      "profile": "https://github.com/keroro520",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "leeyr338",
+      "name": "Yaorong",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/38514341?v=4",
+      "profile": "https://github.com/leeyr338",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "suyanlong",
+      "name": "suyanlong",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/16421423?v=4",
+      "profile": "https://github.com/suyanlong",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Keith-CY",
+      "name": "Chen Yu",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7271329?v=4",
+      "profile": "https://github.com/Keith-CY",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "zhangsoledad",
+      "name": "zhangsoledad",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/3198439?v=4",
+      "profile": "https://zhangsoledad.github.io/salon",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "hezhengjun",
+      "name": "hezhengjun",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/30688033?v=4",
+      "profile": "https://github.com/hezhengjun",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "zeroqn",
+      "name": "zeroqn",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/23418132?v=4",
+      "profile": "https://github.com/zeroqn",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "urugang",
+      "name": "urugang",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/11461821?v=4",
+      "profile": "https://github.com/urugang",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "jjyr",
+      "name": "Jiang Jinyang",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/1695400?v=4",
+      "profile": "https://justjjy.com",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "janx",
+      "name": "Jan Xie",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/5958?v=4",
+      "profile": "https://twitter.com/janhxie",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "jerry-sl",
+      "name": "Sun Lei",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/5476062?v=4",
+      "profile": "https://github.com/jerry-sl",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "chuchenxihyl",
+      "name": "hyl",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/23721562?v=4",
+      "profile": "https://github.com/chuchenxihyl",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "poshboytl",
+      "name": "Terry Tai",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/5960?v=4",
+      "profile": "http://terrytai.me",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "kilb",
+      "name": "Ke Wang",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/9641495?v=4",
+      "profile": "https://bll.io",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "mohanson",
+      "name": "Mohanson",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/12387889?v=4",
+      "profile": "http://accu.cc",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "luqz",
+      "name": "quanzhan lu",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/17267434?v=4",
+      "profile": "https://www.jianshu.com/u/3457636b07c5",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "duanyytop",
+      "name": "duanyytop",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/5823268?v=4",
+      "profile": "https://github.com/duanyytop",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "clearloop",
+      "name": "clearloop",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/26088946?v=4",
+      "profile": "https://github.com/clearloop",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "hot3246624",
+      "name": "nokodemion",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/9135770?v=4",
+      "profile": "https://github.com/hot3246624",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "rainchen",
+      "name": "Rain Chen",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/71397?v=4",
+      "profile": "http://rainchen.com",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "daogangtang",
+      "name": "Daogang Tang",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/629594?v=4",
+      "profile": "https://github.com/daogangtang",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "jiangxianliang007",
+      "name": "xianliang jiang",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/24754263?v=4",
+      "profile": "https://github.com/jiangxianliang007",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "vinberm",
+      "name": "Nov",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/17666225?v=4",
+      "profile": "https://github.com/vinberm",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "rairyx",
+      "name": "Rai Yang",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/5009854?v=4",
+      "profile": "https://github.com/rairyx",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "huwenchao",
+      "name": "Wenchao Hu",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/1630721?v=4",
+      "profile": "http://www.huwenchao.com/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Kayryu",
+      "name": "kaiyu",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/35792093?v=4",
+      "profile": "https://github.com/Kayryu",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "ashchan",
+      "name": "James Chen",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1391?v=4",
+      "profile": "https://ashchan.com",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "rev-chaos",
+      "name": "rev-chaos",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/32355308?v=4",
+      "profile": "https://github.com/rev-chaos",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "KaoImin",
+      "name": "Eason Gao",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/24822778?v=4",
+      "profile": "https://github.com/KaoImin",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "qinix",
+      "name": "Eric Zhang",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1946663?v=4",
+      "profile": "http://qinix.com",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "jasl",
+      "name": "Jun Jiang",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1024162?v=4",
+      "profile": "https://github.com/jasl",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "PRIEWIENV",
+      "name": "PRIEWIENV",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/9765170?v=4",
+      "profile": "https://blog.priewienv.me",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "gitter-badger",
+      "name": "The Gitter Badger",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/8518239?v=4",
+      "profile": "https://gitter.im",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "classicalliu",
+      "name": "CL",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/13375784?v=4",
+      "profile": "https://github.com/classicalliu",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "programmer-liu",
+      "name": "programmer-liu",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/25048144?v=4",
+      "profile": "https://github.com/programmer-liu",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "yejiayu",
+      "name": "Jiayu Ye",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/10446547?v=4",
+      "profile": "https://github.com/yejiayu",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7
+}
