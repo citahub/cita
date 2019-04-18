@@ -337,16 +337,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             }
         }
 
-        /*trace!("quota should be checked: {}", options.check_quota);
-        if options.check_quota {
-            check_quota(
-                self.info.gas_used,
-                self.info.gas_limit,
-                self.info.account_gas_limit,
-                t,
-            )?;
-        }*/
-
         if t.action == Action::AbiStore && !self.transact_set_abi(&t.data) {
             return Err(ExecutionError::TransactionMalformed(
                 "Account doesn't exist".to_owned(),
@@ -999,8 +989,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let mut unconfirmed_substate = Substate::new();
 
         // create contract and transfer value to it if necessary
-        /*let schedule = self.engine.schedule(self.info);
-        let nonce_offset = if schedule.no_empty {1} else {0}.into();*/
         let nonce_offset = U256::from(0);
         let prev_bal = self.state.balance(&params.address)?;
         // TODO Keep it for compatibility. Remove it later.
@@ -1065,9 +1053,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         chain_owner: Address,
         fee_back_platform: bool,
     ) -> ExecutionResult {
-        /*
-        let schedule = self.engine.schedule(self.info);
-         */
         let schedule = Schedule::new_v1();
         // refunds from SSTORE nonzero -> zero
         let sstore_refunds = U256::from(schedule.sstore_refund_gas) * substate.sstore_clears_count;

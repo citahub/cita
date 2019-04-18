@@ -121,7 +121,7 @@ impl<'a> QuotaManager<'a> {
     }
 
     pub fn default_quota() -> Vec<u64> {
-        error!("Use default quota.");
+        info!("Use default quota.");
         Vec::new()
     }
 
@@ -139,7 +139,7 @@ impl<'a> QuotaManager<'a> {
     }
 
     pub fn default_users() -> Vec<Address> {
-        error!("Use default users.");
+        info!("Use default users.");
         Vec::new()
     }
 
@@ -152,7 +152,7 @@ impl<'a> QuotaManager<'a> {
     }
 
     pub fn default_block_quota_limit() -> u64 {
-        error!("Use default block quota limit.");
+        info!("Use default block quota limit.");
         BQL_VALUE
     }
 
@@ -170,7 +170,7 @@ impl<'a> QuotaManager<'a> {
     }
 
     pub fn default_account_quota_limit() -> u64 {
-        error!("Use default account quota limit.");
+        info!("Use default account quota limit.");
         AQL_VALUE
     }
 
@@ -188,7 +188,7 @@ impl<'a> QuotaManager<'a> {
     }
 
     pub fn default_auto_exec_quota_limit() -> u64 {
-        error!("Use default auto exec quota limit.");
+        info!("Use default auto exec quota limit.");
         AUTO_EXEC_QL_VALUE
     }
 }

@@ -470,27 +470,11 @@ impl SnapshotService for Service {
         *cur_status
     }
 
-    /*
-    fn begin_restore(&self, manifest: ManifestData) {
-        if let Err(e) = self.io_channel.lock().send(ClientIoMessage::BeginRestoration(manifest)) {
-            trace!("Error sending snapshot service message: {:?}", e);
-        }
-    }
-    */
-
     fn abort_restore(&self) {
         self.restoring_snapshot.store(false, Ordering::SeqCst);
         *self.restoration.lock() = None;
         *self.status.lock() = RestorationStatus::Inactive;
     }
-
-    /*
-    fn restore_state_chunk(&self, hash: H256, chunk: Bytes) {
-        if let Err(e) = self.io_channel.lock().send(ClientIoMessage::FeedStateChunk(hash, chunk)) {
-            trace!("Error sending snapshot service message: {:?}", e);
-        }
-    }
-    */
 }
 /// The interface for a snapshot network service.
 /// This handles:

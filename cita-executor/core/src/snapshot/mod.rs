@@ -610,12 +610,6 @@ impl StateRebuilder {
     /// journal entry.
     /// Once all chunks have been fed, there should be nothing missing.
     pub fn finalize(mut self, era: u64, id: H256) -> Result<Box<JournalDB>, ::error::Error> {
-        /*let missing = self.missing_code.values().cloned().collect::<Vec<_>>();
-        if !missing.is_empty() { return Err(Error::MissingCode(missing).into()) }
-
-        let missing = self.missing_abi.values().cloned().collect::<Vec<_>>();
-        if !missing.is_empty() { return Err(Error::MissingAbi(missing).into()) }*/
-
         let mut batch = self.db.backing().transaction();
         self.db.journal_under(&mut batch, era, &id)?;
         self.db.backing().write_buffered(batch);
@@ -848,25 +842,6 @@ impl BlockRebuilder {
     /// Glue together any disconnected chunks and check that the chain is complete.
     fn finalize(&self) -> Result<(), ::error::Error> {
         let mut batch = self.db.transaction();
-
-        /*for (first_num, first_hash) in self.disconnected.drain(..) {
-            let parent_num = first_num - 1;
-
-            // check if the parent is even in the chain.
-            // since we don't restore every single block in the chain,
-            // the first block of the first chunks has nothing to connect to.
-            if let Some(parent_hash) = self.chain.block_hash(parent_num) {
-                // if so, add the child to it.
-                self.chain.add_child(&mut batch, parent_hash, first_hash);
-            }
-        }*/
-
-        /*let genesis_hash = self.chain.genesis_hash();
-        self.chain.insert_epoch_transition(&mut batch, 0, ::engines::EpochTransition {
-            block_number: 0,
-            block_hash: genesis_hash,
-            proof: vec![],
-        });*/
         let genesis_header = self
             .executor
             .block_header_by_height(0)

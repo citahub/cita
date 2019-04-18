@@ -112,7 +112,7 @@ impl<'a> PermissionManagement<'a> {
     }
 
     pub fn default_all_accounts() -> Vec<Address> {
-        error!("Use default all accounts.");
+        info!("Use default all accounts.");
         Vec::new()
     }
 
@@ -147,7 +147,7 @@ impl<'a> PermissionManagement<'a> {
     }
 
     pub fn default_permissions() -> Vec<Address> {
-        error!("Use default permissions.");
+        info!("Use default permissions.");
         Vec::new()
     }
 
