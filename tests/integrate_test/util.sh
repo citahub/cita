@@ -153,6 +153,42 @@ check_peer_count () {
     return 1
 }
 
+# output information about time used if exit 0
+check_peer_count_max () {
+    if [ $# -ne 3 ] ; then
+        echo "usage: $0 node_id expected_count timeout"
+        return 1
+    fi
+    id=$1
+    max_count=$2
+    timeout=$3                # seconds
+
+    if [[ $? -ne 0 ]]; then
+        echo "failed to get_height(old): ${old}"
+        return 1
+    fi
+    start=$(date +%s)
+    while [ 1 ] ; do
+        peer_count=$(get_peer_count ${id})
+        if [[ $? -ne 0 ]] ; then
+            echo "failed to get_peer_count! node id: ${id} expected count: ${expected_count}"
+            return 1
+        fi
+
+        now=$(date +%s)
+        if [ $((peer_count)) -le $((max_count)) ]; then
+            echo "$((now-start))"
+            return 0
+        fi
+        if [ $((now-start)) -gt ${timeout} ] ; then
+            echo "time used: $((now-start)) get peer count: ${peer_count} expected count: ${expected_count}"
+            return 1
+        fi
+        sleep 1
+    done
+    return 1
+}
+
 check_height_growth_normal () {
     if [ $# -ne 2 ] ; then
         echo "usage: $0 id timeout"
