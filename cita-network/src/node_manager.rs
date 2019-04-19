@@ -735,9 +735,9 @@ impl PendingConnectedNodeReq {
 
     pub fn handle(self, service: &mut NodesManager) {
         if service.connected_addrs.len() >= service.max_connects {
-            // Has reach to max connects, refuse this connection
+            // Has reached to max connects, refuse this connection
             info!(
-                "[NodeManager] Has reach to max connections [{:?}], refuse Session [{:?}], address: {:?}",
+                "[NodeManager] Has reached to max connects [{:?}], refuse Session [{:?}], address: {:?}",
                 service.max_connects, self.session_id, self.addr
             );
             if let Some(ref mut ctrl) = service.service_ctrl {

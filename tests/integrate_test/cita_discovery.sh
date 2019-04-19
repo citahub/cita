@@ -107,7 +107,8 @@ test_parallel_entry() {
 
     # check every node's peer count reach to 7
     for i in {0..7} ; do
-        timeout=$(check_peer_count $i 7 120)||(echo "FAILED"
+        # needs more time for 8 nodes discovery each other.
+        timeout=$(check_peer_count $i 7 180)||(echo "FAILED"
                                                echo "error msg: ${timeout}"
                                                exit 1)
     done
@@ -270,6 +271,13 @@ test_max_connected_limit_as_client() {
         bin/cita bebop start node/$i > /dev/null
     done
 
+    # make sure that node[0..3] has been connected each other
+    for i in {0..3} ; do
+        timeout=$(check_peer_count $i 3 90)||(echo "FAILED"
+                                              echo "error msg: ${timeout}"
+                                              exit 1)
+    done
+
     # start node4
     bin/cita bebop start node/4 > /dev/null
 
@@ -315,12 +323,13 @@ test_max_connected_limit_as_server() {
         bin/cita bebop start node/$i > /dev/null
     done
 
-    # node[0..3]'s peer count is 2
+    # node[0..3]'s peer count cannot grater than 2,
+    # but some nodes may less than 2.
     for i in {0..3} ; do
 
         # it is necessary to wait for a few seconds for each check
         sleep 3
-        timeout=$(check_peer_count $i 2 90)||(echo "FAILED"
+        timeout=$(check_peer_count_max $i 2 90)||(echo "FAILED"
                                               echo "error msg: ${timeout}"
                                               exit 1)
     done
@@ -391,8 +400,8 @@ main() {
 
     test_entry_and_known_node_restart
     test_repeated_address
-#    test_max_connected_limit_as_client
-#    test_max_connected_limit_as_server
+    test_max_connected_limit_as_client
+    test_max_connected_limit_as_server
 
     echo -n "5) cleanup ... "
     clean_host
