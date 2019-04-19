@@ -53,8 +53,8 @@ usage() {
     cat <<EOF
 Usage: $SCRIPT <command> <node> [options]
 where <command> is one of the following:
-    { help | create | port | setup | start | stop | restart
-      ping | top | backup | clean | logs | logrotate }
+    { help | create | append | port | setup | start | stop
+      restart ping | top | backup | clean | logs | logrotate }
 Run \`$SCRIPT help\` for more detailed information.
 EOF
 }
@@ -72,6 +72,10 @@ This is the primary script for controlling the $SCRIPT node.
     create <config>
         Creates blockchains according to the following config,
         use "cita create -h" to get more information.
+        "cita-config" has the same function.
+    append <config>
+        Append a node into an existed chain,
+        use "cita append -h" to get more information.
         "cita-config" has the same function.
     port <ports>
         Sets docker port, for example: "cita port 1337:1337"
@@ -127,6 +131,9 @@ create() {
     $CITA_SCRIPTS/create_cita_config.py $@
 }
 
+append() {
+    $CITA_SCRIPTS/create_cita_config.py $@
+}
 
 # SERVICE CONTROL COMMANDS
 start_rabbitmq() {
@@ -378,6 +385,11 @@ case "${COMMAND}" in
 
     create)
         create $@
+        exit 0
+        ;;
+
+    append)
+        append $@
         exit 0
         ;;
 
