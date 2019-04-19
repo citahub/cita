@@ -53,6 +53,35 @@ get_height(){
     return 1
 }
 
+get_peer_count(){
+    if [ $# -ne 1 ] ; then
+        echo "usage: $0 node_id"
+        return 1
+    fi
+    id=$1
+    timeout=60                  # 60 seconds
+    start=$(date +%s)
+
+    while [ 1 ] ; do
+        peer_count=$(${SOURCE_DIR}/tests/integrate_test/peerCount.sh 127.0.0.1 $((1337+${id})))
+        if [ $? -eq 0 ] ; then
+            # Remove quotes
+            peer_count_str=`echo ${peer_count} | sed 's/\"//g'`
+
+            echo ${peer_count_str}
+            return 0
+        fi
+
+        now=$(date +%s)
+        if [ $((now-start-timeout)) -gt 0 ] ; then
+            echo "timeout: ${timeout}"
+            return 1
+        fi
+        sleep 1
+    done
+    return 1
+}
+
 # output information about time used if exit 0
 check_height_growth () {
     if [ $# -ne 2 ] ; then
@@ -82,6 +111,42 @@ check_height_growth () {
         if [ $((now-start)) -gt ${timeout} ] ; then
             echo "time used: $((now-start)) old height: ${old} new height: ${new}"
             return 20
+        fi
+        sleep 1
+    done
+    return 1
+}
+
+# output information about time used if exit 0
+check_peer_count () {
+    if [ $# -ne 3 ] ; then
+        echo "usage: $0 node_id expected_count timeout"
+        return 1
+    fi
+    id=$1
+    expected_count=$2
+    timeout=$3                # seconds
+
+    if [[ $? -ne 0 ]]; then
+        echo "failed to get_height(old): ${old}"
+        return 1
+    fi
+    start=$(date +%s)
+    while [ 1 ] ; do
+        peer_count=$(get_peer_count ${id})
+        if [[ $? -ne 0 ]] ; then
+            echo "failed to get_peer_count! node id: ${id} expected count: ${expected_count}"
+            return 1
+        fi
+
+        now=$(date +%s)
+        if [ $((peer_count)) -eq $((expected_count)) ]; then
+            echo "$((now-start))"
+            return 0
+        fi
+        if [ $((now-start)) -gt ${timeout} ] ; then
+            echo "time used: $((now-start)) get peer count: ${peer_count} expected count: ${expected_count}"
+            return 1
         fi
         sleep 1
     done
