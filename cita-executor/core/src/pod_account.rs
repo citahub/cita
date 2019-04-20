@@ -106,12 +106,14 @@ impl fmt::Display for PodAccount {
             "(bal={}; nonce={}; code={} bytes, #{}; abi={} bytes, #{}; storage={} items)",
             self.balance,
             self.nonce,
-            self.code.as_ref().map_or(0, |c| c.len()),
+            self.code.as_ref().map_or(0, Vec::len),
             self.code
                 .as_ref()
-                .map_or_else(H256::new, |c| c.crypt_hash()),
-            self.abi.as_ref().map_or(0, |c| c.len()),
-            self.abi.as_ref().map_or_else(H256::new, |c| c.crypt_hash()),
+                .map_or_else(H256::new, Hashable::crypt_hash),
+            self.abi.as_ref().map_or(0, Vec::len),
+            self.abi
+                .as_ref()
+                .map_or_else(H256::new, Hashable::crypt_hash),
             self.storage.len(),
         )
     }
