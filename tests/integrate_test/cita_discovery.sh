@@ -178,7 +178,7 @@ test_entry_before_known_node_start() {
     # check every node's peer count is 4
     for i in {0..4} ; do
         # needs more time to for checking, because node0 may not have enough score in node4
-        timeout=$(check_peer_count $i 4 180)||(echo "FAILED"
+        timeout=$(check_peer_count $i 4 240)||(echo "FAILED"
                                               echo "error msg: ${timeout}"
                                               exit 1)
     done
