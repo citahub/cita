@@ -4,6 +4,59 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+### Framework
+
+- [Optimization] Update default rust toolchain to `v1.34.0`. [@yangby-cryptape] [@kaikai1024]
+- [Optimization] Update cita-sdk-js version. [@kaikai1024]
+- [Fix] Reorganize toml path. [@ouwenkg]
+- [Feature] Log output mode can be configured as stdout or file. [@Kayryu]
+
+### Executor
+
+- [Optimization] Integrate vm-test. [@ouwenkg]
+- [Optimization] Add unit test of calling contract. [@kaikai1024]
+
+### Auth
+
+- [Fix] Auth crashes when it is not ready. [@leeyr338]
+
+### Network
+
+- [Fix] High CPU usage. [@leeyr338]
+- [Fix] Refuse connect when reach max connections. [@leeyr338]
+- [Optimization] Add discovery test of network. [@leeyr338]
+- [Optimization] Use new version `p2p` to fix network run crash. [@jerry-yu]
+
+### Consensus
+
+- [Optimization] Set the default ntp service to false. [@kaikai1024]
+- [Fix] Not generate block. [@jerry-yu]
+
+### RPC
+
+- [Feature] Add `getVersion` interface. [@luqz]
+- [Feature] Add `peersInfo` interface. [@leeyr338]
+
+### Scripts
+
+- [Optimization] Installation && Exectution Optimization: new usage of cita script. [@clearloop]
+- [Fix] Redirect the stdout and stderr for daemon processes in docker. [@yangby-cryptape]
+- [Optimization] Patch to absolute paths' in starting scripts. [@clearloop]
+- [Optimization] Format the `env.sh` using `ShellCheck`. [@clearloop]
+
+### Doc
+
+- [Doc] Add style guide of codes. [@kaikai1024]
+- [Doc] Add all contributors. [@kaikai1024]
+- [Doc] Add more template types of issue and pull request. [@kaikai1024]
+- [Doc] Add editorconfig file. [@kaikai1024]
+- [Doc] Add release guide doc. [@kaikai1024]
+- [Doc] Fix 404 error of `CITAHub` Docs. [@zhouyun-zoe] [@Keith-CY]
+- [Doc] Add roadmap and fix contributing docs of `CITAHub`. [@zhouyun-zoe]
+- [Doc] Update the description of BlockTag. [@xiangmeiLu]
+- [Doc] Fix protocol upgrade doc. [@QingYanL]
+- [Doc] Set default website with zh-CN language. [@wuyuyue]
+
 ## [v0.22.0] - 2019-03-29
 
 ### Upgrade Note
@@ -46,20 +99,20 @@ But in v0.22.0, the item `[[peers]]` means `known nodes` in the network, you can
 
 ### Framework
 
-- [Optimization] Replace std channel with crossbeam channel. [@kaikai] [@Yaorong]
+- [Optimization] Replace std channel with crossbeam channel. [@kaikai1024] [@leeyr338]
 - [Optimization] Reconfigure the parameters of rocksdb, and this can greatly reduce the `.sst` files in the database. [@jerry-yu]
 
 ### Executor
 
-- [Fix] Executor crashes when receives staled BlockWithProof. [@WPF] [@keroro520]
+- [Fix] Executor crashes when receives staled BlockWithProof. [@ouwenkg] [@keroro520]
 
 ### Auth
 
-- [Fix] Auth crashes when it is not ready. [@Yaorong]
+- [Fix] Auth crashes when it is not ready. [@leeyr338]
 
 ### Network
 
-- [Feature] The network service is refactored by using the p2p protocol. [@Yaorong]
+- [Feature] The network service is refactored by using the p2p protocol. [@leeyr338]
 
 ### Consensus
 
@@ -67,13 +120,13 @@ But in v0.22.0, the item `[[peers]]` means `known nodes` in the network, you can
 
 ### RPC
 
-- [Optimization] Update test token info. [@kaikai]
-- [Feature] Add `from` to `body` of `getBlockByNumber` and `getBlockByHash`. [@CL]
-- [Fix] Fix the missing CORS header. [@yangby]
+- [Optimization] Update test token info. [@kaikai1024]
+- [Feature] Add `from` to `body` of `getBlockByNumber` and `getBlockByHash`. [@classicalliu]
+- [Fix] Fix the missing CORS header. [@yangby-cryptape]
 
 ### Scripts
 
-- [Optimization] Format Python codes. [@WPF]
+- [Optimization] Format Python codes. [@ouwenkg]
 
 ### Doc
 
@@ -146,34 +199,34 @@ After completing the above modifications, following [Upgrade Instructions].
 
 ### CITA-Framework
 
-- [Optimization] Upgrade default rust toolchain to stable. [@yangby]
-- [Optimization] Remove useless dependencies. [@yangby]
-- [Optimization] Compact block Relay. [@u2] [@yangby]
+- [Optimization] Upgrade default rust toolchain to stable. [@yangby-cryptape]
+- [Optimization] Remove useless dependencies. [@yangby-cryptape]
+- [Optimization] Compact block Relay. [@u2] [@yangby-cryptape]
 
 ### Executor
 
-- [Feature] Automatic execution. [@kaikai]
-- [Optimization] Enable changing size of global cache in StateDB. [@lhf]
-- [Refactor] Decouple executor and postman [@keroro520] [@WPF]
+- [Feature] Automatic execution. [@kaikai1024]
+- [Optimization] Enable changing size of global cache in StateDB. [@EighteenZi]
+- [Refactor] Decouple executor and postman [@keroro520] [@ouwenkg]
 - [Configuration] Deprecate `--genesis` command option, instead place into `executor.toml`. [@keroro520]
-- [Configuration] Add argument about timestamp uint in `executor.toml` to compatibility with Ethereum.[@zhiwei]
-- [Optimization] Change state db type to ensure safe reference. [@WPF]
-- [Optimization] Remove unused code in state db. [@WPF]
-- [Optimization] Add more tests in executor and postman. [@WPF]
+- [Configuration] Add argument about timestamp uint in `executor.toml` to compatibility with Ethereum.[@rink1969]
+- [Optimization] Change state db type to ensure safe reference. [@ouwenkg]
+- [Optimization] Remove unused code in state db. [@ouwenkg]
+- [Optimization] Add more tests in executor and postman. [@ouwenkg]
 - [Optimization] Add block priority in postman. [@keroro520]
-- [Refactor] Decouple global sysconfig from transactionOptions. [@kaikai]
+- [Refactor] Decouple global sysconfig from transactionOptions. [@kaikai1024]
 - [Optimization] Deprecate some dangerous clone usage in block and state. [@keroro520]
-- [Optimization] Remove cached latest hashes. [@zhiwei]
-- [Fix] Fix problem in zk privacy. [@zhiwei]
+- [Optimization] Remove cached latest hashes. [@rink1969]
+- [Fix] Fix problem in zk privacy. [@rink1969]
 - [Fix] Fix defects in snapshot. [@keroro520]
 
 ### Chain
 
-- [Optimization] Rename crypto enum. [@zhiwei]
+- [Optimization] Rename crypto enum. [@rink1969]
 
 ### Auth
 
-- [Optimization] Introduce quick check for history heights. [@zhiwei]
+- [Optimization] Introduce quick check for history heights. [@rink1969]
 
 ### Network
 
@@ -187,45 +240,45 @@ After completing the above modifications, following [Upgrade Instructions].
 
 ### RPC
 
-- [Fix] The 'chainIdV1' in the response of getMetaData is hex string, so it should have 0x-prefix. [@yangby]
+- [Fix] The 'chainIdV1' in the response of getMetaData is hex string, so it should have 0x-prefix. [@yangby-cryptape]
 - [Optimization] Split libproto operations from Jsonrpc. [@zeroqn]
 - [Feature] Add `from` field in `Gettransaction` rpc interface. [@zeroqn]
 - [Optimization] Upgrade hyper version and split `Service` and `Server`. [@zeroqn]
-- [Fix] Fix `getFilterChanges` interface, the hash array returned in the case of a block filter starts from the next block. [@WPF]
+- [Fix] Fix `getFilterChanges` interface, the hash array returned in the case of a block filter starts from the next block. [@ouwenkg]
 
 ### System Contract
 
-- [Feature] Change default quotaPrice to 1000000. [@WPF]
-- [Optimization] Take interfaces and test contracts out as a dependent submodule. [@kaikai]
+- [Feature] Change default quotaPrice to 1000000. [@ouwenkg]
+- [Optimization] Take interfaces and test contracts out as a dependent submodule. [@kaikai1024]
 
 ### Scripts
 
-- [Feature] Store their own address for each node. [@yangby]
-- [Configuration] Rename checkPermission to checkCallPermission. [@kaikai]
-- [Feature] Check the maximum number of consensus nodes. [@zhiwei]
+- [Feature] Store their own address for each node. [@yangby-cryptape]
+- [Configuration] Rename checkPermission to checkCallPermission. [@kaikai1024]
+- [Feature] Check the maximum number of consensus nodes. [@rink1969]
 - [Configuration] Optimize usage of backup and clean command. [@keroro520]
-- [Optimization] Add exit info about creating genesis. [@kaikai]
-- [Feature] Support start 4 nodes in docker compose. [@zhiwei]
+- [Optimization] Add exit info about creating genesis. [@kaikai1024]
+- [Feature] Support start 4 nodes in docker compose. [@rink1969]
 
 ### Test
 
 - [Optimization] Split large ci jobs. [@u2]
-- [Optimization] Add test about amend operation. [@zhiwei]
-- [Optimization] Add test to ensure genesis compatibility. [@kaikai]
+- [Optimization] Add test about amend operation. [@rink1969]
+- [Optimization] Add test to ensure genesis compatibility. [@kaikai1024]
 - [Optimization] Add test about snapshot. [@keroro520]
 
 ### Doc
 
-- [Doc] Complete the doc of system contract interface. [@kaikai]
-- [Doc] Update crypto type and timestamp configuration in executor.toml. [@zhiwei]
+- [Doc] Complete the doc of system contract interface. [@kaikai1024]
+- [Doc] Update crypto type and timestamp configuration in executor.toml. [@rink1969]
 - [Doc] More detail statements about cita-bft consensus. [@KaoImin]
 - [Doc] Update sdk info in readme. [@zhouyun-zoe]
-- [Doc] Add node command description. [@WPF]
+- [Doc] Add node command description. [@ouwenkg]
 - [Doc] Build a new [documentation website]. [@zhouyun-zoe]
 
 ### Tool
 
-- [Optimization] Split util module into standalone crates. [@yangby]
+- [Optimization] Split util module into standalone crates. [@yangby-cryptape]
 - [Refactor] Combing the snapshot logic and rewrite snapshot_tools. [@keroro520]
 
 ## [v0.19.1] - 2019-01-31
@@ -668,18 +721,25 @@ Release the first version of CITA.
 [v0.10.0]: https://github.com/cryptape/cita/releases/tag/v0.10
 
 [@77liyan]: https://github.com/77liyan
-[@CL]: https://github.com/classicalliu
+[@EighteenZi]: https://github.com/EighteenZi
 [@KaoImin]: https://github.com/KaoImin
-[@WPF]: https://github.com/ouwenkg
-[@Yaorong]: https://github.com/leeyr338
+[@Kayryu]: https://github.com/Kayryu
+[@Keith-CY]: https://github.com/Keith-CY
+[@QingYanL]: https://github.com/QingYanL
+[@classicalliu]: https://github.com/classicalliu
+[@clearloop]: https://github.com/clearloop
 [@driftluo]: https://github.com/driftluo
 [@jerry-yu]: https://github.com/jerry-yu
-[@kaikai]: https://github.com/kaikai1024
+[@kaikai1024]: https://github.com/kaikai1024
 [@keroro520]: https://github.com/keroro520
-[@lhf]: https://github.com/EighteenZi
+[@leeyr338]: https://github.com/leeyr338
+[@luqz]: https://github.com/luqz
+[@ouwenkg]: https://github.com/ouwenkg
+[@rink1969]: https://github.com/rink1969
 [@u2]: https://github.com/u2
 [@wangfh666]: https://github.com/wangfh666
-[@yangby]: https://github.com/yangby-cryptape
+[@wuyuyue]: https://github.com/wuyuyue
+[@xiangmeiLu]: https://github.com/xiangmeiLu
+[@yangby-cryptape]: https://github.com/yangby-cryptape
 [@zeroqn]: https://github.com/zeroqn
-[@zhiwei]: https://github.com/rink1969
 [@zhouyun-zoe]: https://github.com/zhouyun-zoe
