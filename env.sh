@@ -38,7 +38,7 @@ fi
 # Docker Arguments
 USER_ID="$(id -u "$USER")"
 readonly WORKDIR='/opt/cita'
-readonly USER_NAME='user'
+USER_NAME='user'
 
 cp '/etc/localtime' "${SOURCE_DIR}/localtime"
 readonly LOCALTIME_PATH="${SOURCE_DIR}/localtime"
