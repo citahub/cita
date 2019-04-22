@@ -162,11 +162,7 @@ class ChainInfo():
                                              'authorities.list')
         self.nodes = NetworkAddressList()
         self.enable_tls = False
-        self.root_ca_name = 'rootCA'
-        self.node_ca_name = chain_name
-        self.server_ca_name = 'server'
         self.prefix_subj = '/C=CN/ST=ZJ/O=Cryptape, Inc./CN='
-        self.ca_days = 36525
 
     def template_create_from_arguments(self, args, contracts_dir_src,
                                        configs_dir_src):
@@ -234,62 +230,8 @@ class ChainInfo():
             nodes_str = ''.join(stream.readlines()).replace('\n', ',')
         self.nodes = NetworkAddressList.from_str(nodes_str)
 
-    def encrypted_create_rootca(self, tls):
-        self.enable_tls = tls
-        if not self.enable_tls:
-            return
-        subj = self.prefix_subj + 'cita'
-        cmd = f'openssl req -newkey rsa:1024 -nodes' \
-            f' -keyout {self.template_dir}/{self.root_ca_name}.key' \
-            f' -days {self.ca_days} -x509' \
-            f' -out {self.template_dir}/{self.root_ca_name}.crt' \
-            f' -subj "{subj}"'
-        os.system(cmd)
-
-    def encrypted_load_from_existed(self):
-        root_ca = f'{self.template_dir}/{self.root_ca_name}.key'
-        if os.path.isfile(root_ca):
-            self.enable_tls = True
-
-    def encrypted_create_nodeca(self, node_id):
-        if not self.enable_tls:
-            return
-        node_dir = os.path.join(self.output_root, f'{node_id}')
-        need_directory(node_dir)
-
-        subj = self.prefix_subj + f'{self.node_ca_name}{node_id}.cita'
-
-        cmd = f'openssl req -newkey rsa:1024 -nodes' \
-            f' -keyout {node_dir}/{self.node_ca_name}.key' \
-            f' -days {self.ca_days}' \
-            f' -out {node_dir}/{self.node_ca_name}.csr' \
-            f' -subj "{subj}"'
-        os.system(cmd)
-
-        cmd = f'openssl x509 -CAcreateserial -req' \
-            f' -in {node_dir}/{self.node_ca_name}.csr' \
-            f' -CA {self.template_dir}/{self.root_ca_name}.crt' \
-            f' -CAkey {self.template_dir}/{self.root_ca_name}.key' \
-            f' -days {self.ca_days}' \
-            f' -out {node_dir}/{self.node_ca_name}.crt'
-        os.system(cmd)
-
-        cmd = f'openssl pkcs12 -export' \
-            f' -in {node_dir}/{self.node_ca_name}.crt' \
-            f' -inkey {node_dir}/{self.node_ca_name}.key' \
-            f' -out {node_dir}/{self.server_ca_name}.pfx ' \
-            f' -password pass:server.tls.cita'
-        os.system(cmd)
-
-        for suffix in ('crt', 'csr', 'key'):
-            os.remove(f'{node_dir}/{self.node_ca_name}.{suffix}')
-        shutil.copyfile(f'{self.template_dir}/{self.root_ca_name}.crt',
-                        f'{node_dir}/{self.root_ca_name}.crt')
-
     def create_peer_data(self, node_id, node):
-        ret = dict(id_card=node_id, ip=node['host'], port=node['port'])
-        if self.enable_tls:
-            ret['common_name'] = '{}{}.cita'.format(self.node_ca_name, node_id)
+        ret = dict(ip=node['host'], port=node['port'])
         return ret
 
     def create_init_data(self, super_admin, contract_arguments):
@@ -359,7 +301,6 @@ class ChainInfo():
         network_full_config = os.path.join(self.configs_dir, 'network.toml')
         with open(network_full_config, 'rt') as stream:
             network_data = toml.load(stream)
-            self.encrypted_create_nodeca(node_id)
             network_data['peers'].append(self.create_peer_data(node_id, node))
             config = network_data['peers']
         with open(network_full_config, 'wt') as stream:
@@ -380,7 +321,6 @@ class ChainInfo():
         network_config = os.path.join(node_dir, 'network.toml')
         with open(network_config, 'rt') as stream:
             network_data = toml.load(stream)
-            network_data['id_card'] = node_id
             network_data['port'] = node['port']
             if self.enable_tls:
                 network_data['enable_tls'] = True
@@ -400,7 +340,7 @@ def run_subcmd_create(args, work_dir):
         os.path.join(work_dir, 'scripts/config_tool/config_example'))
     info.create_init_data(args.super_admin, args.contract_arguments)
     info.create_genesis(args.timestamp, args.resource_dir)
-    info.encrypted_create_rootca(args.enable_tls)
+    info.enable_tls = args.enable_tls
     for node in args.nodes:
         info.append_node(node)
 
@@ -408,7 +348,6 @@ def run_subcmd_create(args, work_dir):
 def run_subcmd_append(args, work_dir):
     info = ChainInfo(args.chain_name, work_dir)
     info.template_load_from_existed()
-    info.encrypted_load_from_existed()
     info.append_node(args.node)
 
 
