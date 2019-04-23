@@ -20,14 +20,15 @@ use crate::config::NetConfig;
 use crate::p2p_protocol::transfer::TRANSFER_PROTOCOL_ID;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use cita_types::Address;
-use fnv::FnvHashMap;
+use fnv::FnvHashMap as HashMap;
 use libproto::{Message as ProtoMessage, TryInto};
 use logger::{debug, error, info, trace, warn};
+use notify::DebouncedEvent;
 use pubsub::channel::{select, tick, unbounded, Receiver, Sender};
 use rand;
+use std::sync::mpsc::Receiver as StdReceiver;
 use std::{
-    collections::HashMap,
-    collections::HashSet,
+    collections::{BTreeMap, BTreeSet},
     convert::Into,
     io::Cursor,
     net::{SocketAddr, ToSocketAddrs},
@@ -69,17 +70,16 @@ pub const DIALED_ERROR_SCORE: i32 = 25;
 // A node is dialed error by client, should need DIALED_ERROR_SCORE each time.
 pub const KEEP_ON_LINE_SCORE: i32 = 5;
 
-type IsTranslated = bool;
-
 pub struct NodesManager {
-    check_connected_nodes: Receiver<Instant>,
-    known_addrs: FnvHashMap<SocketAddr, NodeStatus>,
-    config_addrs: HashMap<String, IsTranslated>,
-    translated_addrs: HashSet<SocketAddr>,
+    known_addrs: HashMap<SocketAddr, NodeStatus>,
+    config_addrs: BTreeMap<String, Option<SocketAddr>>,
+
     connected_addrs: HashMap<SessionId, SocketAddr>,
     pending_connected_addrs: HashMap<SessionId, SessionInfo>,
+
     connected_peer_keys: HashMap<Address, SessionId>,
-    repeated_session: HashMap<SessionId, SocketAddr>,
+
+    check_connected_nodes: Receiver<Instant>,
     max_connects: usize,
     nodes_manager_client: NodesManagerClient,
     nodes_manager_service_receiver: Receiver<NodesManagerMessage>,
@@ -91,7 +91,7 @@ pub struct NodesManager {
 }
 
 impl NodesManager {
-    pub fn new(known_addrs: FnvHashMap<SocketAddr, NodeStatus>) -> Self {
+    pub fn new(known_addrs: HashMap<SocketAddr, NodeStatus>) -> Self {
         let mut node_mgr = NodesManager::default();
         node_mgr.known_addrs = known_addrs;
         node_mgr
@@ -106,11 +106,11 @@ impl NodesManager {
         if let Some(enable_tls) = cfg.enable_tls {
             node_mgr.enable_tls = enable_tls;
         }
-        if let Some(known_addrs) = cfg.peers {
-            for addr in known_addrs {
+        if let Some(cfg_addrs) = cfg.peers {
+            for addr in cfg_addrs {
                 if let (Some(ip), Some(port)) = (addr.ip, addr.port) {
                     let addr_str = format!("{}:{}", ip, port);
-                    node_mgr.config_addrs.insert(addr_str, false);
+                    node_mgr.config_addrs.insert(addr_str, None);
                 } else {
                     warn!("[NodeManager] ip(host) & port 'MUST' be set in peers.");
                 }
@@ -118,8 +118,43 @@ impl NodesManager {
         } else {
             warn!("[NodeManager] Does not set any peers in config file!");
         }
-
         node_mgr
+    }
+
+    pub fn notify_config_change(
+        rx: StdReceiver<DebouncedEvent>,
+        node_client: NodesManagerClient,
+        fname: String,
+    ) {
+        loop {
+            match rx.recv() {
+                Ok(event) => match event {
+                    DebouncedEvent::Create(path_buf) | DebouncedEvent::Write(path_buf) => {
+                        if path_buf.is_file() {
+                            let file_name = path_buf.file_name().unwrap().to_str().unwrap();
+                            if file_name == fname {
+                                info!("file {} changed, will auto reload!", file_name);
+
+                                let config = NetConfig::new(file_name);
+                                if let Some(peers) = config.peers {
+                                    let mut addr_strs = Vec::new();
+                                    for addr in peers {
+                                        if let (Some(ip), Some(port)) = (addr.ip, addr.port) {
+                                            addr_strs.push(format!("{}:{}", ip, port));
+                                        }
+                                    }
+                                    node_client.fix_modified_config(ModifiedConfigPeersReq::new(
+                                        addr_strs,
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                    _ => trace!("file notify event: {:?}", event),
+                },
+                Err(e) => warn!("watch error: {:?}", e),
+            }
+        }
     }
 
     pub fn run(&mut self) {
@@ -155,7 +190,7 @@ impl NodesManager {
         self.translate_address();
 
         // If connected node has not reach MAX, select a node from known_addrs to dial.
-        if self.connected_addrs.len() < self.max_connects {
+        if self.connected_addrs.len() < self.max_connects && self.dialing_node.is_none() {
             for (key, value) in self.known_addrs.iter_mut() {
                 // Node has been connected
                 if let Some(session_id) = value.session_id {
@@ -203,7 +238,7 @@ impl NodesManager {
 
                     // The node will get time sugar, the nodes which in config file can get 2, and the
                     // other nodes which discovered by P2P can get 1.
-                    value.score += if self.translated_addrs.contains(&*key) {
+                    value.score += if value.in_config == NodeSource::FromConfig {
                         2
                     } else {
                         1
@@ -252,7 +287,7 @@ impl NodesManager {
     pub fn translate_address(&mut self) {
         for (key, value) in self.config_addrs.iter_mut() {
             // The address has translated.
-            if *value {
+            if value.is_some() {
                 debug!("[NodeManager] The Address {:?} has been translated.", key);
                 continue;
             }
@@ -260,10 +295,9 @@ impl NodesManager {
                 Ok(mut result) => {
                     if let Some(socket_addr) = result.next() {
                         // An init node from config file, give it FULL_SCORE.
-                        let node_status = NodeStatus::new(FULL_SCORE, None);
+                        let node_status = NodeStatus::new(FULL_SCORE, None, NodeSource::FromConfig);
                         self.known_addrs.insert(socket_addr, node_status);
-                        self.translated_addrs.insert(socket_addr);
-                        *value = true;
+                        *value = Some(socket_addr);
                     } else {
                         error!("[NodeManager] Can not convert to socket address!");
                     }
@@ -288,12 +322,10 @@ impl Default for NodesManager {
         // Set enable_tls = false as default.
         NodesManager {
             check_connected_nodes: ticker,
-            known_addrs: FnvHashMap::default(),
-            config_addrs: HashMap::default(),
-            translated_addrs: HashSet::default(),
+            known_addrs: HashMap::default(),
+            config_addrs: BTreeMap::default(),
             connected_addrs: HashMap::default(),
             connected_peer_keys: HashMap::default(),
-            repeated_session: HashMap::default(),
             pending_connected_addrs: HashMap::default(),
             max_connects: DEFAULT_MAX_CONNECTS,
             nodes_manager_client: client,
@@ -307,6 +339,12 @@ impl Default for NodesManager {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum NodeSource {
+    FromConfig,
+    NotConfig,
+}
+
 #[derive(Debug)]
 pub struct NodeStatus {
     // score: Score for a node, it will affect whether the node will be chosen to dail again,
@@ -316,11 +354,16 @@ pub struct NodeStatus {
     // session_id: Indicates that this node has been connected to a session. 'None' for has not
     // connected yet.
     pub session_id: Option<SessionId>,
+    pub in_config: NodeSource,
 }
 
 impl NodeStatus {
-    pub fn new(score: i32, session_id: Option<SessionId>) -> Self {
-        NodeStatus { score, session_id }
+    pub fn new(score: i32, session_id: Option<SessionId>, in_config: NodeSource) -> Self {
+        NodeStatus {
+            score,
+            session_id,
+            in_config,
+        }
     }
 }
 
@@ -398,6 +441,10 @@ impl NodesManagerClient {
         self.send_req(NodesManagerMessage::AddConnectedNode(req));
     }
 
+    pub fn fix_modified_config(&self, req: ModifiedConfigPeersReq) {
+        self.send_req(NodesManagerMessage::ModifiedConfigPeers(req));
+    }
+
     fn send_req(&self, req: NodesManagerMessage) {
         if let Err(e) = self.sender.try_send(req) {
             warn!(
@@ -423,6 +470,7 @@ pub enum NodesManagerMessage {
     AddRepeatedNode(AddRepeatedNodeReq),
     ConnectedSelf(ConnectedSelfReq),
     GetPeersInfo(GetPeersInfoReq),
+    ModifiedConfigPeers(ModifiedConfigPeersReq),
 }
 
 impl NodesManagerMessage {
@@ -441,6 +489,7 @@ impl NodesManagerMessage {
             NodesManagerMessage::AddRepeatedNode(req) => req.handle(service),
             NodesManagerMessage::ConnectedSelf(req) => req.handle(service),
             NodesManagerMessage::GetPeersInfo(req) => req.handle(service),
+            NodesManagerMessage::ModifiedConfigPeers(req) => req.handle(service),
         }
     }
 }
@@ -505,17 +554,12 @@ impl AddConnectedNodeReq {
             );
 
             // It is a repeated_session, but not a repeated node.
-            if self.ty == SessionType::Outbound {
-                if let Some(dialing_addr) = service.dialing_node {
-                    if self.ty == SessionType::Outbound {
-                        if let Some(ref mut node_status) =
-                            service.known_addrs.get_mut(&dialing_addr)
-                        {
-                            node_status.session_id = Some(*repeated_id);
-                            node_status.score += SUCCESS_DIALING_SCORE;
-                        }
+            if let Some(dialing_addr) = service.dialing_node {
+                if self.ty == SessionType::Outbound {
+                    if let Some(ref mut node_status) = service.known_addrs.get_mut(&dialing_addr) {
+                        node_status.session_id = Some(*repeated_id);
+                        node_status.score += SUCCESS_DIALING_SCORE;
                     }
-                    service.repeated_session.insert(*repeated_id, dialing_addr);
                 }
             }
 
@@ -548,6 +592,14 @@ impl AddConnectedNodeReq {
                     "[NodeManager] Add session [{:?}], address: {:?} to Connected_addrs.",
                     self.session_id, session_info.addr
                 );
+                let _ = service
+                    .connected_addrs
+                    .insert(self.session_id, session_info.addr);
+
+                // Add connected peer keys
+                let _ = service
+                    .connected_peer_keys
+                    .insert(self.init_msg.peer_key, self.session_id);
 
                 // If it is an active connection, need to set this node in known_addrs has been connected.
                 if self.ty == SessionType::Outbound {
@@ -558,14 +610,6 @@ impl AddConnectedNodeReq {
                         node_status.score += SUCCESS_DIALING_SCORE;
                     }
                 }
-                service
-                    .connected_addrs
-                    .insert(self.session_id, session_info.addr);
-
-                // Add connected peer keys
-                let _ = service
-                    .connected_peer_keys
-                    .insert(self.init_msg.peer_key, self.session_id);
             }
 
             info!(
@@ -623,11 +667,12 @@ impl NetworkInitReq {
 
 pub struct AddNodeReq {
     addr: SocketAddr,
+    source: NodeSource,
 }
 
 impl AddNodeReq {
-    pub fn new(addr: SocketAddr) -> Self {
-        AddNodeReq { addr }
+    pub fn new(addr: SocketAddr, source: NodeSource) -> Self {
+        AddNodeReq { addr, source }
     }
 
     pub fn handle(self, service: &mut NodesManager) {
@@ -639,7 +684,7 @@ impl AddNodeReq {
             return;
         }
         // Add a new node, using a default node status.
-        let default_node_status = NodeStatus::new(FULL_SCORE, None);
+        let default_node_status = NodeStatus::new(FULL_SCORE, None, self.source);
         service
             .known_addrs
             .entry(self.addr)
@@ -686,7 +731,6 @@ impl AddRepeatedNodeReq {
             node_status.session_id = Some(self.session_id);
             node_status.score += SUCCESS_DIALING_SCORE;
         }
-        service.repeated_session.insert(self.session_id, self.addr);
 
         // This dialing is finished.
         service.dialing_node = None;
@@ -771,26 +815,23 @@ impl DelConnectedNodeReq {
 
         if let Some(addr) = service.connected_addrs.remove(&self.session_id) {
             self.reset_node_status(addr, service);
-        }
 
-        if let Some(addr) = service.repeated_session.remove(&self.session_id) {
-            self.reset_node_status(addr, service);
-        }
-
-        // Remove connected peer keys
-        for (key, value) in service.connected_peer_keys.iter() {
-            if self.session_id == *value {
-                info!(
-                    "[NodeManager] Remove session [{:?}] from connected_peer_keys.",
-                    *value
-                );
-                service.connected_peer_keys.remove(&key.clone());
-                break;
+            // Remove connected peer keys
+            for (key, value) in service.connected_peer_keys.iter() {
+                if self.session_id == *value {
+                    info!(
+                        "[NodeManager] Remove session [{:?}] from connected_peer_keys.",
+                        *value
+                    );
+                    service.connected_peer_keys.remove(&key.clone());
+                    break;
+                }
             }
         }
 
         // Remove pending connected
         if let Some(session_info) = service.pending_connected_addrs.remove(&self.session_id) {
+            self.reset_node_status(session_info.addr, service);
             if session_info.ty == SessionType::Outbound {
                 // Dial a node, but the session was closed by server, means this dial may refused.
                 if let Some(ref mut node_status) = service.known_addrs.get_mut(&session_info.addr) {
@@ -800,7 +841,6 @@ impl DelConnectedNodeReq {
                         session_info.addr, node_status.score
                     );
                 }
-
                 // Close a session which open as client, end of this dialing.
                 service.dialing_node = None;
             }
@@ -948,5 +988,44 @@ impl ConnectedSelfReq {
     pub fn handle(self, service: &mut NodesManager) {
         service.self_addr = Some(self.addr);
         service.dialing_node = None;
+    }
+}
+
+pub struct ModifiedConfigPeersReq {
+    peers: Vec<String>,
+}
+
+impl ModifiedConfigPeersReq {
+    pub fn new(peers: Vec<String>) -> Self {
+        ModifiedConfigPeersReq { peers }
+    }
+
+    pub fn handle(self, service: &mut NodesManager) {
+        //if new config deleted some peer,disconnect and remove it from known addrs
+        let mut keys: BTreeSet<_> = service.config_addrs.keys().cloned().collect();
+        for peer in &self.peers {
+            keys.remove(peer);
+        }
+
+        info!("left peers {:?}", self.peers);
+
+        //The remainder in keys will be disconnected
+        for key in keys {
+            service.config_addrs.remove(&key).and_then(|addr| {
+                addr.and_then(|addr| {
+                    service.known_addrs.remove(&addr).and_then(|node_status| {
+                        node_status.session_id.and_then(|sid| {
+                            service
+                                .service_ctrl
+                                .as_mut()
+                                .and_then(|ctrl| ctrl.disconnect(sid).ok())
+                        })
+                    })
+                })
+            });
+        }
+        for peer in self.peers {
+            service.config_addrs.entry(peer).or_insert(None);
+        }
     }
 }
