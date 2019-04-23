@@ -337,7 +337,7 @@ do_logrotate() {
     sleep 2
     for logfile in ${NODE_LOGS_DIR}/cita-*.log; do
         if [[ ${logs} != *"${logfile}"* ]]; then
-            echo "${logfile}"
+            echo "./${NODE_NAME}/logs/${logfile##*/}"
         fi
     done
 }
