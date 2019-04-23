@@ -98,7 +98,7 @@ class InitializationData(object):
 
     @classmethod
     def load_from_string(cls, cfg):
-        data = yaml.load(cfg)
+        data = yaml.safe_load(cfg)
         contracts_cfgs = dictlist_to_ordereddict(data['Contracts'])
         for name, arguments in contracts_cfgs.items():
             contracts_cfgs[name] = dictlist_to_ordereddict(arguments)
