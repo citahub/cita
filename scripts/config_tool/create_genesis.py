@@ -120,7 +120,7 @@ class GenesisData(object):
     def load_contracts_list(self, contracts_list_file):
         """From file to load the list of contracts."""
         with open(contracts_list_file, 'r') as stream:
-            contracts_list = yaml.load(stream)
+            contracts_list = yaml.safe_load(stream)
         contracts_list['NormalContracts'] = dictlist_to_ordereddict(
             contracts_list['NormalContracts'])
         contracts_list['PermissionContracts']['basic'] \
@@ -134,7 +134,7 @@ class GenesisData(object):
     def load_contracts_args(self, init_data_file):
         """From file to load arguments for contracts."""
         with open(init_data_file, 'r') as stream:
-            data = yaml.load(stream)
+            data = yaml.safe_load(stream)
         contracts_args = dictlist_to_ordereddict(data['Contracts'])
         for name, arguments in contracts_args.items():
             contracts_args[name] = dictlist_to_ordereddict(arguments)
@@ -305,7 +305,7 @@ def core(contracts_dir, contracts_docs_dir, init_data_file, output, timestamp,
         prevhash,
     )
     with open(init_data_file, 'r') as stream:
-        data = yaml.load(stream)
+        data = yaml.safe_load(stream)
     address = data['Contracts'][2]['NodeManager'][0]['nodes']
     super_admin = data['Contracts'][6]['Admin'][0]['admin']
     address.append(super_admin)
