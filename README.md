@@ -8,9 +8,9 @@ English | [简体中文](./README-CN.md)
 
 ## What is CITA
 
-CITA is a fast and scalable blockchain for enterprises. CITA supports both native contract and EVM contract, by which enterprise users can build their own blockchain applications. CITA has a unique architecture which enables enterprise users to release all their computing resources.
+CITA is a fast and scalable blockchain kernel for enterprises. CITA supports both native contract and EVM contract, by which enterprise users can build their own blockchain applications. CITA has a unique architecture which enables enterprise users to release all their computing resources.
 
-- **Horizontal scalability**: With the microservice architecture, a logical node can be easily scaled to a cluster of servers. Node administrators can increase system capacity simply by adding more PC servers on high load. The administrator can even use dedicated servers to provide services for hot-spot accounts. Outside one node's boundary, nodes communicate with each other using P2P network; inside each node, microservices communicate with each other by messaging queue (Note this is completely different from Fabric which uses a messaging queue only as consensus process).
+- **Horizontal scalability**: With the microservice architecture, a logical node can be easily scaled to a cluster of servers. Node administrators can increase system capacity simply by adding more PC servers on high load. The administrator can even use dedicated servers to provide services for hot-spot accounts. Outside one node's boundary, nodes communicate with each other using P2P network; inside each node, microservices communicate with each other by messaging queue.
 
 ![](https://github.com/cryptape/citahub-docs/blob/master/docs/assets/cita-assets/architecture.jpg?raw=true)
 
