@@ -285,11 +285,11 @@ class ChainInfo():
             stream.write('DATA_PATH=./data\n')
 
         privkey = node.get('privkey')
-        if privkey:
-            privkey_config = os.path.join(node_dir, 'privkey')
-            with open(privkey_config, 'wt') as stream:
+        privkey_config = os.path.join(node_dir, 'privkey')
+        with open(privkey_config, 'wt') as stream:
+            if privkey:
                 stream.write(privkey)
-                stream.write('\n')
+            stream.write('\n')
 
         address = node.get('address')
         if address:
