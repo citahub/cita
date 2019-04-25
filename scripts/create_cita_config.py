@@ -238,7 +238,7 @@ class ChainInfo():
         from create_init_data import core as create_init_data
         create_init_data(self.init_data_file, super_admin, contract_arguments)
 
-    def create_genesis(self, timestamp, resource_dir):
+    def create_genesis(self, timestamp, init_token, resource_dir):
         from create_genesis import core as create_genesis
         prevhash = generate_prevhash(resource_dir)
         if resource_dir is not None:
@@ -246,7 +246,7 @@ class ChainInfo():
                             os.path.join(self.configs_dir, 'resource'), False)
         create_genesis(self.contracts_dir, self.contracts_docs_dir,
                        self.init_data_file, self.genesis_path, timestamp,
-                       prevhash)
+                       init_token, prevhash)
 
     def append_node(self, node):
         # For append mode: use the first element to store the new node
@@ -339,7 +339,7 @@ def run_subcmd_create(args, work_dir):
         args, os.path.join(work_dir, 'scripts/contracts'),
         os.path.join(work_dir, 'scripts/config_tool/config_example'))
     info.create_init_data(args.super_admin, args.contract_arguments)
-    info.create_genesis(args.timestamp, args.resource_dir)
+    info.create_genesis(args.timestamp, args.init_token, args.resource_dir)
     info.enable_tls = args.enable_tls
     for node in args.nodes:
         info.append_node(node)
@@ -428,6 +428,12 @@ def parse_arguments():
         '--stdout',
         action='store_true',
         help='Logs will output to stdout')
+
+    pcreate.add_argument(
+        '--init_token',
+        type=lambda x: hex(int(x,16)),
+        default=hex(int("0xffffffffffffffffffffffffff", 16)),
+        help='Init token for this chain, INIT_TOKEN is a hexadecimal number')
 
     #
     # Subcommand: append

@@ -239,13 +239,12 @@ class GenesisData(object):
             self.mine_contract_on_chain_tester(addr, data['bin'] + extra)
 
     def set_account_value(self, address, value):
-        for addr in address:
-            self.accounts[addr] = {
-                'code': '',
-                'storage': {},
-                'nonce': '1',
-                'value': value,
-            }
+        self.accounts[address] = {
+            'code': '',
+            'storage': {},
+            'nonce': '1',
+            'value': value,
+        }
 
     def save_to_file(self, filepath):
         with open(filepath, 'w') as stream:
@@ -289,7 +288,7 @@ def parse_arguments():
 
 
 def core(contracts_dir, contracts_docs_dir, init_data_file, output, timestamp,
-         prevhash):
+         init_token, prevhash):
     # pylint: disable=too-many-arguments
     replaceLogRecord()
     if solidity.get_solidity() is None:
@@ -306,13 +305,10 @@ def core(contracts_dir, contracts_docs_dir, init_data_file, output, timestamp,
     )
     with open(init_data_file, 'r') as stream:
         data = yaml.safe_load(stream)
-    address = data['Contracts'][2]['NodeManager'][0]['nodes']
     super_admin = data['Contracts'][6]['Admin'][0]['admin']
-    address.append(super_admin)
-    value = '0xffffffffffffffffffffffffff'
     genesis_data.init_normal_contracts()
     genesis_data.init_permission_contracts()
-    genesis_data.set_account_value(address, value)
+    genesis_data.set_account_value(super_admin, init_token)
     genesis_data.save_to_file(output)
 
 
