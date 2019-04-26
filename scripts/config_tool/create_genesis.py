@@ -275,6 +275,11 @@ def parse_arguments():
         '--output', required=True, help='Path of the output file.')
     parser.add_argument(
         '--timestamp', type=int, help='Specify a timestamp to use.')
+    parser.add_argument(
+        '--init_token',
+        type=lambda x: hex(int(x,16)),
+        default=hex(int("0xffffffffffffffffffffffffff", 16)),
+        help='Init token for this chain, INIT_TOKEN is a hexadecimal number')
     parser.add_argument('--prevhash', help='Prevhash of genesis.')
     args = parser.parse_args()
     return dict(
@@ -283,6 +288,7 @@ def parse_arguments():
         init_data_file=args.init_data_file,
         output=args.output,
         timestamp=args.timestamp,
+        init_token=args.init_token,
         prevhash=args.prevhash,
     )
 
