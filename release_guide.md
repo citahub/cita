@@ -174,10 +174,6 @@ git push origin merge-master-to-develop
 
 在[信息版]发布新版本主题贴。
 
-### CITAHub Docs 确认更新
-
-确定 [CITAHub Docs] 更新到新版本。
-
 ### 清理分支
 
 ***如果设置了分支保护，联系管理员手动删除***
@@ -194,10 +190,13 @@ git push --delete origin release-x.y.z
 git push --delete origin merge-master-to-develop
 ```
 
+### CITAHub Docs 版本更新
+
+[CITAHub Docs] 延后三天进行版本更新，期间进行文档的测试和补充。
+
 ## 其他
 
 * 若发布之后，需要修改发版公告，交由发版人操作。
-* 发版之前确认新版本相关的文档已经更新到 [CITAHub Docs]
 
 [CITAhub Docs]: https://docs.citahub.com/zh-CN/welcome
 [Semantic Versioning]: https://semver.org/
