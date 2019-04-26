@@ -190,7 +190,7 @@ impl NodesManager {
         self.translate_address();
 
         // If connected node has not reach MAX, select a node from known_addrs to dial.
-        if self.connected_addrs.len() < self.max_connects && self.dialing_node.is_none() {
+        if self.connected_addrs.len() < self.max_connects {
             for (key, value) in self.known_addrs.iter_mut() {
                 // Node has been connected
                 if let Some(session_id) = value.session_id {
