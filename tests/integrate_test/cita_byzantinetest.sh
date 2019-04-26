@@ -39,10 +39,10 @@ echo "DONE"
 ################################################################################
 echo -n "3) start nodes  ...  "
 for i in {0..3} ; do
-    bin/cita setup node/$i  > /dev/null
+    bin/cita bebop setup node/$i  > /dev/null
 done
 for i in {0..3} ; do
-    bin/cita start node/$i debug > /dev/null &
+    bin/cita bebop start node/$i debug > /dev/null &
 done
 echo "DONE"
 

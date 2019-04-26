@@ -1,0 +1,30 @@
+{
+  "title": "getVersion",
+  "schema": {
+    "$ref": "../schemas/getVersion.json"
+  },
+  "tests": [
+    {
+      "title": "getVersion success if enabled",
+      "request": {
+        "method": "getVersion",
+        "params": []
+      },
+      "expectedResponse": {
+        "result": {
+          "softwareVersion": "0.20"
+        }
+      },
+      "asserts": [
+        {
+          "description": "response should not null",
+          "program": ".receivedResponse.result != null"
+        },
+        {
+          "description": "response softwareVersion should more than expected",
+          "program": ".receivedResponse.result.softwareVersion >= .expectedResponse.result.softwareVersion"
+        }
+      ]
+    }
+  ]
+}

@@ -193,8 +193,11 @@ impl BlockBody {
 
     pub fn protobuf(&self) -> ProtoBlockBody {
         let mut body = ProtoBlockBody::new();
-        let txs: Vec<ProtoSignedTransaction> =
-            self.transactions.iter().map(|t| t.protobuf()).collect();
+        let txs: Vec<ProtoSignedTransaction> = self
+            .transactions
+            .iter()
+            .map(SignedTransaction::protobuf)
+            .collect();
         body.set_transactions(txs.into());
         body
     }

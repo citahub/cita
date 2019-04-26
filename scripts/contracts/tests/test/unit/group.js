@@ -1,11 +1,11 @@
+const chai = require('chai');
 const util = require('../helpers/util');
 const config = require('../config');
 const group = require('../helpers/group');
-const chai = require('chai');
 
 const { expect } = chai;
 
-const { appchain, logger } = util;
+const { citaSDK, logger } = util;
 
 const {
   queryInfo, queryAccounts, queryParent, inGroup,
@@ -13,7 +13,7 @@ const {
 
 // test data
 const { address } = config.superAdmin;
-const name = appchain.utils.utf8ToHex('rootGroup');
+const name = citaSDK.utils.utf8ToHex('rootGroup');
 const nul = '0x0000000000000000000000000000000000000000';
 
 describe('test group contract', () => {

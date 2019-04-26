@@ -17,11 +17,11 @@ def send_tx(privkey, code="", version=LATEST_VERSION):
     """
     Send a transaction
 
-    python3 make_tx.py 
-    --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6" 
-    --code ""   
+    python3 make_tx.py
+    --privkey "5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6"
+    --code ""
 
-    python3 send_tx.py 
+    python3 send_tx.py
     """
 
     kwargs = {

@@ -20,7 +20,7 @@ use core::filters::eth_filter::EthFilter;
 use core::libchain::chain::{BlockInQueue, Chain};
 use core::libchain::OpenBlock;
 use error::ErrorCode;
-use jsonrpc_types::rpctypes::{
+use jsonrpc_types::rpc_types::{
     BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
     Log as RpcLog, Receipt as RpcReceipt, RpcBlock,
 };
@@ -238,7 +238,7 @@ impl Forward {
                 }) {
                     let filter: Filter = rpc_filter.into();
                     let logs = self.chain.get_logs(&filter);
-                    let rpc_logs: Vec<RpcLog> = logs.into_iter().map(|x| x.into()).collect();
+                    let rpc_logs: Vec<RpcLog> = logs.into_iter().map(Into::into).collect();
                     response.set_logs(serde_json::to_string(&rpc_logs).unwrap());
                 };
             }
@@ -352,15 +352,16 @@ impl Forward {
                 error!("Get messages which should not handle by this function!");
             }
 
-            Request::peercount(_) | Request::un_tx(_) => {
-                error!("Get messages which should sent to other micro services!");
-            }
             Request::storage_key(skey) => {
                 trace!("storage key info is {:?}", skey);
                 self.ctx_pub
                     .send((routing_key!(Chain >> Request).into(), imsg))
                     .unwrap();
                 return;
+            }
+
+            _ => {
+                error!("Get messages which should sent to other micro services!");
             }
         };
         let msg: Message = response.into();

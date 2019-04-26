@@ -41,7 +41,7 @@ mod postman;
 const SNAPSHOT_LOCK: &str = ".cita_snapshot";
 
 fn main() {
-    micro_service_init!("cita-snapshot", "CITA:snapshot");
+    micro_service_init!("cita-snapshot", "CITA:snapshot", false);
 
     // 1. Aquire client's lock
     let locker = lock();
@@ -58,9 +58,7 @@ fn main() {
         .get_matches();
     let command = matches.value_of("cmd").expect("provide specific command");
     let command = cast_command(command);
-    let file = matches
-        .value_of("file")
-        .expect("provice specific snapshot-file path");
+    let file = matches.value_of("file").unwrap_or("snapshot");
     let file = file.to_owned();
     let start_height = matches.value_of("start_height").unwrap_or("0");
     let start_height = cast_height(start_height);

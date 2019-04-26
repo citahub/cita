@@ -142,17 +142,22 @@ fn profiler(flag_prof_start: u64, flag_prof_duration: u64) {
 }
 
 fn main() {
-    micro_service_init!("cita-auth", "CITA:auth");
-    info!("Version: {}", get_build_info_str(true));
-
     // init app
     let matches = App::new("auth")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
+        .args_from_usage(
+            "-c, --config=[FILE] 'Sets a custom config file'
+                          -s, --stdout 'Log to console'",
+        )
         .get_matches();
+
+    let stdout = matches.is_present("stdout");
+    micro_service_init!("cita-auth", "CITA:auth", stdout);
+    info!("Version: {}", get_build_info_str(true));
+
     let config_path = matches.value_of("config").unwrap_or("auth.toml");
 
     let config = Config::new(config_path);

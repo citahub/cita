@@ -1,0 +1,38 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+# Set default charset
+charset = utf-8
+indent_style = space
+indent_size = 4
+
+# Follow https://github.com/rust-dev-tools/fmt-rfcs/blob/master/guide/guide.md
+[*.rs]
+indent_style = space
+indent_size = 4
+max_line_length = 100
+
+# Matches multiple files with brace expansion notation
+[*.{json,py,md,markdown}]
+indent_style = space
+indent_size = 4
+
+[Makefile]
+indent_style = tab
+indent_size = 4
+
+[*.yml]
+indent_style = space
+indent_size = 2
+
+# Indentation override for all JS under scripts directory
+[scripts/**.js]
+indent_style = space
+indent_size = 2

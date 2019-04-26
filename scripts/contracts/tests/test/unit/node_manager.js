@@ -1,7 +1,7 @@
+const chai = require('chai');
 const util = require('../helpers/util');
 const nodeManager = require('../helpers/node_manager');
 const config = require('../config');
-const chai = require('chai');
 
 const { expect } = chai;
 const {

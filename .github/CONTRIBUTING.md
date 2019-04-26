@@ -2,7 +2,7 @@
 
 First off, thanks for taking the time to contribute!
 
-The following is a set of guidelines for contributing to CITA and its packages. These are mostly guidelines, not rules. Use your best judgement, and feel free to propose changes to this document in a pull request. 
+The following is a set of guidelines for contributing to CITA and its packages. These are mostly guidelines, not rules. Use your best judgement, and feel free to propose changes to this document in a pull request.
 
 ## Table of Contents
 
@@ -91,7 +91,7 @@ Here we use [rustdoc](https://doc.rust-lang.org/book/first-edition/documentation
 
 Documents are essential parts to communicate with our users. We need to make our documents well-structured and readable. Everyone who contributes to the documents should have a **strong responsibility** for creating the great experience.
 
-- Everyone who modifies the documents needs to visualize the documents before making a pull request, in case there are some mistakes. 
+- Everyone who modifies the documents needs to visualize the documents before making a pull request, in case there are some mistakes.
 
 - Separate Chinese and English characters by a blank space. [Chinese Version Only]
     - Normally we need to add a blank space before the first character of English words and after the last character of English words.
@@ -99,32 +99,32 @@ Documents are essential parts to communicate with our users. We need to make our
     - If the character after the last character of English words is punctuation mark, then we don’t need to add a blank space.
 
     Example:
-    
+
     - Bad Style：
-    
+
         我们采用 CITA 作为我们的blockchain基础设施服务。
-    
+
     - Good Style：
-    
+
         我们采用 CITA 作为我们的 blockchain 基础设施服务。
 
 - Separate Chinese characters and numbers by a blank space. [Chinese Version Only]
     - Detailed rules are same as above.
 
     Example:
-    
+
     - Bad Style:
-    
+
         CITA 的速度超乎想象，比我用过的其他10几个区块链服务都要快。
-        
+
     - Good Style:
 
         CITA 的速度超乎想象，比我用过的其他 10 几个区块链服务都要快。
-    
+
 - Please do remember to indent the contents below any ordered list or unordered list.
 
     Example:
-    
+
     ![Bad Style](https://ws4.sinaimg.cn/large/006tKfTcly1frtlvhnbfdj31kw0zkjvu.jpg)
-    
+
     ![Good Style](https://ws3.sinaimg.cn/large/006tKfTcly1frtlwl2hq9j31kw0zktd5.jpg)

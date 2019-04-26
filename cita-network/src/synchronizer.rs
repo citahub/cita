@@ -29,6 +29,7 @@ use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::convert::Into;
 use std::time::{Duration, Instant};
 use std::u8;
+use tentacle::SessionId;
 
 const SYNC_STEP: u64 = 20;
 const SYNC_TIME_OUT: u64 = 9;
@@ -331,7 +332,7 @@ impl Synchronizer {
             let msg = Message::init(OperateType::Single, origin, sync_req.into());
 
             self.nodes_mgr_client.send_message(SingleTxReq::new(
-                origin as usize,
+                SessionId::from(origin as usize),
                 routing_key!(Synchronizer >> SyncRequest).into(),
                 msg,
             ));

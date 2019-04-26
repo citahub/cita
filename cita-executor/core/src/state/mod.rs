@@ -103,7 +103,7 @@ impl AccountEntry {
     }
 
     fn exists_and_is_null(&self) -> bool {
-        self.account.as_ref().map_or(false, |a| a.is_null())
+        self.account.as_ref().map_or(false, Account::is_null)
     }
 
     /// Clone dirty data into new `AccountEntry`. This includes
@@ -272,7 +272,6 @@ const SEC_TRIE_DB_UNWRAP_STR: &str =
 
 impl<B: Backend> State<B> {
     /// Creates new state with empty state root
-    #[cfg(test)]
     pub fn new(mut db: B, account_start_nonce: U256, factories: Factories) -> State<B> {
         let mut root = H256::new();
         {
@@ -905,7 +904,7 @@ impl<B: Backend> State<B> {
             let mut trie = self
                 .factories
                 .trie
-                .from_existing(self.db.as_hashdb_mut(), &mut self.root)
+                .get_from_existing(self.db.as_hashdb_mut(), &mut self.root)
                 .map_err(|err| *err)?;
             for (address, ref mut a) in accounts.iter_mut().filter(|&(_, ref a)| a.is_dirty()) {
                 a.state = AccountState::Committed;
@@ -1217,16 +1216,6 @@ mod tests {
     #[test]
     #[ignore]
     fn should_apply_create_transaction() {
-        /*
-        pragma solidity ^0.4.8;
-        contract AbiTest {
-          uint balance;
-          function AbiTest() {}
-          function setValue(uint value) {
-            balance = value;
-          }
-        }
-        */
         logger::silent();
 
         // 1) tx = (to, data(code), nonce, valid_until_block)

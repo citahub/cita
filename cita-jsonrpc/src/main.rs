@@ -38,6 +38,7 @@
 //!     | jsonrpc | Jsonrpc   | Auth      | RequestNewTxBatch |
 //!     | jsonrpc | Jsonrpc   | Chain     | Request           |
 //!     | jsonrpc | Jsonrpc   | Net       | RequestNet        |
+//!     | jsonrpc | jsonrpc   | Net       | RequestPeersInfo  |
 //!
 //! ### Key behavior
 //!
@@ -99,6 +100,7 @@ mod mq_handler;
 mod mq_publisher;
 mod response;
 mod service_error;
+mod soliloquy;
 mod ws_handler;
 
 use clap::App;
@@ -113,6 +115,7 @@ use libproto::Message;
 use libproto::TryInto;
 use pubsub::channel::{self, Sender};
 use pubsub::start_pubsub;
+use soliloquy::Soliloquy;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::thread;
@@ -124,17 +127,21 @@ use ws_handler::WsFactory;
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 fn main() {
-    micro_service_init!("cita-jsonrpc", "CITA:jsonrpc");
-    info!("Version: {}", get_build_info_str(true));
-
     // todo load config
     let matches = App::new("JsonRpc")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA JSON-RPC by Rust")
-        .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
+        .args_from_usage(
+            "-c, --config=[FILE] 'Sets a custom config file'
+                          -s, --stdout 'Log to console'",
+        )
         .get_matches();
+
+    let stdout = matches.is_present("stdout");
+    micro_service_init!("cita-jsonrpc", "CITA:jsonrpc", stdout);
+    info!("Version: {}", get_build_info_str(true));
 
     let config_path = matches.value_of("config").unwrap_or("jsonrpc.toml");
 
@@ -157,6 +164,10 @@ fn main() {
     let (tx_pub, rx_pub) = channel::unbounded();
     //used for buffer message
     let (tx_relay, rx_relay) = channel::unbounded();
+    // used for deal with RequestRpc
+    let (tx, rx) = channel::unbounded();
+    let soli_resp_tx = tx_sub.clone();
+
     start_pubsub(
         "jsonrpc",
         routing_key!([
@@ -185,19 +196,43 @@ fn main() {
         loop {
             if let Ok(res) = rx_relay.try_recv() {
                 let (topic, req): (String, reqlib::Request) = res;
-                forward_service(
-                    topic,
-                    req,
-                    &mut new_tx_request_buffer,
-                    &mut time_stamp,
-                    &tx_pub,
-                    &tx_flow_config,
-                );
+                match RoutingKey::from(&topic) {
+                    routing_key!(Jsonrpc >> RequestRpc) => {
+                        let data: Message = req.into();
+                        tx.send((topic, data.try_into().unwrap())).unwrap();
+                    }
+                    _ => {
+                        forward_service(
+                            topic,
+                            req,
+                            &mut new_tx_request_buffer,
+                            &mut time_stamp,
+                            &tx_pub,
+                            &tx_flow_config,
+                        );
+                    }
+                }
             } else {
                 if !new_tx_request_buffer.is_empty() {
                     batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, &tx_pub);
                 }
                 thread::sleep(Duration::new(0, tx_flow_config.buffer_duration));
+            }
+        }
+    });
+
+    // response RequestRpc
+    let soli_config = config.clone();
+    thread::spawn(move || {
+        let soliloquy = Soliloquy::new(soli_config);
+
+        loop {
+            if let Ok((_, msg_bytes)) = rx.recv() {
+                let resp_msg = soliloquy.handle(&msg_bytes);
+                let _ = soli_resp_tx.send((
+                    routing_key!(Jsonrpc >> Response).into(),
+                    resp_msg.try_into().unwrap(),
+                ));
             }
         }
     });

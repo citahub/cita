@@ -35,9 +35,9 @@ def start(node_number, log_level=""):
     log_level: str
     """
     for i in range(node_number + 1):
-        p = run_subprocess(f'bin/cita setup node/{i}')
+        p = run_subprocess(f'bin/cita bebop setup node/{i}')
         p.wait()
-        run_subprocess(f'bin/cita start node/{i} {log_level}')
+        run_subprocess(f'bin/cita bebop start node/{i} {log_level}')
 
 
 def stop(node_number):
@@ -45,7 +45,7 @@ def stop(node_number):
     node_number: int
     """
     for i in range(node_number + 1):
-        p = run_subprocess(f'bin/cita stop node/{i}')
+        p = run_subprocess(f'bin/cita bebop stop node/{i}')
         p.wait()
 
 

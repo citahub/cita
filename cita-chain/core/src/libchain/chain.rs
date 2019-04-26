@@ -150,14 +150,13 @@ impl TxProof {
             let from_chain_id = U256::from(iter.next().unwrap());
             let to_chain_id = U256::from(iter.next().unwrap());
             let dest_contract = Address::from(H256::from(iter.next().unwrap()));
-            let dest_hasher = iter.next().unwrap()[..4]
-                .into_iter()
-                .take(4)
-                .enumerate()
-                .fold([0u8; 4], |mut acc, (idx, val)| {
+            let dest_hasher = iter.next().unwrap()[..4].iter().take(4).enumerate().fold(
+                [0u8; 4],
+                |mut acc, (idx, val)| {
                     acc[idx] = *val;
                     acc
-                });
+                },
+            );
             let cross_chain_nonce = U256::from(iter.next().unwrap()).low_u64();
             Some(RelayInfo {
                 from_chain_id,
@@ -459,12 +458,12 @@ impl Chain {
         let conf = ret.get_config();
         let nodes = conf.get_nodes();
         let nodes: Vec<Address> = nodes
-            .into_iter()
+            .iter()
             .map(|vecaddr| Address::from_slice(&vecaddr[..]))
             .collect();
         let validators = conf.get_validators();
         let validators: Vec<Address> = validators
-            .into_iter()
+            .iter()
             .map(|vecaddr| Address::from_slice(&vecaddr[..]))
             .collect();
         let block_interval = conf.get_block_interval();
@@ -522,7 +521,7 @@ impl Chain {
         if !info.get_receipts().is_empty() {
             let receipts: Vec<Receipt> = info
                 .get_receipts()
-                .into_iter()
+                .iter()
                 .map(|receipt_with_option| Receipt::from(receipt_with_option.get_receipt().clone()))
                 .collect();
 
@@ -1125,7 +1124,7 @@ impl Chain {
                         receipts.len(),
                         hashes.len()
                     );
-                    assert!(false);
+                    unreachable!();
                 }
                 log_index = receipts
                     .iter()
@@ -1188,8 +1187,15 @@ impl Chain {
         from_block: BlockId,
         to_block: BlockId,
     ) -> Option<Vec<BlockNumber>> {
-        match (self.block_number(from_block), self.block_number(to_block)) {
-            (Some(from), Some(to)) => Some(self.blocks_with_bloom(bloom, from, to)),
+        match (
+            self.block_number(from_block),
+            self.block_number(to_block),
+            self.block_number(BlockId::Pending),
+        ) {
+            (Some(from), Some(to), Some(pending)) => {
+                let end = if to > pending { pending } else { to };
+                Some(self.blocks_with_bloom(bloom, from, end))
+            }
             _ => None,
         }
     }

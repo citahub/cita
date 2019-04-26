@@ -107,7 +107,7 @@ alias:
 
   - &job-default
     docker:
-      - image: cita/cita-build:ubuntu-18.04-20190107
+      - image: cita/cita-build:ubuntu-18.04-20190413
     working_directory: ~/cita-build
     resource_class: xlarge
 
@@ -261,6 +261,16 @@ jobs:
           name: Test Executor Process Invalid Proof
           command: ./tests/integrate_test/cita_bft_resend.sh
 
+  "Discovery Test for network":
+    <<: *job-default
+    steps:
+    - restore_cache: *restore-source-codes-cache
+    - restore_cache: *restore-release-cache
+    - run: *after-restore-release-cache
+    - run:
+        name: Discovery test for network
+        command: ./tests/integrate_test/cita_discovery.sh
+
   "Byzantine Test in Quota Mode":
     <<: *job-default
     steps:
@@ -366,6 +376,9 @@ workflows:
       - "Integrate Test Part-2":
           requires:
             - "Release"
+      - "Discovery Test for network":
+          requires:
+            - "Release"
       - "Byzantine Test in Quota Mode":
           requires:
             - "Release"
@@ -393,6 +406,7 @@ workflows:
           requires:
             - "Integrate Test Part-1"
             - "Integrate Test Part-2"
+            - "Discovery Test for network"
             - "Byzantine Test in Quota Mode"
             - "Byzantine Test in Charge Mode"
             - "Crosschain Test"

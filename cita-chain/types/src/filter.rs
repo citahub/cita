@@ -19,7 +19,7 @@
 use cita_types::traits::BloomTools;
 use cita_types::{Address, H256};
 use ids::BlockId;
-use jsonrpc_types::rpctypes::{Filter as RpcFilter, VariadicValue};
+use jsonrpc_types::rpc_types::{Filter as RpcFilter, VariadicValue};
 use log_entry::{LogBloom, LogEntry};
 
 /// Blockchain Filter.
@@ -82,7 +82,7 @@ impl Filter {
                 .into_iter()
                 .flat_map(|bloom| {
                     topics
-                        .into_iter()
+                        .iter()
                         .map(|topic| {
                             let mut b = bloom;
                             b.accrue_raw(topic);

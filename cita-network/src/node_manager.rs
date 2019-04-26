@@ -34,7 +34,9 @@ use std::{
     time::{Duration, Instant},
 };
 use tentacle::{
-    multiaddr::ToMultiaddr, service::ServiceControl, yamux::session::SessionType, SessionId,
+    multiaddr::ToMultiaddr,
+    service::{DialProtocol, ServiceControl, SessionType, TargetSession},
+    SessionId,
 };
 
 pub const DEFAULT_MAX_CONNECTS: usize = 666;
@@ -213,7 +215,7 @@ impl NodesManager {
                 if let Some(ref mut ctrl) = self.service_ctrl {
                     self.dialing_node = Some(*key);
                     info!("Trying to dial: {:?}", self.dialing_node);
-                    match ctrl.dial((*key).to_multiaddr().unwrap()) {
+                    match ctrl.dial((*key).to_multiaddr().unwrap(), DialProtocol::All) {
                         Ok(_) => {
                             // Need DIALING_SCORE for every dial.
                             value.score -= DIALING_SCORE;
@@ -384,6 +386,10 @@ impl NodesManagerClient {
         self.send_req(NodesManagerMessage::GetPeerCount(req));
     }
 
+    pub fn get_peers_info(&self, req: GetPeersInfoReq) {
+        self.send_req(NodesManagerMessage::GetPeersInfo(req));
+    }
+
     pub fn network_init(&self, req: NetworkInitReq) {
         self.send_req(NodesManagerMessage::NetworkInit(req));
     }
@@ -416,6 +422,7 @@ pub enum NodesManagerMessage {
     AddConnectedNode(AddConnectedNodeReq),
     AddRepeatedNode(AddRepeatedNodeReq),
     ConnectedSelf(ConnectedSelfReq),
+    GetPeersInfo(GetPeersInfoReq),
 }
 
 impl NodesManagerMessage {
@@ -433,6 +440,7 @@ impl NodesManagerMessage {
             NodesManagerMessage::AddConnectedNode(req) => req.handle(service),
             NodesManagerMessage::AddRepeatedNode(req) => req.handle(service),
             NodesManagerMessage::ConnectedSelf(req) => req.handle(service),
+            NodesManagerMessage::GetPeersInfo(req) => req.handle(service),
         }
     }
 }
@@ -497,9 +505,9 @@ impl AddConnectedNodeReq {
             );
 
             // It is a repeated_session, but not a repeated node.
-            if self.ty == SessionType::Client {
+            if self.ty == SessionType::Outbound {
                 if let Some(dialing_addr) = service.dialing_node {
-                    if self.ty == SessionType::Client {
+                    if self.ty == SessionType::Outbound {
                         if let Some(ref mut node_status) =
                             service.known_addrs.get_mut(&dialing_addr)
                         {
@@ -542,7 +550,7 @@ impl AddConnectedNodeReq {
                 );
 
                 // If it is an active connection, need to set this node in known_addrs has been connected.
-                if self.ty == SessionType::Client {
+                if self.ty == SessionType::Outbound {
                     if let Some(ref mut node_status) =
                         service.known_addrs.get_mut(&session_info.addr)
                     {
@@ -573,7 +581,7 @@ impl AddConnectedNodeReq {
         }
 
         // End of dealing node for this round.
-        if self.ty == SessionType::Client {
+        if self.ty == SessionType::Outbound {
             service.dialing_node = None;
         }
     }
@@ -604,7 +612,7 @@ impl NetworkInitReq {
 
         if let Some(ref mut ctrl) = service.service_ctrl {
             // FIXME: handle the error!
-            let ret = ctrl.send_message(self.session_id, TRANSFER_PROTOCOL_ID, buf);
+            let ret = ctrl.send_message_to(self.session_id, TRANSFER_PROTOCOL_ID, buf);
             info!(
                 "[NodeManager] Send network init message!, id: {:?}, peer_addr: {:?}, ret: {:?}",
                 self.session_id, peer_key, ret,
@@ -726,6 +734,18 @@ impl PendingConnectedNodeReq {
     }
 
     pub fn handle(self, service: &mut NodesManager) {
+        if service.connected_addrs.len() >= service.max_connects {
+            // Has reached to max connects, refuse this connection
+            info!(
+                "[NodeManager] Has reached to max connects [{:?}], refuse Session [{:?}], address: {:?}",
+                service.max_connects, self.session_id, self.addr
+            );
+            if let Some(ref mut ctrl) = service.service_ctrl {
+                let _ = ctrl.disconnect(self.session_id);
+            }
+            return;
+        }
+
         info!(
             "[NodeManager] Session [{:?}], address: {:?} pending to add to Connected_addrs.",
             self.session_id, self.addr
@@ -771,7 +791,7 @@ impl DelConnectedNodeReq {
 
         // Remove pending connected
         if let Some(session_info) = service.pending_connected_addrs.remove(&self.session_id) {
-            if session_info.ty == SessionType::Client {
+            if session_info.ty == SessionType::Outbound {
                 // Dial a node, but the session was closed by server, means this dial may refused.
                 if let Some(ref mut node_status) = service.known_addrs.get_mut(&session_info.addr) {
                     node_status.score -= REFUSED_SCORE;
@@ -830,7 +850,7 @@ impl BroadcastReq {
         let mut buf = Vec::with_capacity(CITA_FRAME_HEADER_LEN + self.key.len() + msg_bytes.len());
         pubsub_message_to_network_message(&mut buf, Some((self.key, msg_bytes)));
         if let Some(ref mut ctrl) = service.service_ctrl {
-            let _ = ctrl.filter_broadcast(None, TRANSFER_PROTOCOL_ID, buf);
+            let _ = ctrl.filter_broadcast(TargetSession::All, TRANSFER_PROTOCOL_ID, buf);
         }
     }
 }
@@ -859,7 +879,7 @@ impl SingleTxReq {
         pubsub_message_to_network_message(&mut buf, Some((self.key, msg_bytes)));
         if let Some(ref mut ctrl) = service.service_ctrl {
             // FIXME: handle the error!
-            let _ = ctrl.send_message(self.dst, TRANSFER_PROTOCOL_ID, buf);
+            let _ = ctrl.send_message_to(self.dst, TRANSFER_PROTOCOL_ID, buf);
         }
     }
 }
@@ -881,6 +901,37 @@ impl GetPeerCountReq {
                 "[NodeManager] Get peer count {}, but send it failed : {:?}",
                 peer_count, e
             );
+        }
+    }
+}
+
+pub struct GetPeersInfoReq {
+    return_channel: Sender<HashMap<Address, String>>,
+}
+
+impl GetPeersInfoReq {
+    pub fn new(return_channel: Sender<HashMap<Address, String>>) -> Self {
+        GetPeersInfoReq { return_channel }
+    }
+
+    pub fn handle(self, service: &mut NodesManager) {
+        let mut peers = HashMap::default();
+
+        for (key, value) in service.connected_peer_keys.iter() {
+            if let Some(socket_addr) = service.connected_addrs.get(&value) {
+                peers.insert(key.clone(), socket_addr.ip().to_string());
+            } else {
+                warn!(
+                    "[NodeManager] Can not get socket address for session {} from connected_addr. It must be something wrong!",
+                    value
+                );
+            }
+        }
+
+        debug!("[NodeManager] get peers info : {:?}", peers);
+
+        if let Err(e) = self.return_channel.try_send(peers) {
+            warn!("[NodeManager] Send peers info failed : {:?}", e);
         }
     }
 }

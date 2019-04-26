@@ -20,7 +20,8 @@ use std::time::Duration;
 use futures::{future::Future, stream::FuturesOrdered, sync::oneshot};
 use hyper::HeaderMap as Headers;
 use jsonrpc_types::{
-    request::Request as JsonRequest, response::Output as JsonrpcResponse, rpctypes::Id as JsonrpcId,
+    rpc_request::Request as JsonRequest, rpc_response::Output as JsonrpcResponse,
+    rpc_types::Id as JsonrpcId,
 };
 use libproto::request::Request as ProtoRequest;
 use pubsub::channel::Sender;

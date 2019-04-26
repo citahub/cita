@@ -28,6 +28,7 @@ use pod_account::*;
 use rlp::*;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::convert::Into;
 use std::fmt;
 use std::sync::Arc;
 use types::basic_account::BasicAccount;
@@ -132,9 +133,9 @@ impl Account {
             storage_root: HASH_NULL_RLP,
             storage_cache: Self::empty_storage_cache(),
             storage_changes: pod.storage.into_iter().collect(),
-            code_hash: pod.code.as_ref().map_or(HASH_EMPTY, |c| c.crypt_hash()),
+            code_hash: pod.code.as_ref().map_or(HASH_EMPTY, Hashable::crypt_hash),
             code_filth: Filth::Dirty,
-            code_size: Some(pod.code.as_ref().map_or(0, |c| c.len())),
+            code_size: Some(pod.code.as_ref().map_or(0, Vec::len)),
             code_cache: Arc::new(pod.code.map_or_else(
                 || {
                     warn!("POD account with unknown code is being created! Assuming no code.");
@@ -142,9 +143,9 @@ impl Account {
                 },
                 |c| c,
             )),
-            abi_hash: pod.abi.as_ref().map_or(HASH_EMPTY, |c| c.crypt_hash()),
+            abi_hash: pod.abi.as_ref().map_or(HASH_EMPTY, Hashable::crypt_hash),
             abi_filth: Filth::Dirty,
-            abi_size: Some(pod.abi.as_ref().map_or(0, |c| c.len())),
+            abi_size: Some(pod.abi.as_ref().map_or(0, Vec::len)),
             abi_cache: Arc::new(pod.abi.map_or_else(
                 || {
                     warn!("POD account with unknown ABI is being created! Assuming no abi.");
@@ -271,7 +272,7 @@ impl Account {
     /// Verify value proof of the trie's storage at `key`.
     pub fn verify_value_proof(&self, key: &H256, proof: &[Bytes]) -> Option<H256> {
         trie::triedb::verify_value_proof(key, self.storage_root, proof, ::rlp::decode)
-            .map(|v: U256| v.into())
+            .map(&Into::into as &Fn(U256) -> H256)
     }
 
     /// Get cached storage value if any. Returns `None` if the
@@ -580,7 +581,7 @@ impl Account {
         trie_factory: &TrieFactory,
         db: &mut HashDB,
     ) -> trie::Result<()> {
-        let mut t = trie_factory.from_existing(db, &mut self.storage_root)?;
+        let mut t = trie_factory.get_from_existing(db, &mut self.storage_root)?;
         for (k, v) in self.storage_changes.drain() {
             // cast key and value to trait type,
             // so we can call overloaded `to_bytes` method

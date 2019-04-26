@@ -31,7 +31,8 @@
 //!     | network_consensus | Consensus | RawBytes              |
 //!     | network           | Chain     | Status                |
 //!     | network           | Chain     | SyncResponse          |
-//!     | network           | Jonsonrpc | RequestNet            |
+//!     | network           | Jsonrpc   | RequestNet            |
+//!     | network           | Jsonrpc   | RequestPeersInfo      |
 //!     | network           | Auth      | GetBlockTxn           |
 //!     | network           | Auth      | BlockTxn              |
 //!
@@ -91,9 +92,7 @@ use crate::mq_agent::MqAgent;
 use crate::network::Network;
 use crate::node_manager::{NodesManager, DEFAULT_PORT};
 use crate::p2p_protocol::{
-    node_discovery::DiscoveryProtocolMeta, node_discovery::NodesAddressManager,
-    node_discovery::DISCOVERY_PROTOCOL_ID, transfer::TransferProtocolMeta,
-    transfer::TRANSFER_PROTOCOL_ID, SHandle,
+    node_discovery::create_discovery_meta, transfer::create_transfer_meta, SHandle,
 };
 use crate::synchronizer::Synchronizer;
 use clap::App;
@@ -108,18 +107,22 @@ use util::set_panic_handler;
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 fn main() {
-    micro_service_init!("cita-network", "CITA:network");
-    info!("Version: {}", get_build_info_str(true));
-
     // init app
     let matches = App::new("network")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
-        .args_from_usage("-a, --address=[FILE] 'Sets an address file'")
+        .args_from_usage(
+            "-c, --config=[FILE] 'Sets a custom config file'
+                        -a, --address=[FILE] 'Sets an address file'
+                        -s, --stdout 'Log to console'",
+        )
         .get_matches();
+
+    let stdout = matches.is_present("stdout");
+    micro_service_init!("cita-network", "CITA:network", stdout);
+    info!("Version: {}", get_build_info_str(true));
 
     let config_path = matches.value_of("config").unwrap_or("network.toml");
 
@@ -144,16 +147,9 @@ fn main() {
     mq_agent.set_nodes_mgr_client(nodes_mgr.client());
     mq_agent.set_network_client(network_mgr.client());
 
-    // Init p2p protocols
-    let discovery_meta = DiscoveryProtocolMeta::new(
-        DISCOVERY_PROTOCOL_ID,
-        NodesAddressManager::new(nodes_mgr.client()),
-    );
-    let transfer_meta = TransferProtocolMeta::new(
-        TRANSFER_PROTOCOL_ID,
-        network_mgr.client(),
-        nodes_mgr.client(),
-    );
+    let discovery_meta = create_discovery_meta(nodes_mgr.client());
+
+    let transfer_meta = create_transfer_meta(network_mgr.client(), nodes_mgr.client());
 
     let mut service_cfg = ServiceBuilder::default()
         .insert_protocol(discovery_meta)

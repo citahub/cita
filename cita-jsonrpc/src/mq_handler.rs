@@ -17,7 +17,7 @@
 
 use helper::{RpcMap, TransferType};
 use jsonrpc_proto::response::OutputExt;
-use jsonrpc_types::response::Output;
+use jsonrpc_types::rpc_response::Output;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
 use libproto::TryFrom;
@@ -44,6 +44,7 @@ impl MqHandler {
             routing_key!(Auth >> Response)
             | routing_key!(Chain >> Response)
             | routing_key!(Executor >> Response)
+            | routing_key!(Jsonrpc >> Response)
             | routing_key!(Net >> Response) => {
                 let content = msg.take_response().ok_or_else(|| {
                     error!("empty response message");

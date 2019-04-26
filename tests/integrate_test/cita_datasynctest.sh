@@ -17,7 +17,7 @@ get_height(){
     fi
     h=`${CUR_PATH}/blockNumber.sh 127.0.0.1 $((1337+${nodeid}))`
     h=$(echo $h | sed 's/\"//g')
-    echo $((h))    
+    echo $((h))
 }
 
 COUNT=$1
@@ -48,7 +48,7 @@ done
 echo "###start node3"
 start_node3
 
-start=$(date +%s) 
+start=$(date +%s)
 
 num_3=$(get_height 3)
 

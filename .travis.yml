@@ -14,7 +14,7 @@ stages:
   - Release
   - IntegrateTest
 before_install:
-  - docker pull cita/cita-build:ubuntu-18.04-20190107
+  - docker pull cita/cita-build:ubuntu-18.04-20190413
 jobs:
   include:
 
@@ -54,11 +54,11 @@ jobs:
       install:
         - rm -rf /opt/cita-run/test-chain
         - cd $TRAVIS_BUILD_DIR/target/install
-        - ./env.sh ./scripts/create_cita_config.py create
+        - ./bin/cita create
             --nodes "127.0.0.1:4100"
             --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"
-        - ./env.sh ./bin/cita setup test-chain/0
-        - ./daemon.sh ./bin/cita start test-chain/0
+        - ./bin/cita setup test-chain/0
+        - ./bin/cita start test-chain/0
       before_script:
         - cd $TRAVIS_BUILD_DIR/target/install/scripts/contracts/tests
         - travis_retry yarn install
@@ -104,12 +104,12 @@ jobs:
       name: Unit Node
       install:
         - cd $TRAVIS_BUILD_DIR/target/install
-        - ./env.sh ./scripts/create_cita_config.py create
+        - ./bin/cita create
             --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002"
             --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"
         - for i in {0..2} ; do
-             ./env.sh bin/cita setup test-chain/$i
-             && ./daemon.sh bin/cita start test-chain/$i ;
+             ./bin/cita setup test-chain/$i
+             && ./bin/cita start test-chain/$i ;
           done
       script:
         - npm run-script unit_node
@@ -118,12 +118,12 @@ jobs:
       name: Integrate Quota
       install:
         - cd $TRAVIS_BUILD_DIR/target/install
-        - ./env.sh ./scripts/create_cita_config.py create
+        - ./bin/cita create
             --nodes "127.0.0.1:4100"
             --contract_arguments "SysConfig.checkQuota=true"
             --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"
-        - ./env.sh ./bin/cita setup test-chain/0
-        - ./daemon.sh ./bin/cita start test-chain/0
+        - ./bin/cita setup test-chain/0
+        - ./bin/cita start test-chain/0
       script:
         - npm run-script integrate_quota
 
@@ -131,12 +131,12 @@ jobs:
       name: Integrate Permission
       install:
         - cd $TRAVIS_BUILD_DIR/target/install
-        - ./env.sh ./scripts/create_cita_config.py create
+        - ./bin/cita create
             --nodes "127.0.0.1:4100"
             --contract_arguments "SysConfig.checkCallPermission=true"
             --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"
-        - ./env.sh ./bin/cita setup test-chain/0
-        - ./daemon.sh ./bin/cita start test-chain/0
+        - ./bin/cita setup test-chain/0
+        - ./bin/cita start test-chain/0
       script:
         - npm run-script permission
 
@@ -144,11 +144,11 @@ jobs:
       name: Integrate AutoExec
       install:
         - cd $TRAVIS_BUILD_DIR/target/install
-        - ./env.sh ./scripts/create_cita_config.py create
+        - ./bin/cita create
             --nodes "127.0.0.1:4100"
             --contract_arguments "SysConfig.autoExec=true"
             --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"
-        - ./env.sh ./bin/cita setup test-chain/0
-        - ./daemon.sh ./bin/cita start test-chain/0
+        - ./bin/cita setup test-chain/0
+        - ./bin/cita start test-chain/0
       script:
         - npm run-script auto_exec

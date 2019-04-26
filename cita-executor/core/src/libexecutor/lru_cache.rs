@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::borrow::ToOwned;
 use std::collections::{btree_map::Keys, btree_map::Values, BTreeMap, HashSet};
 
 /// This structure is used to perform lru based on block height
@@ -73,13 +74,13 @@ where
                 *values = values
                     .iter()
                     .filter(|ref value| !value_list.contains(&value))
-                    .map(|value| value.to_owned())
+                    .map(ToOwned::to_owned)
                     .collect::<Vec<V>>();
             });
             if self
                 .cache_by_key
                 .get(key)
-                .map(|x| x.is_empty())
+                .map(Vec::is_empty)
                 .unwrap_or(false)
             {
                 self.cache_by_key.remove(key);
@@ -96,12 +97,12 @@ where
             self.cache_by_key.remove(k);
 
             let v: Vec<V> = v
-                .into_iter()
+                .iter()
                 .filter(|value| match self.cache_by_value.get(value) {
                     Some(ref key) if key == &k => true,
                     None | Some(_) => false,
                 })
-                .map(|value| value.to_owned())
+                .map(ToOwned::to_owned)
                 .collect();
 
             v.iter().for_each(|value| {

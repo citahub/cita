@@ -23,7 +23,7 @@ use hyper::header::{
 };
 use hyper::service::{MakeService, Service};
 use hyper::{Body, Method, Request, Response, StatusCode};
-use jsonrpc_types::{request::RpcRequest as JsonrpcRequest, rpctypes::Id as RpcId};
+use jsonrpc_types::{rpc_request::RpcRequest as JsonrpcRequest, rpc_types::Id as RpcId};
 use libproto::request::Request as ProtoRequest;
 use pubsub::channel::Sender;
 use std::net::{SocketAddr, TcpListener};
@@ -305,7 +305,7 @@ mod integration_test {
     use futures::{sync::oneshot, Stream};
     use jsonrpc_proto::response::OutputExt;
     use jsonrpc_types;
-    use jsonrpc_types::response::Output;
+    use jsonrpc_types::rpc_response::Output;
     use libproto::protos;
     use serde_json;
     use tokio_core::reactor::Core;
@@ -469,7 +469,8 @@ mod integration_test {
             "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"]
         }"#;
         let rpcreq =
-            serde_json::from_str::<jsonrpc_types::request::PartialRequest>(request_str).unwrap();
+            serde_json::from_str::<jsonrpc_types::rpc_request::PartialRequest>(request_str)
+                .unwrap();
         let data = serde_json::to_string(&JsonrpcRequest::Single(rpcreq)).unwrap();
         let req = hyper::Request::post(uri.clone())
             .body(hyper::Body::from(data))
