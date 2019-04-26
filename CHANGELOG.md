@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+## [v0.23.0] - 2019-04-26
+
+### Upgrade Note
+
+In `v0.23.0`, CITA upgraded the P2P discovery protocol, which leads to Incompatibility with `v0.22.0`. So the nodes with CITA `v0.23.0` and the nodes with CITA `v0.22.0` cannot discover each other in the network. Therefore, when upgrading, all nodes in the network need to be upgraded to `v0.23.0` at the same time.
+
+Following [Upgrade Instructions](https://docs.citahub.com/en-US/cita/protocol-upgrade/overview) to upgrade the nodes.
+
+### New Feature Description
+
+The `v0.23.0` version added two RPC interfaces:
+
+* [Get software version]:
+
+```shell
+curl -X POST --data '{"jsonrpc":"2.0","method":"getVersion","params":[],"id":83}'
+```
+
+* [Get peer information]:
+
+```shell
+curl -X POST --data '{"jsonrpc":"2.0","method":"peersInfo","params":[],"id":83}'
+```
+
 ### Framework
 
 - [Optimization] Update default rust toolchain to `v1.34.0`. [@yangby-cryptape] [@kaikai1024]
@@ -29,18 +53,22 @@ All notable changes to this project will be documented in this file. And this pr
 
 ### Consensus
 
-- [Optimization] Set the default ntp service to false. [@kaikai1024]
+- [Optimization] Set the default NTP service to false. [@kaikai1024]
 - [Fix] Not generate block. [@jerry-yu]
 
 ### RPC
 
 - [Feature] Add `getVersion` interface. [@luqz]
 - [Feature] Add `peersInfo` interface. [@leeyr338]
+- [Fix] Get logs break down the chain when `toBlock` very large. [@leeyr338]
 
 ### Scripts
 
 - [Optimization] Installation && Exectution Optimization: new usage of cita script. [@clearloop]
 - [Fix] Redirect the stdout and stderr for daemon processes in docker. [@yangby-cryptape]
+- [Fix] Eliminate warnings when create nodes in docker. [@ouwenkg]
+- [Fix] Generate privkey file when use authorities option. [@leeyr338]
+- [Optimization] Log rotate output log as a relative path. [@leeyr338]
 - [Optimization] Patch to absolute paths' in starting scripts. [@clearloop]
 - [Optimization] Format the `env.sh` using `ShellCheck`. [@clearloop]
 
@@ -53,6 +81,7 @@ All notable changes to this project will be documented in this file. And this pr
 - [Doc] Add release guide doc. [@kaikai1024]
 - [Doc] Fix 404 error of `CITAHub` Docs. [@zhouyun-zoe] [@Keith-CY]
 - [Doc] Add roadmap and fix contributing docs of `CITAHub`. [@zhouyun-zoe]
+- [Doc] Change CITA slogan into blockchain kernel. [@zhouyun-zoe]
 - [Doc] Update the description of BlockTag. [@xiangmeiLu]
 - [Doc] Fix protocol upgrade doc. [@QingYanL]
 - [Doc] Set default website with zh-CN language. [@wuyuyue]
@@ -687,6 +716,8 @@ Release the first version of CITA.
 [CITA docker images]: https://hub.docker.com/r/cita/
 [Emergency braking system contract]: https://docs.citahub.com/zh-CN/cita/system/emergency-brake
 [Executor service]: https://github.com/cryptape/cita/tree/develop/cita-executor
+[Get peer information]: https://docs.citahub.com/zh-CN/next/cita/rpc-guide/rpc#peersinfo
+[Get software version]: https://docs.citahub.com/zh-CN/next/cita/rpc-guide/rpc#getversion
 [GetMetaData]: https://docs.citahub.com/zh-CN/cita/rpc-guide/rpc#getmetadata
 [Protocol Upgrade From V0 to V1]: https://docs.citahub.com/zh-CN/cita/protocol-upgrade/v1
 [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
@@ -702,7 +733,8 @@ Release the first version of CITA.
 [set quota price]: https://docs.citahub.com/zh-CN/cita/system/price
 [sidechain exit mechanism]: https://docs.nervos.org/cita/#/crosschain/crosschain_contract_example
 
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/cryptape/cita/compare/v0.23.0...HEAD
+[v0.23.0]: https://github.com/cryptape/cita/compare/v0.22...v0.23.0
 [v0.22.0]: https://github.com/cryptape/cita/compare/v0.21...v0.22.0
 [v0.21.1]: https://github.com/cryptape/cita/compare/v0.21...v0.21.1
 [v0.21.0]: https://github.com/cryptape/cita/compare/v0.20...v0.21.0
