@@ -126,6 +126,12 @@ def get_miner_with_balance(miner_privkeys):
     raise Exception('Get miner with balance timeout(60)')
 
 
+def transfer_token_to_miner(superadmin_privkey, miner_privkeys, version):
+    for privkey in miner_privkeys:
+        address = key_address(privkey)
+        test_transfer(superadmin_privkey, address, 100000000000000, version)
+
+
 def key_address(privkey):
     """ Get the address of a privkey """
     hash_obj = sha3.keccak_256()
@@ -149,6 +155,10 @@ def main():
     parser.add_argument(
         "--version", help="Tansaction version.", default=1, type=int)
     args = parser.parse_args()
+
+    # Transfers 100000000000000 tokens from super admin to each miner
+    super_privkey = '0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6'
+    transfer_token_to_miner(super_privkey, args.miner_privkeys, args.version)
 
     miner_privkey = get_miner_with_balance(args.miner_privkeys)
     version = args.version
