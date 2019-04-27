@@ -14,7 +14,7 @@ else
     SOURCE_DIR=$(readlink -f $(dirname $0)/../..)
 fi
 BINARY_DIR=${SOURCE_DIR}/target/install
-TESTS_DIR=${SOURCE_DIR}/tests/interfaces/rpc/tests
+TESTS_DIR=${SOURCE_DIR}/tests/jsondata/rpc/tests
 CHAIN_NAME="mock-chain"
 NODE_NAME="${CHAIN_NAME}/0"
 NODE_DIR="${BINARY_DIR}/${NODE_NAME}"
@@ -37,7 +37,7 @@ if [ ! -d "resource" ]; then
     mkdir resource
 fi
 
-AUTHORITIES=`cat ${SOURCE_DIR}/tests/interfaces/rpc/config/authorities | xargs echo |sed "s/ /,/g"`
+AUTHORITIES=`cat ${SOURCE_DIR}/tests/interfaces/config/authorities | xargs echo |sed "s/ /,/g"`
 ${BINARY_DIR}/scripts/create_cita_config.py create \
              --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
              --chain_name ${CHAIN_NAME} \
@@ -66,7 +66,7 @@ echo -n "DONE"
 echo -n "4) testing ...  "
 AMQP_URL=amqp://guest:guest@localhost/${NODE_NAME} \
     timeout 100s ${BINARY_DIR}/bin/box_executor \
-    -m ${SOURCE_DIR}/tests/interfaces/rpc/config/blockchain.yaml
+    -m ${SOURCE_DIR}/tests/interfaces/config/blockchain.yaml
 echo -n "DONE"
 
 ################################################################################
