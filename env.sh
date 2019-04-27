@@ -35,6 +35,12 @@ if [[ "$3" == "port" ]]; then
     echo -e "\033[0;32mExpose ports: ${EXPOSE[*]} \033[0m"
 fi
 
+# Expose parameter for docker needs something like "-p 1337:1337 -p 1338:1338", but not "-p 1337:1337 1338:1338"
+EXPOSE_PARAM=()
+for port in "${EXPOSE[@]}"; do
+    EXPOSE_PARAM+=" -p ${port}"
+done
+
 # Docker Arguments
 USER_ID="$(id -u "$USER")"
 readonly WORKDIR='/opt/cita'
@@ -59,10 +65,15 @@ if ! docker ps | grep "${CONTAINER_NAME}" > '/dev/null' 2>&1; then
            --env "USER_ID=${USER_ID}" \
            --workdir "${WORKDIR}" \
            --name "${CONTAINER_NAME}" \
-           -p "${EXPOSE[@]}" "${DOCKER_IMAGE}" \
+           ${EXPOSE_PARAM[@]} "${DOCKER_IMAGE}" \
            /bin/bash -c "${INIT_CMD}"
     # Wait entrypoint.sh to finish
     sleep 3
+fi
+
+# If running "cita port" command, need to exit, means the command have finished.
+if [[ "$3" == "port" ]]; then
+    exit 0
 fi
 
 # Run commands through docker container
