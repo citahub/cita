@@ -305,7 +305,7 @@
       "avatar_url": "https://avatars1.githubusercontent.com/u/24754263?v=4",
       "profile": "https://github.com/jiangxianliang007",
       "contributions": [
-        "code"
+        "bug"
       ]
     },
     {
@@ -432,6 +432,69 @@
       "profile": "https://github.com/yejiayu",
       "contributions": [
         "code"
+      ]
+    },
+    {
+      "login": "QingYanL",
+      "name": "liyanzi",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/48231505?v=4",
+      "profile": "https://github.com/QingYanL",
+      "contributions": [
+        "bug"
+      ]
+    },
+    {
+      "login": "YUJIAYIYIYI",
+      "name": "JiaYi",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/40654430?v=4",
+      "profile": "https://github.com/YUJIAYIYIYI",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "timmyz",
+      "name": "Timmy Zhang",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/795528?v=4",
+      "profile": "https://github.com/timmyz",
+      "contributions": [
+        "ideas"
+      ]
+    },
+    {
+      "login": "wuyuyue",
+      "name": "Wu Yuyue",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/40381396?v=4",
+      "profile": "https://github.com/wuyuyue",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "xiangmeiLu",
+      "name": "xiangmeiLu",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/30581938?v=4",
+      "profile": "https://github.com/xiangmeiLu",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "mingxiaowu",
+      "name": "mingxiaowu",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/42978282?v=4",
+      "profile": "https://github.com/mingxiaowu",
+      "contributions": [
+        "bug"
+      ]
+    },
+    {
+      "login": "wangfh666",
+      "name": "wangfh666",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/41322861?s=400&v=4",
+      "profile": "https://github.com/wangfh666",
+      "contributions": [
+        "bug"
       ]
     }
   ],
