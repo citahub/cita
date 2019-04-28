@@ -2,10 +2,10 @@
 
 The code repository has two main branches:
 
-- develop: nightly build.
-- master: production release.
+- `develop`: nightly build.
+- `master`: production release.
 
-The basic distribution process is all code changes need to be merged into the master branch and marked the new version when the code develop can be released as a version. 
+The basic distribution process is all code changes need to be merged into the `master` branch and marked the new version when the code develop can be released as a version.
 
 More details will be explained in the following sections.
 
@@ -17,162 +17,185 @@ The specific process follows the following steps:
 4. [Release] (#Release)
 5. [Other Notes] (#Other Notes)
 
-Prepare the Branch
+## Prepare the Branch
 
-Type of Version
+### Type of Version
 
 Use a semantic version and follow [Semantic Versioning]
 
 The excerpts are as follows:
 
-Version format: Major Version Number. Minor Version Number. Revision Number, and the rule of version number increment are as follows:
+> Version format: Major Version Number. Minor Version Number. Revision Number, and the rule of version number increment are as follows:
+>
+> 1. Major Version Number: if you make incompatible API changes,
+> 2. Minor Version Number: if you make a backward compatible feature addition,
+> 3. Revision Number: if you make a backward compatibility fix.
+>    The pre-release version number and version compilation metadata can be added after "Major Version Number. Minor Version Number. Revision Number" as an extension.
 
-1. Major Version Number: if you make incompatible API changes,
-2. Minor Version Number: if you make a backward compatible feature addition,
-3. Revision Number: if you make a backward compatibility fix.
-   The pre-release version number and version compilation metadata can be added after "Major Version Number. Minor Version Number. Revision Number" as an extension.
+### Create a Release Branch
 
-Create a Release Branch
-
-New branch naming follows the `release-` format*
+***New branch naming follows the `release-` format***
 
 To get the latest code firstly and the specific operation is as follows:
 
-    git fetch origin
+```shell
+git fetch origin
+```
 
-origin stands for CITA official code repository address, which can be viewed via git remote -v.
+`origin` stands for `CITA` official code repository address, which can be viewed via `git remote -v`.
 
 The process is divided into version release (Major Version Number x and Minor Version Number y) and revision patch release (Revision Number z).
 
-Release
+#### Version Release
 
-Create a new branch release-x.y.0 from the latest develop, as follows:
+Create a new branch `release-x.y.0` from the latest `develop`, as follows:
 
-    git checkout origin/develop -b release-x.y.0
+```shell
+git checkout origin/develop -b release-x.y.0
+```
 
-Revision Patch Release
+#### Revision Patch Release
 
-Create a new branch release-x.y.1 from the tag (vx.y.0) that requires a revision, as follows:
+Create a new branch `release-x.y.1` from the `tag` (`vx.y.0`) that requires a revision, as follows:
 
-    git checkout tags/vx.y.0 -b release-x.y.1
+```shell
+git checkout tags/vx.y.0 -b release-x.y.1
+```
 
-Push Branch
+### Push Branch
 
-Push the created release branch release-x.y.z to the official repository, as follows:
+Push the created release branch `release-x.y.z` to the official repository, as follows:
 
-    git push origin release-x.y.z
+```shell
+git push origin release-x.y.z
+```
 
-Setting Branch Protection
+### Setting Branch Protection
 
-Contact the administrator to set branch protection for the release branch release-x.y.z.
+Contact the administrator to set branch protection for the release branch `release-x.y.z`.
 
-Test and Update Log
+## Test and ChangeLog
 
 Broadcast internal mail:
 
 - Inform the test team to test the release branch
 - Inform the toolchain team to adapt to the new version
 
-Merge the bug fixes occurred during the test into the release branch release-x.y.z.
+Merge the bug fixes occurred during the test into the release branch `release-x.y.z`.
 
 If the test passes, modify the update log and update the release date with other information.
 
-Merge Branch
+## Merge Branch
 
-Merge into the master branch
+### Merge into the master branch
 
-Merge the release branch release-x.y.z into the master branch via pull request.
+Merge the release branch `release-x.y.z` into the `master` branch via pull request.
 
-Version tag
+### Version tag
 
-New version tag naming follows vx.y.z format
-
-1. Update the master branch code as follows:
-
-    git checkout origin/master && git pull
-
-1. Create tag as follows:
-
-    git tag -a vx.y.z -m 'vx.y.z'
-
-1. Push tag to the code repository, as follows:
-
-    git push origin vx.y.z
-
-Merge into the develop Branch
-
-The transition branch is named merge-master-to-develop
-
-Merge the master branch into the develop branch. Because of the branch protection, we need to create a middle branch merge-master-to-develop via pull request.
+***New version tag naming follows `vx.y.z` format***
 
 1. Update the master branch code as follows:
 
-    git checkout origin/master && git pull
+```shell
+git checkout origin/master && git pull
+```
 
-1. Create merge-master-to-develop as follows:
+2. Create tag as follows:
 
-    git checkout -b merge-master-to-develop
+```shell
+git tag -a vx.y.z -m 'vx.y.z'
+```
 
-1. Push the branch to the code repository as follows:
+3. Push tag to the code repository, as follows:
 
-    git push origin merge-master-to-develop
+```shell
+git push origin vx.y.z
+```
 
-1. Merge into develop
+### Merge into the develop Branch
 
-Merge the transition branch merge-master-to-develop into the develop branch via pull request.
+***The transition branch is named `merge-master-to-develop`***
 
-Release
+Merge the `master` branch into the `develop` branch. Because of the branch protection, we need to create a middle branch `merge-master-to-develop` via `pull request`.
 
-File Packaging
+1. Update the `master` branch code as follows:
 
-Tarball uses .tar.gz suffix
+```shell
+git checkout origin/master && git pull
+```
+
+2. Create `merge-master-to-develop` as follows:
+
+```shell
+git checkout -b merge-master-to-develop
+```
+
+3. Push the branch to the code repository as follows:
+
+```shell
+git push origin merge-master-to-develop
+```
+
+4. Merge into `develop`
+
+Merge the transition branch `merge-master-to-develop` into the `develop` branch via pull request.
+
+## Release
+
+### File Packaging
+
+***Tarball uses `.tar.gz` suffix***
 
 Releasing the new version needs to package the following files:
 
 - Source code cita_src.tar.gz
 - Releasing files of three different algorithms:
-  - cita_secp256k1_sha3.tar.gz
+    - cita_secp256k1_sha3.tar.gz
     - cita_ed25519_blake2b.tar.gz
-          - cita_sm2_sm3.tar.gz
+    - cita_sm2_sm3.tar.gz
 
-Announcement of Releasing
+### Announcement of Releasing
 
 1. Draft an announcement with a brief description of the new version and upgrade tips with an update log in both Chinese and English.
 2. Upload the required files for the release.
 3. Release the new version
 
-Mail Broadcast
+### Mail Broadcast
 
 Write a new version of the message and broadcast it.
 
-CITAHub talk Posting
+### CITAHub talk Posting
 
 Post a new theme about the version releasing in [Information Edition].
 
-Clearing Branches
+### Clearing Branches
 
-If branch protection is set, contact the administrator to manually delete
+***If branch protection is set, contact the administrator to manually delete***
 
 1. Clean up the release branch, as follows:
 
-    git push --delete origin release-x.y.z
+```shell
+git push --delete origin release-x.y.z
+```
 
-1. Clean up the transition branch as follows:
+2. Clean up the transition branch as follows:
 
-    git push --delete origin merge-master-to-develop
+```shell
+git push --delete origin merge-master-to-develop
+```
 
-Update Version of CITAHub Docs
+### Update Version of CITAHub Docs
 
 [CITAHub Docs] updates three days later. The testing and supplement of documents will be done during this time.
 
-Other Notes
+## Other Notes
 
 - If you need to modify the release announcement after releasing, hand it over to the publisher.
 
 [CITAhub Docs]: https://docs.citahub.com/en/welcome
 [Semantic Versioning]: https://semver.org/
 [Information Edition]: https://talk.citahub.com/c/9-category
-
 
 ----------------------
 
@@ -215,7 +238,7 @@ Other Notes
 
 首先获取最新的代码，具体操作如下：
 
-```
+```shell
 git fetch origin
 ```
 
@@ -227,7 +250,7 @@ git fetch origin
 
 从最新 `develop` 创建新的分支 `release-x.y.0`，具体操作如下：
 
-```
+```shell
 git checkout origin/develop -b release-x.y.0
 ```
 
@@ -235,7 +258,7 @@ git checkout origin/develop -b release-x.y.0
 
 从需要修订版本的 `tag`(`vx.y.0`) 创建新的分支 `release-x.y.1`，具体操作如下：
 
-```
+```shell
 git checkout tags/vx.y.0 -b release-x.y.1
 ```
 
@@ -243,7 +266,7 @@ git checkout tags/vx.y.0 -b release-x.y.1
 
 把创建的发布分支 `release-x.y.z` 推送到官方仓库，具体操作如下：
 
-```
+```shell
 git push origin release-x.y.z
 ```
 
@@ -274,19 +297,19 @@ git push origin release-x.y.z
 
 1. 更新 `master` 分支代码，具体操作如下：
 
-```
+```shell
 git checkout origin/master && git pull
 ```
 
 2. 创建 `tag`，具体操作如下：
 
-```
+```shell
 git tag -a vx.y.z -m 'vx.y.z'
 ```
 
 3. 推送 `tag` 到代码仓库，具体操作如下：
 
-```
+```shell
 git push origin vx.y.z
 ```
 
@@ -298,19 +321,19 @@ git push origin vx.y.z
 
 1. 更新 `master` 分支代码，具体操作如下：
 
-```
+```shell
 git checkout origin/master && git pull
 ```
 
 2. 创建 `merge-master-to-develop`，具体操作如下：
 
-```
+```shell
 git checkout -b merge-master-to-develop
 ```
 
 3. 推送分支到代码仓库，具体操作如下：
 
-```
+```shell
 git push origin merge-master-to-develop
 ```
 
@@ -322,7 +345,7 @@ git push origin merge-master-to-develop
 
 ### 文件打包
 
-***压缩包使用 .tar.gz 后缀***
+***压缩包使用 `.tar.gz` 后缀***
 
 新版本发布需要打包以下文件：
 
@@ -352,13 +375,13 @@ git push origin merge-master-to-develop
 
 1. 清理发布分支，具体操作如下：
 
-```
+```shell
 git push --delete origin release-x.y.z
 ```
 
 2. 清理过渡分支，具体操作如下：
 
-```
+```shell
 git push --delete origin merge-master-to-develop
 ```
 
