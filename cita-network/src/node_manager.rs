@@ -1001,7 +1001,7 @@ impl ModifiedConfigPeersReq {
     }
 
     pub fn handle(self, service: &mut NodesManager) {
-        //if new config deleted some peer,disconnect and remove it from known addrs
+        // if new config deleted some peer,disconnect and remove it from known addrs
         let mut keys: BTreeSet<_> = service.config_addrs.keys().cloned().collect();
         for peer in &self.peers {
             keys.remove(peer);
@@ -1009,7 +1009,7 @@ impl ModifiedConfigPeersReq {
 
         info!("left peers {:?}", self.peers);
 
-        //The remainder in keys will be disconnected
+        // The remainder in keys will be disconnected
         for key in keys {
             service.config_addrs.remove(&key).and_then(|addr| {
                 addr.and_then(|addr| {
