@@ -46,7 +46,7 @@ impl NodesAddressManager {
 impl AddressManager for NodesAddressManager {
     fn add_new_addr(&mut self, _session_id: SessionId, addr: Multiaddr) {
         let address = multiaddr_to_socketaddr(&addr).unwrap();
-        let req = AddNodeReq::new(address, NodeSource::NotConfig);
+        let req = AddNodeReq::new(address, NodeSource::FromDiscovery);
         self.nodes_mgr_client.add_node(req);
 
         info!("[NodeDiscovery] Add node {:?} to manager", address);

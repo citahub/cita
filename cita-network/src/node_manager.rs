@@ -70,11 +70,68 @@ pub const DIALED_ERROR_SCORE: i32 = 25;
 // A node is dialed error by client, should need DIALED_ERROR_SCORE each time.
 pub const KEEP_ON_LINE_SCORE: i32 = 5;
 
+#[derive(Debug, PartialEq)]
+pub enum NodeSource {
+    FromConfig,
+    FromDiscovery,
+}
+
+#[derive(Debug)]
+pub struct NodeStatus {
+    // score: Score for a node, it will affect whether the node will be chosen to dail again,
+    // or be deleted from the known_addresses list. But for now, it useless.
+    pub score: i32,
+
+    // session_id: Indicates that this node has been connected to a session. 'None' for has not
+    // connected yet.
+    pub session_id: Option<SessionId>,
+    pub node_src: NodeSource,
+}
+
+impl NodeStatus {
+    pub fn new(score: i32, session_id: Option<SessionId>, node_src: NodeSource) -> Self {
+        NodeStatus {
+            score,
+            session_id,
+            node_src,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct SessionInfo {
+    pub ty: SessionType,
+    pub addr: SocketAddr,
+}
+
+impl SessionInfo {
+    pub fn new(ty: SessionType, addr: SocketAddr) -> Self {
+        SessionInfo { ty, addr }
+    }
+}
+
+#[derive(Debug)]
+pub struct TransformAddr {
+    // Real linked addr
+    pub conn_addr: SocketAddr,
+    // Outbound addr transformed from Inbound addr
+    pub trans_addr: Option<SocketAddr>,
+}
+
+impl TransformAddr {
+    pub fn new(conn_addr: SocketAddr, trans_addr: Option<SocketAddr>) -> Self {
+        TransformAddr {
+            conn_addr,
+            trans_addr,
+        }
+    }
+}
+
 pub struct NodesManager {
     known_addrs: HashMap<SocketAddr, NodeStatus>,
     config_addrs: BTreeMap<String, Option<SocketAddr>>,
 
-    connected_addrs: HashMap<SessionId, SocketAddr>,
+    connected_addrs: HashMap<SessionId, TransformAddr>,
     pending_connected_addrs: HashMap<SessionId, SessionInfo>,
 
     connected_peer_keys: HashMap<Address, SessionId>,
@@ -238,7 +295,7 @@ impl NodesManager {
 
                     // The node will get time sugar, the nodes which in config file can get 2, and the
                     // other nodes which discovered by P2P can get 1.
-                    value.score += if value.in_config == NodeSource::FromConfig {
+                    value.score += if value.node_src == NodeSource::FromConfig {
                         2
                     } else {
                         1
@@ -336,46 +393,6 @@ impl Default for NodesManager {
             dialing_node: None,
             self_addr: None,
         }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum NodeSource {
-    FromConfig,
-    NotConfig,
-}
-
-#[derive(Debug)]
-pub struct NodeStatus {
-    // score: Score for a node, it will affect whether the node will be chosen to dail again,
-    // or be deleted from the known_addresses list. But for now, it useless.
-    pub score: i32,
-
-    // session_id: Indicates that this node has been connected to a session. 'None' for has not
-    // connected yet.
-    pub session_id: Option<SessionId>,
-    pub in_config: NodeSource,
-}
-
-impl NodeStatus {
-    pub fn new(score: i32, session_id: Option<SessionId>, in_config: NodeSource) -> Self {
-        NodeStatus {
-            score,
-            session_id,
-            in_config,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct SessionInfo {
-    pub ty: SessionType,
-    pub addr: SocketAddr,
-}
-
-impl SessionInfo {
-    pub fn new(ty: SessionType, addr: SocketAddr) -> Self {
-        SessionInfo { ty, addr }
     }
 }
 
@@ -559,6 +576,13 @@ impl AddConnectedNodeReq {
                     if let Some(ref mut node_status) = service.known_addrs.get_mut(&dialing_addr) {
                         node_status.session_id = Some(*repeated_id);
                         node_status.score += SUCCESS_DIALING_SCORE;
+
+                        let _ = service
+                            .connected_addrs
+                            .entry(self.session_id)
+                            .and_modify(|v| {
+                                v.trans_addr = Some(dialing_addr);
+                            });
                     }
                 }
             }
@@ -594,7 +618,7 @@ impl AddConnectedNodeReq {
                 );
                 let _ = service
                     .connected_addrs
-                    .insert(self.session_id, session_info.addr);
+                    .insert(self.session_id, TransformAddr::new(session_info.addr, None));
 
                 // Add connected peer keys
                 let _ = service
@@ -794,10 +818,9 @@ impl PendingConnectedNodeReq {
             "[NodeManager] Session [{:?}], address: {:?} pending to add to Connected_addrs.",
             self.session_id, self.addr
         );
-        let session_info = SessionInfo::new(self.ty, self.addr);
         service
             .pending_connected_addrs
-            .insert(self.session_id, session_info);
+            .insert(self.session_id, SessionInfo::new(self.ty, self.addr));
     }
 }
 
@@ -814,7 +837,8 @@ impl DelConnectedNodeReq {
         info!("[NodeManager] Disconnected session [{:?}]", self.session_id);
 
         if let Some(addr) = service.connected_addrs.remove(&self.session_id) {
-            self.reset_node_status(addr, service);
+            let trans_addr = addr.trans_addr.unwrap_or(addr.conn_addr);
+            self.fix_node_status(trans_addr, service);
 
             // Remove connected peer keys
             for (key, value) in service.connected_peer_keys.iter() {
@@ -831,23 +855,15 @@ impl DelConnectedNodeReq {
 
         // Remove pending connected
         if let Some(session_info) = service.pending_connected_addrs.remove(&self.session_id) {
-            self.reset_node_status(session_info.addr, service);
             if session_info.ty == SessionType::Outbound {
-                // Dial a node, but the session was closed by server, means this dial may refused.
-                if let Some(ref mut node_status) = service.known_addrs.get_mut(&session_info.addr) {
-                    node_status.score -= REFUSED_SCORE;
-                    info!(
-                        "[NodeManager] Node [{:?}] leave score [{:?}].",
-                        session_info.addr, node_status.score
-                    );
-                }
+                self.fix_node_status(session_info.addr, service);
                 // Close a session which open as client, end of this dialing.
                 service.dialing_node = None;
             }
         }
     }
 
-    fn reset_node_status(&self, addr: SocketAddr, service: &mut NodesManager) {
+    fn fix_node_status(&self, addr: SocketAddr, service: &mut NodesManager) {
         // Set the node as disconnected in known_addrs
         if let Some(ref mut node_status) = service.known_addrs.get_mut(&addr) {
             if let Some(session_id) = node_status.session_id {
@@ -958,8 +974,8 @@ impl GetPeersInfoReq {
         let mut peers = HashMap::default();
 
         for (key, value) in service.connected_peer_keys.iter() {
-            if let Some(socket_addr) = service.connected_addrs.get(&value) {
-                peers.insert(key.clone(), socket_addr.ip().to_string());
+            if let Some(addr) = service.connected_addrs.get(&value) {
+                peers.insert(key.clone(), addr.conn_addr.ip().to_string());
             } else {
                 warn!(
                     "[NodeManager] Can not get socket address for session {} from connected_addr. It must be something wrong!",
@@ -1001,7 +1017,7 @@ impl ModifiedConfigPeersReq {
     }
 
     pub fn handle(self, service: &mut NodesManager) {
-        // if new config deleted some peer,disconnect and remove it from known addrs
+        // If new config deleted some peer,disconnect and remove it from known addrs
         let mut keys: BTreeSet<_> = service.config_addrs.keys().cloned().collect();
         for peer in &self.peers {
             keys.remove(peer);
