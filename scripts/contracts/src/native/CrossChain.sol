@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 // TODO
 // If solidity support return variable length data in cross-contract calls,
