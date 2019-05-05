@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 /// @title A library for operation of address array
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

@@ -67,7 +67,7 @@ test_node_entry() {
 
     # check every node's peer count reach to 4
     for i in {0..4} ; do
-        timeout=$(check_peer_count $i 4 60)||(echo "FAILED"
+        timeout=$(check_peer_count $i 4 90)||(echo "FAILED"
                                               echo "error msg: ${timeout}"
                                               exit 1)
     done
@@ -87,7 +87,7 @@ test_node_exit() {
 
     # check every node's peer count is 2
     for i in {0..2} ; do
-        timeout=$(check_peer_count $i 2 60)||(echo "FAILED"
+        timeout=$(check_peer_count $i 2 90)||(echo "FAILED"
                                               echo "error msg: ${timeout}"
                                               exit 1)
     done
@@ -108,7 +108,7 @@ test_parallel_entry() {
     # check every node's peer count reach to 7
     for i in {0..7} ; do
         # needs more time for 8 nodes discovery each other.
-        timeout=$(check_peer_count $i 7 180)||(echo "FAILED"
+        timeout=$(check_peer_count $i 7 240)||(echo "FAILED"
                                                echo "error msg: ${timeout}"
                                                exit 1)
     done
@@ -127,7 +127,7 @@ test_parallel_exit() {
 
     # check every node's peer count is 3
     for i in {0..3} ; do
-        timeout=$(check_peer_count $i 3 60)||(echo "FAILED"
+        timeout=$(check_peer_count $i 3 90)||(echo "FAILED"
                                               echo "error msg: ${timeout}"
                                               exit 1)
     done
@@ -154,7 +154,7 @@ test_parallel_entry_exit() {
 
     # check every node's peer count is 3
     for i in {0..3} ; do
-        timeout=$(check_peer_count $i 3 90)||(echo "FAILED"
+        timeout=$(check_peer_count $i 3 120)||(echo "FAILED"
                                               echo "error msg: ${timeout}"
                                               exit 1)
     done
@@ -194,14 +194,14 @@ test_entry_and_known_node_restart() {
     bin/cita bebop start node/4 > /dev/null
 
     # check every node0 peer count is 4
-    timeout=$(check_peer_count 0 4 90)||(echo "FAILED"
+    timeout=$(check_peer_count 0 4 120)||(echo "FAILED"
                                          echo "error msg: ${timeout}"
                                          exit 1)
     # stop all connected nodes in node4
     for i in {0..3} ; do
         bin/cita bebop stop node/$i > /dev/null
     done
-    timeout=$(check_peer_count 4 0 90)||(echo "FAILED"
+    timeout=$(check_peer_count 4 0 120)||(echo "FAILED"
                                          echo "error msg: ${timeout}"
                                          exit 1)
     # start all nodes
@@ -212,7 +212,7 @@ test_entry_and_known_node_restart() {
     # check every node's peer count is 4
     for i in {0..4} ; do
         # needs more time to for checking, because node0 may not have enough score in node4
-        timeout=$(check_peer_count $i 4 180)||(echo "FAILED"
+        timeout=$(check_peer_count $i 4 240)||(echo "FAILED"
                                               echo "error msg: ${timeout}"
                                               exit 1)
     done
@@ -236,13 +236,13 @@ test_repeated_address() {
 
     # node[0..3]'s peer count is 3
     for i in {0..3} ; do
-        timeout=$(check_peer_count $i 3 90)||(echo "FAILED"
+        timeout=$(check_peer_count $i 3 120)||(echo "FAILED"
                                               echo "error msg: ${timeout}"
                                               exit 1)
     done
 
     # node4's peer count is 0
-    timeout=$(check_peer_count 4 0 90)||(echo "FAILED"
+    timeout=$(check_peer_count 4 0 120)||(echo "FAILED"
                                          echo "error msg: ${timeout}"
                                          exit 1)
     bin/cita bebop stop node/4 > /dev/null
@@ -273,7 +273,7 @@ test_max_connected_limit_as_client() {
 
     # make sure that node[0..3] has been connected each other
     for i in {0..3} ; do
-        timeout=$(check_peer_count $i 3 90)||(echo "FAILED"
+        timeout=$(check_peer_count $i 3 120)||(echo "FAILED"
                                               echo "error msg: ${timeout}"
                                               exit 1)
     done
@@ -286,13 +286,13 @@ test_max_connected_limit_as_client() {
 
         # it is necessary to wait for a few seconds for each check
         sleep 3
-        timeout=$(check_peer_count $i 3 90)||(echo "FAILED"
+        timeout=$(check_peer_count $i 3 120)||(echo "FAILED"
                                               echo "error msg: ${timeout}"
                                               exit 1)
     done
 
     # node4's peer count is 0
-    timeout=$(check_peer_count 4 0 90)||(echo "FAILED"
+    timeout=$(check_peer_count 4 0 120)||(echo "FAILED"
                                          echo "error msg: ${timeout}"
                                          exit 1)
 
@@ -329,7 +329,7 @@ test_max_connected_limit_as_server() {
 
         # it is necessary to wait for a few seconds for each check
         sleep 3
-        timeout=$(check_peer_count_max $i 2 90)||(echo "FAILED"
+        timeout=$(check_peer_count_max $i 2 120)||(echo "FAILED"
                                               echo "error msg: ${timeout}"
                                               exit 1)
     done
@@ -370,7 +370,7 @@ main() {
 
     # Pre-check peer count, it is OK to check node0 only
     echo -n "4) pre-check peer count  ...  "
-    timeout=$(check_peer_count 0 3 60)||(echo "FAILED"
+    timeout=$(check_peer_count 0 3 90)||(echo "FAILED"
                                          echo "error msg: ${timeout}"
                                          exit 1)
     echo "${timeout}s DONE"

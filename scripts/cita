@@ -78,7 +78,8 @@ This is the primary script for controlling the $SCRIPT node.
         use "cita append -h" to get more information.
         "cita-config" has the same function.
     port <ports>
-        Sets docker port, for example: "cita port 1337:1337"
+        Sets docker port, for example: "cita port 1337:1337 1338:1338",
+        expose docker port 1337 and 1338.
  SERVICE CONTROL COMMANDS
     setup <node>
         Ensuring the required runtime environment for $SCRIPT node, like

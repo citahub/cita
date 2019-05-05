@@ -172,11 +172,13 @@ impl ExecutedBlock {
 
     /// Turn this into a `ClosedBlock`.
     pub fn close(mut self, conf: &BlockSysConfig) -> ClosedBlock {
+        let env_info = self.env_info();
         if conf.auto_exec {
             auto_exec(
                 &mut self.state,
                 conf.auto_exec_quota_limit,
                 conf.economical_model,
+                env_info,
             );
             self.state.commit().expect("commit trie error");
         }

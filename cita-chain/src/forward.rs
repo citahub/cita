@@ -389,7 +389,7 @@ impl Forward {
 
         let block = OpenBlock::from(proto_block);
         debug!(
-            "consensus block {} tx hash {:?} len {} version {}",
+            "consensus block {} txs_root {:?} txs_len {} block_version {}",
             block.number(),
             block.transactions_root(),
             block.body().transactions().len(),
@@ -628,7 +628,7 @@ impl Forward {
     fn deal_snapshot_req(&self, snapshot_req: &SnapshotReq) {
         match snapshot_req.cmd {
             Cmd::Snapshot => {
-                info!("receive Snapshot::Snapshot {:?}", snapshot_req);
+                info!("snapshot: receive Snapshot::Snapshot {:?}", snapshot_req);
                 let chain = self.chain.clone();
                 let ctx_pub = self.ctx_pub.clone();
                 let snapshot_req = snapshot_req.clone();
@@ -636,17 +636,17 @@ impl Forward {
                 let _ = snapshot_builder.spawn(move || {
                     take_snapshot(&chain, &snapshot_req);
                     snapshot_response(&ctx_pub, Resp::SnapshotAck, true, None, None);
-                    info!("Taking snapshot finished!!!");
+                    info!("snapshot: Taking snapshot finished!!!");
                 });
             }
             Cmd::Begin => {
-                info!("receive Snapshot::Begin: {:?}", snapshot_req);
+                info!("snapshot: receive Snapshot::Begin: {:?}", snapshot_req);
                 let mut is_snapshot = self.chain.is_snapshot.write();
                 *is_snapshot = true;
                 snapshot_response(&self.ctx_pub, Resp::BeginAck, true, None, None);
             }
             Cmd::Restore => {
-                info!("receive Snapshot::Restore {:?}", snapshot_req);
+                info!("snapshot: receive Snapshot::Restore {:?}", snapshot_req);
                 match restore_snapshot(&self.chain.clone(), snapshot_req) {
                     Ok(proof) => {
                         let height = self.chain.get_current_height();
@@ -659,17 +659,17 @@ impl Forward {
                         );
                     }
                     Err(err) => {
-                        error!("snapshot restore failed: {:?}", err);
+                        error!("snapshot: snapshot restore failed: {:?}", err);
                         snapshot_response(&self.ctx_pub, Resp::RestoreAck, false, None, None);
                     }
                 }
             }
             Cmd::Clear => {
-                info!("receive Snapshot::Clear: {:?}", snapshot_req);
+                info!("snapshot: receive Snapshot::Clear: {:?}", snapshot_req);
                 snapshot_response(&self.ctx_pub, Resp::ClearAck, true, None, None);
             }
             Cmd::End => {
-                info!("receive Snapshot::End {:?}", snapshot_req);
+                info!("snapshot: receive Snapshot::End {:?}", snapshot_req);
                 let chain = self.chain.clone();
                 let ctx_pub = self.ctx_pub.clone();
                 thread::spawn(move || {
@@ -700,7 +700,7 @@ fn take_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) {
     let current_height = chain.get_current_height();
     if block_at == 0 || block_at > current_height {
         warn!(
-            "block height is equal to 0 or bigger than current height, \
+            "snapshot: snapshot block height is equal to 0 or bigger than current height, \
              and be set to current height!"
         );
         block_at = current_height;
@@ -714,12 +714,12 @@ fn take_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) {
 fn restore_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Proof, String> {
     let file_name = snapshot_req.file.clone() + "_chain.rlp";
     let reader = PackedReader::create(Path::new(&file_name))
-        .map_err(|e| format!("Couldn't open snapshot file: {}", e))
-        .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
+        .map_err(|e| format!("snapshot: Couldn't open snapshot file: {}", e))
+        .and_then(|x| x.ok_or_else(|| "snapshot: Snapshot file has invalid format.".into()));
     let reader = match reader {
         Ok(r) => r,
         Err(e) => {
-            warn!("get reader failed: {:?}", e);
+            warn!("snapshot: get reader failed: {:?}", e);
             return Err(e);
         }
     };
@@ -742,7 +742,7 @@ fn restore_snapshot(chain: &Arc<Chain>, snapshot_req: &SnapshotReq) -> Result<Pr
             Ok(proof)
         }
         Err(e) => {
-            warn!("restore_using failed: {:?}", e);
+            warn!("snapshot: restore_using failed: {:?}", e);
             Err(e)
         }
     }
@@ -755,7 +755,7 @@ fn snapshot_response(
     height: Option<u64>,
     proof: Option<Proof>,
 ) {
-    info!("snapshot_response ack: {:?}, flag: {}", ack, flag);
+    info!("snapshot: snapshot_response ack: {:?}, flag: {}", ack, flag);
     let mut resp = SnapshotResp::new();
     resp.set_resp(ack);
     resp.set_flag(flag);
