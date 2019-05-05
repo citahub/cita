@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+## [v0.23.1] - 2019-05-05
+
+Fix the issue about showing the wrong version.
+Check the details at [#538]
+
 ## [v0.23.0] - 2019-04-26
 
 ### Upgrade Note
@@ -733,7 +738,8 @@ Release the first version of CITA.
 [set quota price]: https://docs.citahub.com/zh-CN/cita/system/price
 [sidechain exit mechanism]: https://docs.nervos.org/cita/#/crosschain/crosschain_contract_example
 
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/cryptape/cita/compare/v0.23.1...HEAD
+[v0.23.1]: https://github.com/cryptape/cita/compare/v0.23...v0.23.1
 [v0.23.0]: https://github.com/cryptape/cita/compare/v0.22...v0.23.0
 [v0.22.0]: https://github.com/cryptape/cita/compare/v0.21...v0.22.0
 [v0.21.1]: https://github.com/cryptape/cita/compare/v0.21...v0.21.1
