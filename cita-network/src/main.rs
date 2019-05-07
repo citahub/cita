@@ -109,6 +109,8 @@ use util::set_panic_handler;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
+const NOTIFY_DELAY_SECS: u64 = 1;
+
 fn main() {
     // init app
     let matches = App::new("network")
@@ -175,7 +177,7 @@ fn main() {
     let discovery_flag = config.enable_discovery.unwrap_or(true);
     let (tx, rx) = channel();
     let mut watcher: RecommendedWatcher =
-        Watcher::new(tx, std::time::Duration::from_secs(1)).unwrap();
+        Watcher::new(tx, std::time::Duration::from_secs(NOTIFY_DELAY_SECS)).unwrap();
     if discovery_flag {
         let discovery_meta = create_discovery_meta(nodes_mgr.client());
         service_cfg = service_cfg.insert_protocol(discovery_meta);
