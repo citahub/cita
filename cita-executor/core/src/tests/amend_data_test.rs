@@ -51,6 +51,7 @@ fn call_vm(
         &native_factory,
         false,
         EconomicalModel::Quota,
+        0,
     );
     let mut out = vec![];
     ex.call(

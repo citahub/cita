@@ -113,6 +113,7 @@ pub struct Executive<'a, B: 'a + StateBackend> {
     native_factory: &'a NativeFactory,
     /// Check EconomicalModel
     economical_model: EconomicalModel,
+    chain_version: u32,
 }
 
 impl<'a, B: 'a + StateBackend> Executive<'a, B> {
@@ -126,6 +127,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         native_factory: &'a NativeFactory,
         static_flag: bool,
         economical_model: EconomicalModel,
+        chain_version: u32,
     ) -> Self {
         Executive {
             state,
@@ -136,6 +138,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             depth: 0,
             static_flag,
             economical_model,
+            chain_version,
         }
     }
 
@@ -154,6 +157,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         parent_depth: usize,
         static_flag: bool,
         economical_model: EconomicalModel,
+        chain_version: u32,
     ) -> Self {
         Executive {
             state,
@@ -164,6 +168,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             depth: parent_depth + 1,
             static_flag,
             economical_model,
+            chain_version,
         }
     }
 
@@ -198,6 +203,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             vm_tracer,
             is_static,
             economical_model,
+            self.chain_version,
         )
     }
 
@@ -1264,6 +1270,7 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Charge,
+                0,
             );
             let opts = TransactOptions {
                 tracing: false,
@@ -1313,6 +1320,7 @@ mod tests {
             .unwrap();
         let mut info = EnvInfo::default();
         info.gas_limit = U256::from(100_000);
+        let conf = BlockSysConfig::default();
 
         let executed = {
             let mut ex = Executive::new(
@@ -1323,12 +1331,13 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Charge,
+                conf.chain_version,
             );
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
             };
-            ex.transact(&t, opts, &BlockSysConfig::default()).unwrap()
+            ex.transact(&t, opts, &conf).unwrap()
         };
 
         let schedule = Schedule::new_v1();
@@ -1371,6 +1380,7 @@ mod tests {
         state.add_balance(t.sender(), &U256::from(100_042)).unwrap();
         let mut info = EnvInfo::default();
         info.gas_limit = U256::from(100_000);
+        let conf = BlockSysConfig::default();
 
         let result = {
             let mut ex = Executive::new(
@@ -1381,12 +1391,13 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Charge,
+                conf.chain_version,
             );
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
             };
-            ex.transact(&t, opts, &BlockSysConfig::default())
+            ex.transact(&t, opts, &conf)
         };
 
         match result {
@@ -1421,6 +1432,7 @@ mod tests {
         let mut state = get_temp_state();
         let mut info = EnvInfo::default();
         info.gas_limit = U256::from(100_000);
+        let conf = BlockSysConfig::default();
 
         let result = {
             let mut ex = Executive::new(
@@ -1431,12 +1443,13 @@ mod tests {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
+                conf.chain_version,
             );
             let opts = TransactOptions {
                 tracing: false,
                 vm_tracing: false,
             };
-            ex.transact(&t, opts, &BlockSysConfig::default())
+            ex.transact(&t, opts, &conf)
         };
 
         assert!(result.is_ok());
@@ -1480,6 +1493,7 @@ contract HelloWorld {
         let mut substate = Substate::new();
         let mut tracer = ExecutiveTracer::default();
         let mut vm_tracer = ExecutiveVMTracer::toplevel();
+        let conf = BlockSysConfig::default();
 
         let mut ex = Executive::new(
             &mut state,
@@ -1489,6 +1503,7 @@ contract HelloWorld {
             &native_factory,
             false,
             EconomicalModel::Quota,
+            conf.chain_version,
         );
         let res = ex.create(&params, &mut substate, &mut tracer, &mut vm_tracer);
         assert!(res.is_err());
@@ -1534,6 +1549,7 @@ contract AbiTest {
         let mut substate = Substate::new();
         let mut tracer = ExecutiveTracer::default();
         let mut vm_tracer = ExecutiveVMTracer::toplevel();
+        let conf = BlockSysConfig::default();
 
         {
             let mut ex = Executive::new(
@@ -1544,6 +1560,7 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
+                conf.chain_version,
             );
             let _ = ex.create(&params, &mut substate, &mut tracer, &mut vm_tracer);
         }
@@ -1597,6 +1614,8 @@ contract AbiTest {
         let info = EnvInfo::default();
         let engine = NullEngine::default();
         let mut substate = Substate::new();
+        let conf = BlockSysConfig::default();
+
         {
             let mut ex = Executive::new(
                 &mut state,
@@ -1606,6 +1625,7 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
+                conf.chain_version,
             );
             let mut out = vec![];
             let _ = ex.call(
@@ -1675,6 +1695,8 @@ contract AbiTest {
         let info = EnvInfo::default();
         let engine = NullEngine::default();
         let mut substate = Substate::new();
+        let conf = BlockSysConfig::default();
+
         {
             let mut ex = Executive::new(
                 &mut state,
@@ -1684,6 +1706,7 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
+                conf.chain_version,
             );
             let mut out = vec![];
             let res = ex.call(
@@ -1758,6 +1781,8 @@ contract AbiTest {
         let info = EnvInfo::default();
         let engine = NullEngine::default();
         let mut substate = Substate::new();
+        let conf = BlockSysConfig::default();
+
         {
             let mut ex = Executive::new(
                 &mut state,
@@ -1767,6 +1792,7 @@ contract AbiTest {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
+                conf.chain_version,
             );
             let mut out = vec![];
             let res = ex.call(
@@ -1857,6 +1883,8 @@ contract FakePermissionManagement {
         let info = EnvInfo::default();
         let engine = NullEngine::default();
         let mut substate = Substate::new();
+        let conf = BlockSysConfig::default();
+
         {
             let mut ex = Executive::new(
                 &mut state,
@@ -1866,6 +1894,7 @@ contract FakePermissionManagement {
                 &native_factory,
                 false,
                 EconomicalModel::Quota,
+                conf.chain_version,
             );
             let mut out = vec![];
             let res = ex.call(
