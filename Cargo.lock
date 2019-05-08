@@ -2447,7 +2447,7 @@ dependencies = [
 [[package]]
 name = "pairing"
 version = "0.11.0"
-source = "git+https://github.com/cryptape/pairing.git?branch=0.11-release#aa65ce4cdd5abde9a4f534da11a102a97cb802eb"
+source = "git+https://github.com/cryptape/pairing.git?branch=0.11-release#6e36ec6bd968072c7f499f5f286a8c89f1b51a3b"
 dependencies = [
  "byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4201,7 +4201,7 @@ dependencies = [
 [[package]]
 name = "zktx"
 version = "0.0.1"
-source = "git+https://github.com/cryptape/zktx.git#df9371c58296885a780bdf44c270703ffa7ac5e9"
+source = "git+https://github.com/cryptape/zktx.git#03fcc4b02432f42e53563deccdaaa767fd7a0ad6"
 dependencies = [
  "bellman 0.0.4 (git+https://github.com/cryptape/bellman.git?branch=0.0.4_modified)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
