@@ -187,6 +187,7 @@ impl ExecutedBlock {
                 conf.auto_exec_quota_limit,
                 conf.economical_model,
                 env_info,
+                conf.chain_version,
             );
             self.state.commit().expect("commit trie error");
         }

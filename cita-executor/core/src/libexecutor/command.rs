@@ -307,6 +307,7 @@ impl Commander for Executor {
             &self.factories.native,
             false,
             EconomicalModel::Quota,
+            self.sys_config.block_sys_config.chain_version,
         )
         .transact(t, options, &conf)
         .map_err(Into::into)
