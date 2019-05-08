@@ -5,7 +5,6 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 edition = "2018"
 
 [dependencies]
-fnv = "1.0.6"
 tentacle-discovery = "0.2.0"
 tentacle = "0.2.0-alpha.4"
 tokio = "0.1.14"
@@ -24,6 +23,8 @@ bytes = "0.4"
 byteorder = "1.3"
 rand = "0.4.5"
 dotenv = "0.13.0"
+fnv = "1.0.6"
+notify = "4.0.10"
 
 [dev-dependencies]
 tempfile = "3.0.5"
