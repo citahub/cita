@@ -1,11 +1,16 @@
 #!/bin/bash
 
+debug=$1
+
 echo "Launch CITA"
+
+#docker rm -f $(docker ps -a -q -f name=run)
+#cd target/install && bin/cita stop test-chain/0 && cd ../../
+#cd target/install && bin/cita start test-chain/0 && cd ../../
 
 rm -rf  target/install/test-chain
 # compile
 ./env.sh make debug
-#docker rm -f $(docker ps -a -q -f name=run)
 cd target/install
 echo "Compile finish"
 
@@ -18,10 +23,10 @@ bin/cita setup test-chain/2
 bin/cita setup test-chain/3
 
 echo "Boot CITA"
-bin/cita start test-chain/0
-bin/cita start test-chain/1
-bin/cita start test-chain/2
-bin/cita start test-chain/3
+bin/cita start test-chain/0 ${debug}
+bin/cita start test-chain/1 ${debug}
+bin/cita start test-chain/2 ${debug}
+bin/cita start test-chain/3 ${debug}
 
 echo "Success"
 
