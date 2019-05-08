@@ -99,12 +99,17 @@ use clap::App;
 use dotenv;
 use futures::prelude::*;
 use logger::{debug, info};
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use std::path::Path;
+use std::sync::mpsc::channel;
 use std::thread;
 use tentacle::{builder::ServiceBuilder, secio::SecioKeyPair};
 use util::micro_service_init;
 use util::set_panic_handler;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
+
+const NOTIFY_DELAY_SECS: u64 = 1;
 
 fn main() {
     // init app
@@ -124,12 +129,29 @@ fn main() {
     micro_service_init!("cita-network", "CITA:network", stdout);
     info!("Version: {}", get_build_info_str(true));
 
-    let config_path = matches.value_of("config").unwrap_or("network.toml");
+    let config_file = matches.value_of("config").unwrap_or("network.toml");
+
+    let config_path = Path::new(config_file);
+    let mut dir = config_path
+        .parent()
+        .unwrap_or_else(|| Path::new(""))
+        .to_str()
+        .unwrap();
+    if dir.is_empty() {
+        dir = ".";
+    }
+    let fname = config_path
+        .file_name()
+        .expect("Wrong config file")
+        .to_str()
+        .unwrap()
+        .to_string()
+        .clone();
 
     // Init config
     debug!("Config path {:?}", config_path);
-    let config = NetConfig::new(&config_path);
-    debug!("Network config is {:?}", config);
+    let config = NetConfig::new(&config_file);
+    debug!("Network config is {:?}", config_file);
 
     let addr_path = matches.value_of("address").unwrap_or("address");
     let own_addr = AddressConfig::new(&addr_path);
@@ -147,14 +169,25 @@ fn main() {
     mq_agent.set_nodes_mgr_client(nodes_mgr.client());
     mq_agent.set_network_client(network_mgr.client());
 
-    let discovery_meta = create_discovery_meta(nodes_mgr.client());
-
     let transfer_meta = create_transfer_meta(network_mgr.client(), nodes_mgr.client());
-
     let mut service_cfg = ServiceBuilder::default()
-        .insert_protocol(discovery_meta)
         .insert_protocol(transfer_meta)
         .forever(true);
+
+    let discovery_flag = config.enable_discovery.unwrap_or(true);
+    let (tx, rx) = channel();
+    let mut watcher: RecommendedWatcher =
+        Watcher::new(tx, std::time::Duration::from_secs(NOTIFY_DELAY_SECS)).unwrap();
+    if discovery_flag {
+        let discovery_meta = create_discovery_meta(nodes_mgr.client());
+        service_cfg = service_cfg.insert_protocol(discovery_meta);
+    } else if watcher.watch(dir, RecursiveMode::NonRecursive).is_ok() {
+        let notify_client = nodes_mgr.client();
+        thread::spawn(move || {
+            NodesManager::notify_config_change(rx, notify_client, fname);
+        });
+    }
+
     if nodes_mgr.is_enable_tls() {
         service_cfg = service_cfg.key_pair(SecioKeyPair::secp256k1_generated());
     }
