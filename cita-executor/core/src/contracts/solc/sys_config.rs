@@ -321,7 +321,7 @@ impl<'a> SysConfig<'a> {
                 .unwrap_or_else(SysConfig::default_chain_id);
 
             Some(ChainId::V0(id_v0))
-        } else if version == 1 {
+        } else if version == 1 || version == 2 {
             let id_v1 = self
                 .chain_id_v1(BlockId::Pending)
                 .unwrap_or_else(SysConfig::default_chain_id_v1);

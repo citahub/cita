@@ -1240,7 +1240,7 @@ mod tests {
             nonce: U256::zero().to_string(),
             block_limit: 100u64,
             chain_id: 1.into(),
-            version: 1,
+            version: 2,
         }
         .fake_sign(keypair.address().clone());
         let sender = t.sender();
@@ -1298,7 +1298,7 @@ mod tests {
             nonce: U256::zero().to_string(),
             block_limit: 100u64,
             chain_id: 1.into(),
-            version: 1,
+            version: 2,
         }
         .fake_sign(keypair.address().clone());
         let sender = t.sender();
@@ -1360,7 +1360,7 @@ mod tests {
             nonce: U256::zero().to_string(),
             block_limit: 100u64,
             chain_id: 1.into(),
-            version: 1,
+            version: 2,
         }
         .fake_sign(keypair.address().clone());
 
@@ -1411,7 +1411,7 @@ mod tests {
             nonce: U256::zero().to_string(),
             block_limit: 100u64,
             chain_id: 1.into(),
-            version: 1,
+            version: 2,
         }
         .fake_sign(keypair.address().clone());
 
