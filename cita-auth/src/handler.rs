@@ -200,7 +200,7 @@ impl MsgHandler {
             if !to.is_empty() && Address::from_str(to).is_err() {
                 return Err(Error::InvalidValue);
             }
-        } else if tx_version == 1 {
+        } else if tx_version == 1 || tx_version == 2 {
             // old to must be empty
             if !tx.get_to().is_empty() {
                 return Err(Error::InvalidValue);
@@ -247,7 +247,7 @@ impl MsgHandler {
                     Some(ChainId::V0(chain_id))
                 }
             }
-            1 => {
+            1 | 2 => {
                 // old chain id must be empty
                 if req.get_chain_id() != 0 || req.get_chain_id_v1().len() != 32 {
                     None
@@ -510,7 +510,9 @@ impl MsgHandler {
             } else {
                 Some(Address::from(block_tx_hashes.get_admin_address()))
             };
-            if block_tx_hashes.get_version() == 1 && self.config_info.version == Some(0) {
+            let block_tx_version = block_tx_hashes.get_version();
+            if block_tx_version == 1 || block_tx_version == 2 && self.config_info.version == Some(0)
+            {
                 trace!("Fetch new chain id");
                 let msg: Message = MiscellaneousReq::new().into();
                 self.tx_pub
@@ -838,7 +840,7 @@ impl MsgHandler {
         if let Some(version) = self.config_info.version {
             self.chain_id = if version == 0 {
                 Some(ChainId::V0(miscellaneous.chain_id))
-            } else if version == 1 {
+            } else if version == 1 || version == 2 {
                 if miscellaneous.chain_id_v1.len() == 32 {
                     Some(ChainId::V1(U256::from(
                         miscellaneous.chain_id_v1.as_slice(),
