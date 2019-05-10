@@ -78,6 +78,6 @@ mod tests {
         let executor = init_executor(vec![]);
         let version_management = VersionManager::new(&executor);
         let version = version_management.get_version(BlockId::Pending).unwrap();
-        assert_eq!(version, 1);
+        assert_eq!(version, 2);
     }
 }

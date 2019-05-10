@@ -61,7 +61,7 @@ fn sign(
     tx.set_valid_until_block(height.low_u64() + 100);
     tx.set_quota(1_000_000);
     tx.set_chain_id_v1(H256::from(chain_id).to_vec());
-    tx.set_version(1);
+    tx.set_version(2);
     tx.set_value(vec![0u8; 32]);
     tx.sign(*pkey).take_transaction_with_sig()
 }
