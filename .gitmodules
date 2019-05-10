@@ -18,7 +18,7 @@
 [submodule "scripts/config_tool/genesis"]
 	path = scripts/config_tool/genesis
 	url = https://github.com/cryptape/genesis.git
-	branch = v0.22.0
+	tag = v0.22.0
 [submodule "tests/jsondata"]
 	path = tests/jsondata
 	url = https://github.com/cryptape/cita-testdata.git
