@@ -174,6 +174,17 @@ jobs:
       - run: *clean-build-cache-if-too-large
       - save_cache: *save-clippy-cache
 
+  "Check Shell":
+    docker:
+      - image: debian:stretch
+    steps:
+      - checkout
+      - run:
+          name: Test Shell Scripts
+          command: |
+            sudo apt-get install shellcheck
+            shellcheck scripts/*.sh env.sh
+
   "Release":
     <<: *job-default
     steps:
@@ -354,6 +365,8 @@ workflows:
       - "Check Basic"
 
       - "Check Contracts"
+
+      - "Check Shell"
 
       # - "Test Coverage":
       #     requires:
