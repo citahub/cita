@@ -1,13 +1,13 @@
 #!/bin/bash
 
-if [[ `uname` == 'Darwin' ]]
+if [[ $(uname) == 'Darwin' ]]
 then
-    SOURCE_DIR=$(realpath $(dirname $(realpath $0))/..)
+    SOURCE_DIR=$(realpath "$(dirname "$(realpath "$0")")"/..)
 else
-    SOURCE_DIR=$(readlink -f $(dirname $(realpath $0))/..)
+    SOURCE_DIR=$(readlink -f "$(dirname "$(realpath "$0")")"/..)
 fi
 
-cd ${SOURCE_DIR}
+cd "${SOURCE_DIR}" || exit
 
 if [ $# -ne 1 ] ; then
     echo "usage: $0 debug|release"
