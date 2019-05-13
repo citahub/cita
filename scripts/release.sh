@@ -42,7 +42,7 @@ done
 #strip                                     target/install/bin/*
 
 # 2) cita
-cp -rf scripts/cita                        target/install/bin/
+cp -rf scripts/cita.sh                      target/install/bin/cita
 
 # 3) contract
 cp -rf scripts/contracts                   target/install/scripts/
