@@ -176,6 +176,17 @@ jobs:
       - run: *clean-build-cache-if-too-large
       - save_cache: *save-clippy-cache
 
+  "Check Shell":
+    <<: *job-default
+    steps:
+      - checkout
+      - run:
+          name: Test Shell Scripts
+          command: |
+            sudo apt update
+            sudo apt install -y shellcheck
+            shellcheck scripts/*.sh env.sh
+
   "Release":
     <<: *job-default
     steps:
@@ -356,6 +367,8 @@ workflows:
       - "Check Basic"
 
       - "Check Contracts"
+
+      - "Check Shell"
 
       # - "Test Coverage":
       #     requires:
