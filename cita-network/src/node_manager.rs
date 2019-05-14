@@ -35,8 +35,8 @@ use std::{
     time::{Duration, Instant},
 };
 use tentacle::{
-    multiaddr::ToMultiaddr,
     service::{DialProtocol, ServiceControl, SessionType, TargetSession},
+    utils::socketaddr_to_multiaddr,
     SessionId,
 };
 
@@ -307,7 +307,7 @@ impl NodesManager {
                 if let Some(ref mut ctrl) = self.service_ctrl {
                     self.dialing_node = Some(*key);
                     info!("Trying to dial: {:?}", self.dialing_node);
-                    match ctrl.dial((*key).to_multiaddr().unwrap(), DialProtocol::All) {
+                    match ctrl.dial(socketaddr_to_multiaddr(*key), DialProtocol::All) {
                         Ok(_) => {
                             // Need DIALING_SCORE for every dial.
                             value.score -= DIALING_SCORE;
@@ -680,7 +680,7 @@ impl NetworkInitReq {
 
         if let Some(ref mut ctrl) = service.service_ctrl {
             // FIXME: handle the error!
-            let ret = ctrl.send_message_to(self.session_id, TRANSFER_PROTOCOL_ID, buf);
+            let ret = ctrl.send_message_to(self.session_id, TRANSFER_PROTOCOL_ID, buf.into());
             info!(
                 "[NodeManager] Send network init message!, id: {:?}, peer_addr: {:?}, ret: {:?}",
                 self.session_id, peer_key, ret,
@@ -906,7 +906,7 @@ impl BroadcastReq {
         let mut buf = Vec::with_capacity(CITA_FRAME_HEADER_LEN + self.key.len() + msg_bytes.len());
         pubsub_message_to_network_message(&mut buf, Some((self.key, msg_bytes)));
         if let Some(ref mut ctrl) = service.service_ctrl {
-            let _ = ctrl.filter_broadcast(TargetSession::All, TRANSFER_PROTOCOL_ID, buf);
+            let _ = ctrl.filter_broadcast(TargetSession::All, TRANSFER_PROTOCOL_ID, buf.into());
         }
     }
 }
@@ -935,7 +935,7 @@ impl SingleTxReq {
         pubsub_message_to_network_message(&mut buf, Some((self.key, msg_bytes)));
         if let Some(ref mut ctrl) = service.service_ctrl {
             // FIXME: handle the error!
-            let _ = ctrl.send_message_to(self.dst, TRANSFER_PROTOCOL_ID, buf);
+            let _ = ctrl.send_message_to(self.dst, TRANSFER_PROTOCOL_ID, buf.into());
         }
     }
 }
