@@ -45,7 +45,6 @@ pub fn auto_exec(
     state: &mut State<StateDB>,
     auto_exec_quota_limit: u64,
     economical_model: EconomicalModel,
-    // TODO: UPGRADE PROTOC0L VERSION
     env_info: EnvInfo,
 ) {
     let hash = &*AUTO_EXEC_HASH;
