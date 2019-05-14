@@ -7,7 +7,7 @@ import argparse
 
 NODE_KEYS = [
     '0x98a476f1687bc3d60a2da2adbcba2c46958e61fa2fb4042cd7bc5816a710195b',
-    '0x312b5d21c330b0e88e86f3c5440c63bfddde72d1e155eca9c2d5d9929d012e1a'
+    '0x0958fc78ca04a68fd52c5622ef2ca3cdb177cce96303c25fe1f487c6436a6dac'
 ]
 
 
