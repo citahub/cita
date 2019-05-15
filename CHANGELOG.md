@@ -56,7 +56,7 @@ All notable changes to this project will be documented in this file. And this pr
 - [Optimization] Modify script for new network config. [@leeyr338]
 - [Fix] Set logrotate output log as a relative path. [@leeyr338]
 - [Fix] Generate privkey file when use authorities option. [@leeyr338]
-- [Feature] Let native token be configrable. [@leeyr338]
+- [Feature] Let native token be configurable. [@leeyr338]
 - [Fix] Fix docker multi-ports expose error. [@leeyr338]
 - [Optimization] Remove the useless scripts. [@kaikai1024]
 - [Optimization] Remove warnings of yaml. [@ouwenkg]
