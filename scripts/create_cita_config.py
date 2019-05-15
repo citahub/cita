@@ -162,6 +162,7 @@ class ChainInfo():
                                              'authorities.list')
         self.nodes = NetworkAddressList()
         self.enable_tls = False
+        self.enable_discovery = False
         self.prefix_subj = '/C=CN/ST=ZJ/O=Cryptape, Inc./CN='
 
     def template_create_from_arguments(self, args, contracts_dir_src,
@@ -322,8 +323,8 @@ class ChainInfo():
         with open(network_config, 'rt') as stream:
             network_data = toml.load(stream)
             network_data['port'] = node['port']
-            if self.enable_tls:
-                network_data['enable_tls'] = True
+            network_data['enable_tls'] = self.enable_tls
+            network_data['enable_discovery'] = self.enable_discovery
         with open(network_config, 'wt') as stream:
             current_ip = config[node_id]['ip']
             stream.write(f'# Current node ip is {current_ip}\n')
@@ -341,6 +342,7 @@ def run_subcmd_create(args, work_dir):
     info.create_init_data(args.super_admin, args.contract_arguments)
     info.create_genesis(args.timestamp, args.init_token, args.resource_dir)
     info.enable_tls = args.enable_tls
+    info.enable_discovery = args.enable_discovery
     for node in args.nodes:
         info.append_node(node)
 
@@ -416,6 +418,12 @@ def parse_arguments():
         '--enable_tls',
         action='store_true',
         help='The data is encrypted and transmitted on the network')
+
+    # enable encrypted
+    pcreate.add_argument(
+        '--enable_discovery',
+        action='store_true',
+        help='The node discovery enabled on the network')
 
     # enable get version
     pcreate.add_argument(
