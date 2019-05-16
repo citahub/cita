@@ -83,7 +83,11 @@ Broadcast internal mail:
 
 Merge the bug fixes occurred during the test into the release branch `release-x.y.z`.
 
-If the test passes, modify the update log and update the release date with other information.
+If the test passes:
+
+* Create a `tag` of corresponding version
+* Update `submodule` using `tag`
+* Modify the update log and update the release date with other information
 
 ## Merge Branch
 
@@ -117,7 +121,8 @@ git push origin vx.y.z
 
 ***The transition branch is named `merge-master-to-develop`***
 
-Merge the `master` branch into the `develop` branch. Because of the branch protection, we need to create a middle branch `merge-master-to-develop` via `pull request`.
+Merge the `master` branch into the `develop` branch.
+Because of the branch protection, we need to create a middle branch `merge-master-to-develop` via `pull request`.
 
 1. Update the `master` branch code as follows:
 
@@ -283,7 +288,11 @@ git push origin release-x.y.z
 
 测试过程中出现的 Bug 修复合并入发布分支 `release-x.y.z`。
 
-当测试通过时，修改更新日志，更新版本发布日期等信息。
+测试通过后：
+
+* `submodule` 创建对应版本 `tag`
+* 使用 `tag` 方式更新 `submodule`
+* 修改更新日志，更新版本发布日期等信息
 
 ## 合并分支
 
