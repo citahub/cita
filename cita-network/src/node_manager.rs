@@ -577,12 +577,9 @@ impl AddConnectedNodeReq {
                         node_status.session_id = Some(*repeated_id);
                         node_status.score += SUCCESS_DIALING_SCORE;
 
-                        let _ = service
-                            .connected_addrs
-                            .entry(self.session_id)
-                            .and_modify(|v| {
-                                v.trans_addr = Some(dialing_addr);
-                            });
+                        let _ = service.connected_addrs.entry(*repeated_id).and_modify(|v| {
+                            v.trans_addr = Some(dialing_addr);
+                        });
                     }
                 }
             }
