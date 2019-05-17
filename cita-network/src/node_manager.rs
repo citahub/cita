@@ -767,7 +767,7 @@ impl AddRepeatedNodeReq {
                     });
             }
         } else {
-            warn!("[NodeManager] Cant find repeated sessionid in known addrs");
+            warn!("[NodeManager] Cant find repeated sock addr in known addrs");
         }
         // This dialing is finished.
         service.dialing_node = None;
