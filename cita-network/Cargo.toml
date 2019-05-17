@@ -5,8 +5,8 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 edition = "2018"
 
 [dependencies]
-tentacle-discovery = "0.2.0"
-tentacle = "0.2.0-alpha.4"
+tentacle-discovery = "0.2.4"
+tentacle = "0.2.0-alpha.14"
 tokio = "0.1.14"
 futures = "0.1.25"
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

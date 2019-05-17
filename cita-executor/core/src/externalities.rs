@@ -91,6 +91,7 @@ where
     vm_tracer: &'a mut V,
     static_flag: bool,
     economical_model: EconomicalModel,
+    chain_version: u32,
 }
 
 impl<'a, T: 'a, V: 'a, B: 'a> Externalities<'a, T, V, B>
@@ -115,6 +116,7 @@ where
         vm_tracer: &'a mut V,
         static_flag: bool,
         economical_model: EconomicalModel,
+        chain_version: u32,
     ) -> Self {
         Externalities {
             state,
@@ -131,6 +133,7 @@ where
             vm_tracer,
             static_flag,
             economical_model,
+            chain_version,
         }
     }
 }
@@ -248,6 +251,7 @@ where
             self.depth,
             self.static_flag,
             self.economical_model,
+            self.chain_version,
         );
 
         // TODO: handle internal error separately
@@ -320,6 +324,7 @@ where
             self.depth,
             self.static_flag,
             self.economical_model,
+            self.chain_version,
         );
 
         match ex.call(
@@ -418,6 +423,16 @@ where
 
         let address = self.origin_info.address;
         let balance = self.balance(&address)?;
+
+        if self.chain_version > 1 {
+            if &address == refund_address {
+                self.state.sub_balance(&address, &balance)?;
+            } else {
+                self.state
+                    .transfer_balance(&address, refund_address, &balance)?;
+            }
+        }
+
         self.tracer.trace_suicide(address, balance, *refund_address);
         self.substate.suicides.insert(address);
         Ok(())

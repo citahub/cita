@@ -760,6 +760,7 @@ impl<B: Backend> State<B> {
             &native_factory,
             false,
             conf.economical_model,
+            conf.chain_version,
         )
         .transact(t, options, conf)
         {

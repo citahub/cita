@@ -172,13 +172,22 @@ impl ExecutedBlock {
 
     /// Turn this into a `ClosedBlock`.
     pub fn close(mut self, conf: &BlockSysConfig) -> ClosedBlock {
-        let env_info = self.env_info();
+        let mut env_info = self.env_info();
+        // In protocol version 0, 1:
+        // Auto Execution's env info author is default address
+        // In protocol version > 1:
+        // Auto Execution's env info author is block author
+        if conf.chain_version < 2 {
+            env_info.author = Address::default();
+        }
+
         if conf.auto_exec {
             auto_exec(
                 &mut self.state,
                 conf.auto_exec_quota_limit,
                 conf.economical_model,
                 env_info,
+                conf.chain_version,
             );
             self.state.commit().expect("commit trie error");
         }

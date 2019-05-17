@@ -20,9 +20,9 @@ use logger::{info, warn};
 use pubsub::channel::unbounded;
 use tentacle::{
     builder::MetaBuilder,
-    multiaddr::{Multiaddr, ToMultiaddr},
+    multiaddr::Multiaddr,
     service::{ProtocolHandle, ProtocolMeta},
-    utils::multiaddr_to_socketaddr,
+    utils::{multiaddr_to_socketaddr, socketaddr_to_multiaddr},
     ProtocolId, SessionId,
 };
 use tentacle_discovery::{
@@ -76,9 +76,7 @@ impl AddressManager for NodesAddressManager {
             ret
         );
 
-        ret.into_iter()
-            .map(|addr| addr.to_multiaddr().unwrap())
-            .collect()
+        ret.into_iter().map(socketaddr_to_multiaddr).collect()
     }
 }
 

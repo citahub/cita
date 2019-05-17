@@ -16,8 +16,8 @@ fi
 
 height=$(echo ${response}|jq ".result"|sed 's/\"//g')
 
-if [ $height == null ]; then
+if [ "$height" == null ]; then
    exit 1
-fi   
+fi
 
 echo $((height))

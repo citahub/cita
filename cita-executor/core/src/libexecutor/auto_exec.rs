@@ -45,8 +45,8 @@ pub fn auto_exec(
     state: &mut State<StateDB>,
     auto_exec_quota_limit: u64,
     economical_model: EconomicalModel,
-    // TODO: UPGRADE PROTOC0L VERSION
     env_info: EnvInfo,
+    chain_version: u32,
 ) {
     let hash = &*AUTO_EXEC_HASH;
     let params = ActionParams {
@@ -88,6 +88,7 @@ pub fn auto_exec(
         &mut vm_tracer,
         false,
         economical_model,
+        chain_version,
     );
     let res = {
         factory
