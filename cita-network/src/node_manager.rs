@@ -617,11 +617,6 @@ impl AddConnectedNodeReq {
                     .connected_addrs
                     .insert(self.session_id, TransformAddr::new(session_info.addr, None));
 
-                // Add connected peer keys
-                let _ = service
-                    .connected_peer_keys
-                    .insert(self.init_msg.peer_key, self.session_id);
-
                 // If it is an active connection, need to set this node in known_addrs has been connected.
                 if self.ty == SessionType::Outbound {
                     if let Some(ref mut node_status) =
@@ -632,6 +627,12 @@ impl AddConnectedNodeReq {
                     }
                 }
             }
+
+            // Add connected peer keys
+            // Because AddRepeatedNodeReq maybe already did above action
+            let _ = service
+                .connected_peer_keys
+                .insert(self.init_msg.peer_key, self.session_id);
 
             info!(
                 "[NodeManager] connected_addrs info: {:?}",
@@ -751,8 +752,23 @@ impl AddRepeatedNodeReq {
         if let Some(ref mut node_status) = service.known_addrs.get_mut(&self.addr) {
             node_status.session_id = Some(self.session_id);
             node_status.score += SUCCESS_DIALING_SCORE;
-        }
 
+            if let Some(session_info) = service.pending_connected_addrs.remove(&self.session_id) {
+                let _ = service.connected_addrs.insert(
+                    self.session_id,
+                    TransformAddr::new(session_info.addr, Some(self.addr)),
+                );
+            } else {
+                let _ = service
+                    .connected_addrs
+                    .entry(self.session_id)
+                    .and_modify(|v| {
+                        v.trans_addr = Some(self.addr);
+                    });
+            }
+        } else {
+            warn!("[NodeManager] Cant find repeated sock addr in known addrs");
+        }
         // This dialing is finished.
         service.dialing_node = None;
     }
