@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+## [v0.24.0] - 2019-05-18
+
 ### Framework
 
 - [Optimization] Support new protocol version 2. [@ouwenkg]
@@ -25,6 +27,8 @@ All notable changes to this project will be documented in this file. And this pr
 
 - [Feature] Use new P2P library. [@jerry-yu]
 - [Feature] Let network be configuration. [@jerry-yu]
+- [Fix] Fix bug for saving wrong session id. [@jerry-yu]
+- [Fix] Fix for operating repeated peer key. [@jerry-yu]
 
 ### Chain
 
@@ -36,6 +40,7 @@ All notable changes to this project will be documented in this file. And this pr
 
 - [Fix] Fix Bft panic when new ordinary node syncs the blocks. [@leeyr338]
 - [Fix] Fix the bug that chain can't product block after restart docker. [@leeyr338]
+- [Fix] Fix the bug for jumping round when delayed. [@jerry-yu]
 
 ### Forever
 
@@ -805,12 +810,13 @@ Release the first version of CITA.
 [set quota price]: https://docs.citahub.com/zh-CN/cita/system/price
 [sidechain exit mechanism]: https://docs.nervos.org/cita/#/crosschain/crosschain_contract_example
 
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.23.1...HEAD
-[v0.23.1]: https://github.com/cryptape/cita/compare/v0.23...v0.23.1
-[v0.23.0]: https://github.com/cryptape/cita/compare/v0.22...v0.23.0
+[Unreleased]: https://github.com/cryptape/cita/compare/v0.24.0...HEAD
+[v0.24.0]: https://github.com/cryptape/cita/compare/v0.23.0...v0.24.0
+[v0.23.1]: https://github.com/cryptape/cita/compare/v0.23.0...v0.23.1
+[v0.23.0]: https://github.com/cryptape/cita/compare/v0.22.0...v0.23.0
 [v0.22.0]: https://github.com/cryptape/cita/compare/v0.21...v0.22.0
 [v0.21.1]: https://github.com/cryptape/cita/compare/v0.21...v0.21.1
-[v0.21.0]: https://github.com/cryptape/cita/compare/v0.20...v0.21.0
+[v0.21.0]: https://github.com/cryptape/cita/compare/v0.20...v0.21
 [v0.20.3]: https://github.com/cryptape/cita/compare/v0.20.2...v0.20.3
 [v0.20.2]: https://github.com/cryptape/cita/compare/v0.20.1...v0.20.2
 [v0.20.1]: https://github.com/cryptape/cita/compare/v0.20...v0.20.1
