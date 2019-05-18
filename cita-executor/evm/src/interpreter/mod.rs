@@ -182,7 +182,9 @@ impl<Cost: CostType> evm::Evm for Interpreter<Cost> {
                 gasometer.current_gas = gasometer.current_gas + *gas;
             }
 
-            if trace_executed {
+            let expect_mem_len =
+                mem_written.unwrap_or_default().0 + mem_written.unwrap_or_default().1;
+            if trace_executed && expect_mem_len < self.mem.len() {
                 ext.trace_executed(
                     gasometer.current_gas.as_u256(),
                     stack.peek_top(info.ret),

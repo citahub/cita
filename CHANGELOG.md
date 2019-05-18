@@ -4,6 +4,73 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+### Framework
+
+- [Optimization] Support new protocol version 2. [@ouwenkg]
+- [Optimization] Bump cita-sdk-js to `0.23.1` to fix the problem of version 2. [@kaikai1024]
+- [Optimization] Bump Rust toolchain to `1.34.1`. [@kaikai1024]
+- [Optimization] Use fixed Solidity version for system contracts. [@kaikai1024]
+- [Optimization] Upgrade the node packages to avoid the security alert. [@kaikai1024]
+- [Optimization] Use new log pattern. [@kaikai1024]
+- [Optimization] Update genesis submodule: use tag. [@kaikai1024]
+
+### Executor
+
+- [Fix] Fix coinbase in auto exec. [@ouwenkg]
+- [Fix] Fix potential panic issue in evm trace. [@ouwenkg]
+- [Fix] Refund token when suicide. [@ouwenkg]
+- [Optimization] Update zktx to use stable verison of Rust. [@kaikai1024]
+
+### Network
+
+- [Feature] Use new P2P library. [@jerry-yu]
+- [Feature] Let network be configuration. [@jerry-yu]
+
+### Chain
+
+- [Fix] Fix the bug that getLogs would break down the chain when `toBlock` is very large. [@leeyr338]
+- [Optimization] Update log in `forward` of `cita-chain`. [@ouwenkg]
+- [Fix] Move `chain_version` into `BlockSysConfig`. [@ouwenkg]
+
+### Consensus
+
+- [Fix] Fix Bft panic when new ordinary node syncs the blocks. [@leeyr338]
+- [Fix] Fix the bug that chain can't product block after restart docker. [@leeyr338]
+
+### Forever
+
+- [Fix] Fix service start error when `.*.pid` files exist. [@leeyr338]
+
+### Tools
+
+- [Fix] Fix panic in snapshot path. [@ouwenkg]
+
+### Test
+
+- [Optimization] Set more time for checking P2P network. [@leeyr338]
+- [Optimization] Use testdata submodule to test rpc interface. [@kaikai1024]
+- [Fix] Fix bug of `blockNumber.sh` script. [@rev-chaos]
+
+### Scripts
+
+- [Optimization] Modify script for new network config. [@leeyr338]
+- [Fix] Set logrotate output log as a relative path. [@leeyr338]
+- [Fix] Generate privkey file when use authorities option. [@leeyr338]
+- [Feature] Let native token be configurable. [@leeyr338]
+- [Fix] Fix docker multi-ports expose error. [@leeyr338]
+- [Optimization] Remove the useless scripts. [@kaikai1024]
+- [Optimization] Remove warnings of yaml. [@ouwenkg]
+
+### Doc
+
+- [Doc] Refactor `getting-started` doc. [@zhouyun-zoe]
+- [Doc] Add `economics model` docs.[@zhouyun-zoe]
+- [Doc] Add `zktx` docs. [@kaikai1024]
+- [Doc] Add `depository` sample. [@leeyr338]
+- [Doc] Add `operation guide` section. [@zhouyun-zoe]
+- [Doc] Add English version of release guide. [@YUJIAYIYIYI]
+- [Doc] Add logging rule doc. [@leeyr338]
+
 ## [v0.23.1] - 2019-05-05
 
 Fix the issue about showing the wrong version.
@@ -764,6 +831,7 @@ Release the first version of CITA.
 [@Kayryu]: https://github.com/Kayryu
 [@Keith-CY]: https://github.com/Keith-CY
 [@QingYanL]: https://github.com/QingYanL
+[@YUJIAYIYIYI]: https://github.com/YUJIAYIYIYI
 [@classicalliu]: https://github.com/classicalliu
 [@clearloop]: https://github.com/clearloop
 [@driftluo]: https://github.com/driftluo
@@ -773,6 +841,7 @@ Release the first version of CITA.
 [@leeyr338]: https://github.com/leeyr338
 [@luqz]: https://github.com/luqz
 [@ouwenkg]: https://github.com/ouwenkg
+[@rev-chaos]: https://github.com/rev-chaos
 [@rink1969]: https://github.com/rink1969
 [@u2]: https://github.com/u2
 [@wangfh666]: https://github.com/wangfh666

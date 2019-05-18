@@ -19,7 +19,7 @@ from secp256k1 import PrivateKey
 from url_util import endpoint
 from util import hex2bytes, run_command, remove_hex_0x
 
-LATEST_VERSION = 1
+LATEST_VERSION = 2
 
 accounts_path = Path("../output/transaction")
 if not accounts_path.is_dir():
@@ -139,7 +139,7 @@ def _blake2b_ed25519_deploy_data(current_height,
         chainid = get_chainid()
         logger.debug("chainid is {}".format(chainid))
         tx.chain_id = chainid
-    elif version == 1:
+    elif version < 3:
         chainid = get_chainid_v1()
         logger.debug("chainid_v1 is {}".format(chainid))
         tx.chain_id_v1 = chainid.to_bytes(32, byteorder='big')
@@ -148,7 +148,7 @@ def _blake2b_ed25519_deploy_data(current_height,
     if receiver is not None:
         if version == 0:
             tx.to = receiver
-        elif version == 1:
+        elif version < 3:
             tx.to_v1 = hex2bytes(receiver)
         else:
             logger.error("unexpected version {}".format(version))
@@ -202,7 +202,7 @@ def _sha3_secp256k1_deploy_data(current_height,
         chainid = get_chainid()
         logger.debug("chainid is {}".format(chainid))
         tx.chain_id = chainid
-    elif version == 1:
+    elif version < 3:
         chainid = get_chainid_v1()
         logger.debug("chainid_v1 is {}".format(chainid))
         tx.chain_id_v1 = chainid.to_bytes(32, byteorder='big')
@@ -211,7 +211,7 @@ def _sha3_secp256k1_deploy_data(current_height,
     if receiver is not None:
         if version == 0:
             tx.to = receiver
-        elif version == 1:
+        elif version < 3:
             tx.to_v1 = hex2bytes(receiver)
         else:
             logger.error("unexpected version {}".format(version))
@@ -259,7 +259,7 @@ def parse_arguments():
         action='store_false',
         help="Use ecdsa and sha3.")
     parser.add_argument(
-        "--version", help="Tansaction version.", default=1, type=int)
+        "--version", help="Tansaction version.", default=2, type=int)
     parser.add_argument("--chain_id", default=0, type=int)
     parser.set_defaults(newcrypto=False)
 

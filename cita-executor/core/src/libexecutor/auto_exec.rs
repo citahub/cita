@@ -41,11 +41,12 @@ lazy_static! {
     static ref AUTO_EXEC_HASH: Vec<u8> = method_tools::encode_to_vec(AUTO_EXEC);
 }
 
-// pub fn auto_exec(state: &mut State<StateDB>) -> evm::Result<FinalizationResult> {
 pub fn auto_exec(
     state: &mut State<StateDB>,
     auto_exec_quota_limit: u64,
     economical_model: EconomicalModel,
+    env_info: EnvInfo,
+    chain_version: u32,
 ) {
     let hash = &*AUTO_EXEC_HASH;
     let params = ActionParams {
@@ -68,7 +69,7 @@ pub fn auto_exec(
     let mut trace_output = tracer.prepare_trace_output();
     let output = OutputPolicy::Return(BytesRef::Flexible(&mut out), trace_output.as_mut());
     let factory = Factory::new(VMType::Interpreter, 1024 * 32);
-    let env_info = EnvInfo::default();
+
     let engine = NullEngine::default();
     let native_factory = NativeFactory::default();
     let origin_info = OriginInfo::from(&params);
@@ -87,6 +88,7 @@ pub fn auto_exec(
         &mut vm_tracer,
         false,
         economical_model,
+        chain_version,
     );
     let res = {
         factory

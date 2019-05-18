@@ -30,6 +30,7 @@ use libproto::{TryFrom, TryInto};
 use logger::{error, info, trace, warn};
 use pubsub::channel::{unbounded, Receiver, Sender};
 use serde_json;
+use std::iter::FromIterator;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -215,7 +216,7 @@ impl LocalMessage {
 
                     let peers_info = PeersInfo {
                         amount: peers.len() as u32,
-                        peers: Some(peers),
+                        peers: Some(std::collections::HashMap::from_iter(peers)),
                         error_message: None,
                     };
 

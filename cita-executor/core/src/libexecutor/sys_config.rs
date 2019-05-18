@@ -35,7 +35,6 @@ pub struct GlobalSysConfig {
     /// Interval time for creating a block (milliseconds)
     pub block_interval: u64,
     pub emergency_brake: bool,
-    pub chain_version: u32,
     pub block_sys_config: BlockSysConfig,
 }
 
@@ -49,7 +48,6 @@ impl Default for GlobalSysConfig {
             changed_height: 0,
             block_interval: 3000,
             emergency_brake: false,
-            chain_version: 0,
             block_sys_config: BlockSysConfig::default(),
         }
     }
@@ -141,7 +139,7 @@ impl GlobalSysConfig {
             .unwrap_or_else(EmergencyBrake::default_state);
 
         let version_manager = VersionManager::new(executor);
-        conf.chain_version = version_manager
+        conf.block_sys_config.chain_version = version_manager
             .get_version(block_id)
             .unwrap_or_else(VersionManager::default_version);
 
@@ -175,6 +173,7 @@ pub struct BlockSysConfig {
     pub group_accounts: HashMap<Address, Vec<Address>>,
     pub check_options: CheckOptions,
     pub economical_model: EconomicalModel,
+    pub chain_version: u32,
 }
 
 impl Default for BlockSysConfig {
@@ -190,6 +189,7 @@ impl Default for BlockSysConfig {
             group_accounts: HashMap::new(),
             check_options: CheckOptions::default(),
             economical_model: EconomicalModel::Quota,
+            chain_version: 0,
         }
     }
 }
