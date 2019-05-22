@@ -125,6 +125,12 @@ impl ServiceHandle for SHandle {
                     proto_id, error
                 );
             }
+            ServiceError::SessionBlocked { session_context } => {
+                warn!(
+                    "[P2pProtocol] ServiceError::SessionBlocked session_context {:?}",
+                    session_context
+                );
+            }
         }
     }
 
