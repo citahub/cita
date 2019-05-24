@@ -11,12 +11,18 @@ services:
 git:
   depth: 1
 stages:
+  - CheckShell
   - Release
   - IntegrateTest
 before_install:
   - docker pull cita/cita-build:ubuntu-18.04-20190515
 jobs:
   include:
+
+    - stage: CheckShell
+      script:
+        # Fail if any of these files have warnings
+        - shellcheck scripts/*.sh env.sh
 
     - stage: Release
       name: Release for Integrate Test

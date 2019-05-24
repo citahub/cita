@@ -1,13 +1,13 @@
 #!/bin/bash
 
-if [[ `uname` == 'Darwin' ]]
+if [[ $(uname) == 'Darwin' ]]
 then
-    SOURCE_DIR=$(realpath $(dirname $(realpath $0))/..)
+    SOURCE_DIR=$(realpath "$(dirname "$(realpath "$0")")"/..)
 else
-    SOURCE_DIR=$(readlink -f $(dirname $(realpath $0))/..)
+    SOURCE_DIR=$(readlink -f "$(dirname "$(realpath "$0")")"/..)
 fi
 
-cd ${SOURCE_DIR}
+cd "${SOURCE_DIR}" || exit
 
 if [ $# -ne 1 ] ; then
     echo "usage: $0 debug|release"
@@ -42,7 +42,7 @@ done
 #strip                                     target/install/bin/*
 
 # 2) cita
-cp -rf scripts/cita                        target/install/bin/
+cp -rf scripts/cita.sh                      target/install/bin/cita
 
 # 3) contract
 cp -rf scripts/contracts                   target/install/scripts/
