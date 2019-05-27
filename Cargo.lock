@@ -197,7 +197,7 @@ dependencies = [
 [[package]]
 name = "bft-rs"
 version = "0.2.0-alpha"
-source = "git+https://github.com/cryptape/bft-rs.git?branch=integrate_tests#e2d067f1a7f63c93dac7a026d026d15d7b1ee58b"
+source = "git+https://github.com/cryptape/bft-rs.git?branch=develop#78ba20575834636e1204721df5cbe8df7b255675"
 dependencies = [
  "crossbeam 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-utils 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -490,7 +490,7 @@ name = "cita-bft"
 version = "0.1.0"
 dependencies = [
  "authority_manage 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "bft-rs 0.2.0-alpha (git+https://github.com/cryptape/bft-rs.git?branch=integrate_tests)",
+ "bft-rs 0.2.0-alpha (git+https://github.com/cryptape/bft-rs.git?branch=develop)",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-directories 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -4190,7 +4190,7 @@ dependencies = [
 "checksum backtrace-sys 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)" = "c66d56ac8dabd07f6aacdaf633f4b8262f5b3601a810a0dcddffd5c22c69daa0"
 "checksum base64 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)" = "489d6c0ed21b11d038c31b6ceccca973e65d73ba3bd8ecb9a2babf5546164643"
 "checksum bellman 0.0.4 (git+https://github.com/cryptape/bellman.git?branch=0.0.4_modified)" = "<none>"
-"checksum bft-rs 0.2.0-alpha (git+https://github.com/cryptape/bft-rs.git?branch=integrate_tests)" = "<none>"
+"checksum bft-rs 0.2.0-alpha (git+https://github.com/cryptape/bft-rs.git?branch=develop)" = "<none>"
 "checksum bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e103c8b299b28a9c6990458b7013dc4a8356a9b854c51b9883241f5866fac36e"
 "checksum bindgen 0.37.4 (registry+https://github.com/rust-lang/crates.io-index)" = "1b25ab82877ea8fe6ce1ce1f8ac54361f0218bad900af9eb11803994bf67c221"
 "checksum bit-set 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d9bf6104718e80d7b26a68fdbacff3481cfc05df670821affc7e9cbc1884400c"
