@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use cita_types::{clean_0x, Address};
-use logger::info;
 use serde_derive::Deserialize;
 use std::fs::File;
 use std::io::Read;

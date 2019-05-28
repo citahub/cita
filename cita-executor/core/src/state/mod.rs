@@ -1196,8 +1196,8 @@ impl<B: Backend> fmt::Debug for State<B> {
 
 #[cfg(test)]
 mod tests {
+    extern crate cita_logger as logger;
     extern crate libproto;
-    extern crate logger;
     extern crate rustc_hex;
     ////////////////////////////////////////////////////////////////////////////////
 

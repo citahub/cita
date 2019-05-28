@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -465,7 +465,7 @@ pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
 }
 #[cfg(test)]
 mod tests {
-    extern crate logger;
+    extern crate cita_logger as logger;
     extern crate tempdir;
 
     use cita_crypto::{CreateKey, KeyPair};

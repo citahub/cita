@@ -79,6 +79,9 @@
 //! [`network_message_to_pubsub_message`]: ./citaprotocol/fn.network_message_to_pubsub_message.html
 //!
 
+#[macro_use]
+extern crate cita_logger as logger;
+
 pub mod cita_protocol;
 pub mod config;
 pub mod mq_agent;
@@ -98,7 +101,6 @@ use crate::synchronizer::Synchronizer;
 use clap::App;
 use dotenv;
 use futures::prelude::*;
-use logger::{debug, info};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 use std::sync::mpsc::channel;

@@ -19,7 +19,6 @@ use crate::node_manager::{
     AddRepeatedNodeReq, ConnectedSelfReq, DelConnectedNodeReq, DialedErrorReq, NodesManagerClient,
     PendingConnectedNodeReq,
 };
-use logger::{info, warn};
 use tentacle::{
     context::ServiceContext,
     error,
