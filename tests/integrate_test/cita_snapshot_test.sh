@@ -46,13 +46,11 @@ for id in {0,1,2}; do
 done
 echo "DONE"
 
-sleep 10
-
 ################################################################################
 echo "4) Check all nodes grow up ..."
 for id in {0..2}; do
     echo "chech_height_growth_normal $id ..."
-    timeout=`check_height_growth_normal $id 30`||(echo "FAILED"
+    timeout=`check_height_growth_normal $id 60`||(echo "FAILED"
                                                   echo "error msg: ${timeout}"
                                                   exit 1)
 done

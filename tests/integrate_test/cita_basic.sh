@@ -39,11 +39,9 @@ for i in {0..3} ; do
 done
 echo "DONE"
 
-sleep 60
-
 ################################################################################
 echo -n "4) check height growth normal  ...  "
-timeout=$(check_height_growth_normal 0 15)||(echo "FAILED"
+timeout=$(check_height_growth_normal 0 60)||(echo "FAILED"
                                             echo "error msg: ${timeout}"
                                             exit 1)
 echo "${timeout}s DONE"
@@ -67,8 +65,7 @@ echo "${timeout}s DONE"
 ################################################################################
 echo -n "7) start node2, check height growth  ...  "
 bin/cita bebop start node/2 trace > /dev/null &
-sleep 24 #wait for recovery from stop
-timeout=$(check_height_growth_normal 0 15) || (echo "FAILED"
+timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                echo "error msg: ${timeout}"
                                                exit 1)
 echo "${timeout}s DONE"
