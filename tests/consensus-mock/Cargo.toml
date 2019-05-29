@@ -7,6 +7,7 @@ authors = ["Cryptape Technologies <arch@cryptape.com>"]
 serde = "1.0"
 serde_derive = "1.0"
 bincode = "0.8.0"
+cita-logger = "0.1.0"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 clap = "2"
@@ -14,7 +15,6 @@ pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develo
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 chrono = "0.4.2"
 
 [features]

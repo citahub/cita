@@ -7,8 +7,8 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 dotenv = "0.13.0"
 clap = "2"
 fs2 = "0.4.3"
+cita-logger = "0.1.0"
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 error =  { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

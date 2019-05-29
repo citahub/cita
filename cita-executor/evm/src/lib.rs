@@ -17,12 +17,12 @@
 //! Ethereum virtual machine.
 
 extern crate bit_set;
+#[cfg_attr(feature = "evm-debug", macro_use)]
+extern crate cita_logger as logger;
 pub extern crate cita_types;
 extern crate common_types as types;
 extern crate db as cita_db;
 extern crate hashable;
-#[cfg_attr(feature = "evm-debug", macro_use)]
-extern crate logger;
 extern crate rlp;
 extern crate rustc_hex;
 extern crate util;

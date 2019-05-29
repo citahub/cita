@@ -20,7 +20,6 @@ use crate::network::{NetworkClient, RemoteMessage};
 use crate::node_manager::{AddConnectedNodeReq, InitMsg, NetworkInitReq, NodesManagerClient};
 use bytes::BytesMut;
 use libproto::{Message as ProtoMessage, TryFrom, TryInto};
-use logger::{info, warn};
 use tentacle::{
     builder::MetaBuilder,
     context::{ProtocolContext, ProtocolContextMutRef},

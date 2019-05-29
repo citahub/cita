@@ -22,7 +22,7 @@ extern crate fs2;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
-extern crate logger;
+extern crate cita_logger as logger;
 extern crate pubsub;
 #[macro_use]
 extern crate util;
