@@ -40,11 +40,9 @@ for i in {0..3} ; do
 done
 echo "DONE"
 
-sleep 60
-
 ################################################################################
 echo -n "4) check height growth normal  ...  "
-timeout=$(check_height_growth_normal 0 15)||(echo "FAILED"
+timeout=$(check_height_growth_normal 0 60)||(echo "FAILED"
                                             echo "error msg: ${timeout}"
                                             exit 1)
 echo "${timeout}s DONE"
