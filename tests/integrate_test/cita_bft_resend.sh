@@ -23,12 +23,7 @@ cd "${BINARY_DIR}"
 echo "DONE"
 
 ################################################################################
-echo "1) Clean Up ..."
-cleanup "${CHAIN_NAME}"
-echo "DONE"
-
-################################################################################
-echo "2) Generate CITA configurations ..."
+echo "1) Generate CITA configurations ..."
 ${BINARY_DIR}/scripts/create_cita_config.py create \
     --nodes "127.0.0.1:4000" \
     --super_admin "${SUPER_ADMIN}" \
@@ -37,7 +32,7 @@ ${BINARY_DIR}/scripts/create_cita_config.py create \
 echo "DONE"
 
 ################################################################################
-echo "3) Start CITA components manually"
+echo "2) Start CITA components manually"
 ${BINARY_DIR}/bin/cita bebop setup ${CHAIN_NAME}/0
 ${BINARY_DIR}/bin/cita bebop start ${CHAIN_NAME}/0 trace
 sleep 3
@@ -56,7 +51,7 @@ timeout=`check_height_growth_normal 0 $wait_timeout` || (echo "FAILED"
                                                          exit 1)
 
 ################################################################################
-echo "4) Kill cita-executor and cita-chain, and rm -rf data/statedb"
+echo "3) Kill cita-executor and cita-chain, and rm -rf data/statedb"
 jobs -l | grep cita-executor | awk '{print $2}' | xargs -I {} kill {}
 sleep 3
 jobs -l | grep cita-chai     | awk '{print $2}' | xargs -I {} kill {}
@@ -64,7 +59,7 @@ rm -rf data/statedb
 sleep 10
 
 ################################################################################
-echo "5) Restart CITA"
+echo "4) Restart CITA"
 kill ${auth_pid} ${bft_pid} ${jsonrpc_pid} ${network_pid}
 
 cd ${BINARY_DIR}
@@ -74,9 +69,3 @@ wait_timeout=30
 timeout=`check_height_growth_normal 0 $wait_timeout` || (echo "FAILED"
                                                          echo "error msg: ${timeout}"
                                                          exit 1)
-
-
-################################################################################
-echo "6) Cleanup"
-cleanup "${CHAIN_NAME}"
-echo "DONE"

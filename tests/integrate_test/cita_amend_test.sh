@@ -22,19 +22,14 @@ cd "${BINARY_DIR}"
 echo "DONE"
 
 ################################################################################
-echo "1) Clean Up ..."
-cleanup "${CHAIN_NAME}"
-echo "DONE"
-
-################################################################################
-echo "2) Generate CITA configurations ..."
+echo "1) Generate CITA configurations ..."
 ${BINARY_DIR}/scripts/create_cita_config.py create \
     --nodes "127.0.0.1:4000" \
     --super_admin "${SUPER_ADMIN}"
 echo "DONE"
 
 ################################################################################
-echo "3) Run node-0"
+echo "2) Run node-0"
 ${BINARY_DIR}/bin/cita bebop setup ${CHAIN_NAME}/0 > /dev/null
 ${BINARY_DIR}/bin/cita bebop start ${CHAIN_NAME}/0 trace
 echo "DONE"
@@ -42,7 +37,7 @@ echo "DONE"
 sleep 10
 
 ################################################################################
-echo "4) Check node grow up ..."
+echo "3) Check node grow up ..."
 echo "chech_height_growth_normal 0 ..."
 timeout=`check_height_growth_normal 0 15`||(echo "FAILED"
                                               echo "error msg: ${timeout}"
@@ -50,7 +45,7 @@ timeout=`check_height_growth_normal 0 15`||(echo "FAILED"
 echo "${timeout}s DONE"
 
 ################################################################################
-echo "5) Amend chain name ..."
+echo "4) Amend chain name ..."
 cd ${BINARY_DIR}/scripts/txtool/txtool
 
 curl -X POST --data '{"jsonrpc":"2.0","method":"getMetaData","params":["latest"],"id":1}' 127.0.0.1:1337 \
@@ -70,7 +65,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"getMetaData","params":["latest"]
  | grep "\"chainName\"\:\"0est-chain\""
 
 ################################################################################
-echo "6) Amend abi ..."
+echo "5) Amend abi ..."
 cd ${BINARY_DIR}/scripts/txtool/txtool
 
 # set abi of 0xffffffffffffffffffffffffffffffffff020000 as "amendabitest"
@@ -89,7 +84,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"getAbi","params":["0xfffffffffff
  | grep "616d656e6461626974657374"
 
 ################################################################################
-echo "7) Amend balance ..."
+echo "6) Amend balance ..."
 cd ${BINARY_DIR}/scripts/txtool/txtool
 
 # set balance of 0xffffffffffffffffffffffffffffffffff020000 as 1234(0x4d2)
@@ -108,7 +103,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"getBalance","params":["0xfffffff
  | grep "0x4d2"
 
 ################################################################################
-echo "8) Amend code ..."
+echo "7) Amend code ..."
 cd ${BINARY_DIR}/scripts/txtool/txtool
 
 # set code of 0xffffffffffffffffffffffffffffffffff020004 as "deadbeef"
@@ -125,11 +120,3 @@ sleep 10
 # hex of 1234
 curl -X POST --data '{"jsonrpc":"2.0","method":"getCode","params":["0xffffffffffffffffffffffffffffffffff020004", "latest"],"id":1}' 127.0.0.1:1337 \
  | grep "0xdeadbeef"
-
-################################################################################
-echo "9) Clean Up ..."
-cd ${BINARY_DIR}
-${BINARY_DIR}/bin/cita bebop stop ${CHAIN_NAME}/0
-
-cleanup
-echo "DONE"
