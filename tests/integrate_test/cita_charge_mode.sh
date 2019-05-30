@@ -16,12 +16,7 @@ cd ${BINARY_DIR}
 echo "DONE"
 
 ################################################################################
-echo -n "1) cleanup   ...  "
-cleanup
-echo "DONE"
-
-################################################################################
-echo -n "2) generate config  ...  "
+echo -n "1) generate config  ...  "
 ./scripts/create_cita_config.py \
     create \
     --chain_name "node" \
@@ -35,7 +30,7 @@ echo -n "2) generate config  ...  "
 echo "DONE"
 
 ################################################################################
-echo -n "3) start nodes  ...  "
+echo -n "2) start nodes  ...  "
 for i in {0..3} ; do
     ./bin/cita bebop setup node/$i > /dev/null
 done
@@ -45,21 +40,21 @@ done
 echo "DONE"
 
 ################################################################################
-echo -n "4) check alive  ...  "
+echo -n "3) check alive  ...  "
 timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                               echo "failed to check_height_growth 0: ${timeout}"
                                               exit 1)
 echo "${timeout}s DONE"
 
 ################################################################################
-echo -n "5) Run fee back tests ... "
+echo -n "4) Run fee back tests ... "
 cd ./scripts/txtool/txtool
 python3 ${SOURCE_DIR}/tests/integrate_test/test_fee_back.py --version=0
 cd ../../..
 echo "DONE"
 
 ################################################################################
-echo -n "6) Run charge mode tests ...  "
+echo -n "5) Run charge mode tests ...  "
 echo ""
 
 NODE_0_PRIVKEY=`cat ./node/0/privkey`
@@ -78,28 +73,28 @@ cd ../../..
 echo "DONE"
 
 ################################################################################
-echo -n "7) Update to chainIDV1 ... "
+echo -n "6) Update to chainIDV1 ... "
 cd ./scripts/txtool/txtool
 python3 ${SOURCE_DIR}/tests/integrate_test/update_version.py --version=0
 cd ../../..
 echo "DONE"
 
 ################################################################################
-echo -n "8) check alive  ...  "
+echo -n "7) check alive  ...  "
 timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                               echo "failed to check_height_growth 0: ${timeout}"
                                               exit 1)
 echo "${timeout}s DONE"
 
 ################################################################################
-echo -n "9) Run fee back tests in v1 ... "
+echo -n "8) Run fee back tests in v1 ... "
 cd ./scripts/txtool/txtool
 python3 ${SOURCE_DIR}/tests/integrate_test/test_fee_back.py --version=1
 cd ../../..
 echo "DONE"
 
 ################################################################################
-echo -n "10) Run charge mode tests in v1 ...  "
+echo -n "9) Run charge mode tests in v1 ...  "
 echo ""
 
 NODE_0_PRIVKEY=`cat ./node/0/privkey`
@@ -115,16 +110,4 @@ python3 ${SOURCE_DIR}/tests/integrate_test/test_charge_mode.py \
         ${NODE_0_PRIVKEY} \
         --version 1
 cd ../../..
-echo "DONE"
-
-################################################################################
-echo -n "11) stop nodes  ...  "
-for i in {0..3} ; do
-    ./bin/cita bebop stop node/$i > /dev/null
-done
-echo "DONE"
-
-################################################################################
-echo -n "11) cleanup ... "
-cleanup
 echo "DONE"

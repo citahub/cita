@@ -23,12 +23,7 @@ cd "${BINARY_DIR}"
 echo "DONE"
 
 ################################################################################
-echo "1) Clean Up ..."
-cleanup "${CHAIN_NAME}"
-echo "DONE"
-
-################################################################################
-echo "2) Generate CITA configurations ..."
+echo "1) Generate CITA configurations ..."
 ${BINARY_DIR}/scripts/create_cita_config.py create \
     --nodes "127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003" \
     --super_admin "${SUPER_ADMIN}" \
@@ -37,7 +32,7 @@ ${BINARY_DIR}/scripts/create_cita_config.py create \
 echo "DONE"
 
 ################################################################################
-echo "3) Run node-0, node-1, node-2"
+echo "2) Run node-0, node-1, node-2"
 for id in {0,1,2}; do
     ${BINARY_DIR}/bin/cita bebop setup ${CHAIN_NAME}/${id} > /dev/null
 done
@@ -47,7 +42,7 @@ done
 echo "DONE"
 
 ################################################################################
-echo "4) Check all nodes grow up ..."
+echo "3) Check all nodes grow up ..."
 for id in {0..2}; do
     echo "chech_height_growth_normal $id ..."
     timeout=`check_height_growth_normal $id 60`||(echo "FAILED"
@@ -57,7 +52,7 @@ done
 echo "${timeout}s DONE"
 
 ################################################################################
-echo "5) Stop node-1 and node-2, so that node-0 cannot grow up via cita-consensus and cita-sync mechanisms"
+echo "4) Stop node-1 and node-2, so that node-0 cannot grow up via cita-consensus and cita-sync mechanisms"
 ${BINARY_DIR}/bin/cita bebop stop ${CHAIN_NAME}/1
 ${BINARY_DIR}/bin/cita bebop stop ${CHAIN_NAME}/2
 
@@ -67,7 +62,7 @@ sleep 3
 echo "DONE"
 
 ################################################################################
-echo "6) Take snapshot on node-0 at height {0, 2, 100000} ..."
+echo "5) Take snapshot on node-0 at height {0, 2, 100000} ..."
 for height in {0,2,10000}; do
     cd ${BINARY_DIR}/${CHAIN_NAME}/0
     ${BINARY_DIR}/bin/snapshot_tool \
@@ -83,7 +78,7 @@ cd "${BINARY_DIR}"
 echo "DONE"
 
 ################################################################################
-echo "7) Restore snapshot on node-0 ..."
+echo "6) Restore snapshot on node-0 ..."
 before_height=`get_height 0`
 for height in {10000,2,0,10000,2,0}; do
     cd ${BINARY_DIR}/${CHAIN_NAME}/0
@@ -113,7 +108,7 @@ cd "${BINARY_DIR}"
 echo "DONE"
 
 ################################################################################
-echo "8) Start node-1 and node-2 and check all grow up ..."
+echo "7) Start node-1 and node-2 and check all grow up ..."
 ${BINARY_DIR}/bin/cita bebop start ${CHAIN_NAME}/1 trace
 ${BINARY_DIR}/bin/cita bebop start ${CHAIN_NAME}/2 trace
 
@@ -124,13 +119,4 @@ timeout=`check_height_growth_normal 1 $wait_timeout` || (echo "FAILED"
 timeout=`check_height_growth_normal 0 $wait_timeout` || (echo "FAILED"
                                                          echo "error msg: ${timeout}"
                                                          exit 1)
-echo "DONE"
-
-################################################################################
-echo "9) Clean Up ..."
-for id in {0,1,2}; do
-    ${BINARY_DIR}/bin/cita bebop stop ${CHAIN_NAME}/${id}
-done
-
-cleanup
 echo "DONE"
