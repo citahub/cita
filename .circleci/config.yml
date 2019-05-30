@@ -220,20 +220,27 @@ jobs:
       HASH_ALGO: sm3hash
       CRYPTO_ALGO: sm2
 
-  "Integrate Test Part-1":
+  "Basic Test":
     <<: *job-default
     steps:
       - restore_cache: *restore-source-codes-cache
       - restore_cache: *restore-release-cache
       - run: *after-restore-release-cache
       - run:
-          name: Basic Integrate Test
+          name: Basic Test
           command: ./tests/integrate_test/cita_basic.sh
+
+  "Basic Tls Test":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
-          name: Basic Tls Integrate Test
+          name: Basic Tls Test
           command: ./tests/integrate_test/cita_tls_basic.sh
 
-  "Integrate Test Part-2":
+  "JSON-RPC Mock Test in Charge Mode":
     <<: *job-default
     steps:
       - restore_cache: *restore-source-codes-cache
@@ -247,18 +254,63 @@ jobs:
           command: |
               echo "We should add it back later."
               # ./tests/integrate_test/cita_jsonrpc_schema_mock.sh charge
+
+  "JSON-RPC Mock Test in Quota Mode":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: JSON-RPC Mock Test in Quota Mode
+          command: ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota
+
+  "Test Transfer Value in Charge Mode":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
           name: Test Transfer Value in Charge Mode
           command: ./tests/integrate_test/cita_charge_mode.sh
+
+  "Test Executor Process SignProposal/BlockWithProof":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
           name: Test Executor Process SignProposal/BlockWithProof
           command: ./tests/integrate_test/box_executor_test.sh
+
+  "Test Snapshot Taking And Restoring":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
           name: Test Snapshot Taking And Restoring
           command: ./tests/integrate_test/cita_snapshot_test.sh
+
+  "Test Amend":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
           name: Test Amend
           command: ./tests/integrate_test/cita_amend_test.sh
+
+  "Test Executor Process Invalid Proof":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
           name: Test Executor Process Invalid Proof
           command: ./tests/integrate_test/cita_bft_resend.sh
@@ -372,12 +424,32 @@ workflows:
           requires:
             - "Release"
 
-      - "Integrate Test Part-1":
+      - "Basic Test":
           requires:
             - "Release"
-      - "Integrate Test Part-2":
+      - "Basic Tls Test":
           requires:
             - "Release"
+
+      - "JSON-RPC Mock Test in Charge Mode":
+          requires:
+            - "Release"
+      - "JSON-RPC Mock Test in Quota Mode":
+          requires:
+            - "Release"
+      - "Test Transfer Value in Charge Mode":
+          requires:
+            - "Release"
+      - "Test Snapshot Taking And Restoring":
+          requires:
+            - "Release"
+      - "Test Amend":
+          requires:
+            - "Release"
+      - "Test Executor Process Invalid Proof":
+          requires:
+            - "Release"
+
       - "Discovery Test for network":
           requires:
             - "Release"
@@ -406,8 +478,14 @@ workflows:
 
       - "Passed":
           requires:
-            - "Integrate Test Part-1"
-            - "Integrate Test Part-2"
+            - "Basic Test"
+            - "Basic Tls Test"
+            - "JSON-RPC Mock Test in Charge Mode"
+            - "JSON-RPC Mock Test in Quota Mode"
+            - "Test Transfer Value in Charge Mode"
+            - "Test Snapshot Taking And Restoring"
+            - "Test Amend"
+            - "Test Executor Process Invalid Proof"
             - "Discovery Test for network"
             - "Byzantine Test in Quota Mode"
             - "Byzantine Test in Charge Mode"
