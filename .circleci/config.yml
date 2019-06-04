@@ -238,7 +238,7 @@ jobs:
       - run: *after-restore-release-cache
       - run:
           name: Basic Tls Test
-          command: ./tests/integrate_test/cita_basic.sh enable_tls
+          command: ./tests/integrate_test/cita_basic.sh --enable_tls
 
   "JSON-RPC Mock Test in Charge Mode":
     <<: *job-default

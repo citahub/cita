@@ -323,9 +323,23 @@ start_nodes() {
         num=4
     fi
     for ((i=0; i<num; i++)); do
-        bin/cita bebop setup node/$i  > /dev/null
+        bin/cita bebop setup test/$i 2>&1
     done
     for ((i=0; i<num; i++)); do
-        bin/cita bebop start node/$i > /dev/null
+        bin/cita bebop start test/$i 2>&1
     done
+}
+
+config_script() {
+    ./scripts/create_cita_config.py "$@" > /dev/null 2>&1
+}
+
+create_config() {
+    local param="create \
+        --chain_name test \
+        --super_admin 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523 \
+        --nodes 127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003 \
+        $*"
+    # shellcheck disable=SC2086
+    config_script $param
 }
