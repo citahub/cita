@@ -71,12 +71,10 @@ check_height_growth() {
     local old=$2
     local new
     if new=$(get_height "${id}"); then
-        echo "new height: ${new}"
         if [ "${new}" -gt "${old}" ]; then
             echo "height growth"
             return 0
         fi
-        echo "height not growth"
     fi
     return 1
 }
@@ -157,11 +155,9 @@ check_height_growth_normal() {
     local now
 
     if old=$(get_height "${id}"); then
-        echo "old height: ${old}"
         start=$(date +%s)
         while true; do
             if check_height_growth "${id}" "${old}"; then
-                echo "height gorwth normal id(${id})"
                 return 0
             fi
             now=$(date +%s)
