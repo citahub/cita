@@ -15,22 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate clap;
-extern crate dotenv;
-extern crate error;
-extern crate fs2;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate cita_logger as logger;
-extern crate pubsub;
 #[macro_use]
 extern crate util;
 
+use crate::postman::Postman;
 use clap::App;
 use fs2::FileExt;
 use libproto::router::{MsgType, RoutingKey, SubModules};
-use postman::Postman;
 use pubsub::channel;
 use pubsub::start_pubsub;
 use std::fs::{self, File, OpenOptions};
