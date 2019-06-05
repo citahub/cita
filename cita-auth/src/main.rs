@@ -69,35 +69,22 @@
 //!
 
 extern crate cita_crypto as crypto;
-extern crate cita_directories;
-extern crate cita_types;
-extern crate clap;
 extern crate core as chain_core;
-extern crate cpuprofiler;
-extern crate dotenv;
-extern crate error;
-extern crate jsonrpc_types;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate cita_logger as logger;
-extern crate lru;
-extern crate pubsub;
 #[cfg(test)]
 #[macro_use]
 extern crate quickcheck;
-extern crate rayon;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
 #[cfg(test)]
 extern crate tempfile;
-extern crate tx_pool;
 #[macro_use]
 extern crate util;
 extern crate db as cita_db;
 extern crate hashable;
-extern crate uuid;
 
 use batch_forward::BatchForward;
 use clap::App;

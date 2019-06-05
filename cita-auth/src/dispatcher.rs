@@ -15,9 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::handler::SysConfigInfo;
+use crate::txwal::TxWal;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256};
-use handler::SysConfigInfo;
 use libproto::blockchain::{AccountGasLimit, BlockBody, BlockTxs, SignedTransaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
@@ -28,7 +29,6 @@ use std::collections::HashSet;
 use std::convert::Into;
 use std::thread;
 use tx_pool;
-use txwal::TxWal;
 
 pub struct Dispatcher {
     txs_pool: RefCell<tx_pool::Pool>,
