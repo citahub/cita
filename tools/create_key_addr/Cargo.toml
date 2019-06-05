@@ -2,6 +2,7 @@
 name = "create_key_addr"
 version = "0.1.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
+edition = "2018"
 
 [dependencies]
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

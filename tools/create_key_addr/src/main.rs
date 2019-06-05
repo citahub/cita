@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -16,9 +16,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate cita_crypto as crypto;
-extern crate hashable;
 
-use crypto::{CreateKey, KeyPair, PubKey};
+use crate::crypto::{CreateKey, KeyPair, PubKey};
 use hashable::Hashable;
 use std::env;
 use std::fs::{File, OpenOptions};
