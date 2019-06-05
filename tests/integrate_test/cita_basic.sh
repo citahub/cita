@@ -31,28 +31,28 @@ main() {
     echo "${timeout}s DONE"
 
     echo -n "4) stop node3, check height growth  ...  "
-    bin/cita bebop stop test/3 2>&1
+    bin/cita bebop stop $CHAIN_NAME/3 2>&1
     timeout=$(check_height_growth_normal 0 30) || (echo "FAILED"
                                                    echo "error msg: ${timeout}"
                                                    exit 1)
     echo "${timeout}s DONE"
 
     echo -n "5) stop node2, check height stopped  ...  "
-    bin/cita bebop stop test/2 2>&1
+    bin/cita bebop stop $CHAIN_NAME/2 2>&1
     timeout=$(check_height_stopped 0 30) || (echo "FAILED"
                                              echo "error msg: ${timeout}"
                                              exit 1)
     echo "${timeout}s DONE"
 
     echo -n "6) start node2, check height growth  ...  "
-    bin/cita bebop start test/2 2>&1
+    bin/cita bebop start $CHAIN_NAME/2 2>&1
     timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                    echo "error msg: ${timeout}"
                                                    exit 1)
     echo "${timeout}s DONE"
 
     echo -n "7) start node3, check synch  ...  "
-    bin/cita bebop start test/3 2>&1
+    bin/cita bebop start $CHAIN_NAME/3 2>&1
     timeout=$(check_height_sync 3 0) || (echo "FAILED"
                                          echo "error msg: ${timeout}"
                                          exit 1)
@@ -60,7 +60,7 @@ main() {
 
     echo -n "8) stop all nodes, check height changed after restart  ...  "
     for i in {0..3}; do
-        bin/cita bebop restart test/$i 2>&1
+        bin/cita bebop restart $CHAIN_NAME/$i 2>&1
     done
 
     timeout=$(check_height_growth_normal 0 300) || (echo "FAILED"
@@ -69,9 +69,9 @@ main() {
     echo "${timeout}s DONE"
 
     echo -n "9) stop&clean node3, check height synch after restart  ...  "
-    bin/cita bebop stop test/3 2>&1
-    bin/cita bebop clean test/3 2>&1
-    bin/cita bebop start test/3 2>&1
+    bin/cita bebop stop $CHAIN_NAME/3 2>&1
+    bin/cita bebop clean $CHAIN_NAME/3 2>&1
+    bin/cita bebop start $CHAIN_NAME/3 2>&1
     timeout=$(check_height_sync 3 0) || (echo "FAILED"
                                          echo "error msg: ${timeout}"
                                          exit 1)

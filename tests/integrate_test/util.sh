@@ -1,5 +1,7 @@
 #!/bin/bash
 
+CHAIN_NAME="test"
+
 sudo() {
     set -o noglob
     if [ "$(whoami)" == "root" ] ; then
@@ -319,10 +321,10 @@ start_nodes() {
         num=4
     fi
     for ((i=0; i<num; i++)); do
-        bin/cita bebop setup test/$i 2>&1
+        bin/cita bebop setup $CHAIN_NAME/$i 2>&1
     done
     for ((i=0; i<num; i++)); do
-        bin/cita bebop start test/$i 2>&1
+        bin/cita bebop start $CHAIN_NAME/$i 2>&1
     done
 }
 
@@ -332,7 +334,7 @@ config_script() {
 
 create_config() {
     local param="create \
-        --chain_name test \
+        --chain_name $CHAIN_NAME \
         --super_admin 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523 \
         --nodes 127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003 \
         $*"
