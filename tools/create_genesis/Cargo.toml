@@ -1,0 +1,40 @@
+[package]
+name = "create_genesis"
+version = "0.1.0"
+authors = ["Cryptape Technologies <contact@cryptape.com>"]
+edition = "2018"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8"
+json = "0.11.13"
+serde_json = "1.0.39"
+ethabi = "7.0.0"
+ethereum-types = "0.5.2"
+hex = "0.3"
+tiny-keccak = "1.4.2"
+libsecp256k1 = "0.2.2"
+clap = "2.33.0"
+
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+
+core-executor = { path="../../cita-executor/core"}
+evm = { path="../../cita-executor/evm"}
+
+[features]
+default = ["secp256k1", "sha3hash", "rabbitmq"]
+secp256k1 = ["libproto/secp256k1", "proof/secp256k1"]
+ed25519 = ["libproto/ed25519", "proof/ed25519"]
+sm2 = ["libproto/sm2", "proof/sm2"]
+sha3hash = ["hashable/sha3hash", "libproto/sha3hash", "proof/sha3hash"]
+blake2bhash = ["hashable/blake2bhash", "libproto/blake2bhash", "proof/blake2bhash"]
+sm3hash = ["hashable/sm3hash", "libproto/sm3hash", "proof/sm3hash"]
+rabbitmq = ["pubsub/rabbitmq"]
+zeromq = ["pubsub/zeromq"]
+kafka = ["pubsub/kafka"]
+privatetx = ["core-executor/privatetx"]
+evm-debug = ["core-executor/evm-debug"]
+evm-debug-tests = ["evm-debug", "core-executor/evm-debug-tests"]
