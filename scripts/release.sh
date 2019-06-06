@@ -30,6 +30,7 @@ for binary in \
         cita-forever \
         cita-jsonrpc \
         cita-network \
+        create_genesis \
         create_key_addr \
         cita-relayer-parser \
         snapshot_tool \

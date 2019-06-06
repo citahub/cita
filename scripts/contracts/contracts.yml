@@ -1,62 +1,62 @@
 NormalContracts:
-- SysConfig:
+  SysConfig:
     address: '0xffffffffffffffffffffffffffffffffff020000'
     file: system/SysConfig.sol
-- NodeManager:
+  NodeManager:
     address: '0xffffffffffffffffffffffffffffffffff020001'
     file: system/NodeManager.sol
-- ChainManager:
+  ChainManager:
     address: '0xffffffffffffffffffffffffffffffffff020002'
     file: system/ChainManager.sol
-- QuotaManager:
+  QuotaManager:
     address: '0xffffffffffffffffffffffffffffffffff020003'
     file: system/QuotaManager.sol
-- PermissionManagement:
+  PermissionManagement:
     address: '0xffffffffffffffffffffffffffffffffff020004'
     file: permission_management/PermissionManagement.sol
-- PermissionCreator:
+  PermissionCreator:
     address: '0xffffffffffffffffffffffffffffffffff020005'
     file: permission_management/PermissionCreator.sol
-- Authorization:
+  Authorization:
     address: '0xffffffffffffffffffffffffffffffffff020006'
     file: permission_management/Authorization.sol
-- RoleManagement:
+  RoleManagement:
     address: '0xffffffffffffffffffffffffffffffffff020007'
     file: role_management/RoleManagement.sol
-- RoleCreator:
+  RoleCreator:
     address: '0xffffffffffffffffffffffffffffffffff020008'
     file: role_management/RoleCreator.sol
-- Group:
+  Group:
     address: '0xffffffffffffffffffffffffffffffffff020009'
     file: user_management/Group.sol
-- GroupManagement:
+  GroupManagement:
     address: '0xffffffffffffffffffffffffffffffffff02000a'
     file: user_management/GroupManagement.sol
-- GroupCreator:
+  GroupCreator:
     address: '0xffffffffffffffffffffffffffffffffff02000b'
     file: user_management/GroupCreator.sol
-- Admin:
+  Admin:
     address: '0xffffffffffffffffffffffffffffffffff02000c'
     file: common/Admin.sol
-- RoleAuth:
+  RoleAuth:
     address: '0xffffffffffffffffffffffffffffffffff02000d'
     file: role_management/RoleAuth.sol
-- BatchTx:
+  BatchTx:
     address: '0xffffffffffffffffffffffffffffffffff02000e'
     file: system/BatchTx.sol
-- EmergencyBrake:
+  EmergencyBrake:
     address: '0xffffffffffffffffffffffffffffffffff02000f'
     file: system/EmergencyBrake.sol
-- PriceManager:
+  PriceManager:
     address: '0xffffffffffffffffffffffffffffffffff020010'
     file: system/PriceManager.sol
-- VersionManager:
+  VersionManager:
     address: '0xffffffffffffffffffffffffffffffffff020011'
     file: system/VersionManager.sol
-- AllGroups:
+  AllGroups:
     address: '0xffffffffffffffffffffffffffffffffff020012'
     file: user_management/AllGroups.sol
-- AutoExec:
+  AutoExec:
     address: '0xffffffffffffffffffffffffffffffffff020013'
     file: system/AutoExec.sol
 
@@ -64,162 +64,162 @@ NormalContracts:
 PermissionContracts:
   file: permission_management/Permission.sol
   basic:
-  - sendTx:
+    sendTx:
       address: '0xffffffffffffffffffffffffffffffffff021000'
-  - createContract:
+    createContract:
       address: '0xffffffffffffffffffffffffffffffffff021001'
   contracts:
-  - newPermission:
+    newPermission:
       address: '0xffffffffffffffffffffffffffffffffff021010'
       contracts:
-      - PermissionManagement
+        - PermissionManagement
       functions:
-      - 'newPermission(bytes32,address[],bytes4[])'
-  - deletePermission:
+        - 'newPermission(bytes32,address[],bytes4[])'
+    deletePermission:
       address: '0xffffffffffffffffffffffffffffffffff021011'
       contracts:
-      - PermissionManagement
+        - PermissionManagement
       functions:
-      - 'deletePermission(address)'
-  - updatePermission:
+        - 'deletePermission(address)'
+    updatePermission:
       address: '0xffffffffffffffffffffffffffffffffff021012'
       contracts:
-      - PermissionManagement
-      - PermissionManagement
-      - PermissionManagement
+        - PermissionManagement
+        - PermissionManagement
+        - PermissionManagement
       functions:
-      - 'addResources(address,address[],bytes4[])'
-      - 'deleteResources(address,address[],bytes4[])'
-      - 'updatePermissionName(address,bytes32)'
-  - setAuth:
+        - 'addResources(address,address[],bytes4[])'
+        - 'deleteResources(address,address[],bytes4[])'
+        - 'updatePermissionName(address,bytes32)'
+    setAuth:
       address: '0xffffffffffffffffffffffffffffffffff021013'
       contracts:
-      - PermissionManagement
-      - PermissionManagement
+        - PermissionManagement
+        - PermissionManagement
       functions:
-      - 'setAuthorization(address,address)'
-      - 'setAuthorizations(address,address[])'
-  - cancelAuth:
+        - 'setAuthorization(address,address)'
+        - 'setAuthorizations(address,address[])'
+    cancelAuth:
       address: '0xffffffffffffffffffffffffffffffffff021014'
       contracts:
-      - PermissionManagement
-      - PermissionManagement
-      - PermissionManagement
+        - PermissionManagement
+        - PermissionManagement
+        - PermissionManagement
       functions:
-      - 'cancelAuthorization(address,address)'
-      - 'clearAuthorization(address)'
-      - 'cancelAuthorizations(address,address[])'
-  - newRole:
+        - 'cancelAuthorization(address,address)'
+        - 'clearAuthorization(address)'
+        - 'cancelAuthorizations(address,address[])'
+    newRole:
       address: '0xffffffffffffffffffffffffffffffffff021015'
       contracts:
-      - RoleManagement
+        - RoleManagement
       functions:
-      - 'newRole(bytes32,address[])'
-  - deleteRole:
+        - 'newRole(bytes32,address[])'
+    deleteRole:
       address: '0xffffffffffffffffffffffffffffffffff021016'
       contracts:
-      - RoleManagement
+        - RoleManagement
       functions:
-      - 'deleteRole(address)'
-  - updateRole:
+        - 'deleteRole(address)'
+    updateRole:
       address: '0xffffffffffffffffffffffffffffffffff021017'
       contracts:
-      - RoleManagement
-      - RoleManagement
-      - RoleManagement
+        - RoleManagement
+        - RoleManagement
+        - RoleManagement
       functions:
-      - 'addPermissions(address,address[])'
-      - 'deletePermissions(address,address[])'
-      - 'updateRoleName(address,bytes32)'
-  - setRole:
+        - 'addPermissions(address,address[])'
+        - 'deletePermissions(address,address[])'
+        - 'updateRoleName(address,bytes32)'
+    setRole:
       address: '0xffffffffffffffffffffffffffffffffff021018'
       contracts:
-      - RoleManagement
+        - RoleManagement
       functions:
-      - 'setRole(address,address)'
-  - cancelRole:
+        - 'setRole(address,address)'
+    cancelRole:
       address: '0xffffffffffffffffffffffffffffffffff021019'
       contracts:
-      - RoleManagement
-      - RoleManagement
+        - RoleManagement
+        - RoleManagement
       functions:
-      - 'cancelRole(address,address)'
-      - 'clearRole(address)'
-  - newGroup:
+        - 'cancelRole(address,address)'
+        - 'clearRole(address)'
+    newGroup:
       address: '0xffffffffffffffffffffffffffffffffff02101a'
       contracts:
-      - GroupManagement
+        - GroupManagement
       functions:
-      - 'newGroup(address,bytes32,address[])'
-  - deleteGroup:
+        - 'newGroup(address,bytes32,address[])'
+    deleteGroup:
       address: '0xffffffffffffffffffffffffffffffffff02101b'
       contracts:
-      - GroupManagement
+        - GroupManagement
       functions:
-      - 'deleteGroup(address,address)'
-  - updateGroup:
+        - 'deleteGroup(address,address)'
+    updateGroup:
       address: '0xffffffffffffffffffffffffffffffffff02101c'
       contracts:
-      - GroupManagement
-      - GroupManagement
-      - GroupManagement
+        - GroupManagement
+        - GroupManagement
+        - GroupManagement
       functions:
-      - 'addAccounts(address,address,address[])'
-      - 'deleteAccounts(address,address,address[])'
-      - 'updateGroupName(address,address,bytes32)'
-  - newNode:
+        - 'addAccounts(address,address,address[])'
+        - 'deleteAccounts(address,address,address[])'
+        - 'updateGroupName(address,address,bytes32)'
+    newNode:
       address: '0xffffffffffffffffffffffffffffffffff021020'
       contracts:
-      - NodeManager
+        - NodeManager
       functions:
-      - 'approveNode(address)'
-  - deleteNode:
+        - 'approveNode(address)'
+    deleteNode:
       address: '0xffffffffffffffffffffffffffffffffff021021'
       contracts:
-      - NodeManager
+        - NodeManager
       functions:
-      - 'deleteNode(address)'
-  - updateNode:
+        - 'deleteNode(address)'
+    updateNode:
       address: '0xffffffffffffffffffffffffffffffffff021022'
       contracts:
-      - NodeManager
+        - NodeManager
       functions:
-      - 'setStake(address,uint64)'
-  - accountQuota:
+        - 'setStake(address,uint64)'
+    accountQuota:
       address: '0xffffffffffffffffffffffffffffffffff021023'
       contracts:
-      - QuotaManager
-      - QuotaManager
+        - QuotaManager
+        - QuotaManager
       functions:
-      - 'setDefaultAQL(uint256)'
-      - 'setAQL(address,uint256)'
-  - blockQuota:
+        - 'setDefaultAQL(uint256)'
+        - 'setAQL(address,uint256)'
+    blockQuota:
       address: '0xffffffffffffffffffffffffffffffffff021024'
       contracts:
-      - QuotaManager
+        - QuotaManager
       functions:
-      - 'setBQL(uint256)'
-  - batchTx:
+        - 'setBQL(uint256)'
+    batchTx:
       address: '0xffffffffffffffffffffffffffffffffff021025'
       contracts:
-      - BatchTx
+        - BatchTx
       functions:
-      - 'multiTxs(bytes)'
-  - emergencyBrake:
+        - 'multiTxs(bytes)'
+    emergencyBrake:
       address: '0xffffffffffffffffffffffffffffffffff021026'
       contracts:
-      - EmergencyBrake
+        - EmergencyBrake
       functions:
-      - 'setState(bool)'
-  - quotaPrice:
+        - 'setState(bool)'
+    quotaPrice:
       address: '0xffffffffffffffffffffffffffffffffff021027'
       contracts:
-      - PriceManager
+        - PriceManager
       functions:
-      - 'setQuotaPrice(uint256)'
-  - version:
+        - 'setQuotaPrice(uint256)'
+    version:
       address: '0xffffffffffffffffffffffffffffffffff021028'
       contracts:
-      - VersionManager
+        - VersionManager
       functions:
-      - 'setVersion(uint32)'
+        - 'setVersion(uint32)'
