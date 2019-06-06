@@ -27,6 +27,7 @@ use lru_cache::LruCache;
 use pod_account::*;
 use rlp::*;
 use std::cell::{Cell, RefCell};
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::convert::Into;
 use std::fmt;
@@ -558,6 +559,17 @@ impl Account {
     /// Return the storage overlay.
     pub fn storage_changes(&self) -> &HashMap<H256, H256> {
         &self.storage_changes
+    }
+
+    /// Return the storage cache
+    pub fn storage_cache(&self) -> BTreeMap<String, String> {
+        let mut result = BTreeMap::new();
+        for (k, v) in self.storage_cache.borrow().iter() {
+            let key = String::from("0x") + &hex::encode(*k);
+            let value = String::from("0x") + &hex::encode(*v);
+            result.insert(key.clone(), value.clone());
+        }
+        result
     }
 
     /// Increment the nonce of the account by one.

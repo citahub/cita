@@ -458,6 +458,13 @@ impl<B: Backend> State<B> {
         })
     }
 
+    /// Get account of `a`
+    pub fn account(&self, a: &Address) -> trie::Result<Option<Account>> {
+        self.ensure_cached(a, RequireCache::None, false, |a| {
+            a.as_ref().map(|account| account.clone_all())
+        })
+    }
+
     /// Get the nonce of account `a`.
     pub fn nonce(&self, a: &Address) -> trie::Result<U256> {
         self.ensure_cached(a, RequireCache::None, true, |a| {
