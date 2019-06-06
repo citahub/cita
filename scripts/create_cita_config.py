@@ -246,10 +246,9 @@ class ChainInfo():
         if resource_dir is not None:
             shutil.copytree(resource_dir,
                             os.path.join(self.configs_dir, 'resource'), False)
-        if not prevhash:
-            prevhash = DEFAULT_PREVHASH
-        if not timestamp:
-            timestamp = str(int(time.time() * 1000))
+
+        prevhash = DEFAULT_PREVHASH if not prevhash else str(prevhash)
+        timestamp = str(int(time.time() * 1000)) if not timestamp else str(timestamp)
 
         process = subprocess.Popen(["./bin/create_genesis",self.contracts_dir, self.contracts_docs_dir,
         self.init_data_file, self.genesis_path, timestamp, init_token, prevhash])

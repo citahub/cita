@@ -17,6 +17,7 @@
 
 //! System contracts.
 
+pub mod admin;
 pub mod chain_manager;
 pub mod emergency_brake;
 pub mod node_manager;

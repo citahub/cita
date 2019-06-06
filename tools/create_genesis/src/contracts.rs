@@ -150,7 +150,7 @@ impl Basic {
         let addr = Address::from_str(clean_0x(&info.address)).unwrap();
         conts.push(Token::Address(addr));
         let mut funcs = Vec::new();
-        funcs.push(Token::FixedBytes(String::from("0000").into_bytes()));
+        funcs.push(Token::FixedBytes(vec![0, 0, 0, 0]));
 
         tokens.push(Token::Array(conts));
         tokens.push(Token::Array(funcs));

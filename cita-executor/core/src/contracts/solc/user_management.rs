@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn test_all_groups() {
-        let executor = init_executor(vec![]);
+        let executor = init_executor();
 
         let user_management = UserManagement::new(&executor);
         let all_groups: Vec<Address> = user_management.all_groups(BlockId::Pending).unwrap();
@@ -119,15 +119,9 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_accounts() {
-        let executor = init_executor(vec![(
-            "Group.accounts",
-            concat!(
-                "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523,",
-                "0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888,",
-                "0x9dcd6b234e2772c5451fd4ccf7582f4283140697"
-            ),
-        )]);
+        let executor = init_executor();
         let user_management = UserManagement::new(&executor);
 
         // Test accounts

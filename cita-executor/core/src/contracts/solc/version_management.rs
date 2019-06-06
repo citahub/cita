@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_state() {
-        let executor = init_executor(vec![]);
+        let executor = init_executor();
         let version_management = VersionManager::new(&executor);
         let version = version_management.get_version(BlockId::Pending).unwrap();
         assert_eq!(version, 2);

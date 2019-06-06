@@ -29,7 +29,7 @@ const ALLACCOUNTS: &[u8] = &*b"queryAllAccounts()";
 const PERMISSIONS: &[u8] = &*b"queryPermissions(address)";
 const RESOURCES: &[u8] = &*b"queryResource()";
 #[cfg(test)]
-const DEFAULT_SUPER_ADEMIN: &str = "4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000";
+const DEFAULT_SUPER_ADEMIN: &str = "4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523";
 
 lazy_static! {
     static ref ALLACCOUNTS_HASH: Vec<u8> = method_tools::encode_to_vec(ALLACCOUNTS);
@@ -280,10 +280,7 @@ mod tests {
 
     #[test]
     fn test_solc() {
-        let executor = init_executor(vec![(
-            "Authorization.superAdmin",
-            &format!("0x{}", DEFAULT_SUPER_ADEMIN),
-        )]);
+        let executor = init_executor();
 
         // Test all_accounts
         let permission_management = PermissionManagement::new(&executor);
@@ -454,12 +451,14 @@ mod tests {
             // senTx
             Resource {
                 cont: H160::from_str(reserved_addresses::PERMISSION_SEND_TX).unwrap(),
-                func: vec![0, 0, 0, 0],
+                // func: vec![0, 0, 0, 0],
+                func: vec![48, 48, 48, 48],
             },
             // createContract
             Resource {
                 cont: H160::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap(),
-                func: vec![0, 0, 0, 0],
+                // func: vec![0, 0, 0, 0],
+                func: vec![48, 48, 48, 48],
             },
             // approveNode
             Resource {
@@ -519,7 +518,7 @@ mod tests {
 
     #[test]
     fn test_resources() {
-        let executor = init_executor(vec![]);
+        let executor = init_executor();
         let permission = Address::from_str(reserved_addresses::PERMISSION_NEW_PERMISSION).unwrap();
 
         // Test resources
