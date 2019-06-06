@@ -310,7 +310,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "box_executor"
+name = "box-executor"
 version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -409,7 +409,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "chain_performance_by_mq"
+name = "chain-performance-by-mq"
 version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -953,7 +953,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "create_key_addr"
+name = "create-key-addr"
 version = "0.1.0"
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -3165,7 +3165,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "snapshot_tool"
+name = "snapshot-tool"
 version = "0.2.0"
 dependencies = [
  "cita-logger 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3199,7 +3199,7 @@ version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "state_test"
+name = "state-test"
 version = "0.1.0"
 dependencies = [
  "core-executor 0.1.0",

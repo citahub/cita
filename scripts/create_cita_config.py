@@ -60,7 +60,7 @@ def generate_keypairs(amount):
     privkeys = list()
     _, address_path = tempfile.mkstemp()
     _, secret_path = tempfile.mkstemp()
-    cmd = 'create_key_addr "{}" "{}"'.format(secret_path, address_path)
+    cmd = 'create-key-addr "{}" "{}"'.format(secret_path, address_path)
     for _ in range(0, amount):
         os.system(cmd)
         with open(address_path, 'rt') as stream:
