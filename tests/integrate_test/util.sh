@@ -1,5 +1,7 @@
 #!/bin/bash
 
+CHAIN_NAME="test"
+
 sudo() {
     set -o noglob
     if [ "$(whoami)" == "root" ] ; then
@@ -71,12 +73,10 @@ check_height_growth() {
     local old=$2
     local new
     if new=$(get_height "${id}"); then
-        echo "new height: ${new}"
         if [ "${new}" -gt "${old}" ]; then
             echo "height growth"
             return 0
         fi
-        echo "height not growth"
     fi
     return 1
 }
@@ -157,11 +157,9 @@ check_height_growth_normal() {
     local now
 
     if old=$(get_height "${id}"); then
-        echo "old height: ${old}"
         start=$(date +%s)
         while true; do
             if check_height_growth "${id}" "${old}"; then
-                echo "height gorwth normal id(${id})"
                 return 0
             fi
             now=$(date +%s)
@@ -323,9 +321,23 @@ start_nodes() {
         num=4
     fi
     for ((i=0; i<num; i++)); do
-        bin/cita bebop setup node/$i  > /dev/null
+        bin/cita bebop setup $CHAIN_NAME/$i 2>&1
     done
     for ((i=0; i<num; i++)); do
-        bin/cita bebop start node/$i > /dev/null
+        bin/cita bebop start $CHAIN_NAME/$i 2>&1
     done
+}
+
+config_script() {
+    ./scripts/create_cita_config.py "$@" > /dev/null 2>&1
+}
+
+create_config() {
+    local param="create \
+        --chain_name $CHAIN_NAME \
+        --super_admin 0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523 \
+        --nodes 127.0.0.1:4000,127.0.0.1:4001,127.0.0.1:4002,127.0.0.1:4003 \
+        $*"
+    # shellcheck disable=SC2086
+    config_script $param
 }
