@@ -20,10 +20,9 @@ amend_chain_name() {
     --privkey 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 > /dev/null
 
     python3 send_tx.py > /dev/null
+    python3 get_receipt.py --forever true
 
-    sleep 10
-
-    curl -X POST --data '{"jsonrpc":"2.0","method":"getMetaData","params":["latest"],"id":1}' 127.0.0.1:1337 \
+    curl -X POST --data '{"jsonrpc":"2.0","method":"getMetaData","params":["pending"],"id":1}' 127.0.0.1:1337 \
      | grep "\"chainName\"\:\"0est-chain\""
 }
 
@@ -36,11 +35,10 @@ amend_abi() {
     --privkey 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 > /dev/null
 
     python3 send_tx.py > /dev/null
-
-    sleep 10
+    python3 get_receipt.py --forever true
 
     # ascii of "amendabitest"
-    curl -X POST --data '{"jsonrpc":"2.0","method":"getAbi","params":["0xffffffffffffffffffffffffffffffffff020000", "latest"],"id":1}' 127.0.0.1:1337 \
+    curl -X POST --data '{"jsonrpc":"2.0","method":"getAbi","params":["0xffffffffffffffffffffffffffffffffff020000", "pending"],"id":1}' 127.0.0.1:1337 \
      | grep "616d656e6461626974657374"
 }
 
@@ -53,11 +51,10 @@ amend_balance() {
     --privkey 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 > /dev/null
 
     python3 send_tx.py > /dev/null
-
-    sleep 10
+    python3 get_receipt.py --forever true
 
     # hex of 1234
-    curl -X POST --data '{"jsonrpc":"2.0","method":"getBalance","params":["0xffffffffffffffffffffffffffffffffff020000", "latest"],"id":1}' 127.0.0.1:1337 \
+    curl -X POST --data '{"jsonrpc":"2.0","method":"getBalance","params":["0xffffffffffffffffffffffffffffffffff020000", "pending"],"id":1}' 127.0.0.1:1337 \
      | grep "0x4d2"
 }
 
@@ -70,11 +67,10 @@ amend_code() {
     --privkey 0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 > /dev/null
 
     python3 send_tx.py > /dev/null
-
-    sleep 10
+    python3 get_receipt.py --forever true
 
     # hex of 1234
-    curl -X POST --data '{"jsonrpc":"2.0","method":"getCode","params":["0xffffffffffffffffffffffffffffffffff020004", "latest"],"id":1}' 127.0.0.1:1337 \
+    curl -X POST --data '{"jsonrpc":"2.0","method":"getCode","params":["0xffffffffffffffffffffffffffffffffff020004", "pending"],"id":1}' 127.0.0.1:1337 \
      | grep "0xdeadbeef"
 }
 
