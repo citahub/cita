@@ -2,42 +2,25 @@
 # -*- tab-width:4;indent-tabs-mode:nil -*-
 # ex: ts=4 sw=4 et
 
+# Exit immediately if a command exits with a non-zero status
+set -e
+
 # Commands Paths
 if [[ $(uname) == 'Darwin' ]]; then
     CITA_BIN=$(dirname "$(realpath "$0")")
 else
     CITA_BIN=$(dirname "$(readlink -f "$0")")
 fi
-CITA_SCRIPTS=$(dirname "$CITA_BIN")/scripts
-
-if [ "$1" != "bebop" ]; then
-    if stat "$CITA_BIN"/cita-env > /dev/null 2>&1; then
-        "$CITA_BIN"/cita-env bin/cita bebop "$@"
-    else
-        echo -e "\033[0;31mPlease run this command after build 🎨"
-        echo -e "\033[0;32mRun \`cita bebop\` to preview help! 🎸 \033[0m\n"
-    fi
-    exit 0
-fi
-
-# Delete the verbose parameters
-set -- "${@:2}"
-
-# Exit immediately if a command exits with a non-zero status
-set -e
 
 # Add cita scripts into system executable paths
 export PATH=$CITA_BIN:$PATH
+CITA_SCRIPTS=$(dirname "$CITA_BIN")/scripts
 SERVICES=( forever auth bft chain executor jsonrpc network )
 SCRIPT=$(basename "$0")
-COMMAND=$1
-NODE_NAME=$2
-NODE_PATH=$(realpath "${NODE_NAME}")
-NODE_LOGS_DIR="${NODE_PATH}/logs"
-NODE_DATA_DIR="${NODE_PATH}/data"
-TNODE=$(echo "${NODE_NAME}" | sed 's/\//%2f/g')
+# DIAGNOSTIC COMMANDS
+PING_STATUS=""
 
-sudo(){
+sudo() {
     set -o noglob
 
     if [ "$(whoami)" == "root" ] ; then
@@ -57,7 +40,6 @@ where <command> is one of the following:
 Run \`$SCRIPT help\` for more detailed information.
 EOF
 }
-
 
 # INFORMATIONAL COMMANDS
 help() {
@@ -125,13 +107,8 @@ EOF
 
 }
 
-
 # BUILDING COMMANDS
-create() {
-    "$CITA_SCRIPTS"/create_cita_config.py "$@"
-}
-
-append() {
+config() {
     "$CITA_SCRIPTS"/create_cita_config.py "$@"
 }
 
@@ -174,10 +151,10 @@ do_setup() {
     exit 1
 }
 
-
 do_start() {
-    debug=$1
-    mock=$2
+    local debug=$1
+    local mock=$2
+    local config
 
     # Make sure log directory exists
     mkdir -p "${NODE_LOGS_DIR}"
@@ -228,11 +205,8 @@ do_stop() {
     echo "stop...ok"
 }
 
-
-# DIAGNOSTIC COMMANDS
-PING_STATUS=""
 do_ping() {
-    pidfile="${NODE_PATH}/.cita-forever.pid"
+    local pidfile="${NODE_PATH}/.cita-forever.pid"
     if [[ ! -e "$pidfile" ]]; then
         PING_STATUS="pang"
         return
@@ -286,6 +260,7 @@ do_clean() {
 }
 
 do_backup() {
+    local backup_dir
     # Backup empty node always successfully
     if [[ ! -d ${NODE_DATA_DIR} || ! -d ${NODE_LOGS_DIR} ]]; then
         echo "Node ${NODE_NAME} has no data and logs directories"
@@ -306,7 +281,7 @@ do_backup() {
 }
 
 do_logs() {
-    service0=$1
+    local service0=$1
     if [ -z "${service0}" ]; then
         echo "'${SCRIPT} logs' requires exactly 2 arguments."
         echo
@@ -327,6 +302,7 @@ do_logs() {
 }
 
 do_logrotate() {
+    local logs
     logs=$(ls -1 "${NODE_LOGS_DIR}"/cita-*.log)
     cita-forever logrotate > /dev/null 2>&1
 
@@ -340,16 +316,17 @@ do_logrotate() {
 }
 
 clear_rabbit_mq() {
-    MQ_COMMAND="curl -i -u guest:guest -H content-type:application/json -XDELETE http://localhost:15672/api/queues/${TNODE}"
+    local mq_command
+    local mq_command="curl -i -u guest:guest -H content-type:application/json -XDELETE http://localhost:15672/api/queues/${TNODE}"
 
-    "$MQ_COMMAND"/auth              > /dev/null 2>&1 || true
-    "$MQ_COMMAND"/chain             > /dev/null 2>&1 || true
-    "$MQ_COMMAND"/consensus         > /dev/null 2>&1 || true
-    "$MQ_COMMAND"/jsonrpc           > /dev/null 2>&1 || true
-    "$MQ_COMMAND"/network           > /dev/null 2>&1 || true
-    "$MQ_COMMAND"/network_tx        > /dev/null 2>&1 || true
-    "$MQ_COMMAND"/network_consensus > /dev/null 2>&1 || true
-    "$MQ_COMMAND"/executor          > /dev/null 2>&1 || true
+    "$mq_command"/auth              > /dev/null 2>&1 || true
+    "$mq_command"/chain             > /dev/null 2>&1 || true
+    "$mq_command"/consensus         > /dev/null 2>&1 || true
+    "$mq_command"/jsonrpc           > /dev/null 2>&1 || true
+    "$mq_command"/network           > /dev/null 2>&1 || true
+    "$mq_command"/network_tx        > /dev/null 2>&1 || true
+    "$mq_command"/network_consensus > /dev/null 2>&1 || true
+    "$mq_command"/executor          > /dev/null 2>&1 || true
 }
 
 node_down_check() {
@@ -368,128 +345,159 @@ node_up_check() {
     fi
 }
 
-# Commands not depend on $NODE_PATH
-case "${COMMAND}" in
-    help)
-        help
-        exit 0
-        ;;
+parse_command() {
+    local command="$1"
+    case "${command}" in
+        help)
+            help
+            exit 0
+            ;;
 
-    usage)
-        usage
-        exit 0
-        ;;
+        usage)
+            usage
+            exit 0
+            ;;
 
-    create)
-        create "$@"
-        exit 0
-        ;;
+        create)
+            config "$@"
+            exit 0
+            ;;
 
-    append)
-        append "$@"
-        exit 0
-        ;;
+        append)
+            config "$@"
+            exit 0
+            ;;
 
-esac
+        setup)
+            do_setup
+            ;;
 
-if [ $# -lt 2 ]; then
-    usage
-    exit 1
-fi
+        start)
+            # TODO: should not do so, but present tests need this
+            do_stop
+            node_down_check
 
-# Make sure the node directory exists
-if [ ! -d "${NODE_PATH}" ]; then
-    echo "No such node directory: ${NODE_NAME}"
-    exit 1
-elif [[ ! -e "${NODE_PATH}/forever.toml" && ! -e "${NODE_PATH}/forever_mock.toml" ]]; then
-    echo "'${NODE_NAME}' is not a ${SCRIPT} node directory"
-    exit 1
-fi
+            # Make sure the RabbitMQ fresh
+            clear_rabbit_mq
 
-# Enter the node directory
-pushd . > /dev/null
-cd "${NODE_PATH}"
+            do_start "$3" "$4"
+            ;;
 
-case "${COMMAND}" in
-    setup)
-        do_setup
-        ;;
+        stop)
+            node_up_check
+            do_stop
+            ;;
 
-    start)
-        do_stop      # TODO: should not do so, but present tests need this
-        node_down_check
+        restart)
+            node_up_check
+            do_stop
 
-        # Make sure the RabbitMQ fresh
-        clear_rabbit_mq
+            # Make sure the RabbitMQ fresh
+            clear_rabbit_mq
 
-        do_start "$3" "$4"
-        ;;
+            do_start "$3" "$4"
+            ;;
 
-    stop)
-        node_up_check
-        do_stop
-        ;;
+        ping)
+            do_ping
+            if [ "${PING_STATUS}" == "pong" ]; then
+                echo "pong"
+            else
+                echo "Node '${NODE_NAME}' not responding to pings."
+                exit 1
+            fi
+            ;;
 
-    restart)
-        node_up_check
-        do_stop
+        top)
+            node_up_check
+            do_top
+            ;;
+        # deprecated, use 'top' instead
+        stat)
+            node_up_check
+            do_top
+            ;;
+        # similar to 'top', but ... ?
+        status)
+            do_status
+            ;;
 
-        # Make sure the RabbitMQ fresh
-        clear_rabbit_mq
+        logrotate)
+            do_logrotate
+            ;;
 
-        do_start "$3" "$4"
-        ;;
+        logs)
+            do_logs "$3"
+            ;;
 
-    ping)
-        do_ping
-        if [ "${PING_STATUS}" == "pong" ]; then
-            echo "pong"
+        backup)
+            node_down_check
+            do_backup
+            ;;
+
+        clean)
+            node_down_check
+            do_clean
+            ;;
+
+        *)
+            usage
+            ;;
+
+    esac
+}
+
+main() {
+    if [ "$1" != "bebop" ]; then
+        if stat "$CITA_BIN"/cita-env > /dev/null 2>&1; then
+            "$CITA_BIN"/cita-env bin/cita bebop "$@"
         else
-            echo "Node '${NODE_NAME}' not responding to pings."
-            exit 1
+            echo -e "\033[0;31mPlease run this command after build 🎨"
+            echo -e "\033[0;32mRun \`cita bebop\` to preview help! 🎸 \033[0m\n"
         fi
-        ;;
+        exit 0
+    fi
 
-    top)
-        node_up_check
-        do_top
-        ;;
+    # Delete the verbose parameters
+    set -- "${@:2}"
+    local command=$1
 
-    stat)   # deprecated, use 'top' instead
-        node_up_check
-        do_top
-        ;;
+    # Commands not depend on $NODE_PATH
+    local indie=( help usage create append )
+    if [[ "${indie[*]}" =~ $command ]]; then
+        parse_command "$@"
+    fi
 
-    status) # similar to 'top', but ... ?
-        do_status
-        ;;
-
-    logrotate)
-        do_logrotate
-        ;;
-
-    logs)
-        do_logs "$3"
-        ;;
-
-    backup)
-        node_down_check
-        do_backup
-        ;;
-
-    clean)
-        node_down_check
-        do_clean
-        ;;
-
-    help)
-        help
-        ;;
-
-    *)
+    # Commands depend on $NODE_PATH
+    if [ $# -lt 2 ]; then
         usage
-        ;;
-esac
-popd > /dev/null
+        exit 1
+    fi
 
-exit 0
+    NODE_NAME=$2
+    NODE_PATH=$(realpath "${NODE_NAME}")
+    NODE_LOGS_DIR="${NODE_PATH}/logs"
+    NODE_DATA_DIR="${NODE_PATH}/data"
+    TNODE=$(echo "${NODE_NAME}" | sed 's/\//%2f/g')
+
+    # Make sure the node directory exists
+    if [ ! -d "${NODE_PATH}" ]; then
+        echo "No such node directory: ${NODE_NAME}"
+        exit 1
+    elif [[ ! -e "${NODE_PATH}/forever.toml" && ! -e "${NODE_PATH}/forever_mock.toml" ]]; then
+        echo "'${NODE_NAME}' is not a ${SCRIPT} node directory"
+        exit 1
+    fi
+
+    # Enter the node directory
+    pushd . > /dev/null
+    cd "${NODE_PATH}"
+
+    parse_command "$@"
+
+    popd > /dev/null
+
+    exit 0
+}
+
+main "$@"
