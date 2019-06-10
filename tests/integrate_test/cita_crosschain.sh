@@ -494,7 +494,7 @@ function main () {
 
     title "Create side chain keys ..."
     for ((id=0;id<4;id++)); do
-        bin/create_key_addr secret${id} address${id}
+        bin/create-key-addr secret${id} address${id}
     done
     local side_auths=$(ls address[0-4] | sort | xargs -I {} cat {} \
         | tr '\n' ',' | rev | cut -c 2- | rev)

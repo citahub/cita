@@ -53,7 +53,7 @@ main() {
     echo "5) Take snapshot on node-0 at height {0, 2, 100000} ..."
     for height in {0,2,10000}; do
         cd "${BINARY_DIR}"/"${CHAIN_NAME}"/0
-        "${BINARY_DIR}"/bin/snapshot_tool \
+        "${BINARY_DIR}"/bin/snapshot-tool \
             --cmd snapshot \
             --file snapshot-test-${height} \
             --end_height ${height} || (
@@ -71,7 +71,7 @@ main() {
         cd "${BINARY_DIR}"/"${CHAIN_NAME}"/0
         echo "restoring with before_height=${before_height}, height=${height} ..."
 
-        "${BINARY_DIR}"/bin/snapshot_tool \
+        "${BINARY_DIR}"/bin/snapshot-tool \
             --cmd restore \
             --file snapshot-test-${height} || (
                 echo "FAILED"

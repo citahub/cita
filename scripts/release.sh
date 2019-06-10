@@ -30,12 +30,12 @@ for binary in \
         cita-forever \
         cita-jsonrpc \
         cita-network \
-        create_key_addr \
+        create-key-addr \
         cita-relayer-parser \
-        snapshot_tool \
+        snapshot-tool \
         consensus-mock \
         chain-executor-mock \
-        box_executor \
+        box-executor \
         ; do
     cp -rf "target/${type}/${binary}" target/install/bin/
 done

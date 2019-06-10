@@ -1,5 +1,5 @@
 [package]
-name = "state_test"
+name = "state-test"
 version = "0.1.0"
 authors = ["Cryptape Technologies <arch@cryptape.com>"]
 edition = "2018"
