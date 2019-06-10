@@ -19,6 +19,7 @@ use super::core::libexecutor::block::{ClosedBlock, OpenBlock};
 use cita_db::Itertools;
 use cita_types::Address;
 use libproto::{ExecutedResult, Proof};
+use std::cmp::min;
 use std::collections::BTreeMap;
 
 #[derive(Debug, Copy, Clone)]
@@ -392,10 +393,11 @@ impl Backlogs {
 
     pub fn prune(&mut self, height: u64) {
         // Importance guard: we must keep the executed result of the recent
-        // 2 height(current_height - 1, current_height - 2), which used when
-        // postman check arrived proof via `Postman::check_proof`
-        if height + 2 < self.get_current_height() {
-            self.completed = self.completed.split_off(&height);
+        // 3 height(current_height, current_height - 1, current_height - 2),
+        // which used when postman check arrived proof via `Postman::check_proof`
+        if self.get_current_height() > 2 {
+            let split_height = min(height, self.get_current_height() - 2);
+            self.completed = self.completed.split_off(&split_height);
         }
     }
 }
