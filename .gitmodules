@@ -10,8 +10,8 @@
 	path = scripts/txtool/txtool/proto
 	url = https://github.com/cryptape/cita-proto.git
 	branch = master
-[submodule "scripts/contracts/tests/contracts"]
-	path = scripts/contracts/tests/contracts
+[submodule "tests/contracts"]
+	path = tests/contracts
 	url = https://github.com/cryptape/test-contracts.git
 	branch = master
 [submodule "scripts/contracts/interaction"]
