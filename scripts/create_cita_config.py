@@ -250,7 +250,7 @@ class ChainInfo():
         prevhash = DEFAULT_PREVHASH if not prevhash else str(prevhash)
         timestamp = str(int(time.time() * 1000)) if not timestamp else str(timestamp)
 
-        process = subprocess.Popen(["./bin/create_genesis",self.contracts_dir, self.contracts_docs_dir,
+        process = subprocess.Popen(["./bin/create-genesis",self.contracts_dir, self.contracts_docs_dir,
         self.init_data_file, self.genesis_path, timestamp, init_token, prevhash])
         process.wait()
 

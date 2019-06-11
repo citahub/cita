@@ -1,5 +1,5 @@
 [package]
-name = "create_genesis"
+name = "create-genesis"
 version = "0.1.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
 edition = "2018"
