@@ -341,7 +341,7 @@ impl<'a> SysConfig<'a> {
     }
 
     pub fn default_auto_exec() -> bool {
-        error!("Use the default autoEXEC.");
+        info!("Use the default autoEXEC.");
         false
     }
 }
