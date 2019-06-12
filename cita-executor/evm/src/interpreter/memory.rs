@@ -13,8 +13,8 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+use crate::return_data::ReturnData;
 use cita_types::U256;
-use return_data::ReturnData;
 
 const MAX_RETURN_WASTE_BYTES: usize = 16384;
 
@@ -32,7 +32,7 @@ pub trait Memory {
     /// Read a word from memory
     fn read(&self, offset: U256) -> U256;
     /// Write slice of bytes to memory. Does not resize memory!
-    fn write_slice(&mut self, offset: U256, &[u8]);
+    fn write_slice(&mut self, offset: U256, _: &[u8]);
     /// Retrieve part of the memory between offset and offset + size
     fn read_slice(&self, offset: U256, size: U256) -> &[u8];
     /// Retrieve writeable part of memory

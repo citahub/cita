@@ -15,30 +15,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate bincode;
 extern crate cita_crypto as crypto;
-extern crate cita_types;
-extern crate clap;
-extern crate cpuprofiler;
-extern crate dotenv;
 #[macro_use]
 extern crate libproto;
-extern crate hashable;
-extern crate proof;
-extern crate rustc_serialize;
 
 #[macro_use]
 extern crate cita_logger as logger;
-extern crate pubsub;
 #[macro_use]
 extern crate serde_derive;
 
 mod generate_block;
 
+use crate::crypto::*;
+use crate::generate_block::Generateblock;
 use cita_types::H256;
 use clap::App;
-use crypto::*;
-use generate_block::Generateblock;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
 use libproto::TryFrom;

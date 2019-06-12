@@ -15,13 +15,13 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::u256_to_address;
+use crate::error::{Error, Result};
+use crate::evm::CostType;
+use crate::ext::Ext;
+use crate::instructions::{self, Instruction, InstructionInfo};
+use crate::interpreter::stack::Stack;
+use crate::schedule::Schedule;
 use cita_types::{H256, U256};
-use error::{Error, Result};
-use evm::CostType;
-use ext::Ext;
-use instructions::{self, Instruction, InstructionInfo};
-use interpreter::stack::Stack;
-use schedule::Schedule;
 use std::cmp;
 
 macro_rules! overflowing {

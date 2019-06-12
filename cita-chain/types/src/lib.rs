@@ -16,23 +16,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern crate cita_crypto as crypto;
-extern crate cita_types;
-extern crate hashable;
-extern crate jsonrpc_types;
-extern crate libproto;
-extern crate rlp;
 #[macro_use]
 extern crate rlp_derive;
 #[macro_use]
 extern crate serde_derive;
-extern crate util;
 #[macro_use]
 extern crate lazy_static;
-extern crate time;
 #[macro_use]
 extern crate cita_logger as logger;
 extern crate db as cita_db;
-extern crate proof;
 
 pub extern crate bloomchain;
 

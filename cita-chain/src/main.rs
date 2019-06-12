@@ -66,36 +66,25 @@
 //! [`Chain`]: ../core/libchain/chain/struct.Chain.html
 //!
 
-extern crate byteorder;
-extern crate cita_types;
-extern crate clap;
 extern crate common_types as types;
-extern crate core;
-extern crate dotenv;
-extern crate error;
-extern crate jsonrpc_types;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate cita_logger as logger;
-extern crate proof;
-extern crate pubsub;
-extern crate serde_json;
 #[macro_use]
 extern crate util;
-extern crate cita_directories;
 extern crate db as cita_db;
 
 mod block_processor;
 mod forward;
 
-use block_processor::BlockProcessor;
-use cita_db::kvdb::{Database, DatabaseConfig};
+use crate::block_processor::BlockProcessor;
+use crate::cita_db::kvdb::{Database, DatabaseConfig};
+use crate::forward::Forward;
 use cita_directories::DataPath;
 use clap::App;
 use core::db;
 use core::libchain;
-use forward::Forward;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::{channel, start_pubsub};
 use std::sync::Arc;

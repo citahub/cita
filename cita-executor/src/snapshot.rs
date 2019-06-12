@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,14 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate crossbeam_channel;
-
-use cita_db::journaldb::Algorithm;
-use cita_db::DatabaseConfig;
-use core::db::NUM_COLUMNS;
-use core::libexecutor::command;
-use core::snapshot as CoreSnapshot;
-use core::snapshot::io::{PackedReader, PackedWriter};
+use crate::cita_db::journaldb::Algorithm;
+use crate::cita_db::DatabaseConfig;
+use crate::core::db::NUM_COLUMNS;
+use crate::core::libexecutor::command;
+use crate::core::snapshot as CoreSnapshot;
+use crate::core::snapshot::io::{PackedReader, PackedWriter};
 use crossbeam_channel::{Receiver, Sender};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Resp as Ack, SnapshotResp};

@@ -83,39 +83,28 @@
 
 #[cfg(test)]
 extern crate cita_crypto;
-extern crate cita_directories;
-extern crate cita_types;
-extern crate clap;
 extern crate common_types as types;
 extern crate core_executor as core;
 #[macro_use]
 extern crate crossbeam_channel;
 extern crate db as cita_db;
-extern crate dotenv;
-extern crate error;
-extern crate evm;
-extern crate grpc;
 #[cfg(test)]
 extern crate hashable;
-extern crate jsonrpc_types;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
 extern crate cita_logger as logger;
-extern crate proof;
-extern crate pubsub;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
 #[macro_use]
 extern crate util;
 
+use crate::core::contracts::grpc::grpc_vm_adapter;
+use crate::core::libexecutor::executor::Executor;
+use crate::postman::Postman;
 use cita_directories::DataPath;
 use clap::App;
-use core::contracts::grpc::grpc_vm_adapter;
-use core::libexecutor::executor::Executor;
 use libproto::router::{MsgType, RoutingKey, SubModules};
-use postman::Postman;
 use pubsub::channel;
 use pubsub::start_pubsub;
 use std::thread;

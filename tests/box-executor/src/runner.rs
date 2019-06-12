@@ -1,14 +1,5 @@
-extern crate bincode;
 extern crate cita_crypto as crypto;
 extern crate cita_logger as logger;
-extern crate cita_types;
-extern crate clap;
-extern crate dotenv;
-extern crate proof;
-extern crate pubsub;
-extern crate rlp;
-extern crate rustc_serialize;
-extern crate serde_yaml;
 
 use libproto::{TryFrom, TryInto};
 use std::convert::{From, Into};
@@ -16,10 +7,10 @@ use std::str::FromStr;
 use std::u8;
 use std::{thread, time};
 
+use crate::config::Config;
+use crate::crypto::PrivKey;
+use crate::generate_block::BuildBlock;
 use cita_types::H256;
-use config::Config;
-use crypto::PrivKey;
-use generate_block::BuildBlock;
 use libproto::{Message, RichStatus, SignedTransaction};
 
 use libproto::router::{MsgType, RoutingKey, SubModules};
