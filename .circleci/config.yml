@@ -145,9 +145,7 @@ jobs:
       - restore_cache: *restore-security-audit-cache
       - run:
           name: Check Security Audit
-          command: |
-            echo "Add it back when bump protobuf to `v2.6.0`."
-            # make security_audit
+          command: make security_audit
       - save_cache: *save-security-audit-cache
 
   "Check Contracts":
