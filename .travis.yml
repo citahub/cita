@@ -91,6 +91,9 @@ jobs:
       name: Unit Quota Management
       script: npm run-script unit_qm
     - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit Quota
+      script: npm run-script unit_quota
+    - <<: *stage-contract-test-sha3-secp256k1
       name: Unit Abi
       script: npm run-script abi
     - <<: *stage-contract-test-sha3-secp256k1
