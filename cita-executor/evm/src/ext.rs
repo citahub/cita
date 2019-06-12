@@ -16,14 +16,14 @@
 
 //! Interface for Evm externalities.
 
-use call_type::CallType;
+use crate::call_type::CallType;
+use crate::env_info::*;
+use crate::error::Result;
+use crate::return_data::ReturnData;
+use crate::Schedule;
 use cita_types::{Address, H256, U256};
-use env_info::*;
-use error::Result;
-use return_data::ReturnData;
 use std::sync::Arc;
 use util::*;
-use Schedule;
 
 /// Result of externalities create function.
 pub enum ContractCreateResult {

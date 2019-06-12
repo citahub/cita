@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use helper::{RpcMap, TransferType};
+use crate::helper::{RpcMap, TransferType};
 use jsonrpc_proto::response::OutputExt;
 use jsonrpc_types::rpc_response::Output;
 use libproto::router::{MsgType, RoutingKey, SubModules};

@@ -16,11 +16,11 @@
 
 //! Blockchain filter
 
+use crate::ids::BlockId;
+use crate::log_entry::{LogBloom, LogEntry};
 use cita_types::traits::BloomTools;
 use cita_types::{Address, H256};
-use ids::BlockId;
 use jsonrpc_types::rpc_types::{Filter as RpcFilter, VariadicValue};
-use log_entry::{LogBloom, LogEntry};
 
 /// Blockchain Filter.
 #[derive(Debug, PartialEq)]
@@ -159,9 +159,9 @@ impl From<RpcFilter> for Filter {
 
 #[cfg(test)]
 mod tests {
-    use filter::Filter;
-    use ids::BlockId;
-    use log_entry::{LogBloom, LogEntry};
+    use crate::filter::Filter;
+    use crate::ids::BlockId;
+    use crate::log_entry::{LogBloom, LogEntry};
 
     #[test]
     fn test_bloom_possibilities_none() {

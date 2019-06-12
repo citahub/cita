@@ -49,7 +49,7 @@ impl<T> HyperResponseExt<T> for HyperResponse<T> {
 }
 
 pub trait IntoResponse {
-    fn into_response(self, Headers) -> Response;
+    fn into_response(self, _: Headers) -> Response;
 }
 
 pub trait FutureResponse
@@ -195,7 +195,7 @@ mod tests {
 
     #[test]
     fn test_hyper_response_with_headers() {
-        use http_header::HeaderMapExt;
+        use crate::http_header::HeaderMapExt;
         use hyper::{header::*, Method};
 
         let mut headers = HeaderMap::new();

@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use helper::{select_topic, RpcMap, TransferType};
+use crate::helper::{select_topic, RpcMap, TransferType};
 use jsonrpc_proto::complete::CompleteInto;
 use jsonrpc_types::rpc_request::{PartialRequest, RequestInfo};
 use jsonrpc_types::rpc_response::RpcFailure;

@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::postman::Postman;
 use cita_crypto::{CreateKey, PrivKey, Sign, Signature, Signer};
 use cita_types::{traits::LowerHex, Address, H256, U256};
 use hashable::Hashable;
-use postman::Postman;
 use std::str::FromStr;
 
 #[cfg(feature = "secp256k1")]

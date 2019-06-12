@@ -15,31 +15,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate bincode;
 extern crate cita_crypto as crypto;
-extern crate cita_types;
-extern crate clap;
 #[macro_use]
 extern crate libproto;
-extern crate dotenv;
-extern crate hashable;
-extern crate proof;
-extern crate rustc_serialize;
 #[macro_use]
 extern crate cita_logger as logger;
 
-extern crate pubsub;
-extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_yaml;
 
 mod config;
 mod generate_block;
 mod runner;
 
+use crate::config::Config;
 use clap::App;
-use config::Config;
 use std::env;
 
 fn main() {

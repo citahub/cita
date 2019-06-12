@@ -16,6 +16,7 @@
 
 //! Log entry type definition.
 
+use crate::BlockNumber;
 use cita_types::traits::BloomTools;
 use cita_types::{Address, Bloom, H256};
 use jsonrpc_types::rpc_types::Log as RpcLog;
@@ -23,7 +24,6 @@ use libproto::executor::LogEntry as ProtoLogEntry;
 use rlp::*;
 use std::ops::Deref;
 use util::{Bytes, HeapSizeOf};
-use BlockNumber;
 
 pub type LogBloom = Bloom;
 

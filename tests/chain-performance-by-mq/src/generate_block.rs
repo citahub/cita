@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::crypto::*;
 use bincode::{serialize, Infinite};
 use cita_types::H256;
-use crypto::*;
 use hashable::Hashable;
 use libproto::TryInto;
 use libproto::{Block, BlockWithProof, Message, SignedTransaction, Transaction};

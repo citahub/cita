@@ -16,9 +16,9 @@
 
 //! Bridge between bloomchain crate types and cita LogBloom.
 
+use crate::log_entry::LogBloom;
 use bloomchain::group::BloomGroup;
 use bloomchain::Bloom;
-use log_entry::LogBloom;
 use rlp::*;
 use util::HeapSizeOf;
 

@@ -30,11 +30,11 @@ use self::stack::{Stack, VecStack};
 use super::call_type::CallType;
 use super::error::{Error, Result};
 use super::return_data::{GasLeft, ReturnData};
-use action_params::{ActionParams, ActionValue};
+use crate::action_params::{ActionParams, ActionValue};
+use crate::evm::{self, CostType};
+use crate::ext::{ContractCreateResult, Ext, MessageCallResult};
+use crate::instructions::{self, Instruction, InstructionInfo};
 use bit_set::BitSet;
-use evm::{self, CostType};
-use ext::{ContractCreateResult, Ext, MessageCallResult};
-use instructions::{self, Instruction, InstructionInfo};
 use std::cmp;
 use std::mem;
 

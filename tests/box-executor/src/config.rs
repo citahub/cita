@@ -1,14 +1,6 @@
-extern crate bincode;
 extern crate cita_crypto as crypto;
-extern crate cita_types;
-extern crate clap;
-extern crate dotenv;
-extern crate pubsub;
-extern crate rlp;
-extern crate rustc_serialize;
-extern crate serde_yaml;
 
-use crypto::PrivKey;
+use crate::crypto::PrivKey;
 use std::collections::HashMap;
 use std::fs;
 use std::io::Read;
