@@ -117,42 +117,4 @@ mod tests {
             vec![H160::from_str(reserved_addresses::GROUP).unwrap()]
         );
     }
-
-    #[test]
-    #[ignore]
-    fn test_accounts() {
-        let executor = init_executor();
-        let user_management = UserManagement::new(&executor);
-
-        // Test accounts
-        let accounts: Vec<Address> = user_management
-            .accounts(
-                &H160::from_str("ffffffffffffffffffffffffffffffffff020009").unwrap(),
-                BlockId::Pending,
-            )
-            .unwrap();
-
-        assert_eq!(
-            accounts,
-            vec![
-                Address::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523").unwrap(),
-                Address::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap(),
-                Address::from_str("9dcd6b234e2772c5451fd4ccf7582f4283140697").unwrap(),
-            ]
-        );
-
-        // Test group accounts
-        let root = H160::from_str(reserved_addresses::GROUP).unwrap();
-
-        let group_accounts = user_management.load_group_accounts(BlockId::Pending);
-        assert_eq!(group_accounts.contains_key(&root), true);
-        assert_eq!(
-            *group_accounts.get(&root).unwrap(),
-            vec![
-                Address::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523").unwrap(),
-                Address::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap(),
-                Address::from_str("9dcd6b234e2772c5451fd4ccf7582f4283140697").unwrap(),
-            ]
-        );
-    }
 }

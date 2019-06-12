@@ -451,14 +451,12 @@ mod tests {
             // senTx
             Resource {
                 cont: H160::from_str(reserved_addresses::PERMISSION_SEND_TX).unwrap(),
-                // func: vec![0, 0, 0, 0],
-                func: vec![48, 48, 48, 48],
+                func: vec![0, 0, 0, 0],
             },
             // createContract
             Resource {
                 cont: H160::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap(),
-                // func: vec![0, 0, 0, 0],
-                func: vec![48, 48, 48, 48],
+                func: vec![0, 0, 0, 0],
             },
             // approveNode
             Resource {

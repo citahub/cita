@@ -467,28 +467,29 @@ pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
 mod tests {
     extern crate cita_logger as logger;
     extern crate tempdir;
-
     use cita_crypto::{CreateKey, KeyPair};
     use cita_types::Address;
-    use cita_types::H256;
-    use contracts::solc::sys_config::SysConfig;
     use libexecutor::command::Commander;
     use libexecutor::command::{Command, CommandResp};
     use libexecutor::fsm::FSM;
-    use rustc_hex::FromHex;
-    use std::str::FromStr;
     use std::thread;
     use std::time::Duration;
     use tests::helpers;
     use types::ids::BlockId;
-    use types::reserved_addresses;
 
     #[test]
+    #[cfg(feature = "sha3hash")]
     fn test_chain_name_valid_block_number() {
+        use cita_types::H256;
+        use contracts::solc::sys_config::SysConfig;
+        use rustc_hex::FromHex;
+        use std::str::FromStr;
+        use types::reserved_addresses;
+
         let privkey =
             H256::from("0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6");
-        let mut executor = helpers::init_executor();
 
+        let mut executor = helpers::init_executor();
         let to = Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
         let data = "c0c41f220000000000000000000000000000000000000000000\
                     000000000000000000020000000000000000000000000000000\
