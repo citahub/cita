@@ -5,10 +5,7 @@ use std::process::Command;
 pub struct Solc;
 
 impl Solc {
-    pub fn get_contracts_data<'a>(
-        file_path: String,
-        contract_name: &'a str,
-    ) -> BTreeMap<&'a str, String> {
+    pub fn get_contracts_data(file_path: String, contract_name: &str) -> BTreeMap<String, String> {
         let output = Command::new("solc")
             .arg(file_path.clone())
             .arg("--allow-paths")
@@ -29,11 +26,11 @@ impl Solc {
         let devdoc = &compiled["contracts"][&index]["devdoc"];
 
         let mut data = BTreeMap::new();
-        data.insert("bin", bin.to_string());
-        data.insert("abi", abi.to_string());
-        data.insert("hashes", hashes.to_string());
-        data.insert("userdoc", userdoc.to_string());
-        data.insert("devdoc", devdoc.to_string());
+        data.insert("bin".to_string(), bin.to_string());
+        data.insert("abi".to_string(), abi.to_string());
+        data.insert("hashes".to_string(), hashes.to_string());
+        data.insert("userdoc".to_string(), userdoc.to_string());
+        data.insert("devdoc".to_string(), devdoc.to_string());
 
         data
     }

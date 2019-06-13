@@ -16,9 +16,7 @@ tiny-keccak = "1.4.2"
 libsecp256k1 = "0.2.2"
 clap = "2.33.0"
 
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 core-executor = { path="../../cita-executor/core", default-features = false}
 evm = { path="../../cita-executor/evm"}

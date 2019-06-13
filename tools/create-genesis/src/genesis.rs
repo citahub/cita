@@ -100,49 +100,12 @@ impl<'a> GenesisCreator<'a> {
     pub fn init_normal_contracts(&mut self) {
         for (contract_name, contract_info) in self.contract_list.normal_contracts.list().iter() {
             let address = &contract_info.address;
-            let sol_path = self.contract_dir.to_owned() + "/src/" + &contract_info.file;
-            let abi_path =
-                self.contract_dir.to_owned() + "/interaction/abi/" + contract_name + ".abi";
-            let data = Solc::get_contracts_data(sol_path, contract_name);
-
+            let data = self.get_data(contract_name, contract_info.file.clone());
             let input_data = string_2_bytes(data["bin"].clone());
+
             self.write_docs(contract_name, data);
-
-            let abi_file = File::open(abi_path).expect("failed to open abi file.");
-            let contract = Contract::load(abi_file).unwrap();
-
-            if let Some(constructor) = contract.constructor() {
-                let mut params = Vec::new();
-                match *contract_name {
-                    "SysConfig" => {
-                        params = self.contract_args.contracts.sys_config.as_params();
-                    }
-                    "QuotaManager" => {
-                        params = self.contract_args.contracts.quota_manager.as_params();
-                    }
-                    "NodeManager" => {
-                        params = self.contract_args.contracts.node_manager.as_params();
-                    }
-                    "ChainManager" => {
-                        params = self.contract_args.contracts.chain_manager.as_params();
-                    }
-                    "Authorization" => {
-                        params = self.contract_args.contracts.authorization.as_params();
-                    }
-                    "Group" => {
-                        params = self.contract_args.contracts.group.as_params();
-                    }
-                    "Admin" => {
-                        params = self.contract_args.contracts.admin.as_params();
-                    }
-                    "VersionManager" => {
-                        params = self.contract_args.contracts.version_manager.as_params();
-                    }
-                    "PriceManager" => {
-                        params = self.contract_args.contracts.price_manager.as_params();
-                    }
-                    _ => (),
-                }
+            if let Some(constructor) = self.load_contract(contract_name.to_string()).constructor() {
+                let params = self.contract_args.get_params(contract_name.to_owned());
                 let bytes = constructor.encode_input(input_data, &params).unwrap();
                 let account = Miner::mine(bytes);
                 self.accounts.insert((*address).clone(), account);
@@ -157,58 +120,52 @@ impl<'a> GenesisCreator<'a> {
     pub fn init_permission_contracts(&mut self) {
         let normal_contracts = self.contract_list.normal_contracts.clone();
         let perm_contracts = self.contract_list.permission_contracts.clone();
-
-        let contract_name: &'static str = "Permission";
-        let perm_path = self.contract_dir.to_owned() + "/src/" + &perm_contracts.file;
-        let abi_path = self.contract_dir.to_owned() + "/interaction/abi/" + contract_name + ".abi";
-
-        let data = Solc::get_contracts_data(perm_path, contract_name);
+        let contract_name = "Permission".to_string();
+        let data = self.get_data(&contract_name, perm_contracts.file);
         let input_data = string_2_bytes(data["bin"].clone());
+
         self.write_docs(&contract_name, data);
+        if let Some(constructor) = self.load_contract(contract_name).constructor() {
+            for (name, info) in perm_contracts.basic.list().iter() {
+                let address = &info.address;
+                let params = self
+                    .contract_list
+                    .permission_contracts
+                    .basic
+                    .as_params(name, info);
 
-        let abi_file = File::open(abi_path).expect("failed to open abi file.");
-        let contract = Contract::load(abi_file).unwrap();
-        let constructor = contract.constructor().unwrap();
+                let bytes = constructor
+                    .encode_input(input_data.clone(), &params)
+                    .unwrap();
+                let account = Miner::mine(bytes);
+                self.accounts.insert(address.clone(), account);
+                println!("Permission contracts: {:?} {:?} is ok!", name, address);
+            }
 
-        for (name, info) in perm_contracts.basic.list().iter() {
-            let address = &info.address;
-            let params = self
-                .contract_list
-                .permission_contracts
-                .basic
-                .as_params(name, info);
+            for (name, info) in perm_contracts.contracts.list().iter() {
+                let perm_address = &info.address;
+                let params = self.contract_list.permission_contracts.contracts.as_params(
+                    &normal_contracts,
+                    name,
+                    info,
+                );
 
-            let bytes = constructor
-                .encode_input(input_data.clone(), &params)
-                .unwrap();
-            let account = Miner::mine(bytes);
-            self.accounts.insert(address.clone(), account);
-            println!("Permission contracts: {:?} {:?} is ok!", name, address);
-        }
-
-        for (name, info) in perm_contracts.contracts.list().iter() {
-            let perm_address = &info.address;
-            let params = self.contract_list.permission_contracts.contracts.as_params(
-                &normal_contracts,
-                name,
-                info,
-            );
-
-            let bytes = constructor
-                .encode_input(input_data.clone(), &params)
-                .unwrap();
-            let account = Miner::mine(bytes);
-            self.accounts.insert((*perm_address).clone(), account);
-            println!("Permission contracts: {:?} {:?} is ok!", name, perm_address);
+                let bytes = constructor
+                    .encode_input(input_data.clone(), &params)
+                    .unwrap();
+                let account = Miner::mine(bytes);
+                self.accounts.insert((*perm_address).clone(), account);
+                println!("Permission contracts: {:?} {:?} is ok!", name, perm_address);
+            }
         }
     }
 
-    pub fn write_docs(&self, name: &str, data: BTreeMap<&'static str, String>) {
+    pub fn write_docs(&self, name: &str, data: BTreeMap<String, String>) {
         for doc_type in ["hashes", "userdoc", "devdoc"].iter() {
             let file_path =
                 self.contract_docs_dir.to_owned() + "/" + name + "-" + doc_type + ".json";
             let path = Path::new(&file_path);
-            let json = json::stringify_pretty(data[doc_type].clone(), 4);
+            let json = json::stringify_pretty(data[*doc_type].clone(), 4);
             let mut f = File::create(path).expect("failed to write docs.");
             let _ = f.write_all(&json.as_bytes());
         }
@@ -231,5 +188,16 @@ impl<'a> GenesisCreator<'a> {
         genesis.alloc = self.accounts.clone();
         let f = File::create(self.genesis_path.to_owned()).expect("failed to create genesis.json.");
         let _ = serde_json::to_writer_pretty(f, &genesis);
+    }
+
+    pub fn get_data(&self, contract_name: &str, file_path: String) -> BTreeMap<String, String> {
+        let path = self.contract_dir.to_owned() + "/src/" + &file_path;
+        Solc::get_contracts_data(path, contract_name)
+    }
+
+    pub fn load_contract(&self, contract_name: String) -> Contract {
+        let abi_path = self.contract_dir.to_owned() + "/interaction/abi/" + &contract_name + ".abi";
+        let abi_file = File::open(abi_path).expect("failed to open abi file.");
+        Contract::load(abi_file).unwrap()
     }
 }

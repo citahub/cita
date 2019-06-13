@@ -5,6 +5,10 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::str::FromStr;
 
+pub trait GetParams {
+    fn as_params(&self) -> Vec<Token>;
+}
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct InitData {
     #[serde(rename = "Contracts")]
@@ -15,6 +19,41 @@ impl InitData {
     pub fn load_contract_args(path: &str) -> InitData {
         let f = File::open(path).expect("failed to open file");
         serde_yaml::from_reader(f).unwrap()
+    }
+
+    pub fn get_params(&self, contract_name: &str) -> Vec<Token> {
+        let mut params = Vec::new();
+        match contract_name {
+            "SysConfig" => {
+                params = self.contracts.sys_config.as_params();
+            }
+            "QuotaManager" => {
+                params = self.contracts.quota_manager.as_params();
+            }
+            "NodeManager" => {
+                params = self.contracts.node_manager.as_params();
+            }
+            "ChainManager" => {
+                params = self.contracts.chain_manager.as_params();
+            }
+            "Authorization" => {
+                params = self.contracts.authorization.as_params();
+            }
+            "Group" => {
+                params = self.contracts.group.as_params();
+            }
+            "Admin" => {
+                params = self.contracts.admin.as_params();
+            }
+            "VersionManager" => {
+                params = self.contracts.version_manager.as_params();
+            }
+            "PriceManager" => {
+                params = self.contracts.price_manager.as_params();
+            }
+            _ => (),
+        }
+        params
     }
 }
 
@@ -97,8 +136,8 @@ pub struct SysConfig {
     pub auto_exec: bool,
 }
 
-impl SysConfig {
-    pub fn as_params(&self) -> Vec<Token> {
+impl GetParams for SysConfig {
+    fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
         tokens.push(Token::Uint(
             U256::from_str(&self.delay_block_number).unwrap(),
@@ -136,8 +175,8 @@ pub struct QuotaManager {
     pub admin: String,
 }
 
-impl QuotaManager {
-    pub fn as_params(&self) -> Vec<Token> {
+impl GetParams for QuotaManager {
+    fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
         tokens.push(Token::Address(
             Address::from_str(clean_0x(&self.admin)).unwrap(),
@@ -152,8 +191,8 @@ pub struct NodeManager {
     pub stakes: Vec<String>,
 }
 
-impl NodeManager {
-    pub fn as_params(&self) -> Vec<Token> {
+impl GetParams for NodeManager {
+    fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
 
         let mut nodes = Vec::new();
@@ -181,8 +220,8 @@ pub struct ChainManager {
     pub parent_chain_authorities: Vec<String>,
 }
 
-impl ChainManager {
-    pub fn as_params(&self) -> Vec<Token> {
+impl GetParams for ChainManager {
+    fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
         tokens.push(Token::Uint(U256::from_str(&self.parent_chain_id).unwrap()));
 
@@ -202,8 +241,8 @@ pub struct Authorization {
     pub super_admin: String,
 }
 
-impl Authorization {
-    pub fn as_params(&self) -> Vec<Token> {
+impl GetParams for Authorization {
+    fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
         tokens.push(Token::Address(
             Address::from_str(clean_0x(&self.super_admin)).unwrap(),
@@ -219,8 +258,8 @@ pub struct Group {
     pub accounts: Vec<String>,
 }
 
-impl Group {
-    pub fn as_params(&self) -> Vec<Token> {
+impl GetParams for Group {
+    fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
         tokens.push(Token::Address(
             Address::from_str(clean_0x(&self.parent)).unwrap(),
@@ -241,8 +280,8 @@ pub struct Admin {
     pub admin: String,
 }
 
-impl Admin {
-    pub fn as_params(&self) -> Vec<Token> {
+impl GetParams for Admin {
+    fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
         tokens.push(Token::Address(
             Address::from_str(clean_0x(&self.admin)).unwrap(),
@@ -256,8 +295,8 @@ pub struct VersionManager {
     pub version: String,
 }
 
-impl VersionManager {
-    pub fn as_params(&self) -> Vec<Token> {
+impl GetParams for VersionManager {
+    fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
         tokens.push(Token::Uint(U256::from_str(&self.version).unwrap()));
         tokens
@@ -270,8 +309,8 @@ pub struct PriceManager {
     pub quota_price: String,
 }
 
-impl PriceManager {
-    pub fn as_params(&self) -> Vec<Token> {
+impl GetParams for PriceManager {
+    fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
         tokens.push(Token::Uint(U256::from_dec_str(&self.quota_price).unwrap()));
         tokens
