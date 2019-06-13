@@ -98,6 +98,7 @@ impl<'a> GenesisCreator<'a> {
     }
 
     pub fn init_normal_contracts(&mut self) {
+        let normal_params = self.contract_args.get_params();
         for (contract_name, contract_info) in self.contract_list.normal_contracts.list().iter() {
             let address = &contract_info.address;
             let data = self.get_data(contract_name, contract_info.file.clone());
@@ -105,7 +106,9 @@ impl<'a> GenesisCreator<'a> {
 
             self.write_docs(contract_name, data);
             if let Some(constructor) = self.load_contract(contract_name.to_string()).constructor() {
-                let params = self.contract_args.get_params(contract_name.to_owned());
+                let params = normal_params
+                    .get(*contract_name)
+                    .map_or(Vec::new(), |p| (*p).clone());
                 let bytes = constructor.encode_input(input_data, &params).unwrap();
                 let account = Miner::mine(bytes);
                 self.accounts.insert((*address).clone(), account);

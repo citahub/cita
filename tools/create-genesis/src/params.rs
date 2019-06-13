@@ -2,6 +2,7 @@ use crate::common::clean_0x;
 use ethabi::Token;
 use ethereum_types::{Address, U256};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::str::FromStr;
 
@@ -21,38 +22,38 @@ impl InitData {
         serde_yaml::from_reader(f).unwrap()
     }
 
-    pub fn get_params(&self, contract_name: &str) -> Vec<Token> {
-        let mut params = Vec::new();
-        match contract_name {
-            "SysConfig" => {
-                params = self.contracts.sys_config.as_params();
-            }
-            "QuotaManager" => {
-                params = self.contracts.quota_manager.as_params();
-            }
-            "NodeManager" => {
-                params = self.contracts.node_manager.as_params();
-            }
-            "ChainManager" => {
-                params = self.contracts.chain_manager.as_params();
-            }
-            "Authorization" => {
-                params = self.contracts.authorization.as_params();
-            }
-            "Group" => {
-                params = self.contracts.group.as_params();
-            }
-            "Admin" => {
-                params = self.contracts.admin.as_params();
-            }
-            "VersionManager" => {
-                params = self.contracts.version_manager.as_params();
-            }
-            "PriceManager" => {
-                params = self.contracts.price_manager.as_params();
-            }
-            _ => (),
-        }
+    pub fn get_params(&self) -> BTreeMap<String, Vec<Token>> {
+        let mut params = BTreeMap::new();
+        params.insert(
+            "SysConfig".to_string(),
+            self.contracts.sys_config.as_params(),
+        );
+        params.insert(
+            "QuotaManager".to_string(),
+            self.contracts.quota_manager.as_params(),
+        );
+        params.insert(
+            "NodeManager".to_string(),
+            self.contracts.node_manager.as_params(),
+        );
+        params.insert(
+            "ChainManager".to_string(),
+            self.contracts.chain_manager.as_params(),
+        );
+        params.insert(
+            "Authorization".to_string(),
+            self.contracts.authorization.as_params(),
+        );
+        params.insert("Group".to_string(), self.contracts.group.as_params());
+        params.insert("Admin".to_string(), self.contracts.admin.as_params());
+        params.insert(
+            "VersionManager".to_string(),
+            self.contracts.version_manager.as_params(),
+        );
+        params.insert(
+            "PriceManager".to_string(),
+            self.contracts.price_manager.as_params(),
+        );
         params
     }
 }
