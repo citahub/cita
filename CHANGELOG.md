@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+## [v0.24.1] - 2019-06-14
+
+Fix the issue about memory leak in cita-executor.
+Check the details at [#588]
+
 ## [v0.24.0] - 2019-05-18
 
 ### Framework
@@ -789,6 +794,7 @@ Release the first version of CITA.
 
 [#201]: https://github.com/cryptape/cita/issues/201
 [#206]: https://github.com/cryptape/cita/issues/206
+[#588]: https://github.com/cryptape/cita/issues/588
 [Account model based zero-knowledge proof transaction.]: https://github.com/cryptape/cita/blob/develop/cita-executor/core/src/native/zk_privacy.md
 [CITA docker images]: https://hub.docker.com/r/cita/
 [Emergency braking system contract]: https://docs.citahub.com/zh-CN/cita/system/emergency-brake
@@ -810,7 +816,8 @@ Release the first version of CITA.
 [set quota price]: https://docs.citahub.com/zh-CN/cita/system/price
 [sidechain exit mechanism]: https://docs.nervos.org/cita/#/crosschain/crosschain_contract_example
 
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.24.0...HEAD
+[Unreleased]: https://github.com/cryptape/cita/compare/v0.24.1...HEAD
+[v0.24.1]: https://github.com/cryptape/cita/compare/v0.24.0...v0.24.1
 [v0.24.0]: https://github.com/cryptape/cita/compare/v0.23.0...v0.24.0
 [v0.23.1]: https://github.com/cryptape/cita/compare/v0.23.0...v0.23.1
 [v0.23.0]: https://github.com/cryptape/cita/compare/v0.22.0...v0.23.0
