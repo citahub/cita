@@ -22,7 +22,6 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use cita_types::Address;
 use fnv::FnvHashMap as HashMap;
 use libproto::{Message as ProtoMessage, TryInto};
-use logger::{debug, error, info, trace, warn};
 use notify::DebouncedEvent;
 use pubsub::channel::{select, tick, unbounded, Receiver, Sender};
 use rand;

@@ -3,6 +3,7 @@ name = "common-types"
 description = "Common types used throughout the codebase"
 version = "0.1.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
+edition = "2018"
 
 [dependencies]
 rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -18,7 +19,7 @@ serde_derive = "1.0"
 bloomchain = "0.2"
 lazy_static = "0.2"
 time = "0.1"
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-logger = "0.1.0"
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 

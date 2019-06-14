@@ -4,7 +4,7 @@ import "./RoleCreator.sol";
 import "../../interaction/interface/IAuthorization.sol";
 import "../lib/ContractCheck.sol";
 import "../lib/AddressArray.sol";
-import "../interaction/interface/IRoleAuth.sol";
+import "../../interaction/interface/IRoleAuth.sol";
 
 /// @title Authorization about role and account
 /// @author ["Cryptape Technologies <contact@cryptape.com>"]

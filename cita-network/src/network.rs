@@ -27,7 +27,6 @@ use libproto::routing_key;
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
 use libproto::{Message as ProtoMessage, OperateType, Response};
 use libproto::{TryFrom, TryInto};
-use logger::{error, info, trace, warn};
 use pubsub::channel::{unbounded, Receiver, Sender};
 use serde_json;
 use std::iter::FromIterator;

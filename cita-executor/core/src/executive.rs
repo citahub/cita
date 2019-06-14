@@ -1210,7 +1210,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
 #[cfg(test)]
 mod tests {
-    extern crate logger;
+    extern crate cita_logger as logger;
     extern crate rustc_hex;
     ////////////////////////////////////////////////////////////////////////////////
 

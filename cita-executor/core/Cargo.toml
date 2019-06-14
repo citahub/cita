@@ -4,9 +4,9 @@ version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>", "Cryptape Technologies <contact@cryptape.com>"]
 
 [dependencies]
+cita-logger = "0.1.0"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 byteorder = { version = "1", default-features = false }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

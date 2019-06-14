@@ -16,17 +16,17 @@
 
 //! Receipt
 
+use crate::log_entry::{LocalizedLogEntry, LogBloom, LogEntry};
+use crate::BlockNumber;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use jsonrpc_types::rpc_types::Receipt as RpcReceipt;
 use libproto::executor::{
     Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot,
 };
-use log_entry::{LocalizedLogEntry, LogBloom, LogEntry};
 use rlp::*;
 use std::str::FromStr;
 use util::{Bytes, HeapSizeOf};
-use BlockNumber;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
@@ -385,7 +385,7 @@ impl Into<RpcReceipt> for LocalizedReceipt {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use log_entry::LogEntry;
+    use crate::log_entry::LogEntry;
 
     #[test]
     fn test_no_state_root() {

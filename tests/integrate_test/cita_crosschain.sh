@@ -2,6 +2,13 @@
 
 set -e -o pipefail
 
+if [[ $(uname) == 'Darwin' ]]
+then
+    SOURCE_DIR=$(realpath "$(dirname "$0")"/../..)
+else
+    SOURCE_DIR=$(readlink -f "$(dirname "$0")"/../..)
+fi
+
 # Test private key & address
 PKEY="1234567890123456789012345678901234567890123456789012345678901234"
 PADDR="2e988a386a799f506693793c6a5af6b54dfaabfb"
@@ -12,7 +19,7 @@ CMC="scripts/contracts/src/system/ChainManager.sol"
 CMC_ABI=
 
 # Base dir for import contract files
-CONTRACT_LIBS_DIR="scripts/contracts"
+CONTRACT_LIBS_DIR="$SOURCE_DIR"
 
 # Templates for some shell commands
 JSONRPC_CALL='{"jsonrpc":"2.0","method":"call", "params":[{"to":"%s", "data":"%s"}, "pending"],"id":2}'
@@ -20,7 +27,7 @@ JSONRPC_BLOCKHEADER='{"jsonrpc":"2.0","method":"getBlockHeader","params":["0x%x"
 JSONRPC_STATEPROOF='{"jsonrpc":"2.0","method":"getStateProof","params":["0x%s","0x%s","0x%x"],"id":1}'
 
 # Test contract file
-CONTRACT_DEMO="scripts/contracts/tests/contracts/MyToken.sol"
+CONTRACT_DEMO="${SOURCE_DIR}/tests/contracts/MyToken.sol"
 DEMO_ABI=
 
 # Global variables which are set in functions
@@ -147,7 +154,7 @@ function deploy_contract () {
     local chain="$1"
     local solfile="$2"
     local extra="$3"
-    local code="$(solc --allow-paths "$(pwd)/${CONTRACT_LIBS_DIR}" \
+    local code="$(solc --allow-paths "${CONTRACT_LIBS_DIR}" \
         --bin "${solfile}" 2>/dev/null | tail -1)${extra}"
     txtool_run ${chain} make_tx.py --privkey "${PKEY}" --code "${code}"
     txtool_run ${chain} send_tx.py
@@ -347,7 +354,7 @@ function test_demo_contract () {
         "The tokens is not right for side chain."
 
     title "Send tokens from main chain."
-    DEMO_ABI=$(solc --allow-paths "$(pwd)/${CONTRACT_LIBS_DIR}" \
+    DEMO_ABI=$(solc --allow-paths "${CONTRACT_LIBS_DIR}" \
             --combined-json abi ${CONTRACT_DEMO} \
         | sed "s@${CONTRACT_DEMO}:@@g" \
         | json_get '.contracts.MyToken.abi')
@@ -494,7 +501,7 @@ function main () {
 
     title "Create side chain keys ..."
     for ((id=0;id<4;id++)); do
-        bin/create_key_addr secret${id} address${id}
+        bin/create-key-addr secret${id} address${id}
     done
     local side_auths=$(ls address[0-4] | sort | xargs -I {} cat {} \
         | tr '\n' ',' | rev | cut -c 2- | rev)
@@ -512,7 +519,7 @@ function main () {
     wait_chain_for_height main 3
 
     title "Register side chain ..."
-    CMC_ABI=$(solc --allow-paths "$(pwd)/${CONTRACT_LIBS_DIR}" \
+    CMC_ABI=$(solc --allow-paths "${CONTRACT_LIBS_DIR}" \
         --combined-json abi ${CMC} 2>/dev/null \
         | sed "s@${CMC}:@@g" \
         | json_get '.contracts.ChainManager.abi')

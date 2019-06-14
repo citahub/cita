@@ -310,7 +310,7 @@ mod integration_test {
     use serde_json;
     use tokio_core::reactor::Core;
 
-    use helper::TransferType;
+    use crate::helper::TransferType;
 
     struct Serve {
         pub addr: SocketAddr,

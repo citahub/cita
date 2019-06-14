@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::types::filter::Filter;
+use crate::types::ids::BlockId;
 use cita_types::H256;
 use core::filters::eth_filter::EthFilter;
 use core::libchain::chain::{BlockInQueue, Chain};
@@ -41,10 +43,8 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use types::filter::Filter;
-use types::ids::BlockId;
 
-use cita_db::kvdb::DatabaseConfig;
+use crate::cita_db::kvdb::DatabaseConfig;
 use cita_directories::DataPath;
 use core::db;
 use std::fs::File;
