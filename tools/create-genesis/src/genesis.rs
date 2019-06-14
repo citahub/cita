@@ -135,7 +135,7 @@ impl<'a> GenesisCreator<'a> {
                     .contract_list
                     .permission_contracts
                     .basic
-                    .as_params(name, info);
+                    .as_params(name);
 
                 let bytes = constructor
                     .encode_input(input_data.clone(), &params)
@@ -147,11 +147,11 @@ impl<'a> GenesisCreator<'a> {
 
             for (name, info) in perm_contracts.contracts.list().iter() {
                 let perm_address = &info.address;
-                let params = self.contract_list.permission_contracts.contracts.as_params(
-                    &normal_contracts,
-                    name,
-                    info,
-                );
+                let params = self
+                    .contract_list
+                    .permission_contracts
+                    .contracts
+                    .as_params(&normal_contracts, name);
 
                 let bytes = constructor
                     .encode_input(input_data.clone(), &params)

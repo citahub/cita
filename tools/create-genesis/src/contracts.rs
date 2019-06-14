@@ -143,17 +143,19 @@ impl Basic {
         basic
     }
 
-    pub fn as_params(&self, name: &str, info: &BasicInfo) -> Vec<Token> {
+    pub fn as_params(&self, name: &str) -> Vec<Token> {
         let mut tokens = Vec::new();
-        tokens.push(Token::FixedBytes(String::from(name).into_bytes()));
-        let mut conts = Vec::new();
-        let addr = Address::from_str(clean_0x(&info.address)).unwrap();
-        conts.push(Token::Address(addr));
-        let mut funcs = Vec::new();
-        funcs.push(Token::FixedBytes(vec![0, 0, 0, 0]));
+        if let Some(info) = self.list().get(name) {
+            tokens.push(Token::FixedBytes(String::from(name).into_bytes()));
+            let mut conts = Vec::new();
+            let addr = Address::from_str(clean_0x(&info.address)).unwrap();
+            conts.push(Token::Address(addr));
+            let mut funcs = Vec::new();
+            funcs.push(Token::FixedBytes(vec![0, 0, 0, 0]));
 
-        tokens.push(Token::Array(conts));
-        tokens.push(Token::Array(funcs));
+            tokens.push(Token::Array(conts));
+            tokens.push(Token::Array(funcs));
+        }
         tokens
     }
 }
@@ -260,186 +262,14 @@ impl Contracts {
         contracts
     }
 
-    pub fn as_params(
-        &self,
-        normal_contracts: &NormalContracts,
-        name: &str,
-        info: &ContractsInfo,
-    ) -> Vec<Token> {
+    pub fn as_params(&self, normal_contracts: &NormalContracts, name: &str) -> Vec<Token> {
         let mut tokens = Vec::new();
-        let reference = normal_contracts.list();
-
-        // Get name
-        tokens.push(Token::FixedBytes(String::from(name).into_bytes()));
-        // Get conts
-        let mut conts = Vec::new();
-        match name {
-            "newPermission" => {
-                for a in self.new_permission.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "deletePermission" => {
-                for a in self.delete_permission.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "updatePermission" => {
-                for a in self.update_permission.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "setAuth" => {
-                for a in self.set_auth.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "cancelAuth" => {
-                for a in self.cancel_auth.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "newRole" => {
-                for a in self.new_role.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "deleteRole" => {
-                for a in self.delete_role.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "updateRole" => {
-                for a in self.update_role.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "setRole" => {
-                for a in self.set_role.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "cancelRole" => {
-                for a in self.cancel_role.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "newGroup" => {
-                for a in self.new_group.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "deleteGroup" => {
-                for a in self.delete_group.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "updateGroup" => {
-                for a in self.update_group.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "newNode" => {
-                for a in self.new_node.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "deleteNode" => {
-                for a in self.delete_node.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "updateNode" => {
-                for a in self.update_node.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "accountQuota" => {
-                for a in self.account_quota.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "blockQuota" => {
-                for a in self.block_quota.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "batchTx" => {
-                for a in self.batch_tx.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "emergencyBrake" => {
-                for a in self.emergency_brake.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "quotaPrice" => {
-                for a in self.quota_price.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            "version" => {
-                for a in self.version.contracts.iter() {
-                    let contract_info = &reference[a.as_str()];
-                    let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-                    conts.push(Token::Address(address));
-                }
-            }
-            _ => panic!("Unexpected permission contract name"),
+        if let Some(info) = self.list().get(name) {
+            tokens.push(Token::FixedBytes(String::from(name).into_bytes()));
+            let (conts, funcs) = info.get_contract_info(normal_contracts);
+            tokens.push(Token::Array(conts));
+            tokens.push(Token::Array(funcs));
         }
-
-        // Get funcs
-        let mut funcs = Vec::new();
-        for f in info.functions.iter() {
-            let func = keccak256(f.as_bytes()).to_vec();
-            funcs.push(Token::FixedBytes(func[0..4].to_vec()));
-        }
-
-        tokens.push(Token::Array(conts));
-        tokens.push(Token::Array(funcs));
         tokens
     }
 }
@@ -449,6 +279,28 @@ pub struct ContractsInfo {
     pub address: String,
     pub contracts: Vec<String>,
     pub functions: Vec<String>,
+}
+
+impl ContractsInfo {
+    pub fn get_contract_info(
+        &self,
+        normal_contracts: &NormalContracts,
+    ) -> (Vec<Token>, Vec<Token>) {
+        let mut conts = Vec::new();
+        let reference = normal_contracts.list();
+        for a in self.contracts.iter() {
+            let contract_info = &reference[a.as_str()];
+            let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
+            conts.push(Token::Address(address));
+        }
+
+        let mut funcs = Vec::new();
+        for f in self.functions.iter() {
+            let func = keccak256(f.as_bytes()).to_vec();
+            funcs.push(Token::FixedBytes(func[0..4].to_vec()));
+        }
+        (conts, funcs)
+    }
 }
 #[cfg(test)]
 mod tests {
