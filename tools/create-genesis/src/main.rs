@@ -11,8 +11,8 @@ use genesis::GenesisCreator;
 
 fn main() {
     let matches = App::new("CITA genesis creator")
-        .version("1.0")
-        .author("Cryptape Technologies")
+        .version(env!("CARGO_PKG_VERSION"))
+        .author(env!("CARGO_PKG_AUTHORS"))
         .arg(
             Arg::with_name("contract_dir")
                 .help("The directory of contracts.")
