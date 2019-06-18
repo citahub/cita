@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Quota Price Management
+//! Get Admin Info
 
 use super::ContractCallExt;
-use cita_types::{Address, U256};
+use cita_types::Address;
 use contracts::tools::{decode as decode_tools, method as method_tools};
 use libexecutor::executor::Executor;
 use std::str::FromStr;
@@ -26,52 +26,43 @@ use types::ids::BlockId;
 use types::reserved_addresses;
 
 lazy_static! {
-    static ref GET_QUOTA_PRICE: Vec<u8> = method_tools::encode_to_vec(b"getQuotaPrice()");
-    static ref CONTRACT_ADDRESS: Address =
-        Address::from_str(reserved_addresses::PRICE_MANAGEMENT).unwrap();
+    static ref GET_ADMIN: Vec<u8> = method_tools::encode_to_vec(b"admin()");
+    static ref CONTRACT_ADDRESS: Address = Address::from_str(reserved_addresses::ADMIN).unwrap();
 }
 
-/// Configuration items from system contract
-pub struct PriceManagement<'a> {
+pub struct Admin<'a> {
     executor: &'a Executor,
 }
 
-impl<'a> PriceManagement<'a> {
+impl<'a> Admin<'a> {
     pub fn new(executor: &'a Executor) -> Self {
-        PriceManagement { executor }
+        Admin { executor }
     }
 
-    /// Set quota price
-    pub fn quota_price(&self, block_id: BlockId) -> Option<U256> {
+    /// Get Admin
+    pub fn get_admin(&self, block_id: BlockId) -> Option<Address> {
         self.executor
-            .call_method(
-                &*CONTRACT_ADDRESS,
-                &*GET_QUOTA_PRICE.as_slice(),
-                None,
-                block_id,
-            )
+            .call_method(&*CONTRACT_ADDRESS, &*GET_ADMIN.as_slice(), None, block_id)
             .ok()
-            .and_then(|output| decode_tools::to_u256(&output))
-    }
-
-    pub fn default_quota_price() -> U256 {
-        info!("Use default quota price");
-        U256::from(1)
+            .and_then(|output| decode_tools::to_address(&output))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::PriceManagement;
-    use cita_types::U256;
+    use super::Admin;
+    use cita_types::Address;
     use tests::helpers::init_executor;
     use types::ids::BlockId;
 
     #[test]
-    fn test_state() {
+    fn test_admin() {
         let executor = init_executor();
-        let price_management = PriceManagement::new(&executor);
-        let price = price_management.quota_price(BlockId::Pending).unwrap();
-        assert_eq!(price, U256::from(100_0000));
+        let admin = Admin::new(&executor);
+        let addr = admin.get_admin(BlockId::Pending).unwrap();
+        assert_eq!(
+            addr,
+            Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523")
+        );
     }
 }

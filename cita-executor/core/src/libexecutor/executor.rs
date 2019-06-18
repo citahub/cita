@@ -467,62 +467,29 @@ pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
 mod tests {
     extern crate cita_logger as logger;
     extern crate tempdir;
-
     use cita_crypto::{CreateKey, KeyPair};
-    use cita_types::traits::LowerHex;
     use cita_types::Address;
-    use contracts::solc::sys_config::SysConfig;
-    use core::receipt::ReceiptError;
     use libexecutor::command::Commander;
     use libexecutor::command::{Command, CommandResp};
     use libexecutor::fsm::FSM;
-    use rustc_hex::FromHex;
-    use std::str::FromStr;
     use std::thread;
     use std::time::Duration;
     use tests::helpers;
     use types::ids::BlockId;
-    use types::reserved_addresses;
 
     #[test]
-    fn test_contract_address_from_permission_denied() {
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
-
-        let mut executor =
-            helpers::init_executor(vec![("SysConfig.checkCreateContractPermission", "true")]);
-
-        let chain = helpers::init_chain();
-        let data = helpers::generate_contract();
-        let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
-        let inchain = chain.clone();
-        let txs = block.body().transactions().clone();
-        let hash = txs[0].hash();
-        let h = executor.get_current_height() + 1;
-
-        let closed_block = executor.into_fsm(block.clone());
-        let executed_result = executor.grow(closed_block);
-        inchain.set_block_body(h, &block);
-        inchain.set_db_result(&executed_result, &block);
-
-        let receipt = chain
-            .localized_receipt(hash)
-            .expect("failed to get localized_receipt");
-        assert_eq!(receipt.contract_address, None);
-        assert_eq!(receipt.error, Some(ReceiptError::NoContractPermission));
-    }
-
-    #[test]
+    #[cfg(feature = "sha3hash")]
     fn test_chain_name_valid_block_number() {
-        let keypair = KeyPair::gen_keypair();
-        let privkey = keypair.privkey();
-        let addr = keypair.address().lower_hex();
+        use cita_types::H256;
+        use contracts::solc::sys_config::SysConfig;
+        use rustc_hex::FromHex;
+        use std::str::FromStr;
+        use types::reserved_addresses;
 
-        let mut executor = helpers::init_executor(vec![
-            ("SysConfig.chainName", "abcd"),
-            ("Admin.admin", &addr),
-        ]);
+        let privkey =
+            H256::from("0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6");
 
+        let mut executor = helpers::init_executor();
         let to = Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
         let data = "c0c41f220000000000000000000000000000000000000000000\
                     000000000000000000020000000000000000000000000000000\
@@ -543,14 +510,14 @@ mod tests {
             .unwrap();
 
         assert_eq!(chain_name_pending, "12345");
-        assert_eq!(chain_name_latest, "abcd");
+        assert_eq!(chain_name_latest, "test-chain");
     }
 
     #[test]
     fn test_rollback_current_height() {
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let mut executor = helpers::init_executor(vec![]);
+        let mut executor = helpers::init_executor();
 
         let data = helpers::generate_contract();
         for _i in 0..5 {
@@ -580,7 +547,7 @@ mod tests {
     fn test_closed_block_grow() {
         let keypair = KeyPair::gen_keypair();
         let privkey = keypair.privkey();
-        let mut executor = helpers::init_executor(vec![]);
+        let mut executor = helpers::init_executor();
 
         let data = helpers::generate_contract();
         let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
@@ -602,7 +569,6 @@ mod tests {
         let (command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
         let (command_resp_sender, command_resp_receiver) = crossbeam_channel::bounded(0);
         let mut executor = helpers::init_executor2(
-            vec![],
             fsm_req_receiver.clone(),
             fsm_resp_sender,
             command_req_receiver,

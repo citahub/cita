@@ -31,6 +31,7 @@ for binary in \
         cita-jsonrpc \
         cita-network \
         create-key-addr \
+        create-genesis \
         cita-relayer-parser \
         snapshot-tool \
         consensus-mock \

@@ -10,7 +10,10 @@ import shutil
 import sys
 import tempfile
 import toml
+import subprocess
+import time
 
+DEFAULT_PREVHASH = '0x{:064x}'.format(0)
 
 def update_search_paths(work_dir):
     """Add new path to the search path."""
@@ -239,14 +242,17 @@ class ChainInfo():
         create_init_data(self.init_data_file, super_admin, contract_arguments)
 
     def create_genesis(self, timestamp, init_token, resource_dir):
-        from create_genesis import core as create_genesis
         prevhash = generate_prevhash(resource_dir)
         if resource_dir is not None:
             shutil.copytree(resource_dir,
                             os.path.join(self.configs_dir, 'resource'), False)
-        create_genesis(self.contracts_dir, self.contracts_docs_dir,
-                       self.init_data_file, self.genesis_path, timestamp,
-                       init_token, prevhash)
+
+        prevhash = DEFAULT_PREVHASH if not prevhash else str(prevhash)
+        timestamp = str(int(time.time() * 1000)) if not timestamp else str(timestamp)
+
+        process = subprocess.Popen(["./bin/create-genesis",self.contracts_dir, self.contracts_docs_dir,
+        self.init_data_file, self.genesis_path, timestamp, init_token, prevhash])
+        process.wait()
 
     def append_node(self, node):
         # For append mode: use the first element to store the new node

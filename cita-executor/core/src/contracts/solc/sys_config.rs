@@ -358,33 +358,13 @@ mod tests {
 
     #[test]
     fn test_delay_block_number() {
-        let executor = init_executor(vec![
-            ("SysConfig.delayBlockNumber", "2"),
-            ("SysConfig.checkCallPermission", "false"),
-            ("SysConfig.checkSendTxPermission", "false"),
-            ("SysConfig.checkCreateContractPermission", "false"),
-            ("SysConfig.checkQuota", "true"),
-            ("SysConfig.checkFeeBackPlatform", "true"),
-            (
-                "SysConfig.chainOwner",
-                "0x0000000000000000000000000000000000000000",
-            ),
-            ("SysConfig.chainName", "test-chain"),
-            ("SysConfig.chainId", "123"),
-            ("SysConfig.operator", "test-operator"),
-            ("SysConfig.website", "https://www.cryptape.com"),
-            ("SysConfig.blockInterval", "3006"),
-            ("SysConfig.economicalModel", "1"),
-            ("SysConfig.name", "name"),
-            ("SysConfig.symbol", "symbol"),
-            ("SysConfig.avatar", "avatar"),
-        ]);
+        let executor = init_executor();
 
         let config = SysConfig::new(&executor);
 
         // Test delay block number
         let number = config.delay_block_number(BlockId::Pending).unwrap();
-        assert_eq!(number, 2);
+        assert_eq!(number, 1);
 
         // Test call permission_check
         let check_call_permission = config.call_permission_check(BlockId::Pending).unwrap();
@@ -406,7 +386,7 @@ mod tests {
 
         // Test fee_back_platform_check
         let check_fee_back_platform = config.fee_back_platform_check(BlockId::Pending).unwrap();
-        assert_eq!(check_fee_back_platform, true);
+        assert_eq!(check_fee_back_platform, false);
 
         // Test chain_owner
         let value = config.chain_owner(BlockId::Pending).unwrap();
@@ -421,7 +401,7 @@ mod tests {
 
         // Test chain_id
         let value = config.chain_id(BlockId::Pending).unwrap();
-        assert_eq!(value, 123);
+        assert_eq!(value, 1);
 
         // Test operator
         let value = config.operator(BlockId::Pending).unwrap();
@@ -429,24 +409,24 @@ mod tests {
 
         // Test website
         let value = config.website(BlockId::Pending).unwrap();
-        assert_eq!(value, "https://www.cryptape.com");
+        assert_eq!(value, "https://www.example.com");
 
         // Test block_interval
         let value = config.block_interval(BlockId::Pending).unwrap();
-        assert_eq!(value, 3006);
+        assert_eq!(value, 3000);
 
         // Test economical_model
         let value = config.economical_model(BlockId::Pending).unwrap();
-        assert_eq!(value, EconomicalModel::Charge);
+        assert_eq!(value, EconomicalModel::Quota);
 
         // Test token info
         let value = config.token_info(BlockId::Pending).unwrap();
         assert_eq!(
             value,
             TokenInfo {
-                name: "name".to_owned(),
-                symbol: "symbol".to_owned(),
-                avatar: "avatar".to_owned()
+                name: "CITA Test Token".to_owned(),
+                symbol: "CTT".to_owned(),
+                avatar: "https://cdn.cryptape.com/icon_cita.png".to_owned()
             }
         );
 

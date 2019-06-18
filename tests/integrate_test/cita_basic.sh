@@ -39,7 +39,7 @@ main() {
 
     echo -n "5) stop node3, check height growth  ...  "
     bin/cita bebop stop $CHAIN_NAME/3 2>&1
-    timeout=$(check_height_growth_normal 0 30) || (echo "FAILED"
+    timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                    echo "error msg: ${timeout}"
                                                    exit 1)
     echo "${timeout}s DONE"

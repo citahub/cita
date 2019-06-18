@@ -205,27 +205,19 @@ mod tests {
 
     #[test]
     fn test_users() {
-        let executor = init_executor(vec![
-            ((
-                "QuotaManager.admin",
-                "0xd3f1a71d1d8f073f4e725f57bbe14d67da22f888",
-            )),
-        ]);
-        println!("init executor finish");
+        let executor = init_executor();
 
         let quota_management = QuotaManager::new(&executor);
         let users = quota_management.users(BlockId::Pending).unwrap();
         assert_eq!(
             users,
-            vec![H160::from_str("d3f1a71d1d8f073f4e725f57bbe14d67da22f888").unwrap()]
+            vec![H160::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523").unwrap()]
         );
     }
 
     #[test]
     fn test_quota() {
-        let executor = init_executor(vec![]);
-        println!("init executor finish");
-
+        let executor = init_executor();
         let quota_management = QuotaManager::new(&executor);
 
         // Test quota
