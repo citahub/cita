@@ -50,4 +50,5 @@ module.exports = {
   genContract,
   getTxReceipt,
   getBlockNumber,
+  getMetaData,
 };

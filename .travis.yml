@@ -108,6 +108,9 @@ jobs:
     - <<: *stage-contract-test-sha3-secp256k1
       name: Unit Uint8
       script: npm run-script uint8
+    - <<: *stage-contract-test-sha3-secp256k1
+      name: Unit VersionManager
+      script: npm run-script unit_vm
 
     - <<: *stage-contract-test-sha3-secp256k1
       name: Unit Node
