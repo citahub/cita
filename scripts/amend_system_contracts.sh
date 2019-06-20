@@ -11,7 +11,7 @@ fi
 if [ "$1" = "help" ]; then
     echo "Admin private key, chain id, version, url  as the params.
         For example: \\
-        ./env.sh scripts/amend_system_contracts.sh \\
+        bin/cita scripts/amend_system_contracts.sh \\
         0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \\
         1 \\
         1 \\
