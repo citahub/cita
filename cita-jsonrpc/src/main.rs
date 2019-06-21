@@ -101,7 +101,6 @@ use uuid::Uuid;
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 fn main() {
-    // todo load config
     let matches = App::new("JsonRpc")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))

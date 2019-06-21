@@ -55,10 +55,8 @@ pub mod env_info;
 
 #[macro_use]
 pub mod error;
-
 pub mod filters;
 pub mod libchain;
 pub mod snapshot;
-
 pub use cita_db::journaldb;
 pub use types::*;

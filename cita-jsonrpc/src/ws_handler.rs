@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -70,7 +70,6 @@ impl Factory for WsFactory {
 impl Handler for WsHandler {
     fn on_message(&mut self, msg: ws::Message) -> ws::Result<()> {
         trace!("Server got message '{}'  post thread_pool deal task ", msg);
-        // let this = self.clone();
         let tx = self.tx.clone();
         let response = Arc::clone(&self.responses);
         let sender = self.sender.clone();
