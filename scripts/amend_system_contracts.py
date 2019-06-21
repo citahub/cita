@@ -13,7 +13,7 @@ import sys
 import time
 from jsonrpcclient.http_client import HTTPClient
 
-LATEST_VERSION = 1
+LATEST_VERSION = 2
 AMEND_ADDR = '0xffffffffffffffffffffffffffffffffff010002'
 SYS_CONF = '0xffffffffffffffffffffffffffffffffff020000'
 NEW = '0xffffffffffffffffffffffffffffffffff020012'
