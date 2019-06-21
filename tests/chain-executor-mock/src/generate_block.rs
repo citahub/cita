@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -57,17 +57,6 @@ impl BuildBlock {
         From::from(stream.out().crypt_hash())
     }
 
-    /// Generate a signed transaction
-    ///
-    /// ```no_run
-    /// message Transaction {
-    ///     string to = 1;
-    ///     string nonce = 2;
-    ///     uint64 quota = 3;
-    ///     uint64 valid_until_block = 4;
-    ///     bytes data = 5;
-    /// }
-    /// ```
     pub fn build_tx(
         to_address: &str,
         data: &str,
