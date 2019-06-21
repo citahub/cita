@@ -185,7 +185,7 @@ impl PackedReader {
     /// Create a new `PackedReader` for the file at the given path.
     /// This will fail if any io errors are encountered or the file
     /// is not a valid packed snapshot.
-    pub fn create(path: &Path) -> Result<Option<Self>, ::error::Error> {
+    pub fn create(path: &Path) -> Result<Option<Self>, crate::error::Error> {
         let mut file = File::open(path)?;
         let file_len = file.metadata()?.len();
         if file_len < 8 {
@@ -270,7 +270,7 @@ pub struct LooseReader {
 impl LooseReader {
     /// Create a new `LooseReader` which will read the manifest and chunk data from
     /// the given directory.
-    pub fn create(mut dir: PathBuf) -> Result<Self, ::error::Error> {
+    pub fn create(mut dir: PathBuf) -> Result<Self, crate::error::Error> {
         let mut manifest_buf = Vec::new();
 
         dir.push("MANIFEST");

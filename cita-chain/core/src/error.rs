@@ -16,14 +16,14 @@
 
 //! General error types for use in ethcore.
 
-use basic_types::LogBloom;
+use crate::basic_types::LogBloom;
 use cita_ed25519::Error as EthkeyError;
 
-use cita_db::TrieError;
+use crate::cita_db::TrieError;
+use crate::header::BlockNumber;
+use crate::snapshot::error::Error as SnapshotError;
 use cita_types::{H256, U256, U512};
-use header::BlockNumber;
 use snappy;
-use snapshot::error::Error as SnapshotError;
 use std::fmt;
 use util::*;
 
