@@ -16,8 +16,8 @@
 
 //! Execution environment substate.
 
+use crate::log_entry::LogEntry;
 use cita_types::{Address, U256};
-use log_entry::LogEntry;
 use std::collections::HashSet;
 
 /// State changes which should be applied in finalize,
@@ -60,7 +60,7 @@ impl Substate {
 #[cfg(test)]
 mod tests {
     use super::Substate;
-    use log_entry::LogEntry;
+    use crate::log_entry::LogEntry;
 
     #[test]
     fn created() {

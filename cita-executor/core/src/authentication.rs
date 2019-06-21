@@ -15,14 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::contracts::solc::{permission_management::contains_resource, Resource};
+use crate::executed::ExecutionError;
+use crate::libexecutor::sys_config::CheckOptions;
+use crate::types::reserved_addresses;
+use crate::types::transaction::{Action, SignedTransaction};
 use cita_types::{Address, H160};
-use contracts::solc::{permission_management::contains_resource, Resource};
-use executed::ExecutionError;
-use libexecutor::sys_config::CheckOptions;
 use std::collections::HashMap;
 use std::str::FromStr;
-use types::reserved_addresses;
-use types::transaction::{Action, SignedTransaction};
 
 /// Check the sender's permission
 #[allow(unknown_lints, clippy::implicit_hasher)] // TODO clippy

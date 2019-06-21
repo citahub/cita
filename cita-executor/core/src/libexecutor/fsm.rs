@@ -142,17 +142,17 @@ impl FSM for Executor {
 #[cfg(test)]
 mod tests {
     use super::ExecutedBlock;
-    use cita_crypto::{CreateKey, KeyPair};
-    use cita_types::Address;
-    use libexecutor::block::OpenBlock;
-    use libexecutor::executor::Executor;
-    use libexecutor::fsm::{StatusOfFSM, FSM};
-    use std::thread;
-    use std::time::Duration;
-    use tests::helpers::{
+    use crate::libexecutor::block::OpenBlock;
+    use crate::libexecutor::executor::Executor;
+    use crate::libexecutor::fsm::{StatusOfFSM, FSM};
+    use crate::tests::helpers::{
         create_block, generate_block_body, generate_block_header, generate_contract, init_executor,
         init_executor2,
     };
+    use cita_crypto::{CreateKey, KeyPair};
+    use cita_types::Address;
+    use std::thread;
+    use std::time::Duration;
 
     fn generate_empty_block() -> OpenBlock {
         let block_body = generate_block_body();

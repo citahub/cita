@@ -18,12 +18,12 @@
 //! Get Admin Info
 
 use super::ContractCallExt;
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::executor::Executor;
+use crate::types::ids::BlockId;
+use crate::types::reserved_addresses;
 use cita_types::Address;
-use contracts::tools::{decode as decode_tools, method as method_tools};
-use libexecutor::executor::Executor;
 use std::str::FromStr;
-use types::ids::BlockId;
-use types::reserved_addresses;
 
 lazy_static! {
     static ref GET_ADMIN: Vec<u8> = method_tools::encode_to_vec(b"admin()");
@@ -51,9 +51,9 @@ impl<'a> Admin<'a> {
 #[cfg(test)]
 mod tests {
     use super::Admin;
+    use crate::tests::helpers::init_executor;
+    use crate::types::ids::BlockId;
     use cita_types::Address;
-    use tests::helpers::init_executor;
-    use types::ids::BlockId;
 
     #[test]
     fn test_admin() {

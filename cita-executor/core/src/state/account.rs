@@ -19,12 +19,13 @@
 
 //! Single account in the system.
 
-use cita_db::{trie, DBValue, HashDB, Trie, TrieFactory};
+use crate::cita_db::{trie, DBValue, HashDB, Trie, TrieFactory};
+use crate::pod_account::*;
+use crate::types::basic_account::BasicAccount;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use hashable::{Hashable, HASH_EMPTY, HASH_NULL_RLP};
 use lru_cache::LruCache;
-use pod_account::*;
 use rlp::*;
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
@@ -32,7 +33,6 @@ use std::collections::HashMap;
 use std::convert::Into;
 use std::fmt;
 use std::sync::Arc;
-use types::basic_account::BasicAccount;
 use util::*;
 
 const STORAGE_CACHE_ITEMS: usize = 8192;
@@ -720,8 +720,8 @@ impl fmt::Debug for Account {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use account_db::*;
-    use cita_db::MemoryDB;
+    use crate::account_db::*;
+    use crate::cita_db::MemoryDB;
     use rlp::{Compressible, RlpType, UntrustedRlp};
 
     #[test]

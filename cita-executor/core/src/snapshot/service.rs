@@ -27,14 +27,14 @@ use std::sync::Arc;
 use super::io::{LooseReader, LooseWriter, SnapshotReader, SnapshotWriter};
 use super::{BlockRebuilder, ManifestData, RestorationStatus, StateRebuilder};
 
-use error::Error;
+use crate::error::Error;
 
+use crate::libexecutor::executor::Executor;
 use cita_types::H256;
-use libexecutor::executor::Executor;
 
-use cita_db::journaldb::Algorithm;
-use cita_db::kvdb::{Database, DatabaseConfig, KeyValueDB};
-use cita_db::TrieError;
+use crate::cita_db::journaldb::Algorithm;
+use crate::cita_db::kvdb::{Database, DatabaseConfig, KeyValueDB};
+use crate::cita_db::TrieError;
 use snappy;
 use util::Bytes;
 use util::UtilError;

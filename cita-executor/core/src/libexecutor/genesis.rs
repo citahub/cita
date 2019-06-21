@@ -15,25 +15,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_db::kvdb::KeyValueDB;
+use crate::cita_db::kvdb::KeyValueDB;
+use crate::db::{self as db, Writable};
+use crate::factory::Factories;
+use crate::libexecutor::block::Block;
+use crate::state::State;
+use crate::state_db::StateDB;
+use crate::types::extras::*;
 use cita_types::traits::ConvertType;
 use cita_types::{clean_0x, Address, H256, U256};
 use crypto::digest::Digest;
 use crypto::md5::Md5;
-use db::{self as db, Writable};
-use factory::Factories;
-use libexecutor::block::Block;
 use rustc_hex::FromHex;
 use serde_json;
-use state::State;
-use state_db::StateDB;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
-use types::extras::*;
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
 
@@ -187,8 +187,8 @@ impl Genesis {
 
 #[cfg(test)]
 mod test {
+    use crate::libexecutor::genesis::{Contract, Spec};
     use cita_types::{H256, U256};
-    use libexecutor::genesis::{Contract, Spec};
     use serde_json;
     use std::collections::HashMap;
     use std::str::FromStr;

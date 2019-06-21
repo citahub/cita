@@ -18,15 +18,15 @@
 //! Quota manager.
 
 use super::ContractCallExt;
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::executor::Executor;
+use crate::types::ids::BlockId;
+use crate::types::reserved_addresses;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H160};
-use contracts::tools::{decode as decode_tools, method as method_tools};
-use libexecutor::executor::Executor;
 use libproto::blockchain::AccountGasLimit as ProtoAccountQuotaLimit;
 use std::collections::HashMap;
 use std::str::FromStr;
-use types::ids::BlockId;
-use types::reserved_addresses;
 
 const QUOTAS: &[u8] = &*b"getQuotas()";
 const ACCOUNTS: &[u8] = &*b"getAccounts()";
@@ -198,10 +198,10 @@ mod tests {
     extern crate cita_logger as logger;
 
     use super::{QuotaManager, AQL_VALUE, AUTO_EXEC_QL_VALUE, BQL_VALUE};
+    use crate::tests::helpers::init_executor;
+    use crate::types::ids::BlockId;
     use cita_types::H160;
     use std::str::FromStr;
-    use tests::helpers::init_executor;
-    use types::ids::BlockId;
 
     #[test]
     fn test_users() {

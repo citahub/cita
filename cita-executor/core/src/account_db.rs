@@ -16,7 +16,7 @@
 
 //! DB backend wrapper for Account trie
 
-use cita_db::{DBValue, HashDB};
+use crate::cita_db::{DBValue, HashDB};
 use cita_types::{Address, H256};
 use hashable::{Hashable, HASH_NULL_RLP};
 use rlp::NULL_RLP;

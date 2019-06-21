@@ -20,21 +20,23 @@ extern crate tempdir;
 
 use self::rustc_serialize::hex::FromHex;
 use self::tempdir::TempDir;
+use crate::cita_db::kvdb::{self, Database, DatabaseConfig};
+use crate::cita_db::KeyValueDB;
+use crate::db;
+use crate::journaldb;
+use crate::libexecutor::block::{BlockBody, ClosedBlock, OpenBlock};
+use crate::libexecutor::command;
+use crate::libexecutor::executor::Executor;
+use crate::state::State;
+use crate::state_db::*;
+use crate::types::header::OpenHeader;
+use crate::types::transaction::SignedTransaction;
 use cita_crypto::PrivKey;
-use cita_db::kvdb::{self, Database, DatabaseConfig};
-use cita_db::KeyValueDB;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, U256};
 use core::libchain::chain;
 use crossbeam_channel::{Receiver, Sender};
-use db;
-use journaldb;
-use libexecutor::block::{BlockBody, ClosedBlock, OpenBlock};
-use libexecutor::command;
-use libexecutor::executor::Executor;
 use libproto::blockchain;
-use state::State;
-use state_db::*;
 use std::env;
 use std::fs::File;
 use std::io::Read;
@@ -43,8 +45,6 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
-use types::header::OpenHeader;
-use types::transaction::SignedTransaction;
 use util::AsMillis;
 
 const CHAIN_CONFIG: &str = "chain.toml";
@@ -61,7 +61,7 @@ fn new_db() -> Arc<KeyValueDB> {
 
 pub fn get_temp_state_db() -> StateDB {
     let db = new_db();
-    let journal_db = journaldb::new(db, journaldb::Algorithm::Archive, ::db::COL_STATE);
+    let journal_db = journaldb::new(db, journaldb::Algorithm::Archive, crate::db::COL_STATE);
     StateDB::new(journal_db, 5 * 1024 * 1024)
 }
 
@@ -220,7 +220,7 @@ pub fn generate_block_header() -> OpenHeader {
 
 pub fn generate_block_body() -> BlockBody {
     let mut stx = SignedTransaction::default();
-    use types::transaction::SignedTransaction;
+    use crate::types::transaction::SignedTransaction;
     stx.data = vec![1; 200];
     let transactions = vec![stx; 200];
     BlockBody { transactions }

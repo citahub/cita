@@ -16,7 +16,7 @@
 
 //! Traces config.
 
-use bloomchain::Config as BloomConfig;
+use crate::bloomchain::Config as BloomConfig;
 
 /// Traces config.
 #[derive(Debug, PartialEq, Clone, Copy)]

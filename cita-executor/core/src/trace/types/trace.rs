@@ -18,7 +18,7 @@
 
 use super::error::Error;
 
-use basic_types::LogBloom;
+use crate::basic_types::LogBloom;
 use cita_types::traits::BloomTools;
 use cita_types::{Address, U256};
 use evm::action_params::ActionParams;

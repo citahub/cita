@@ -20,14 +20,14 @@
 use std::str::FromStr;
 
 use super::ContractCallExt;
-use contracts::tools::method as method_tools;
-use libexecutor::executor::Executor;
+use crate::contracts::tools::method as method_tools;
+use crate::libexecutor::executor::Executor;
 
+use crate::types::ids::BlockId;
+use crate::types::reserved_addresses;
 use cita_types::Address;
 use cita_types::H256;
 use ethabi::{decode, ParamType};
-use types::ids::BlockId;
-use types::reserved_addresses;
 
 lazy_static! {
     static ref VERSION_HASH: Vec<u8> = method_tools::encode_to_vec(b"getVersion()");
@@ -70,8 +70,8 @@ impl<'a> VersionManager<'a> {
 #[cfg(test)]
 mod tests {
     use super::VersionManager;
-    use tests::helpers::init_executor;
-    use types::ids::BlockId;
+    use crate::tests::helpers::init_executor;
+    use crate::types::ids::BlockId;
 
     #[test]
     fn test_state() {

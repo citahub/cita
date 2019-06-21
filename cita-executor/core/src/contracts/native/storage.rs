@@ -18,14 +18,14 @@
 use self::bincode::internal::serialize_into;
 use self::bincode::Infinite;
 use super::factory::{Contract, Factory};
+use crate::contracts::tools::method as method_tools;
+use crate::types::reserved_addresses;
 use bincode;
 use cita_types::{Address, H256, U256};
-use contracts::tools::method as method_tools;
 use evm;
 use evm::fake_tests::FakeExt;
 use std::io::Write;
 use std::str::FromStr;
-use types::reserved_addresses;
 
 use byteorder::BigEndian;
 use evm::action_params::ActionParams;

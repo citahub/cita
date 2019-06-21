@@ -18,30 +18,30 @@
 use super::command::{Command, CommandResp, Commander};
 use super::fsm::FSM;
 use super::sys_config::GlobalSysConfig;
-use bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
+use crate::bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
+use crate::cita_db::kvdb::{DBTransaction, Database, DatabaseConfig};
+use crate::cita_db::trie::{TrieFactory, TrieSpec};
+use crate::cita_db::{journaldb, KeyValueDB};
+use crate::contracts::{native::factory::Factory as NativeFactory, solc::NodeManager};
+use crate::db;
+use crate::db::*;
+use crate::engines::{Engine, NullEngine};
+use crate::factory::*;
+use crate::header::*;
+pub use crate::libexecutor::block::*;
+use crate::libexecutor::genesis::Genesis;
+use crate::state_db::StateDB;
+use crate::types::extras::*;
+use crate::types::ids::BlockId;
 pub use byteorder::{BigEndian, ByteOrder};
-use cita_db::kvdb::{DBTransaction, Database, DatabaseConfig};
-use cita_db::trie::{TrieFactory, TrieSpec};
-use cita_db::{journaldb, KeyValueDB};
 use cita_types::H256;
-use contracts::{native::factory::Factory as NativeFactory, solc::NodeManager};
 use crossbeam_channel::{Receiver, Sender};
-use db;
-use db::*;
-use engines::{Engine, NullEngine};
 use evm::env_info::LastHashes;
 use evm::Factory as EvmFactory;
-use factory::*;
-use header::*;
-pub use libexecutor::block::*;
-use libexecutor::genesis::Genesis;
 use libproto::{ConsensusConfig, ExecutedResult};
-use state_db::StateDB;
 use std::convert::{From, Into};
 use std::sync::Arc;
 use std::time::Instant;
-use types::extras::*;
-use types::ids::BlockId;
 use util::RwLock;
 use util::UtilError;
 
@@ -467,24 +467,24 @@ pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
 mod tests {
     extern crate cita_logger as logger;
     extern crate tempdir;
+    use crate::libexecutor::command::Commander;
+    use crate::libexecutor::command::{Command, CommandResp};
+    use crate::libexecutor::fsm::FSM;
+    use crate::tests::helpers;
+    use crate::types::ids::BlockId;
     use cita_crypto::{CreateKey, KeyPair};
     use cita_types::Address;
-    use libexecutor::command::Commander;
-    use libexecutor::command::{Command, CommandResp};
-    use libexecutor::fsm::FSM;
     use std::thread;
     use std::time::Duration;
-    use tests::helpers;
-    use types::ids::BlockId;
 
     #[test]
     #[cfg(feature = "sha3hash")]
     fn test_chain_name_valid_block_number() {
+        use crate::contracts::solc::sys_config::SysConfig;
+        use crate::types::reserved_addresses;
         use cita_types::H256;
-        use contracts::solc::sys_config::SysConfig;
         use rustc_hex::FromHex;
         use std::str::FromStr;
-        use types::reserved_addresses;
 
         let privkey =
             H256::from("0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6");

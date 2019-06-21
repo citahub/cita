@@ -299,7 +299,7 @@ pub struct LooseReader {
 impl LooseReader {
     /// Create a new `LooseReader` which will read the manifest and chunk data from
     /// the given directory.
-    pub fn create(mut dir: PathBuf) -> Result<Self, ::error::Error> {
+    pub fn create(mut dir: PathBuf) -> Result<Self, crate::error::Error> {
         let mut manifest_buf = Vec::new();
 
         dir.push("MANIFEST");

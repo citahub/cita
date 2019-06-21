@@ -17,20 +17,20 @@
 //! Trace database.
 
 use super::flat::{FlatBlockTraces, FlatTrace, FlatTransactionTraces};
-use bloomchain::group::{BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition};
-use bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
-use cache_manager::CacheManager;
-use cita_db::{DBTransaction, KeyValueDB};
+use crate::bloomchain::group::{BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition};
+use crate::bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
+use crate::cache_manager::CacheManager;
+use crate::cita_db::{DBTransaction, KeyValueDB};
+use crate::db::{self, CacheUpdatePolicy, Key, Readable, Writable};
+use crate::header::BlockNumber;
+use crate::log_blooms::LogBloomGroup;
+use crate::trace::{
+    Config, Database as TraceDatabase, DatabaseExtras, Filter, ImportRequest, LocalizedTrace,
+};
 use cita_types::{H256, H264};
-use db::{self, CacheUpdatePolicy, Key, Readable, Writable};
-use header::BlockNumber;
-use log_blooms::LogBloomGroup;
 use std::collections::{HashMap, VecDeque};
 use std::ops::Deref;
 use std::sync::Arc;
-use trace::{
-    Config, Database as TraceDatabase, DatabaseExtras, Filter, ImportRequest, LocalizedTrace,
-};
 use util::{HeapSizeOf, RwLock};
 
 const TRACE_DB_VER: &[u8] = b"1.0";
@@ -490,16 +490,16 @@ where
 
 #[cfg(test)]
 mod tests {
-    use cita_db::{kvdb, DBTransaction, KeyValueDB};
+    use crate::cita_db::{kvdb, DBTransaction, KeyValueDB};
+    use crate::header::BlockNumber;
+    use crate::trace::flat::{FlatBlockTraces, FlatTrace, FlatTransactionTraces};
+    use crate::trace::trace::{Action, Call, Res};
+    use crate::trace::{AddressesFilter, Filter, LocalizedTrace, TraceError};
+    use crate::trace::{Config, Database as TraceDatabase, DatabaseExtras, ImportRequest, TraceDB};
     use cita_types::{Address, H256, U256};
     use evm::call_type::CallType;
-    use header::BlockNumber;
     use std::collections::HashMap;
     use std::sync::Arc;
-    use trace::flat::{FlatBlockTraces, FlatTrace, FlatTransactionTraces};
-    use trace::trace::{Action, Call, Res};
-    use trace::{AddressesFilter, Filter, LocalizedTrace, TraceError};
-    use trace::{Config, Database as TraceDatabase, DatabaseExtras, ImportRequest, TraceDB};
 
     struct NoopExtras;
 
@@ -549,7 +549,7 @@ mod tests {
     }
 
     fn new_db() -> Arc<KeyValueDB> {
-        Arc::new(kvdb::in_memory(::db::NUM_COLUMNS.unwrap_or(0)))
+        Arc::new(kvdb::in_memory(crate::db::NUM_COLUMNS.unwrap_or(0)))
     }
 
     #[test]
