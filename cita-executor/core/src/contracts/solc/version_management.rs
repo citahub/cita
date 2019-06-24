@@ -76,7 +76,7 @@ mod tests {
     use crate::types::ids::BlockId;
 
     #[test]
-    fn test_state() {
+    fn test_get_version() {
         let executor = init_executor();
         let version_management = VersionManager::new(&executor);
         let version = version_management.get_version(BlockId::Pending).unwrap();
