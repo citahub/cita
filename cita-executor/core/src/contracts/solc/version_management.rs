@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -30,6 +30,8 @@ use cita_types::H256;
 use ethabi::{decode, ParamType};
 
 lazy_static! {
+    // Will use `getProtocolVersion` at next version after `v0.25.0`.
+    // And the `getVersion` will be *Deprecated*.
     static ref VERSION_HASH: Vec<u8> = method_tools::encode_to_vec(b"getVersion()");
     static ref CONTRACT_ADDRESS: Address =
         Address::from_str(reserved_addresses::VERSION_MANAGEMENT).unwrap();

@@ -23,7 +23,7 @@ contract VersionManager is IVersionManager, ReservedAddrPublic {
         version = _version;
     }
 
-    function setVersion(uint32 _version)
+    function setProtocolVersion(uint32 _version)
         public
         onlyAdmin
     {
@@ -37,11 +37,28 @@ contract VersionManager is IVersionManager, ReservedAddrPublic {
         version = _version;
     }
 
-    function getVersion()
+    /// @notice Deprecated. Check the setProtocolVersion
+    function setVersion(uint32 _version)
+        public
+        onlyAdmin
+    {
+        setProtocolVersion(_version);
+    }
+
+    function getProtocolVersion()
         public
         view
         returns (uint32)
     {
         return version;
+    }
+
+    /// @notice Deprecated. Check the getProtocolVersion
+    function getVersion()
+        public
+        view
+        returns (uint32)
+    {
+        return getProtocolVersion();
     }
 }

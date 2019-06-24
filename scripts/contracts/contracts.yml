@@ -221,5 +221,7 @@ PermissionContracts:
       address: '0xffffffffffffffffffffffffffffffffff021028'
       contracts:
         - VersionManager
+        - VersionManager
       functions:
         - 'setVersion(uint32)'
+        - 'setProtocolVersion(uint32)'

@@ -227,6 +227,7 @@ mod tests {
     const SET_STATE: &[u8] = &*b"setState(bool)";
     const SET_QUOTA_PRICE: &[u8] = &*b"setQuotaPrice(uint256)";
     const SET_VERSION: &[u8] = &*b"setVersion(uint32)";
+    const SET_PROTOCOL_VERSION: &[u8] = &*b"setProtocolVersion(uint32)";
 
     #[test]
     fn test_contains_resource() {
@@ -503,10 +504,15 @@ mod tests {
                 cont: H160::from_str(reserved_addresses::PRICE_MANAGEMENT).unwrap(),
                 func: method_tools::encode_to_vec(SET_QUOTA_PRICE),
             },
-            // version
+            // setVersion(Will deprecated)
             Resource {
                 cont: H160::from_str(reserved_addresses::VERSION_MANAGEMENT).unwrap(),
                 func: method_tools::encode_to_vec(SET_VERSION),
+            },
+            // setProtocolVersion
+            Resource {
+                cont: H160::from_str(reserved_addresses::VERSION_MANAGEMENT).unwrap(),
+                func: method_tools::encode_to_vec(SET_PROTOCOL_VERSION),
             },
         ];
         expected_resources.sort();
