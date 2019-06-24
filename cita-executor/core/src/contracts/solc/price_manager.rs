@@ -68,7 +68,7 @@ mod tests {
     use cita_types::U256;
 
     #[test]
-    fn test_state() {
+    fn test_quota_price() {
         let executor = init_executor();
         let price_management = PriceManagement::new(&executor);
         let price = price_management.quota_price(BlockId::Pending).unwrap();
