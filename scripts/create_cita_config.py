@@ -343,7 +343,7 @@ def run_subcmd_create(args, work_dir):
     info = ChainInfo(args.chain_name, work_dir)
     info.template_create_from_arguments(
         args, os.path.join(work_dir, 'scripts/contracts'),
-        os.path.join(work_dir, 'scripts/config_tool/config_example'))
+        os.path.join(work_dir, 'scripts/config_tool/default_config'))
     info.create_init_data(args.super_admin, args.contract_arguments)
     info.create_genesis(args.timestamp, args.init_token, args.resource_dir)
     info.enable_tls = args.enable_tls
