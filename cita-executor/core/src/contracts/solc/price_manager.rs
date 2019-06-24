@@ -18,12 +18,12 @@
 //! Quota Price Management
 
 use super::ContractCallExt;
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::executor::Executor;
+use crate::types::ids::BlockId;
+use crate::types::reserved_addresses;
 use cita_types::{Address, U256};
-use contracts::tools::{decode as decode_tools, method as method_tools};
-use libexecutor::executor::Executor;
 use std::str::FromStr;
-use types::ids::BlockId;
-use types::reserved_addresses;
 
 lazy_static! {
     static ref GET_QUOTA_PRICE: Vec<u8> = method_tools::encode_to_vec(b"getQuotaPrice()");
@@ -63,9 +63,9 @@ impl<'a> PriceManagement<'a> {
 #[cfg(test)]
 mod tests {
     use super::PriceManagement;
+    use crate::tests::helpers::init_executor;
+    use crate::types::ids::BlockId;
     use cita_types::U256;
-    use tests::helpers::init_executor;
-    use types::ids::BlockId;
 
     #[test]
     fn test_state() {

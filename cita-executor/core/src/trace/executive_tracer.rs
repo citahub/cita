@@ -16,13 +16,13 @@
 
 //! Simple executive tracer.
 
-use cita_types::{Address, U256};
-use evm::action_params::ActionParams;
-use trace::trace::{
+use crate::trace::trace::{
     Action, Call, CallResult, Create, CreateResult, MemoryDiff, Res, StorageDiff, Suicide,
     VMExecutedOperation, VMOperation, VMTrace,
 };
-use trace::{FlatTrace, TraceError, Tracer, VMTracer};
+use crate::trace::{FlatTrace, TraceError, Tracer, VMTracer};
+use cita_types::{Address, U256};
+use evm::action_params::ActionParams;
 use util::Bytes;
 
 /// Simple executive tracer. Traces all calls and creates. Ignores delegatecalls.

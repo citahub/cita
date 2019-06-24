@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::types::reserved_addresses;
 use cita_types::Address;
 use evm::action_params::ActionParams;
 use evm::{self, Ext, GasLeft};
 use std::collections::HashMap;
 use std::str::FromStr;
-use types::reserved_addresses;
 
 ////////////////////////////////////////////////////////////////////////////////
 pub type Signature = u32;

@@ -37,10 +37,10 @@ pub use self::types::filter::{AddressesFilter, Filter};
 pub use self::types::flat::{FlatBlockTraces, FlatTrace, FlatTransactionTraces};
 pub use self::types::trace::{MemoryDiff, StorageDiff, VMExecutedOperation, VMOperation, VMTrace};
 pub use self::types::{filter, flat, localized, trace};
-use cita_db::DBTransaction;
+use crate::cita_db::DBTransaction;
+use crate::header::BlockNumber;
 use cita_types::{Address, H256, U256};
 use evm::action_params::ActionParams;
-use header::BlockNumber;
 use util::Bytes;
 
 /// This trait is used by executive to build traces.

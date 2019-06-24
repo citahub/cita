@@ -20,15 +20,15 @@
 use std::str::FromStr;
 
 use super::ContractCallExt;
+use crate::contracts::solc::version_management::VersionManager;
+use crate::contracts::tools::method as method_tools;
+use crate::libexecutor::economical_model::EconomicalModel;
+use crate::libexecutor::executor::Executor;
+use crate::types::ids::BlockId;
+use crate::types::reserved_addresses;
 use cita_types::{Address, H256, U256};
-use contracts::solc::version_management::VersionManager;
-use contracts::tools::method as method_tools;
 use ethabi::{decode, ParamType, Token};
-use libexecutor::economical_model::EconomicalModel;
-use libexecutor::executor::Executor;
 use num::FromPrimitive;
-use types::ids::BlockId;
-use types::reserved_addresses;
 
 lazy_static! {
     static ref DELAY_BLOCK_NUMBER: Vec<u8> = method_tools::encode_to_vec(b"getDelayBlockNumber()");
@@ -351,10 +351,10 @@ mod tests {
     extern crate cita_logger as logger;
 
     use super::{EconomicalModel, SysConfig, TokenInfo};
+    use crate::tests::helpers::init_executor;
+    use crate::types::ids::BlockId;
     use cita_types::Address;
     use std::str::FromStr;
-    use tests::helpers::init_executor;
-    use types::ids::BlockId;
 
     #[test]
     fn test_delay_block_number() {

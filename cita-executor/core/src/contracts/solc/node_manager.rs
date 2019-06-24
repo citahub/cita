@@ -18,16 +18,16 @@
 //! Node manager.
 
 use super::ContractCallExt;
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::economical_model::EconomicalModel;
+use crate::libexecutor::executor::Executor;
+use crate::types::ids::BlockId;
+use crate::types::reserved_addresses;
 use cita_types::{Address, H160};
-use contracts::tools::{decode as decode_tools, method as method_tools};
 use largest_remainder_method::apportion;
-use libexecutor::economical_model::EconomicalModel;
-use libexecutor::executor::Executor;
 use rand::{Rng, SeedableRng, StdRng};
 use std::iter;
 use std::str::FromStr;
-use types::ids::BlockId;
-use types::reserved_addresses;
 
 const LIST_NODE: &[u8] = &*b"listNode()";
 const LIST_STAKE: &[u8] = &*b"listStake()";

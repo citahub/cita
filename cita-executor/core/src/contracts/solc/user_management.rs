@@ -17,13 +17,13 @@
 //! User management.
 
 use super::ContractCallExt;
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::executor::Executor;
+use crate::types::ids::BlockId;
+use crate::types::reserved_addresses;
 use cita_types::{Address, H160};
-use contracts::tools::{decode as decode_tools, method as method_tools};
-use libexecutor::executor::Executor;
 use std::collections::HashMap;
 use std::str::FromStr;
-use types::ids::BlockId;
-use types::reserved_addresses;
 
 const ALLGROUPS: &[u8] = &*b"queryGroups()";
 const ACCOUNTS: &[u8] = &*b"queryAccounts()";
@@ -99,11 +99,11 @@ mod tests {
     extern crate cita_logger as logger;
 
     use super::UserManagement;
+    use crate::tests::helpers::init_executor;
+    use crate::types::ids::BlockId;
+    use crate::types::reserved_addresses;
     use cita_types::{Address, H160};
     use std::str::FromStr;
-    use tests::helpers::init_executor;
-    use types::ids::BlockId;
-    use types::reserved_addresses;
 
     #[test]
     fn test_all_groups() {

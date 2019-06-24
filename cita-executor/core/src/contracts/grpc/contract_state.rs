@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::db::Key;
 use cita_types::{Address, H160};
-use db::Key;
 use rlp::*;
 use std::str::FromStr;
 use util::*;

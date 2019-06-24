@@ -2,6 +2,7 @@
 name = "core-executor"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>", "Cryptape Technologies <contact@cryptape.com>"]
+editon = "2018"
 
 [dependencies]
 cita-logger = "0.1.0"

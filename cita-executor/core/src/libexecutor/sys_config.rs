@@ -16,14 +16,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::executor::Executor;
-use cita_types::{Address, U256};
-use contracts::solc::{
+use crate::contracts::solc::{
     AccountQuotaLimit, EmergencyBrake, NodeManager, PermissionManagement, PriceManagement,
     QuotaManager, Resource, SysConfig, UserManagement, VersionManager, AUTO_EXEC_QL_VALUE,
 };
-use libexecutor::economical_model::EconomicalModel;
+use crate::libexecutor::economical_model::EconomicalModel;
+use crate::types::ids::BlockId;
+use cita_types::{Address, U256};
 use std::collections::HashMap;
-use types::ids::BlockId;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct GlobalSysConfig {

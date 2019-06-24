@@ -19,5 +19,5 @@ pub mod cache;
 pub mod chain;
 pub mod rich_status;
 pub mod status;
-pub use cita_db::journaldb;
-pub use types::block::*;
+pub use crate::cita_db::journaldb;
+pub use crate::types::block::*;

@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::spec;
 use cita_crypto_trait::Sign;
 use cita_ed25519::{Message as ED_Message, Signature as ED_Signature};
 use cita_secp256k1::Signature;
@@ -22,7 +23,6 @@ use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160 as Ripemd160Digest;
 use crypto::sha2::Sha256 as Sha256Digest;
 use hashable::Hashable;
-use spec;
 use std::cmp::min;
 use util::BytesRef;
 
@@ -206,10 +206,10 @@ mod tests {
     extern crate rustc_serialize;
 
     use super::{ethereum_builtin, Builtin, Linear, Pricer};
+    use crate::spec;
     use cita_crypto_trait::{CreateKey, Sign};
     use cita_ed25519::{pubkey_to_address as ED_pubkey_to_address, KeyPair, Signature};
     use cita_types::{H256, U256};
-    use spec;
     use util::BytesRef;
 
     #[test]

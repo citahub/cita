@@ -16,9 +16,9 @@
 
 //! Traces import request.
 
+use crate::header::BlockNumber;
+use crate::trace::FlatBlockTraces;
 use cita_types::H256;
-use header::BlockNumber;
-use trace::FlatBlockTraces;
 
 /// Traces import request.
 pub struct ImportRequest {

@@ -17,15 +17,15 @@
 // CITA, Copyright 2016-2017 Cryptape Technologies LLC.
 // Remove some hf code.
 
+use crate::cita_db::{DBTransaction, HashDB, JournalDB, KeyValueDB};
+use crate::db::COL_ACCOUNT_BLOOM;
+use crate::header::BlockNumber;
+use crate::state::backend::*;
+use crate::state::Account;
 use byteorder::{ByteOrder, LittleEndian};
-use cita_db::{DBTransaction, HashDB, JournalDB, KeyValueDB};
 use cita_types::{Address, H256};
-use db::COL_ACCOUNT_BLOOM;
 use ethcore_bloom_journal::{Bloom, BloomJournal};
-use header::BlockNumber;
 use lru_cache::LruCache;
-use state::backend::*;
-use state::Account;
 use std::collections::{HashSet, VecDeque};
 use std::sync::Arc;
 use util::cache::MemoryLruCache;

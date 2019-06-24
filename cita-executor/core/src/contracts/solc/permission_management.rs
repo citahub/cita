@@ -17,13 +17,13 @@
 //! Permission management.
 
 use super::ContractCallExt;
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::executor::Executor;
+use crate::types::ids::BlockId;
+use crate::types::reserved_addresses;
 use cita_types::{Address, H160, H256};
-use contracts::tools::{decode as decode_tools, method as method_tools};
-use libexecutor::executor::Executor;
 use std::collections::HashMap;
 use std::str::FromStr;
-use types::ids::BlockId;
-use types::reserved_addresses;
 
 const ALLACCOUNTS: &[u8] = &*b"queryAllAccounts()";
 const PERMISSIONS: &[u8] = &*b"queryPermissions(address)";
@@ -186,13 +186,13 @@ mod tests {
 
     use super::contains_resource;
     use super::{PermissionManagement, Resource, DEFAULT_SUPER_ADEMIN};
+    use crate::contracts::tools::method as method_tools;
+    use crate::tests::helpers::init_executor;
+    use crate::types::ids::BlockId;
+    use crate::types::reserved_addresses;
     use cita_types::{Address, H160, H256};
-    use contracts::tools::method as method_tools;
     use std::collections::HashMap;
     use std::str::FromStr;
-    use tests::helpers::init_executor;
-    use types::ids::BlockId;
-    use types::reserved_addresses;
 
     const NEW_PERMISSION: &[u8] = &*b"newPermission(bytes32,address[],bytes4[])";
     const DELETE_PERMISSION: &[u8] = &*b"deletePermission(address)";

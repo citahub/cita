@@ -28,5 +28,5 @@ pub mod lru_cache;
 pub mod sys_config;
 
 pub use self::genesis::Genesis;
-pub use cita_db::journaldb;
+pub use crate::cita_db::journaldb;
 pub use libproto::*;

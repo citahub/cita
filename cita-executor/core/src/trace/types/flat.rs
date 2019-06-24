@@ -17,7 +17,7 @@
 //! Flat trace module
 
 use super::trace::{Action, Res};
-use basic_types::LogBloom;
+use crate::basic_types::LogBloom;
 use rlp::*;
 use std::collections::VecDeque;
 use util::HeapSizeOf;
@@ -165,9 +165,9 @@ impl Into<Vec<FlatTransactionTraces>> for FlatBlockTraces {
 #[cfg(test)]
 mod tests {
     use super::{FlatBlockTraces, FlatTrace, FlatTransactionTraces};
+    use crate::trace::trace::{Action, Call, CallResult, Res, Suicide};
     use evm::call_type::CallType;
     use rlp::*;
-    use trace::trace::{Action, Call, CallResult, Res, Suicide};
 
     #[test]
     fn encode_flat_transaction_traces() {

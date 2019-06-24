@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use builtin::Builtin;
+use crate::builtin::Builtin;
+use crate::engines::Engine;
 use cita_types::Address;
-use engines::Engine;
 use std::collections::BTreeMap;
 
 /// An engine which does not provide any consensus mechanism and does not seal blocks.

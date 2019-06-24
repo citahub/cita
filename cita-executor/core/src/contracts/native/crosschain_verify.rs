@@ -15,15 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::contracts::{
+    native::factory::Contract, solc::ChainManagement, tools::method as method_tools,
+};
+use crate::state::StateProof;
 use cita_types::{Address, H256, U256};
-use contracts::{native::factory::Contract, solc::ChainManagement, tools::method as method_tools};
 use core::header::Header;
 use core::libchain::chain::TxProof;
 use ethabi;
 use evm::action_params::ActionParams;
 use evm::storage::Map;
 use evm::{Error, Ext, GasLeft, ReturnData};
-use state::StateProof;
 
 lazy_static! {
     static ref VERIFY_TRANSACTION_FUNC: u32 =

@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::contracts::solc::permission_management::Resource;
 use cita_types::{Address, H256, U256};
-use contracts::solc::permission_management::Resource;
 use ethabi::{decode, ParamType, Token};
 
 /// Parse solidity return data `address[]` to rust `Vec<Address>`

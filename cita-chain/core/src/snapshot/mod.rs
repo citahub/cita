@@ -28,7 +28,7 @@ const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 // Snappy::decompressed_len estimation may sometimes yield results greater
 // than PREFERRED_CHUNK_SIZE so allow some threshold here.
 //const MAX_CHUNK_SIZE: usize = PREFERRED_CHUNK_SIZE / 4 * 5;
-use header::Header;
+use crate::header::Header;
 
 use cita_types::H256;
 use rlp::{DecoderError, Encodable, RlpStream, UntrustedRlp};
@@ -37,31 +37,33 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use cita_db::kvdb::{DBTransaction, KeyValueDB};
+use crate::cita_db::kvdb::{DBTransaction, KeyValueDB};
 use hashable::Hashable;
 use snappy;
 use util::{Bytes, Mutex, BLOCKLIMIT};
 
-use basic_types::{LogBloom, LogBloomGroup};
-use bloomchain::group::BloomGroupChain;
-use bloomchain::{Bloom, Number as BloomChainNumber};
+use crate::basic_types::{LogBloom, LogBloomGroup};
+use crate::bloomchain::group::BloomGroupChain;
+use crate::bloomchain::{Bloom, Number as BloomChainNumber};
 
 pub use self::error::Error;
 use self::io::SnapshotReader;
 use self::io::SnapshotWriter;
 use self::service::{Service, SnapshotService};
 use super::header::BlockNumber;
-use db::{CacheUpdatePolicy, Writable, COL_BODIES, COL_EXTRA, COL_HEADERS};
+use crate::db::{CacheUpdatePolicy, Writable, COL_BODIES, COL_EXTRA, COL_HEADERS};
 
-use types::ids::BlockId;
+use crate::types::ids::BlockId;
 
-use libchain::chain::Chain;
-use types::block::{Block, BlockBody};
-use types::extras::{BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupPosition};
+use crate::libchain::chain::Chain;
+use crate::types::block::{Block, BlockBody};
+use crate::types::extras::{
+    BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupPosition,
+};
 
 use libproto::Proof;
 
-use receipt::Receipt;
+use crate::receipt::Receipt;
 
 //#[cfg(test)]
 //mod tests;
@@ -443,7 +445,11 @@ impl BlockRebuilder {
     }
 
     /// Feed an uncompressed state chunk into the rebuilder.
-    pub fn feed(&mut self, chunk: &[u8], abort_flag: &AtomicBool) -> Result<(), ::error::Error> {
+    pub fn feed(
+        &mut self,
+        chunk: &[u8],
+        abort_flag: &AtomicBool,
+    ) -> Result<(), crate::error::Error> {
         let rlp = UntrustedRlp::new(chunk);
         let item_count = rlp.item_count()?;
         let num_blocks = (item_count - 2) as u64;
@@ -684,7 +690,7 @@ impl BlockRebuilder {
     }
 
     /// Glue together any disconnected chunks and check that the chain is complete.
-    fn finalize(&self) -> Result<(), ::error::Error> {
+    fn finalize(&self) -> Result<(), crate::error::Error> {
         let mut batch = self.db.transaction();
 
         let genesis_block = self

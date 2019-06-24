@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::header::BlockNumber;
 use cita_types::{Address, H256, U256};
-use header::BlockNumber;
 use std::sync::Arc;
 
 /// Simple vector of hashes, should be at most 256 items large, can be smaller if being used
