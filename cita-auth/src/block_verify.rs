@@ -79,7 +79,7 @@ impl<'a> BlockVerify<'a> {
         unimplemented!();
     }
 
-    pub fn verify_emergency_brake() -> bool {
+    pub fn verify_emergency_intervention() -> bool {
         unimplemented!()
     }
 }

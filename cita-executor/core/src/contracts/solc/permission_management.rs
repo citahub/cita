@@ -327,7 +327,7 @@ mod tests {
             Address::from_str(reserved_addresses::PERMISSION_ACCOUNT_QUOTA).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_BLOCK_QUOTA).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_BATCH_TX).unwrap(),
-            Address::from_str(reserved_addresses::PERMISSION_EMERGENCY_BRAKE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_EMERGENCY_INTERVENTION).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_QUOTA_PRICE).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_VERSION).unwrap(),
         ];
@@ -494,9 +494,9 @@ mod tests {
                 cont: H160::from_str(reserved_addresses::BATCH_TX).unwrap(),
                 func: method_tools::encode_to_vec(MULTI_TXS),
             },
-            // emergencyBrake
+            // emergencyIntervention
             Resource {
-                cont: H160::from_str(reserved_addresses::EMERGENCY_BRAKE).unwrap(),
+                cont: H160::from_str(reserved_addresses::EMERGENCY_INTERVENTION).unwrap(),
                 func: method_tools::encode_to_vec(SET_STATE),
             },
             // quotaPrice

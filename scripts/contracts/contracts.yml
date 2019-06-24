@@ -44,9 +44,9 @@ NormalContracts:
   BatchTx:
     address: '0xffffffffffffffffffffffffffffffffff02000e'
     file: system/BatchTx.sol
-  EmergencyBrake:
+  EmergencyIntervention:
     address: '0xffffffffffffffffffffffffffffffffff02000f'
-    file: system/EmergencyBrake.sol
+    file: system/EmergencyIntervention.sol
   PriceManager:
     address: '0xffffffffffffffffffffffffffffffffff020010'
     file: system/PriceManager.sol
@@ -205,10 +205,10 @@ PermissionContracts:
         - BatchTx
       functions:
         - 'multiTxs(bytes)'
-    emergencyBrake:
+    emergencyIntervention:
       address: '0xffffffffffffffffffffffffffffffffff021026'
       contracts:
-        - EmergencyBrake
+        - EmergencyIntervention
       functions:
         - 'setState(bool)'
     quotaPrice:
