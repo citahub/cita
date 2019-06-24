@@ -88,7 +88,7 @@ GPLv3 license
 
 ## 权益归属
 
-<img src="https://github.com/cryptape/assets/blob/master/cryptape-logo-square.png?raw=true">
+<img src="https://github.com/cryptape/assets/blob/master/cryptape-logo-square.png?raw=true" width="256">
 
 秘猿科技团队 :heart:
 
