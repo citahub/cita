@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -69,7 +69,7 @@ mod grpc_service {
                     (*count).to_string()
                 }
                 "count" => {
-                    let mut count = self.init_count.lock().unwrap();
+                    let count = self.init_count.lock().unwrap();
                     (*count).to_string()
                 }
                 "hello" => "hello".to_string(),
