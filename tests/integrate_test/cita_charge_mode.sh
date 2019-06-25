@@ -37,6 +37,13 @@ test_fee_back() {
     cd ../../..
 }
 
+test_perm_denied() {
+    local version=$1
+    cd ./scripts/txtool/txtool
+    python3 "${SOURCE_DIR}"/tests/integrate_test/test_perm_denied.py --version="$version"
+    cd ../../..
+}
+
 update_version() {
     local version=$1
     cd ./scripts/txtool/txtool
@@ -54,6 +61,7 @@ main() {
     echo -n "1) generate config  ...  "
     create_config \
         --contract_arguments "SysConfig.checkFeeBackPlatform=true" \
+        --contract_arguments "SysConfig.checkCreateContractPermission=true" \
         --contract_arguments "SysConfig.economicalModel=1" \
         --contract_arguments "VersionManager.version=0" \
         --contract_arguments "PriceManager.quotaPrice=1000000" \
@@ -74,25 +82,29 @@ main() {
     test_fee_back 0
     echo "DONE"
 
-    echo -n "5) Run charge mode tests in v0 ...  "
+    echo -n "5) Check permission denied ... "
+    test_perm_denied 0
+    echo "Done"
+
+    echo -n "6) Run charge mode tests in v0 ...  "
     test_charge_mode 0
     echo "DONE"
 
-    echo -n "6) Update to chainIDV1 ... "
+    echo -n "7) Update to chainIDV1 ... "
     update_version 0
     echo "DONE"
 
-    echo -n "7) check alive  ...  "
+    echo -n "8) check alive  ...  "
     timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                    echo "failed to check_height_growth 0: ${timeout}"
                                                    exit 1)
     echo "${timeout}s DONE"
 
-    echo -n "8) Run fee back tests in v1 ... "
+    echo -n "9) Run fee back tests in v1 ... "
     test_fee_back 1
     echo "DONE"
 
-    echo -n "9) Run charge mode tests in v1 ...  "
+    echo -n "10) Run charge mode tests in v1 ...  "
     test_charge_mode 1
     echo "DONE"
 }
