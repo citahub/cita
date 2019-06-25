@@ -15,17 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::cita_protocol::{pubsub_message_to_network_message, NetMessageUnit, CONSENSUS_STR};
+use crate::cita_protocol::{
+    pubsub_message_to_network_message, NetMessageUnit, CONSENSUS_STR, CONSENSUS_TTL_NUM,
+};
 use crate::config::NetConfig;
 use crate::p2p_protocol::transfer::TRANSFER_PROTOCOL_ID;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use cita_types::Address;
 use fnv::FnvHashMap as HashMap;
-use libproto::routing_key;
-use libproto::{
-    router::{MsgType, RoutingKey, SubModules},
-    Message as ProtoMessage, TryInto,
-};
+use libproto::{Message as ProtoMessage, TryInto};
 use notify::DebouncedEvent;
 use pubsub::channel::{select, tick, unbounded, Receiver, Sender};
 use rand::{thread_rng, Rng};
@@ -729,7 +727,6 @@ impl NetworkInitReq {
         let mut msg_unit = NetMessageUnit::default();
         msg_unit.key = "network.init".to_string();
         msg_unit.data = init_msg.into();
-        msg_unit.ttl = 0;
 
         if let Some(buf) = pubsub_message_to_network_message(&msg_unit) {
             if let Some(ref mut ctrl) = service.service_ctrl {
@@ -1064,13 +1061,12 @@ impl BroadcastReq {
         info.version = service.self_version;
         service.self_version += 1;
 
-        let cur_status: String = routing_key!(Synchronizer >> Status).into();
-
+        // Broadcast msg with three types:
         // Synchronizer >> Status for declaring myself status,only send to neighbors
         // If consensus node all be connected,consensus msg and tx msg only be sent once
         // No need to resend tx info
-        if service.consensus_topology.consensus_all_linked() || info.key == cur_status {
-            info.ttl = 0;
+        if !service.consensus_topology.consensus_all_linked() && info.key.contains(CONSENSUS_STR) {
+            info.ttl = CONSENSUS_TTL_NUM;
         }
 
         if let Some(buf) = pubsub_message_to_network_message(&info) {
@@ -1103,7 +1099,6 @@ impl SingleTxReq {
         let mut msg_unit = NetMessageUnit::default();
         msg_unit.key = self.key;
         msg_unit.data = self.msg.try_into().unwrap();
-        msg_unit.ttl = 0;
 
         if let Some(buf) = pubsub_message_to_network_message(&msg_unit) {
             if let Some(ref mut ctrl) = service.service_ctrl {

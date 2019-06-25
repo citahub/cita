@@ -60,8 +60,9 @@ pub const HEAD_VERSION_OFFSET: usize = 4 + 4;
 pub const HEAD_ADDRESS_OFFSET: usize = 4 + 4 + 8;
 pub const HEAD_KEY_LEN_OFFSET: usize = 4 + 4 + 8 + 20;
 pub const HEAD_TTL_OFFSET: usize = 4 + 4 + 8 + 20 + 1;
-pub const DEFAULT_TTL_NUM: u8 = 9;
 
+pub const DEFAULT_TTL_NUM: u8 = 0;
+pub const CONSENSUS_TTL_NUM: u8 = 9;
 pub const CONSENSUS_STR: &str = "consensus";
 
 #[derive(Debug, Clone)]
