@@ -13,6 +13,8 @@ import sha3
 from ecdsa import SigningKey, SECP256k1
 from jsonrpcclient.http_client import HTTPClient
 
+from txtool_utils import get_receipt, rpc_request, get_balance
+
 LATEST_VERSION = 1
 DEFAULT_QUOTA_PRICE = 1000000
 
@@ -55,27 +57,6 @@ def send_tx(privkey,
     subprocess.call(['python3', 'send_tx.py'])
     with open('../output/transaction/hash') as fobj:
         return fobj.read().strip()
-
-
-def rpc_request(method, params):
-    """ Send a jsonrpc request to default url. """
-    client = HTTPClient('http://127.0.0.1:1337')
-    return client.request(method, params)
-
-
-def get_balance(addr):
-    """ Get the balance of an address """
-    return int(rpc_request('getBalance', [addr, 'pending']), 16)
-
-
-def get_receipt(tx_hash, retry=8):
-    """ Get receipt of a transaction """
-    while retry > 0:
-        receipt = rpc_request('getTransactionReceipt', [tx_hash])
-        if receipt is not None:
-            return receipt
-        time.sleep(4)
-        retry -= 1
 
 
 def test_transfer(sender_privkey,
