@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,12 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_crypto::PrivKey;
+use cita_types::U256;
 use serde_json;
 use std::collections::HashMap;
 use std::time::Duration;
-
-use cita_crypto::PrivKey;
-use cita_types::U256;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct UpStream {
