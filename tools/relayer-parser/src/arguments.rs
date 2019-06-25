@@ -15,10 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use cita_types::{H256, U256};
 use clap;
 use std::str::FromStr;
-
-use cita_types::{H256, U256};
 
 pub struct AppArgs {
     pub cfg_file: String,
