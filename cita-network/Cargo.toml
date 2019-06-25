@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 tentacle-discovery = "0.2.4"
-tentacle = "0.2.0-alpha.14"
+tentacle = "0.2.1"
 tokio = "0.1.14"
 futures = "0.1.25"
 cita-logger = "0.1.0"

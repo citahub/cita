@@ -17,8 +17,11 @@
 
 use crate::cita_protocol::network_message_to_pubsub_message;
 use crate::network::{NetworkClient, RemoteMessage};
-use crate::node_manager::{AddConnectedNodeReq, InitMsg, NetworkInitReq, NodesManagerClient};
+use crate::node_manager::{
+    AddConnectedNodeReq, InitMsg, NetworkInitReq, NodesManagerClient, RetransNetMsgReq,
+};
 use bytes::BytesMut;
+use cita_types::Address;
 use libproto::{Message as ProtoMessage, TryFrom, TryInto};
 use tentacle::{
     builder::MetaBuilder,
@@ -40,6 +43,7 @@ struct TransferProtocol {
     connected_session_ids: Vec<SessionId>,
     network_client: NetworkClient,
     nodes_mgr_client: NodesManagerClient,
+    self_address: Address,
 }
 
 impl ServiceProtocol for TransferProtocol {
@@ -79,18 +83,34 @@ impl ServiceProtocol for TransferProtocol {
     fn received(&mut self, env: ProtocolContextMutRef, data: bytes::Bytes) {
         let mut data = BytesMut::from(data);
 
-        if let Some((key, message)) = network_message_to_pubsub_message(&mut data) {
-            if key.eq(&"network.init".to_string()) {
-                let msg = InitMsg::from(message);
+        if let Some(mut info) = network_message_to_pubsub_message(&mut data) {
+            if info.key.eq(&"network.init".to_string()) {
+                let msg = InitMsg::from(info.data);
                 let req = AddConnectedNodeReq::new(env.session.id, env.session.ty, msg);
                 self.nodes_mgr_client.add_connected_node(req);
                 return;
             }
 
-            let mut msg = ProtoMessage::try_from(&message).unwrap();
-            msg.set_origin(env.session.id.value() as u32);
+            if info.addr == self.self_address {
+                debug!("[Transfer] Recieve myself {:?} message", info.addr);
+                return;
+            }
+
+            let sid = env.session.id;
+            let mut msg = ProtoMessage::try_from(&info.data).unwrap();
+            msg.set_origin(sid.value() as u32);
             self.network_client
-                .handle_remote_message(RemoteMessage::new(key, msg.try_into().unwrap()));
+                .handle_remote_message(RemoteMessage::new(
+                    info.key.clone(),
+                    msg.try_into().unwrap(),
+                ));
+
+            // Now only consensus need be retransfered
+            if info.ttl > 0 {
+                info.ttl -= 1;
+                let req = RetransNetMsgReq::new(info, sid);
+                self.nodes_mgr_client.retrans_net_msg(req);
+            }
         } else {
             warn!("[Transfer] Cannot convert network message to pubsub message!");
         }
@@ -100,6 +120,7 @@ impl ServiceProtocol for TransferProtocol {
 pub fn create_transfer_meta(
     network_client: NetworkClient,
     nodes_mgr_client: NodesManagerClient,
+    self_address: Address,
 ) -> ProtocolMeta {
     MetaBuilder::default()
         .id(TRANSFER_PROTOCOL_ID)
@@ -114,6 +135,7 @@ pub fn create_transfer_meta(
                 connected_session_ids: Vec::default(),
                 network_client: network_client.clone(),
                 nodes_mgr_client: nodes_mgr_client.clone(),
+                self_address,
             });
             ProtocolHandle::Callback(handle)
         })

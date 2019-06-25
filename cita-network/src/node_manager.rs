@@ -15,7 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::cita_protocol::{pubsub_message_to_network_message, CITA_FRAME_HEADER_LEN};
+use crate::cita_protocol::{
+    pubsub_message_to_network_message, NetMessageUnit, CONSENSUS_STR, CONSENSUS_TTL_NUM,
+};
 use crate::config::NetConfig;
 use crate::p2p_protocol::transfer::TRANSFER_PROTOCOL_ID;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
@@ -24,7 +26,7 @@ use fnv::FnvHashMap as HashMap;
 use libproto::{Message as ProtoMessage, TryInto};
 use notify::DebouncedEvent;
 use pubsub::channel::{select, tick, unbounded, Receiver, Sender};
-use rand;
+use rand::{thread_rng, Rng};
 use std::sync::mpsc::Receiver as StdReceiver;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -126,14 +128,66 @@ impl TransformAddr {
     }
 }
 
+#[derive(Default, Debug)]
+pub struct ConsensusNodeTopology {
+    pub linked_nodes: BTreeSet<Address>,
+    pub validator_nodes: BTreeSet<Address>,
+    //pub consensus_threshold_linked : bool,
+    pub consensus_all_linked: bool,
+    pub height: u64,
+}
+
+impl ConsensusNodeTopology {
+    pub fn new(self_address: Address) -> ConsensusNodeTopology {
+        let mut top = ConsensusNodeTopology::default();
+        top.linked_nodes.insert(self_address);
+        top
+    }
+
+    fn validator_subset_linked(&self) -> bool {
+        self.validator_nodes.is_subset(&self.linked_nodes)
+    }
+
+    pub fn update_validators(&mut self, height: u64, validators: BTreeSet<Address>) {
+        if height < self.height || validators == self.validator_nodes {
+            debug!("No need update validator height {} self height {} validator {:?} self validator {:?}",
+            height,self.height,validators,self.validator_nodes);
+
+            if height > self.height {
+                self.height = height;
+            }
+            return;
+        }
+        self.validator_nodes = validators;
+        self.consensus_all_linked = self.validator_subset_linked();
+    }
+
+    pub fn add_linked_nodes(&mut self, linked_node: Address) {
+        if self.linked_nodes.insert(linked_node) {
+            self.consensus_all_linked = self.validator_subset_linked();
+        }
+    }
+
+    pub fn del_linked_nodes(&mut self, linked_node: &Address) {
+        if self.linked_nodes.remove(linked_node) {
+            self.consensus_all_linked = self.validator_subset_linked();
+        }
+    }
+
+    pub fn consensus_all_linked(&self) -> bool {
+        self.consensus_all_linked
+    }
+    //pub fn consensus_threshold_linked(&self) -> bool {self.consensus_threshold_linked}
+}
+
 pub struct NodesManager {
     known_addrs: HashMap<SocketAddr, NodeStatus>,
     config_addrs: BTreeMap<String, Option<SocketAddr>>,
 
-    connected_addrs: HashMap<SessionId, TransformAddr>,
-    pending_connected_addrs: HashMap<SessionId, SessionInfo>,
+    connected_addrs: BTreeMap<SessionId, TransformAddr>,
+    pending_connected_addrs: BTreeMap<SessionId, SessionInfo>,
 
-    connected_peer_keys: HashMap<Address, SessionId>,
+    connected_peer_keys: BTreeMap<Address, SessionId>,
 
     check_connected_nodes: Receiver<Instant>,
     max_connects: usize,
@@ -141,27 +195,49 @@ pub struct NodesManager {
     nodes_manager_service_receiver: Receiver<NodesManagerMessage>,
     service_ctrl: Option<ServiceControl>,
     peer_key: Address,
-    enable_tls: bool,
+
+    gossip_key_version: HashMap<Address, u64>,
+    consensus_topology: ConsensusNodeTopology,
+
+    self_version: u64,
+
     dialing_node: Option<SocketAddr>,
     self_addr: Option<SocketAddr>,
 }
 
 impl NodesManager {
-    pub fn new(known_addrs: HashMap<SocketAddr, NodeStatus>) -> Self {
-        let mut node_mgr = NodesManager::default();
-        node_mgr.known_addrs = known_addrs;
-        node_mgr
+    fn new(peer_key: Address) -> NodesManager {
+        let (tx, rx) = unbounded();
+        let ticker = tick(CHECK_CONNECTED_NODES);
+        let client = NodesManagerClient { sender: tx };
+
+        // Set enable_tls = false as default.
+        NodesManager {
+            check_connected_nodes: ticker,
+            known_addrs: HashMap::default(),
+            config_addrs: BTreeMap::default(),
+            connected_addrs: BTreeMap::default(),
+            connected_peer_keys: BTreeMap::default(),
+            pending_connected_addrs: BTreeMap::default(),
+            max_connects: DEFAULT_MAX_CONNECTS,
+            nodes_manager_client: client,
+            nodes_manager_service_receiver: rx,
+            service_ctrl: None,
+            peer_key,
+            dialing_node: None,
+            self_addr: None,
+            gossip_key_version: HashMap::default(),
+            self_version: 0,
+            consensus_topology: ConsensusNodeTopology::new(peer_key),
+        }
     }
 
     pub fn from_config(cfg: NetConfig, key: Address) -> Self {
-        let mut node_mgr = NodesManager::default();
+        let mut node_mgr = NodesManager::new(key);
         let max_connects = cfg.max_connects.unwrap_or(DEFAULT_MAX_CONNECTS);
         node_mgr.max_connects = max_connects;
         node_mgr.peer_key = key;
 
-        if let Some(enable_tls) = cfg.enable_tls {
-            node_mgr.enable_tls = enable_tls;
-        }
         if let Some(cfg_addrs) = cfg.peers {
             for addr in cfg_addrs {
                 if let (Some(ip), Some(port)) = (addr.ip, addr.port) {
@@ -247,12 +323,16 @@ impl NodesManager {
 
         // If connected node has not reach MAX, select a node from known_addrs to dial.
         if self.connected_addrs.len() < self.max_connects {
-            for (key, value) in self.known_addrs.iter_mut() {
+            let mut socks: Vec<_> = self.known_addrs.keys().cloned().collect();
+            thread_rng().shuffle(&mut socks);
+
+            for key in socks {
+                let value = self.known_addrs.get_mut(&key).unwrap();
                 // Node has been connected
                 if let Some(session_id) = value.session_id {
                     debug!(
                         "[NodeManager] Address {:?} has been connected on : {:?}.",
-                        *key, session_id
+                        key, session_id
                     );
 
                     // Node keep on line, reward KEEP_ON_LINE_SCORE.
@@ -264,19 +344,8 @@ impl NodesManager {
                     continue;
                 }
 
-                // Give 50% probability to select this node, this design can avoid two nodes
-                // simultaneously dialing each other.
-                let selected_miss: bool = (rand::random::<u32>() % 2) != 0;
-                if selected_miss {
-                    debug!(
-                        "[NodeManager] Address {:?} selects miss in this round.",
-                        *key
-                    );
-                    continue;
-                }
-
                 if let Some(self_addr) = self.self_addr {
-                    if *key == self_addr {
+                    if key == self_addr {
                         debug!(
                             "[NodeManager] Trying to connected self: {:?}, skip it",
                             self_addr
@@ -289,7 +358,7 @@ impl NodesManager {
                 if value.score < MIN_DIALING_SCORE {
                     debug!(
                         "[NodeManager] Address {:?} has to low score ({:?}) to dial.",
-                        *key, value.score
+                        key, value.score
                     );
 
                     // The node will get time sugar, the nodes which in config file can get 2, and the
@@ -304,9 +373,9 @@ impl NodesManager {
 
                 // Dial this address
                 if let Some(ref mut ctrl) = self.service_ctrl {
-                    self.dialing_node = Some(*key);
+                    self.dialing_node = Some(key);
                     info!("Trying to dial: {:?}", self.dialing_node);
-                    match ctrl.dial(socketaddr_to_multiaddr(*key), DialProtocol::All) {
+                    match ctrl.dial(socketaddr_to_multiaddr(key), DialProtocol::All) {
                         Ok(_) => {
                             // Need DIALING_SCORE for every dial.
                             value.score -= DIALING_SCORE;
@@ -336,10 +405,6 @@ impl NodesManager {
         self.service_ctrl = Some(ctrl);
     }
 
-    pub fn is_enable_tls(&self) -> bool {
-        self.enable_tls
-    }
-
     pub fn translate_address(&mut self) {
         for (key, value) in self.config_addrs.iter_mut() {
             // The address has translated.
@@ -365,32 +430,6 @@ impl NodesManager {
                     );
                 }
             }
-        }
-    }
-}
-
-impl Default for NodesManager {
-    fn default() -> NodesManager {
-        let (tx, rx) = unbounded();
-        let ticker = tick(CHECK_CONNECTED_NODES);
-        let client = NodesManagerClient { sender: tx };
-
-        // Set enable_tls = false as default.
-        NodesManager {
-            check_connected_nodes: ticker,
-            known_addrs: HashMap::default(),
-            config_addrs: BTreeMap::default(),
-            connected_addrs: HashMap::default(),
-            connected_peer_keys: HashMap::default(),
-            pending_connected_addrs: HashMap::default(),
-            max_connects: DEFAULT_MAX_CONNECTS,
-            nodes_manager_client: client,
-            nodes_manager_service_receiver: rx,
-            service_ctrl: None,
-            peer_key: Address::zero(),
-            enable_tls: false,
-            dialing_node: None,
-            self_addr: None,
         }
     }
 }
@@ -437,6 +476,10 @@ impl NodesManagerClient {
         self.send_req(NodesManagerMessage::Broadcast(req));
     }
 
+    pub fn retrans_net_msg(&self, req: RetransNetMsgReq) {
+        self.send_req(NodesManagerMessage::RetransNetMsg(req));
+    }
+
     pub fn send_message(&self, req: SingleTxReq) {
         self.send_req(NodesManagerMessage::SingleTxReq(req));
     }
@@ -461,6 +504,10 @@ impl NodesManagerClient {
         self.send_req(NodesManagerMessage::ModifiedConfigPeers(req));
     }
 
+    pub fn deal_rich_status(&self, req: DealRichStatusReq) {
+        self.send_req(NodesManagerMessage::DealRichStatus(req));
+    }
+
     fn send_req(&self, req: NodesManagerMessage) {
         if let Err(e) = self.sender.try_send(req) {
             warn!(
@@ -479,6 +526,7 @@ pub enum NodesManagerMessage {
     PendingConnectedNodeReq(PendingConnectedNodeReq),
     DelConnectedNodeReq(DelConnectedNodeReq),
     Broadcast(BroadcastReq),
+    RetransNetMsg(RetransNetMsgReq),
     SingleTxReq(SingleTxReq),
     GetPeerCount(GetPeerCountReq),
     NetworkInit(NetworkInitReq),
@@ -487,6 +535,7 @@ pub enum NodesManagerMessage {
     ConnectedSelf(ConnectedSelfReq),
     GetPeersInfo(GetPeersInfoReq),
     ModifiedConfigPeers(ModifiedConfigPeersReq),
+    DealRichStatus(DealRichStatusReq),
 }
 
 impl NodesManagerMessage {
@@ -506,6 +555,8 @@ impl NodesManagerMessage {
             NodesManagerMessage::ConnectedSelf(req) => req.handle(service),
             NodesManagerMessage::GetPeersInfo(req) => req.handle(service),
             NodesManagerMessage::ModifiedConfigPeers(req) => req.handle(service),
+            NodesManagerMessage::RetransNetMsg(req) => req.handle(service),
+            NodesManagerMessage::DealRichStatus(req) => req.handle(service),
         }
     }
 }
@@ -632,6 +683,9 @@ impl AddConnectedNodeReq {
             let _ = service
                 .connected_peer_keys
                 .insert(self.init_msg.peer_key, self.session_id);
+            service
+                .consensus_topology
+                .add_linked_nodes(self.init_msg.peer_key);
 
             info!(
                 "[NodeManager] connected_addrs info: {:?}",
@@ -665,23 +719,23 @@ impl NetworkInitReq {
     pub fn handle(self, service: &mut NodesManager) {
         let peer_key = service.peer_key;
 
-        let send_key = "network.init".to_string();
         let init_msg = InitMsg {
             chain_id: 0,
             peer_key,
         };
-        let msg_bytes: Vec<u8> = init_msg.into();
 
-        let mut buf = Vec::with_capacity(CITA_FRAME_HEADER_LEN + send_key.len() + msg_bytes.len());
-        pubsub_message_to_network_message(&mut buf, Some((send_key, msg_bytes)));
+        let mut msg_unit = NetMessageUnit::default();
+        msg_unit.key = "network.init".to_string();
+        msg_unit.data = init_msg.into();
 
-        if let Some(ref mut ctrl) = service.service_ctrl {
-            // FIXME: handle the error!
-            let ret = ctrl.send_message_to(self.session_id, TRANSFER_PROTOCOL_ID, buf.into());
-            info!(
-                "[NodeManager] Send network init message!, id: {:?}, peer_addr: {:?}, ret: {:?}",
-                self.session_id, peer_key, ret,
-            );
+        if let Some(buf) = pubsub_message_to_network_message(&msg_unit) {
+            if let Some(ref mut ctrl) = service.service_ctrl {
+                let ret = ctrl.send_message_to(self.session_id, TRANSFER_PROTOCOL_ID, buf);
+                info!(
+                    "[NodeManager] Send network init message!, id: {:?}, peer_addr: {:?}, ret: {:?}",
+                    self.session_id, peer_key, ret,
+                );
+            }
         }
     }
 }
@@ -787,7 +841,9 @@ impl GetRandomNodesReq {
     }
 
     pub fn handle(self, service: &mut NodesManager) {
-        let addrs = service.known_addrs.keys().take(self.num).cloned().collect();
+        let mut addrs: Vec<_> = service.known_addrs.keys().cloned().collect();
+        thread_rng().shuffle(&mut addrs);
+        addrs.truncate(self.num);
 
         if let Err(e) = self.return_channel.try_send(addrs) {
             warn!(
@@ -853,15 +909,21 @@ impl DelConnectedNodeReq {
             self.fix_node_status(trans_addr, service);
 
             // Remove connected peer keys
-            for (key, value) in service.connected_peer_keys.iter() {
-                if self.session_id == *value {
-                    info!(
-                        "[NodeManager] Remove session [{:?}] from connected_peer_keys.",
-                        *value
-                    );
-                    service.connected_peer_keys.remove(&key.clone());
-                    break;
+            let key = {
+                if let Some((&key, _)) = service
+                    .connected_peer_keys
+                    .iter()
+                    .find(|(_, &v)| v == self.session_id)
+                {
+                    Some(key)
+                } else {
+                    None
                 }
+            };
+
+            if let Some(key) = key {
+                service.consensus_topology.del_linked_nodes(&key);
+                service.connected_peer_keys.remove(&key);
             }
         }
 
@@ -897,6 +959,82 @@ impl DelConnectedNodeReq {
 }
 
 #[derive(Debug)]
+pub struct RetransNetMsgReq {
+    msg_unit: NetMessageUnit,
+    incomming_session_id: SessionId,
+}
+
+impl RetransNetMsgReq {
+    pub fn new(msg_unit: NetMessageUnit, incomming_session_id: SessionId) -> Self {
+        RetransNetMsgReq {
+            msg_unit,
+            incomming_session_id,
+        }
+    }
+
+    pub fn handle(mut self, service: &mut NodesManager) {
+        let msg_version = self.msg_unit.version;
+        let in_id = self.incomming_session_id;
+
+        trace!(
+            "[NodeManager] RetranseReq msg.key {:?}, from session {},version {} self current version {} ttl {}",
+            self.msg_unit.key,
+            self.incomming_session_id,
+            msg_version,
+            service.self_version,
+            self.msg_unit.ttl,
+        );
+
+        let saved_version = service
+            .gossip_key_version
+            .entry(self.msg_unit.addr)
+            .or_insert(0);
+        if msg_version == 0 || *saved_version < msg_version {
+            *saved_version = msg_version;
+            let mut ids: Vec<_> = service.connected_addrs.keys().cloned().collect();
+            ids.retain(|id| *id != in_id);
+
+            if service.consensus_topology.consensus_all_linked {
+                self.msg_unit.ttl = 0;
+            }
+
+            if let Some(buf) = pubsub_message_to_network_message(&self.msg_unit) {
+                if let Some(ref mut ctrl) = service.service_ctrl {
+                    let _ =
+                        ctrl.filter_broadcast(TargetSession::Multi(ids), TRANSFER_PROTOCOL_ID, buf);
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct DealRichStatusReq {
+    msg: ProtoMessage,
+}
+
+impl DealRichStatusReq {
+    pub fn new(msg: ProtoMessage) -> Self {
+        DealRichStatusReq { msg }
+    }
+
+    pub fn handle(mut self, service: &mut NodesManager) {
+        let rich_status = self.msg.take_rich_status().unwrap();
+        info!("DealRichStatusReq rich status {:?}", rich_status);
+
+        let validators: BTreeSet<Address> = rich_status
+            .get_validators()
+            .iter()
+            .map(|node| Address::from_slice(node))
+            .collect();
+
+        service
+            .consensus_topology
+            .update_validators(rich_status.get_height(), validators);
+    }
+}
+
+#[derive(Debug)]
 pub struct BroadcastReq {
     key: String,
     msg: ProtoMessage,
@@ -913,12 +1051,26 @@ impl BroadcastReq {
             self.msg,
             self.key
         );
-        let msg_bytes: Vec<u8> = self.msg.try_into().unwrap();
 
-        let mut buf = Vec::with_capacity(CITA_FRAME_HEADER_LEN + self.key.len() + msg_bytes.len());
-        pubsub_message_to_network_message(&mut buf, Some((self.key, msg_bytes)));
-        if let Some(ref mut ctrl) = service.service_ctrl {
-            let _ = ctrl.filter_broadcast(TargetSession::All, TRANSFER_PROTOCOL_ID, buf.into());
+        let mut info = NetMessageUnit::default();
+        info.key = self.key;
+        info.data = self.msg.try_into().unwrap();
+        info.addr = service.peer_key;
+        info.version = service.self_version;
+        service.self_version += 1;
+
+        // Broadcast msg with three types:
+        // Synchronizer >> Status for declaring myself status,only send to neighbors
+        // If consensus node all be connected,consensus msg and tx msg only be sent once
+        // No need to resend tx info
+        if !service.consensus_topology.consensus_all_linked() && info.key.contains(CONSENSUS_STR) {
+            info.ttl = CONSENSUS_TTL_NUM;
+        }
+
+        if let Some(buf) = pubsub_message_to_network_message(&info) {
+            if let Some(ref mut ctrl) = service.service_ctrl {
+                let _ = ctrl.filter_broadcast(TargetSession::All, TRANSFER_PROTOCOL_ID, buf);
+            }
         }
     }
 }
@@ -941,13 +1093,15 @@ impl SingleTxReq {
             self.dst,
             self.key
         );
-        let msg_bytes: Vec<u8> = self.msg.try_into().unwrap();
+        let dst = self.dst;
+        let mut msg_unit = NetMessageUnit::default();
+        msg_unit.key = self.key;
+        msg_unit.data = self.msg.try_into().unwrap();
 
-        let mut buf = Vec::with_capacity(CITA_FRAME_HEADER_LEN + self.key.len() + msg_bytes.len());
-        pubsub_message_to_network_message(&mut buf, Some((self.key, msg_bytes)));
-        if let Some(ref mut ctrl) = service.service_ctrl {
-            // FIXME: handle the error!
-            let _ = ctrl.send_message_to(self.dst, TRANSFER_PROTOCOL_ID, buf.into());
+        if let Some(buf) = pubsub_message_to_network_message(&msg_unit) {
+            if let Some(ref mut ctrl) = service.service_ctrl {
+                let _ = ctrl.send_message_to(dst, TRANSFER_PROTOCOL_ID, buf);
+            }
         }
     }
 }

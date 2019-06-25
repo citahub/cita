@@ -66,6 +66,7 @@ impl MqAgent {
             "network",
             routing_key!([
                 Chain >> Status,
+                Chain >> RichStatus,
                 Chain >> SyncResponse,
                 Jsonrpc >> RequestNet,
                 Jsonrpc >> RequestPeersInfo,
