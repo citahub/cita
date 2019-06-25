@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::cita_protocol::{network_message_to_pubsub_message, CONSENSUS_STR};
+use crate::cita_protocol::network_message_to_pubsub_message;
 use crate::network::{NetworkClient, RemoteMessage};
 use crate::node_manager::{
     AddConnectedNodeReq, InitMsg, NetworkInitReq, NodesManagerClient, RetransNetMsgReq,
@@ -106,7 +106,7 @@ impl ServiceProtocol for TransferProtocol {
                 ));
 
             // Now only consensus need be retransfered
-            if info.ttl > 0 && info.key.contains(CONSENSUS_STR) {
+            if info.ttl > 0 {
                 info.ttl -= 1;
                 let req = RetransNetMsgReq::new(info, sid);
                 self.nodes_mgr_client.retrans_net_msg(req);

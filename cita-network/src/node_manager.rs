@@ -994,9 +994,7 @@ impl RetransNetMsgReq {
             let mut ids: Vec<_> = service.connected_addrs.keys().cloned().collect();
             ids.retain(|id| *id != in_id);
 
-            if service.consensus_topology.consensus_all_linked
-                && self.msg_unit.key.contains(CONSENSUS_STR)
-            {
+            if service.consensus_topology.consensus_all_linked {
                 self.msg_unit.ttl = 0;
             }
 
