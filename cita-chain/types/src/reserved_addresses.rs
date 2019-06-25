@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -103,7 +103,7 @@ pub const GROUP_CREATOR: &str = "ffffffffffffffffffffffffffffffffff02000b";
 pub const ADMIN: &str = "ffffffffffffffffffffffffffffffffff02000c";
 pub const ROLE_AUTH: &str = "ffffffffffffffffffffffffffffffffff02000d";
 pub const BATCH_TX: &str = "ffffffffffffffffffffffffffffffffff02000e";
-pub const EMERGENCY_BRAKE: &str = "ffffffffffffffffffffffffffffffffff02000f";
+pub const EMERGENCY_INTERVENTION: &str = "ffffffffffffffffffffffffffffffffff02000f";
 pub const PRICE_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020010";
 pub const VERSION_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020011";
 pub const ALL_GROUPS: &str = "ffffffffffffffffffffffffffffffffff020012";
@@ -130,7 +130,7 @@ pub const PERMISSION_UPDATE_NODE: &str = "ffffffffffffffffffffffffffffffffff0210
 pub const PERMISSION_ACCOUNT_QUOTA: &str = "ffffffffffffffffffffffffffffffffff021023";
 pub const PERMISSION_BLOCK_QUOTA: &str = "ffffffffffffffffffffffffffffffffff021024";
 pub const PERMISSION_BATCH_TX: &str = "ffffffffffffffffffffffffffffffffff021025";
-pub const PERMISSION_EMERGENCY_BRAKE: &str = "ffffffffffffffffffffffffffffffffff021026";
+pub const PERMISSION_EMERGENCY_INTERVENTION: &str = "ffffffffffffffffffffffffffffffffff021026";
 pub const PERMISSION_QUOTA_PRICE: &str = "ffffffffffffffffffffffffffffffffff021027";
 pub const PERMISSION_VERSION: &str = "ffffffffffffffffffffffffffffffffff021028";
 

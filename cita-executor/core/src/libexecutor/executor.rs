@@ -452,7 +452,7 @@ pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
     consensus_config.set_check_quota(sys_config.block_sys_config.check_options.quota);
     consensus_config.set_block_interval(sys_config.block_interval);
     consensus_config.set_version(sys_config.block_sys_config.chain_version);
-    if sys_config.emergency_brake {
+    if sys_config.emergency_intervention {
         let super_admin_account = sys_config
             .block_sys_config
             .super_admin_account

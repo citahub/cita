@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Emergency Break
+//! Emergency Intervention
 
 use std::str::FromStr;
 
@@ -31,17 +31,17 @@ use ethabi::{decode, ParamType};
 lazy_static! {
     static ref STATE_HASH: Vec<u8> = method_tools::encode_to_vec(b"state()");
     static ref CONTRACT_ADDRESS: Address =
-        Address::from_str(reserved_addresses::EMERGENCY_BRAKE).unwrap();
+        Address::from_str(reserved_addresses::EMERGENCY_INTERVENTION).unwrap();
 }
 
 /// Configuration items from system contract
-pub struct EmergencyBrake<'a> {
+pub struct EmergencyIntervention<'a> {
     executor: &'a Executor,
 }
 
-impl<'a> EmergencyBrake<'a> {
+impl<'a> EmergencyIntervention<'a> {
     pub fn new(executor: &'a Executor) -> Self {
-        EmergencyBrake { executor }
+        EmergencyIntervention { executor }
     }
 
     pub fn state(&self, block_id: BlockId) -> Option<bool> {
@@ -55,22 +55,22 @@ impl<'a> EmergencyBrake<'a> {
     }
 
     pub fn default_state() -> bool {
-        info!("Use default emergency break state.");
+        info!("Use default emergency intervention state.");
         false
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::EmergencyBrake;
+    use super::EmergencyIntervention;
     use crate::tests::helpers::init_executor;
     use crate::types::ids::BlockId;
 
     #[test]
     fn test_state() {
         let executor = init_executor();
-        let emergency_brake = EmergencyBrake::new(&executor);
-        let state = emergency_brake.state(BlockId::Pending).unwrap();
+        let emergency_intervention = EmergencyIntervention::new(&executor);
+        let state = emergency_intervention.state(BlockId::Pending).unwrap();
         assert_eq!(state, false);
     }
 }

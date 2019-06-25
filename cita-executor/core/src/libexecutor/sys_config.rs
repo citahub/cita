@@ -17,7 +17,7 @@
 
 use super::executor::Executor;
 use crate::contracts::solc::{
-    AccountQuotaLimit, EmergencyBrake, NodeManager, PermissionManagement, PriceManagement,
+    AccountQuotaLimit, EmergencyIntervention, NodeManager, PermissionManagement, PriceManagement,
     QuotaManager, Resource, SysConfig, UserManagement, VersionManager, AUTO_EXEC_QL_VALUE,
 };
 use crate::libexecutor::economical_model::EconomicalModel;
@@ -34,7 +34,7 @@ pub struct GlobalSysConfig {
     pub changed_height: usize,
     /// Interval time for creating a block (milliseconds)
     pub block_interval: u64,
-    pub emergency_brake: bool,
+    pub emergency_intervention: bool,
     pub block_sys_config: BlockSysConfig,
 }
 
@@ -47,7 +47,7 @@ impl Default for GlobalSysConfig {
             delay_active_interval: 1,
             changed_height: 0,
             block_interval: 3000,
-            emergency_brake: false,
+            emergency_intervention: false,
             block_sys_config: BlockSysConfig::default(),
         }
     }
@@ -133,10 +133,10 @@ impl GlobalSysConfig {
             .set_specific_quota_limit(specific);
         conf.changed_height = executor.get_current_height() as usize;
 
-        let emergency_manager = EmergencyBrake::new(executor);
-        conf.emergency_brake = emergency_manager
+        let emergency_manager = EmergencyIntervention::new(executor);
+        conf.emergency_intervention = emergency_manager
             .state(block_id)
-            .unwrap_or_else(EmergencyBrake::default_state);
+            .unwrap_or_else(EmergencyIntervention::default_state);
 
         let version_manager = VersionManager::new(executor);
         conf.block_sys_config.chain_version = version_manager

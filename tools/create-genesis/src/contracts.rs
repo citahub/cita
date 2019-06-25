@@ -70,8 +70,8 @@ pub struct NormalContracts {
     #[serde(rename = "BatchTx")]
     pub batch_tx: Info,
 
-    #[serde(rename = "EmergencyBrake")]
-    pub emergency_brake: Info,
+    #[serde(rename = "EmergencyIntervention")]
+    pub emergency_intervention: Info,
 
     #[serde(rename = "PriceManager")]
     pub price_manager: Info,
@@ -104,7 +104,7 @@ impl NormalContracts {
         normal_contracts.insert("Admin", self.admin.clone());
         normal_contracts.insert("RoleAuth", self.role_auth.clone());
         normal_contracts.insert("BatchTx", self.batch_tx.clone());
-        normal_contracts.insert("EmergencyBrake", self.emergency_brake.clone());
+        normal_contracts.insert("EmergencyIntervention", self.emergency_intervention.clone());
         normal_contracts.insert("PriceManager", self.price_manager.clone());
         normal_contracts.insert("VersionManager", self.version_manager.clone());
         normal_contracts.insert("AllGroups", self.all_groups.clone());
@@ -224,8 +224,8 @@ pub struct Contracts {
     #[serde(rename = "batchTx")]
     pub batch_tx: ContractsInfo,
 
-    #[serde(rename = "emergencyBrake")]
-    pub emergency_brake: ContractsInfo,
+    #[serde(rename = "emergencyIntervention")]
+    pub emergency_intervention: ContractsInfo,
 
     #[serde(rename = "quotaPrice")]
     pub quota_price: ContractsInfo,
@@ -256,7 +256,7 @@ impl Contracts {
         contracts.insert("accountQuota", self.account_quota.clone());
         contracts.insert("blockQuota", self.block_quota.clone());
         contracts.insert("batchTx", self.batch_tx.clone());
-        contracts.insert("emergencyBrake", self.emergency_brake.clone());
+        contracts.insert("emergencyIntervention", self.emergency_intervention.clone());
         contracts.insert("quotaPrice", self.quota_price.clone());
         contracts.insert("version", self.version.clone());
         contracts
@@ -355,9 +355,9 @@ mod tests {
             BatchTx:
                 address: '0xffffffffffffffffffffffffffffffffff02000e'
                 file: system/BatchTx.sol
-            EmergencyBrake:
+            EmergencyIntervention:
                 address: '0xffffffffffffffffffffffffffffffffff02000f'
-                file: system/EmergencyBrake.sol
+                file: system/EmergencyIntervention.sol
             PriceManager:
                 address: '0xffffffffffffffffffffffffffffffffff020010'
                 file: system/PriceManager.sol
@@ -515,10 +515,10 @@ mod tests {
                         - BatchTx
                     functions:
                         - 'multiTxs(bytes)'
-                emergencyBrake:
+                emergencyIntervention:
                     address: '0xffffffffffffffffffffffffffffffffff021026'
                     contracts:
-                        - EmergencyBrake
+                        - EmergencyIntervention
                     functions:
                         - 'setState(bool)'
                 quotaPrice:
