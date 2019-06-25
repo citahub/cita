@@ -3,60 +3,17 @@
 Test cases of transfer and check balances in charge economical mode.
 """
 
-import functools
-import subprocess
 import argparse
 import time
 import binascii
-
 import sha3
+
 from ecdsa import SigningKey, SECP256k1
 from jsonrpcclient.http_client import HTTPClient
-
-from txtool_utils import get_receipt, rpc_request, get_balance
+from txtool_utils import get_receipt, rpc_request, get_balance, send_tx
 
 LATEST_VERSION = 1
 DEFAULT_QUOTA_PRICE = 1000000
-
-
-def send_tx(privkey,
-            to_addr,
-            value=0,
-            quota=30000,
-            code="",
-            version=LATEST_VERSION):
-    """
-    Send a transfer transaction to a node
-
-        python3 make_tx.py \
-        --value 20000 \
-        --quota 100000\
-        --code "" \
-        --privkey 101c286e965ddf8176dd6c0793e9ad5f3d745105fab744eea6ffdae6a98d0553 \
-        --to 0xc94bcce78b4e618c6a259d4eb8e7bf45e145f0d0 \
-        --no-newcrypto
-
-        python3 send_tx.py
-
-    """
-    kwargs = {
-        '--privkey': privkey,
-        '--to': to_addr,
-        '--code': code,
-        '--value': str(value),
-        '--quota': str(quota),
-        '--version': str(version),
-    }
-    args = functools.reduce(
-        lambda lst, kv: lst + list(kv),
-        kwargs.items(),
-        [],
-    )
-    print(['python3', 'make_tx.py', *args, '--no-newcrypto'])
-    subprocess.call(['python3', 'make_tx.py', *args, '--no-newcrypto'])
-    subprocess.call(['python3', 'send_tx.py'])
-    with open('../output/transaction/hash') as fobj:
-        return fobj.read().strip()
 
 
 def test_transfer(sender_privkey,
@@ -71,7 +28,12 @@ def test_transfer(sender_privkey,
     assert sender_balance_old > 0, \
         'Sender balance not enough: address={}'.format(sender_addr)
 
-    tx_hash = send_tx(sender_privkey, receiver_addr, value, version=version)
+    tx_hash = send_tx(
+        sender_privkey,
+        to=receiver_addr,
+        value=value,
+        quota=29000,
+        version=version)
     receipt = get_receipt(tx_hash)
     assert receipt and receipt['errorMessage'] is None, \
         'Send transaction failed: receipt={}'.format(receipt)
@@ -145,14 +107,15 @@ def main():
     version = args.version
 
     alice_privkey = '0xb5d6f7a1bf4493af95afc96f5bf116a3236038fae25e0287ac847623d4e183e6'
-    alice_address = key_address(alice_privkey)
+    alice_address = key_address(
+        alice_privkey)  # 0xc94bcce78b4e618c6a259d4eb8e7bf45e145f0d0
+    alice_old_balance = get_balance(alice_address)
     print('[Alice.address]: {}'.format(alice_address))
 
     bob_privkey = '0x9b9464a30a57702fbfc29cc4afbc676d3dcad1811db3a36ea79b0bde94e10dd9'
-    bob_address = key_address(bob_privkey)
+    bob_address = key_address(
+        bob_privkey)  # 0x32c7e8b442f2f67816baef4b2d51c34039aadfcc
     print('[Bob.address]: {}'.format(bob_address))
-
-    alice_old_balance = get_balance(alice_address)
 
     # Send 10 * 10000 * DEFAULT_QUOTA_PRICE from miner to alice
     test_transfer(
@@ -173,7 +136,7 @@ def main():
         'Bob({}) should receive 30000 * {} now'.format(bob_address, DEFAULT_QUOTA_PRICE)
 
     # Bob send an invalid transaction to chain (Error=NotEnoughCash)
-    tx_hash = send_tx(bob_privkey, "", quota=29000, code="", version=version)
+    tx_hash = send_tx(bob_privkey, quota=29000, version=version)
     # Wait the transaction receipt then check the balance
     get_receipt(tx_hash)
     bob_new_balance2 = get_balance(bob_address)

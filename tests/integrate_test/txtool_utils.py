@@ -6,15 +6,17 @@ import time
 from jsonrpcclient.http_client import HTTPClient
 
 LATEST_VERSION = 2
+DEFAULT_QUOTA = 1000000
 
 
-def send_tx(privkey, code="", to="", version=LATEST_VERSION):
+def send_tx(privkey,
+            code="",
+            to="",
+            value=0,
+            quota=DEFAULT_QUOTA,
+            version=LATEST_VERSION):
     """
-    Step 1: make tx
-
     python3 make_tx.py --privkey "$$" --to "$$" --code "$$" -- version "$$"
-
-    Step 2: Send tx
 
     python3 send_tx.py
     """
@@ -23,6 +25,8 @@ def send_tx(privkey, code="", to="", version=LATEST_VERSION):
         '--privkey': privkey,
         '--to': to,
         '--code': code,
+        '--value': str(value),
+        '--quota': str(quota),
         '--version': str(version),
     }
     args = functools.reduce(
