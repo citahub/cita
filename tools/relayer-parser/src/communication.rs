@@ -25,8 +25,8 @@ use serde_json;
 use std::convert::Into;
 use tokio_core::reactor::{Core, Timeout};
 
+use crate::configuration::UpStream;
 use cita_types::{H256, U256};
-use configuration::UpStream;
 use jsonrpc_types::{rpc_request, rpc_types};
 use libproto::blockchain::UnverifiedTransaction;
 
