@@ -12,7 +12,6 @@ from ecdsa import SigningKey, SECP256k1
 from jsonrpcclient.http_client import HTTPClient
 from txtool_utils import get_receipt, rpc_request, get_balance, send_tx
 
-LATEST_VERSION = 1
 DEFAULT_QUOTA_PRICE = 1000000
 
 
