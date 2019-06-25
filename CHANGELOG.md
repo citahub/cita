@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+### Framework
+
+- [Optimization] Bump Rust toolchain to `1.34.2`. [@kaikai1024]
+- [Optimization] Use Rust 2018 edition. [@kaikai1024] [@ouwenkg]
+- [Optimization] Use `cita-logger` crate. [@kaikai1024]
+
+### Network
+
+- [Fix] Fix the bug that save wrong session. [@leeyr338]
+- [Fix] Should not unwrap on handle_remote_msg. [@leeyr338]
+- [Fix] Fix the operation of repeated peer key. [@jerry-yu]
+- [Feature] Add retransfer message for P2P network. [@jerry-yu]
+
+### System Contracts
+
+- [Fix] Fix the import path. [@ouwenkg]
+- [Optimization] Use `protocol version` instead of version. [@kaikai1024]
+- [Optimization] Rename `emergency brake` to `emergency intervention`. [@kaikai1024]
+
+### Tools
+
+- [Refactor] Rewrite the tool of creating genesis using Rust. [@ouwenkg]
+
+### Test
+
+- [Refactor] Refactor scripts of integrate test. [@kaikai1024]
+- [Optimization] Add quota unit test in travisCI. [@ouwenkg]
+
+### Scripts
+
+- [Fix] Node path should not consider bin path. [@rainchen]
+- [Refactor] Refactor the `cita.sh` script. [@kaikai1024]
+- [Fix] Fix amend help info and latest version. [@leeyr338]
+- [Optimization] Rename `config_example` to `default_config`. [@kaikai1024]
+
+### Doc
+
+- [Doc] Add file naming style doc. [@kaikai1024]
+- [Doc] New CITA contents structure of CITAHub-Docs. [@kaikai1024] [@zhouyun-zoe] [@ouwenkg] [@leeyr338] [@wuyuyue]
+- [Doc] Add wiki about RocksDB. [@leeyr338]
+- [Doc] Update the description about `getTransactionCount`. [@ouwenkg]
+
 ## [v0.24.1] - 2019-06-14
 
 Fix the issue about memory leak in cita-executor.
@@ -854,6 +896,7 @@ Release the first version of CITA.
 [@leeyr338]: https://github.com/leeyr338
 [@luqz]: https://github.com/luqz
 [@ouwenkg]: https://github.com/ouwenkg
+[@rainchen]: https://github.com/rainchen
 [@rev-chaos]: https://github.com/rev-chaos
 [@rink1969]: https://github.com/rink1969
 [@u2]: https://github.com/u2
