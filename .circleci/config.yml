@@ -273,6 +273,16 @@ jobs:
           name: Test Transfer Value in Charge Mode
           command: ./tests/integrate_test/cita_charge_mode.sh
 
+  "Test System Features":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Test System Features
+          command: ./tests/integrate_test/cita_features_test.sh
+
   "Test Executor Process SignProposal/BlockWithProof":
     <<: *job-default
     steps:
@@ -438,6 +448,9 @@ workflows:
       - "Test Transfer Value in Charge Mode":
           requires:
             - "Release"
+      - "Test System Features":
+          requires:
+            - "Release"
       - "Test Snapshot Taking And Restoring":
           requires:
             - "Release"
@@ -481,6 +494,7 @@ workflows:
             - "JSON-RPC Mock Test in Charge Mode"
             - "JSON-RPC Mock Test in Quota Mode"
             - "Test Transfer Value in Charge Mode"
+            - "Test System Features"
             - "Test Snapshot Taking And Restoring"
             - "Test Amend"
             - "Test Executor Process Invalid Proof"
