@@ -35,8 +35,6 @@ main() {
         --contract_arguments "SysConfig.checkFeeBackPlatform=true" \
         --contract_arguments "SysConfig.checkCreateContractPermission=true" \
         --contract_arguments "SysConfig.economicalModel=1" \
-        --contract_arguments "VersionManager.version=0" \
-        --contract_arguments "PriceManager.quotaPrice=1000000" \
         --contract_arguments "SysConfig.chainOwner=0x36a60d575b0dee0423abb6a57dbc6ca60bf47545"
     echo "DONE"
 
@@ -51,11 +49,11 @@ main() {
     echo "${timeout}s DONE"
 
     echo -n "4) Run fee back tests ... "
-    test_fee_back 0
+    test_fee_back 2
     echo "DONE"
 
     echo -n "5) Check permission denied ... "
-    test_perm_denied 0
+    test_perm_denied 2
     echo "Done"
 }
 

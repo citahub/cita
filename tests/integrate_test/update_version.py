@@ -19,7 +19,7 @@ def main():
     tx_hash = send_tx(
         admin_privkey, code=code, to=version_manager, version=version)
     get_receipt(tx_hash)
-    print('>>> Test fee back successfully!')
+    print('>>> Update version successfully!')
 
 
 def parse_arguments():

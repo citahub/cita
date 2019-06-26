@@ -47,10 +47,8 @@ main() {
     echo -n "1) generate config  ...  "
     create_config \
         --contract_arguments "SysConfig.checkFeeBackPlatform=true" \
-        --contract_arguments "SysConfig.checkCreateContractPermission=true" \
         --contract_arguments "SysConfig.economicalModel=1" \
         --contract_arguments "VersionManager.version=0" \
-        --contract_arguments "PriceManager.quotaPrice=1000000" \
         --contract_arguments "SysConfig.chainOwner=0x36a60d575b0dee0423abb6a57dbc6ca60bf47545"
     echo "DONE"
 
