@@ -19,8 +19,8 @@
 //! TODO: consider spliting it into two separate files.
 
 use super::interpreter::SharedCache;
+use crate::evm::Evm;
 use cita_types::U256;
-use evm::Evm;
 use std::fmt;
 use std::sync::Arc;
 

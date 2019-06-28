@@ -79,6 +79,9 @@
 //! [`network_message_to_pubsub_message`]: ./citaprotocol/fn.network_message_to_pubsub_message.html
 //!
 
+#[macro_use]
+extern crate cita_logger as logger;
+
 pub mod cita_protocol;
 pub mod config;
 pub mod mq_agent;
@@ -98,7 +101,6 @@ use crate::synchronizer::Synchronizer;
 use clap::App;
 use dotenv;
 use futures::prelude::*;
-use logger::{debug, info};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 use std::sync::mpsc::channel;
@@ -169,7 +171,8 @@ fn main() {
     mq_agent.set_nodes_mgr_client(nodes_mgr.client());
     mq_agent.set_network_client(network_mgr.client());
 
-    let transfer_meta = create_transfer_meta(network_mgr.client(), nodes_mgr.client());
+    let transfer_meta =
+        create_transfer_meta(network_mgr.client(), nodes_mgr.client(), own_addr.addr);
     let mut service_cfg = ServiceBuilder::default()
         .insert_protocol(transfer_meta)
         .forever(true);
@@ -188,7 +191,7 @@ fn main() {
         });
     }
 
-    if nodes_mgr.is_enable_tls() {
+    if config.enable_tls.unwrap_or(false) {
         service_cfg = service_cfg.key_pair(SecioKeyPair::secp256k1_generated());
     }
     let mut service = service_cfg.build(SHandle::new(nodes_mgr.client()));

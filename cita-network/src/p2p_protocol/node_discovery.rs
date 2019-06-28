@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::node_manager::{AddNodeReq, GetRandomNodesReq, NodeSource, NodesManagerClient};
-use logger::{info, warn};
 use pubsub::channel::unbounded;
 use tentacle::{
     builder::MetaBuilder,

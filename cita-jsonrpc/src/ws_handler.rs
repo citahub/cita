@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use helper::{select_topic, RpcMap, TransferType};
+use crate::helper::{select_topic, RpcMap, TransferType};
 use jsonrpc_proto::complete::CompleteInto;
 use jsonrpc_types::rpc_request::{PartialRequest, RequestInfo};
 use jsonrpc_types::rpc_response::RpcFailure;
@@ -70,7 +70,6 @@ impl Factory for WsFactory {
 impl Handler for WsHandler {
     fn on_message(&mut self, msg: ws::Message) -> ws::Result<()> {
         trace!("Server got message '{}'  post thread_pool deal task ", msg);
-        // let this = self.clone();
         let tx = self.tx.clone();
         let response = Arc::clone(&self.responses);
         let sender = self.sender.clone();

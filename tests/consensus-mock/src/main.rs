@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,25 +15,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate bincode;
-extern crate chrono;
 extern crate cita_crypto as crypto;
 #[macro_use]
 extern crate clap;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
-extern crate logger;
-extern crate proof;
-extern crate pubsub;
+extern crate cita_logger as logger;
 #[macro_use]
 extern crate serde_derive;
 extern crate cita_types as types;
-extern crate hashable;
 
+use crate::crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
+use crate::types::{Address, H256};
 use bincode::{serialize, Infinite};
 use clap::App;
-use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
 use hashable::Hashable;
 use libproto::blockchain::{Block, BlockBody, BlockTxs, BlockWithProof};
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -46,7 +42,6 @@ use std::collections::HashMap;
 use std::convert::Into;
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use types::{Address, H256};
 
 pub type PubType = (String, Vec<u8>);
 

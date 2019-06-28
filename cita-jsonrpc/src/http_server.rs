@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -294,23 +294,20 @@ pub fn listener_from_socket_addr(addr: &SocketAddr) -> std::io::Result<TcpListen
 
 #[cfg(test)]
 mod integration_test {
-    use pubsub::channel::{self, Sender};
-    use std::collections::HashMap;
-    use std::str::FromStr;
-    use std::thread;
-
-    use uuid::Uuid;
-
     use super::*;
+    use crate::helper::TransferType;
     use futures::{sync::oneshot, Stream};
     use jsonrpc_proto::response::OutputExt;
     use jsonrpc_types;
     use jsonrpc_types::rpc_response::Output;
     use libproto::protos;
+    use pubsub::channel::{self, Sender};
     use serde_json;
+    use std::collections::HashMap;
+    use std::str::FromStr;
+    use std::thread;
     use tokio_core::reactor::Core;
-
-    use helper::TransferType;
+    use uuid::Uuid;
 
     struct Serve {
         pub addr: SocketAddr,

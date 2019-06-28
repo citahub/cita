@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,17 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::contracts::grpc::service_registry;
+use crate::libexecutor::command;
+use crate::types::ids::BlockId;
 use cita_types::{Address, H256, U256};
-use contracts::grpc::service_registry;
 use crossbeam_channel::{Receiver, Sender};
 use grpc::Server;
-use libexecutor::command;
 use libproto::executor::{LoadRequest, LoadResponse, RegisterRequest, RegisterResponse};
 use libproto::executor_grpc::{ExecutorService, ExecutorServiceServer};
 use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
-use types::ids::BlockId;
 
 pub struct ExecutorServiceImpl {
     command_req_sender: Sender<command::Command>,
@@ -33,7 +33,6 @@ pub struct ExecutorServiceImpl {
 }
 
 impl ExecutorService for ExecutorServiceImpl {
-    // add code here
     fn register(
         &self,
         _o: ::grpc::RequestOptions,

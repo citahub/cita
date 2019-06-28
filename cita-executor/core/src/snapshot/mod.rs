@@ -19,17 +19,17 @@
 // chunks around 4MB before compression
 const PREFERRED_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 
-use account_db::{AccountDB, AccountDBMut};
+use crate::account_db::{AccountDB, AccountDBMut};
 
-use cita_db::hashdb::DBValue;
-use cita_db::journaldb::{self, Algorithm, JournalDB};
-use cita_db::kvdb::{DBTransaction, Database, KeyValueDB};
-use cita_db::{HashDB, Trie, TrieDB, TrieDBMut, TrieMut};
+use crate::cita_db::hashdb::DBValue;
+use crate::cita_db::journaldb::{self, Algorithm, JournalDB};
+use crate::cita_db::kvdb::{DBTransaction, Database, KeyValueDB};
+use crate::cita_db::{HashDB, Trie, TrieDB, TrieDBMut, TrieMut};
+use crate::db::{Writable, COL_EXTRA, COL_HEADERS, COL_STATE};
+use crate::libexecutor::executor::Executor;
 use cita_types::{Address, H256, U256};
-use db::{Writable, COL_EXTRA, COL_HEADERS, COL_STATE};
 use hashable::Hashable;
 use hashable::{HASH_EMPTY, HASH_NULL_RLP};
-use libexecutor::executor::Executor;
 use rlp::{DecoderError, Encodable, RlpStream, UntrustedRlp};
 use snappy;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -46,17 +46,17 @@ pub use self::error::Error;
 use self::io::SnapshotReader;
 use self::io::SnapshotWriter;
 use self::service::Service;
-use snapshot::service::SnapshotService;
-pub use types::basic_account::BasicAccount;
-use types::ids::BlockId;
+use crate::snapshot::service::SnapshotService;
+pub use crate::types::basic_account::BasicAccount;
+use crate::types::ids::BlockId;
 
 use super::state::backend::Backend;
 use super::state::Account as StateAccount;
 use super::state_db::StateDB;
+use crate::header::Header;
 use ethcore_bloom_journal::Bloom;
-use header::Header;
 
-use types::extras::CurrentHash;
+use crate::types::extras::CurrentHash;
 
 /// A sink for produced chunks.
 pub type ChunkSink<'a> = FnMut(&[u8]) -> Result<(), Error> + 'a;
@@ -518,7 +518,7 @@ impl StateRebuilder {
     }
 
     /// Feed an uncompressed state chunk into the rebuilder.
-    pub fn feed(&mut self, chunk: &[u8], flag: &AtomicBool) -> Result<(), ::error::Error> {
+    pub fn feed(&mut self, chunk: &[u8], flag: &AtomicBool) -> Result<(), crate::error::Error> {
         let rlp = UntrustedRlp::new(chunk);
         let empty_rlp = StateAccount::new_basic(U256::zero(), U256::zero()).rlp();
         let mut pairs = Vec::with_capacity(rlp.item_count()?);
@@ -609,7 +609,7 @@ impl StateRebuilder {
     /// Finalize the restoration. Check for accounts missing code and make a dummy
     /// journal entry.
     /// Once all chunks have been fed, there should be nothing missing.
-    pub fn finalize(mut self, era: u64, id: H256) -> Result<Box<JournalDB>, ::error::Error> {
+    pub fn finalize(mut self, era: u64, id: H256) -> Result<Box<JournalDB>, crate::error::Error> {
         let mut batch = self.db.backing().transaction();
         self.db.journal_under(&mut batch, era, &id)?;
         self.db.backing().write_buffered(batch);
@@ -643,7 +643,7 @@ fn rebuild_accounts(
     known_abi: &HashMap<H256, Address>,
     known_storage_roots: &mut HashMap<Address, H256>,
     abort_flag: &AtomicBool,
-) -> Result<RebuiltStatus, ::error::Error> {
+) -> Result<RebuiltStatus, crate::error::Error> {
     let mut status = RebuiltStatus::default();
     for (account_rlp, out) in account_fat_rlps.into_iter().zip(out_chunk.iter_mut()) {
         if !abort_flag.load(Ordering::SeqCst) {
@@ -760,7 +760,11 @@ impl BlockRebuilder {
     }
 
     /// Feed an uncompressed state chunk into the rebuilder.
-    pub fn feed(&mut self, chunk: &[u8], abort_flag: &AtomicBool) -> Result<(), ::error::Error> {
+    pub fn feed(
+        &mut self,
+        chunk: &[u8],
+        abort_flag: &AtomicBool,
+    ) -> Result<(), crate::error::Error> {
         let rlp = UntrustedRlp::new(chunk);
         let item_count = rlp.item_count()?;
         let num_blocks = (item_count - 2) as u64;
@@ -840,7 +844,7 @@ impl BlockRebuilder {
     }
 
     /// Glue together any disconnected chunks and check that the chain is complete.
-    fn finalize(&self) -> Result<(), ::error::Error> {
+    fn finalize(&self) -> Result<(), crate::error::Error> {
         let mut batch = self.db.transaction();
         let genesis_header = self
             .executor

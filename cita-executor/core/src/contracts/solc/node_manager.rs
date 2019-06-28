@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -18,16 +18,16 @@
 //! Node manager.
 
 use super::ContractCallExt;
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::economical_model::EconomicalModel;
+use crate::libexecutor::executor::Executor;
+use crate::types::ids::BlockId;
+use crate::types::reserved_addresses;
 use cita_types::{Address, H160};
-use contracts::tools::{decode as decode_tools, method as method_tools};
 use largest_remainder_method::apportion;
-use libexecutor::economical_model::EconomicalModel;
-use libexecutor::executor::Executor;
 use rand::{Rng, SeedableRng, StdRng};
 use std::iter;
 use std::str::FromStr;
-use types::ids::BlockId;
-use types::reserved_addresses;
 
 const LIST_NODE: &[u8] = &*b"listNode()";
 const LIST_STAKE: &[u8] = &*b"listStake()";
@@ -134,41 +134,8 @@ impl<'a> NodeManager<'a> {
 
 #[cfg(test)]
 mod tests {
-    extern crate logger;
-
-    use super::{party_seats, shuffle, NodeManager};
-    use cita_types::H160;
-    use std::str::FromStr;
-    use tests::helpers::init_executor;
-    use types::ids::BlockId;
-
-    #[test]
-    fn test_node_manager_contract() {
-        let executor = init_executor(vec![
-            (
-                "NodeManager.nodes",
-                concat!(
-                    "0x50ad2b9d6946d9c75ae978534043e3021ee1bfb1,",
-                    "0xeeb3a71c4046f63a941013f826fccc503be26b77,",
-                    "0xa2bbb65d4f8c3ada29f7471abe416e18061127f3,",
-                    "0x72eb1e258c9cdccebb7b62930a35cfb6ef4cd24b"
-                ),
-            ),
-            ("NodeManager.stakes", "1,1,1,1"),
-        ]);
-        let node_manager = NodeManager::new(&executor, executor.genesis_header().timestamp());
-        let nodes = node_manager.nodes(BlockId::Pending).unwrap();
-
-        assert_eq!(
-            nodes,
-            vec![
-                H160::from_str("50ad2b9d6946d9c75ae978534043e3021ee1bfb1").unwrap(),
-                H160::from_str("eeb3a71c4046f63a941013f826fccc503be26b77").unwrap(),
-                H160::from_str("a2bbb65d4f8c3ada29f7471abe416e18061127f3").unwrap(),
-                H160::from_str("72eb1e258c9cdccebb7b62930a35cfb6ef4cd24b").unwrap(),
-            ]
-        )
-    }
+    extern crate cita_logger as logger;
+    use super::{party_seats, shuffle};
 
     #[test]
     fn test_party_seats() {

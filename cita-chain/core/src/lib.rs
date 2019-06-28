@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -19,7 +19,7 @@ extern crate byteorder;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
-extern crate logger;
+extern crate cita_logger as logger;
 extern crate cita_merklehash;
 extern crate hashable;
 extern crate lru_cache;
@@ -55,10 +55,8 @@ pub mod env_info;
 
 #[macro_use]
 pub mod error;
-
 pub mod filters;
 pub mod libchain;
 pub mod snapshot;
-
-pub use cita_db::journaldb;
-pub use types::*;
+pub use crate::cita_db::journaldb;
+pub use crate::types::*;

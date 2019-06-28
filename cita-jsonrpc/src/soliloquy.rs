@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use config::Config;
-use get_build_info_str;
+use crate::config::Config;
+use crate::get_build_info_str;
 use jsonrpc_types::rpc_types::SoftwareVersion;
 use jsonrpc_types::ErrorCode;
 use libproto::protos::response::Response;
@@ -71,11 +71,11 @@ impl Soliloquy {
 
 #[cfg(test)]
 pub mod tests {
-    use config::Config;
+    use crate::config::Config;
+    use crate::soliloquy::Soliloquy;
     use jsonrpc_types::ErrorCode;
     use libproto::Message;
     use libproto::TryInto;
-    use soliloquy::Soliloquy;
 
     fn get_response(toml_str: String) -> libproto::response::Response {
         let config = util::parse_config_from_buffer::<Config>(&toml_str)

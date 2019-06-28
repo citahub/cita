@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use cita_db::trie;
+use crate::cita_db::trie;
+use crate::state::backend::Backend;
+use crate::state::State;
 use cita_types::{Address, H256, U256};
-use state::backend::Backend;
-use state::State;
 
 pub fn set_storage<B>(
     state: &mut State<B>,

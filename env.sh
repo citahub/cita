@@ -13,7 +13,7 @@ fi
 
 if test -f "${SOURCE_DIR}/Cargo.toml"; then
     readonly CONTAINER_NAME='cita_build_container'
-    readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20190429'
+    readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20190515'
 else
     readonly CONTAINER_NAME='cita_run_container'
     readonly DOCKER_IMAGE='cita/cita-run:ubuntu-18.04-20190419'
@@ -38,7 +38,7 @@ fi
 # Expose parameter for docker needs something like "-p 1337:1337 -p 1338:1338", but not "-p 1337:1337 1338:1338"
 EXPOSE_PARAM=()
 for port in "${EXPOSE[@]}"; do
-    EXPOSE_PARAM+=" -p ${port}"
+    EXPOSE_PARAM+=(-p ${port})
 done
 
 # Docker Arguments
@@ -65,7 +65,7 @@ if ! docker ps | grep "${CONTAINER_NAME}" > '/dev/null' 2>&1; then
            --env "USER_ID=${USER_ID}" \
            --workdir "${WORKDIR}" \
            --name "${CONTAINER_NAME}" \
-           ${EXPOSE_PARAM[@]} "${DOCKER_IMAGE}" \
+           "${EXPOSE_PARAM[@]}" "${DOCKER_IMAGE}" \
            /bin/bash -c "${INIT_CMD}"
     # Wait entrypoint.sh to finish
     sleep 3

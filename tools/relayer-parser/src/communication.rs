@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -25,8 +25,8 @@ use serde_json;
 use std::convert::Into;
 use tokio_core::reactor::{Core, Timeout};
 
+use crate::configuration::UpStream;
 use cita_types::{H256, U256};
-use configuration::UpStream;
 use jsonrpc_types::{rpc_request, rpc_types};
 use libproto::blockchain::UnverifiedTransaction;
 

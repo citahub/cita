@@ -17,7 +17,7 @@
 //! Evm input params.
 
 // use ethjson;
-use call_type::CallType;
+use crate::call_type::CallType;
 
 use cita_types::{Address, H256, U256};
 use hashable::HASH_EMPTY;

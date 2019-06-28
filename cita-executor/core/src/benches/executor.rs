@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -34,7 +34,7 @@ fn generate_block(executor: &Executor, txs: u32) -> OpenBlock {
 #[bench]
 fn test_block_with_10000_tx(b: &mut Bencher) {
     // One block with 10000 tx bench test takes 271.51ms
-    let mut executor = helpers::init_executor(vec![]);
+    let mut executor = helpers::init_executor();
     let block = generate_block(&executor, 10000);
 
     b.iter(|| {
@@ -45,7 +45,7 @@ fn test_block_with_10000_tx(b: &mut Bencher) {
 #[bench]
 fn test_block_with_30000_tx(b: &mut Bencher) {
     // One block with 30000 tx bench test takes 886.39ms
-    let mut executor = helpers::init_executor(vec![]);
+    let mut executor = helpers::init_executor();
     let block = generate_block(&executor, 30000);
 
     b.iter(|| {
@@ -56,7 +56,7 @@ fn test_block_with_30000_tx(b: &mut Bencher) {
 #[bench]
 fn test_block_with_50000_tx(b: &mut Bencher) {
     // One block with 50000 tx bench test takes 1424.51ms
-    let mut executor = helpers::init_executor(vec![]);
+    let mut executor = helpers::init_executor();
     let block = generate_block(&executor, 50000);
 
     b.iter(|| {
@@ -67,7 +67,7 @@ fn test_block_with_50000_tx(b: &mut Bencher) {
 #[bench]
 fn test_block_with_10000_tx_write_db(b: &mut Bencher) {
     // One block with 10000 tx bench test takes 1551.8ms
-    let mut executor = helpers::init_executor(vec![]);
+    let mut executor = helpers::init_executor();
     let block = generate_block(&executor, 10000);
 
     b.iter(|| {

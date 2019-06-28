@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::core::libexecutor::block::{ClosedBlock, OpenBlock};
-use cita_db::Itertools;
+use crate::cita_db::Itertools;
 use cita_types::Address;
 use libproto::{ExecutedResult, Proof};
 use std::cmp::min;
@@ -414,18 +414,18 @@ pub fn wrap_height(height: usize) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::{wrap_height, Backlog, Backlogs, Priority};
-    use cita_db::journaldb;
-    use cita_db::kvdb::{in_memory, KeyValueDB};
-    use core::header::OpenHeader;
-    use core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
-    use core::libexecutor::sys_config::BlockSysConfig;
-    use core::state_db::StateDB;
+    use crate::cita_db::journaldb;
+    use crate::cita_db::kvdb::{in_memory, KeyValueDB};
+    use crate::core::header::OpenHeader;
+    use crate::core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
+    use crate::core::libexecutor::sys_config::BlockSysConfig;
+    use crate::core::state_db::StateDB;
     use hashable::HASH_NULL_RLP;
     use std::sync::Arc;
 
     fn generate_block_body() -> BlockBody {
         let mut stx = SignedTransaction::default();
-        use types::transaction::SignedTransaction;
+        use crate::types::transaction::SignedTransaction;
         stx.data = vec![1; 200];
         let transactions = vec![stx; 200];
         BlockBody { transactions }

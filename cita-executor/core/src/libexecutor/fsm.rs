@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -142,17 +142,17 @@ impl FSM for Executor {
 #[cfg(test)]
 mod tests {
     use super::ExecutedBlock;
-    use cita_crypto::{CreateKey, KeyPair};
-    use cita_types::Address;
-    use libexecutor::block::OpenBlock;
-    use libexecutor::executor::Executor;
-    use libexecutor::fsm::{StatusOfFSM, FSM};
-    use std::thread;
-    use std::time::Duration;
-    use tests::helpers::{
+    use crate::libexecutor::block::OpenBlock;
+    use crate::libexecutor::executor::Executor;
+    use crate::libexecutor::fsm::{StatusOfFSM, FSM};
+    use crate::tests::helpers::{
         create_block, generate_block_body, generate_block_header, generate_contract, init_executor,
         init_executor2,
     };
+    use cita_crypto::{CreateKey, KeyPair};
+    use cita_types::Address;
+    use std::thread;
+    use std::time::Duration;
 
     fn generate_empty_block() -> OpenBlock {
         let block_body = generate_block_body();
@@ -217,7 +217,7 @@ mod tests {
 
     #[test]
     fn test_fsm_initialize() {
-        let executor = init_executor(vec![]);
+        let executor = init_executor();
         let open_block = generate_empty_block();
 
         {
@@ -257,7 +257,6 @@ mod tests {
         let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
         let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
         let executor = init_executor2(
-            vec![],
             fsm_req_receiver.clone(),
             fsm_resp_sender,
             command_req_receiver,
@@ -290,7 +289,6 @@ mod tests {
         let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
         let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
         let executor = init_executor2(
-            vec![],
             fsm_req_receiver.clone(),
             fsm_resp_sender,
             command_req_receiver,
@@ -321,7 +319,6 @@ mod tests {
         let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
         let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
         let mut executor = init_executor2(
-            vec![],
             fsm_req_receiver.clone(),
             fsm_resp_sender,
             command_req_receiver,
@@ -397,7 +394,6 @@ mod tests {
         let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
         let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
         let mut executor = init_executor2(
-            vec![],
             fsm_req_receiver.clone(),
             fsm_resp_sender,
             command_req_receiver,

@@ -1,5 +1,3 @@
-extern crate util;
-
 use std::env;
 
 use util::build_info::gen_build_info;

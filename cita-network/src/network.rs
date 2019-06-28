@@ -17,7 +17,8 @@
 
 use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::node_manager::{
-    BroadcastReq, GetPeerCountReq, GetPeersInfoReq, NodesManagerClient, SingleTxReq,
+    BroadcastReq, DealRichStatusReq, GetPeerCountReq, GetPeersInfoReq, NodesManagerClient,
+    SingleTxReq,
 };
 use crate::synchronizer::{SynchronizerClient, SynchronizerMessage};
 use jsonrpc_types::rpc_types::PeersInfo;
@@ -27,7 +28,6 @@ use libproto::routing_key;
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
 use libproto::{Message as ProtoMessage, OperateType, Response};
 use libproto::{TryFrom, TryInto};
-use logger::{error, info, trace, warn};
 use pubsub::channel::{unbounded, Receiver, Sender};
 use serde_json;
 use std::iter::FromIterator;
@@ -137,6 +137,11 @@ impl LocalMessage {
                 service
                     .sync_client
                     .handle_local_status(SynchronizerMessage::new(self.key, self.data));
+            }
+            routing_key!(Chain >> RichStatus) => {
+                let msg = ProtoMessage::try_from(&self.data).unwrap();
+                let req = DealRichStatusReq::new(msg);
+                service.nodes_mgr_client.deal_rich_status(req);
             }
             routing_key!(Chain >> SyncResponse) => {
                 let msg = ProtoMessage::try_from(&self.data).unwrap();

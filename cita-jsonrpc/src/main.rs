@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -53,42 +53,16 @@
 //! uuid number and `TransferType`.
 //!
 
-extern crate bytes;
-extern crate clap;
-extern crate cpuprofiler;
-extern crate dotenv;
-extern crate error;
-extern crate futures;
-extern crate http;
-extern crate httparse;
-extern crate hyper;
-extern crate jsonrpc_proto;
-extern crate jsonrpc_types;
-extern crate libc;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
-extern crate logger;
-extern crate net2;
-extern crate num_cpus;
-extern crate pubsub;
-extern crate serde;
+extern crate cita_logger as logger;
 #[macro_use]
 extern crate serde_derive;
 #[cfg_attr(test, macro_use)]
 extern crate serde_json;
-extern crate threadpool;
-extern crate time;
-extern crate tokio;
-extern crate tokio_core;
-extern crate tokio_executor;
-extern crate tokio_io;
-extern crate tokio_timer;
-extern crate unicase;
 #[macro_use]
 extern crate util;
-extern crate uuid;
-extern crate ws;
 
 mod config;
 mod extractor;
@@ -103,31 +77,30 @@ mod service_error;
 mod soliloquy;
 mod ws_handler;
 
+use crate::config::{NewTxFlowConfig, ProfileConfig};
+use crate::fdlimit::set_fd_limit;
+use crate::http_server::Server;
+use crate::soliloquy::Soliloquy;
+use crate::ws_handler::WsFactory;
 use clap::App;
-use config::{NewTxFlowConfig, ProfileConfig};
 use cpuprofiler::PROFILER;
-use fdlimit::set_fd_limit;
 use futures::Future;
-use http_server::Server;
 use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
 use libproto::TryInto;
 use pubsub::channel::{self, Sender};
 use pubsub::start_pubsub;
-use soliloquy::Soliloquy;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};
 use util::{set_panic_handler, Mutex};
 use uuid::Uuid;
-use ws_handler::WsFactory;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 fn main() {
-    // todo load config
     let matches = App::new("JsonRpc")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))

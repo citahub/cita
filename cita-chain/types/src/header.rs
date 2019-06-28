@@ -17,7 +17,7 @@
 
 //! Block header.
 
-use basic_types::{LogBloom, ZERO_LOGBLOOM};
+use crate::basic_types::{LogBloom, ZERO_LOGBLOOM};
 use cita_types::{Address, H256, U256};
 use libproto::blockchain::{
     Block as ProtoBlock, BlockHeader as ProtoBlockHeader, Proof as ProtoProof, ProofType,
@@ -29,9 +29,9 @@ use std::cmp;
 use std::ops::{Deref, DerefMut};
 use time::get_time;
 
+pub use crate::BlockNumber;
 use hashable::{Hashable, HASH_NULL_RLP};
 use util::{Bytes, HeapSizeOf};
-pub use BlockNumber;
 
 #[derive(Debug, Clone, Eq)]
 pub struct OpenHeader {

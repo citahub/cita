@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -20,16 +20,18 @@
 use std::str::FromStr;
 
 use super::ContractCallExt;
-use contracts::tools::method as method_tools;
-use libexecutor::executor::Executor;
+use crate::contracts::tools::method as method_tools;
+use crate::libexecutor::executor::Executor;
 
+use crate::types::ids::BlockId;
+use crate::types::reserved_addresses;
 use cita_types::Address;
 use cita_types::H256;
 use ethabi::{decode, ParamType};
-use types::ids::BlockId;
-use types::reserved_addresses;
 
 lazy_static! {
+    // Will use `getProtocolVersion` at next version after `v0.25.0`.
+    // And the `getVersion` will be *Deprecated*.
     static ref VERSION_HASH: Vec<u8> = method_tools::encode_to_vec(b"getVersion()");
     static ref CONTRACT_ADDRESS: Address =
         Address::from_str(reserved_addresses::VERSION_MANAGEMENT).unwrap();
@@ -70,12 +72,12 @@ impl<'a> VersionManager<'a> {
 #[cfg(test)]
 mod tests {
     use super::VersionManager;
-    use tests::helpers::init_executor;
-    use types::ids::BlockId;
+    use crate::tests::helpers::init_executor;
+    use crate::types::ids::BlockId;
 
     #[test]
-    fn test_state() {
-        let executor = init_executor(vec![]);
+    fn test_get_version() {
+        let executor = init_executor();
         let version_management = VersionManager::new(&executor);
         let version = version_management.get_version(BlockId::Pending).unwrap();
         assert_eq!(version, 2);

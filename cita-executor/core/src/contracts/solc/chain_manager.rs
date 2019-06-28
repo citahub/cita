@@ -17,12 +17,12 @@
 
 //! Chain manager.
 
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::types::reserved_addresses;
 use cita_types::{Address, H160, H256, U256};
-use contracts::tools::{decode as decode_tools, method as method_tools};
 use evm::call_type::CallType;
 use evm::ext::{Ext, MessageCallResult};
 use std::str::FromStr;
-use types::reserved_addresses;
 
 const CHAIN_ID: &[u8] = &*b"getChainId()";
 const AUTHORITIES: &[u8] = &*b"getAuthorities(uint256)";

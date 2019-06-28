@@ -19,7 +19,6 @@ use crate::node_manager::{
     AddRepeatedNodeReq, ConnectedSelfReq, DelConnectedNodeReq, DialedErrorReq, NodesManagerClient,
     PendingConnectedNodeReq,
 };
-use logger::{info, warn};
 use tentacle::{
     context::ServiceContext,
     error,
@@ -124,6 +123,12 @@ impl ServiceHandle for SHandle {
                 warn!(
                     "[P2pProtocol] ServiceError::ProtocolHandleError proto_id {:?}--{:?}",
                     proto_id, error
+                );
+            }
+            ServiceError::SessionBlocked { session_context } => {
+                warn!(
+                    "[P2pProtocol] ServiceError::SessionBlocked session_context {:?}",
+                    session_context
                 );
             }
         }

@@ -20,34 +20,31 @@ extern crate tempdir;
 
 use self::rustc_serialize::hex::FromHex;
 use self::tempdir::TempDir;
+use crate::cita_db::kvdb::{self, Database, DatabaseConfig};
+use crate::cita_db::KeyValueDB;
+use crate::db;
+use crate::journaldb;
+use crate::libexecutor::block::{BlockBody, ClosedBlock, OpenBlock};
+use crate::libexecutor::command;
+use crate::libexecutor::executor::Executor;
+use crate::state::State;
+use crate::state_db::*;
+use crate::types::header::OpenHeader;
+use crate::types::transaction::SignedTransaction;
 use cita_crypto::PrivKey;
-use cita_db::kvdb::{self, Database, DatabaseConfig};
-use cita_db::KeyValueDB;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, U256};
 use core::libchain::chain;
 use crossbeam_channel::{Receiver, Sender};
-use db;
-use journaldb;
-use libexecutor::block::{Block, BlockBody, ClosedBlock, OpenBlock};
-use libexecutor::command;
-use libexecutor::executor::Executor;
-use libexecutor::genesis::Genesis;
-use libexecutor::genesis::Spec;
 use libproto::blockchain;
-use serde_json;
-use state::State;
-use state_db::*;
 use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 use std::path::Path;
-use std::process::{Command, Output};
+use std::process::Command;
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
-use types::header::OpenHeader;
-use types::transaction::SignedTransaction;
 use util::AsMillis;
 
 const CHAIN_CONFIG: &str = "chain.toml";
@@ -64,7 +61,7 @@ fn new_db() -> Arc<KeyValueDB> {
 
 pub fn get_temp_state_db() -> StateDB {
     let db = new_db();
-    let journal_db = journaldb::new(db, journaldb::Algorithm::Archive, ::db::COL_STATE);
+    let journal_db = journaldb::new(db, journaldb::Algorithm::Archive, crate::db::COL_STATE);
     StateDB::new(journal_db, 5 * 1024 * 1024)
 }
 
@@ -108,13 +105,12 @@ pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
     (deploy_code, runtime_code)
 }
 
-pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Executor {
+pub fn init_executor() -> Executor {
     let (_fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
     let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
     let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
     let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
     init_executor2(
-        contract_arguments,
         fsm_req_receiver,
         fsm_resp_sender,
         command_req_receiver,
@@ -123,7 +119,6 @@ pub fn init_executor(contract_arguments: Vec<(&str, &str)>) -> Executor {
 }
 
 pub fn init_executor2(
-    contract_arguments: Vec<(&str, &str)>,
     fsm_req_receiver: Receiver<OpenBlock>,
     fsm_resp_sender: Sender<ClosedBlock>,
     command_req_receiver: Receiver<command::Command>,
@@ -131,74 +126,13 @@ pub fn init_executor2(
 ) -> Executor {
     // FIXME temp dir should be removed automatically, but at present it is not
     let tempdir = TempDir::new("init_executor").unwrap().into_path();
-    let create_init_data_py = Path::new(SCRIPTS_DIR).join("config_tool/create_init_data.py");
-    let create_genesis_py = Path::new(SCRIPTS_DIR).join("config_tool/create_genesis.py");
-    let contracts_dir = Path::new(SCRIPTS_DIR).join("contracts");
-    let mut init_data_yml = tempdir.clone();
-    init_data_yml.push("init_data.yml");
-    let mut genesis_json = tempdir.clone();
-    genesis_json.push("genesis.json");
-
-    let contract_arguments = contract_arguments
-        .iter()
-        .map(|(key, value)| format!("{}={}", key, value))
-        .collect::<Vec<String>>();
-    let mut init_data_args: Vec<&str> = vec![
-        create_init_data_py.to_str().unwrap(),
-        "--output",
-        init_data_yml.to_str().unwrap(),
-    ];
-    if !contract_arguments.is_empty() {
-        init_data_args.push("--contract_arguments");
-        contract_arguments.iter().for_each(|arg| {
-            init_data_args.push(arg);
-        });
-    }
-
-    fn check_command_output(output: Output) {
-        if !output.status.success() {
-            panic!(
-                "\n[stderr]: {}\n[stdout]: {}",
-                String::from_utf8_lossy(output.stderr.as_slice()),
-                String::from_utf8_lossy(output.stdout.as_slice()),
-            );
-        }
-    }
-
-    let output = Command::new("python3")
-        .args(init_data_args.as_slice())
-        .output()
-        .expect("Failed to create init data");
-
-    check_command_output(output);
-    let output = Command::new("python3")
-        .args(&[
-            create_genesis_py.to_str().unwrap(),
-            "--output",
-            genesis_json.to_str().unwrap(),
-            "--init_data_file",
-            init_data_yml.to_str().unwrap(),
-            "--contracts_dir",
-            contracts_dir.to_str().unwrap(),
-        ])
-        .output()
-        .expect("Failed to create init data");
-    check_command_output(output);
-
-    // Load from genesis json file
-    println!("genesis_json: {}", genesis_json.to_str().unwrap());
-    let genesis_file = File::open(genesis_json.to_str().unwrap()).unwrap();
-    let spec: Spec = serde_json::from_reader(genesis_file).expect("Failed to load genesis.");
-    let _genesis = Genesis {
-        spec,
-        block: Block::default(),
-    };
+    let genesis_path = Path::new(SCRIPTS_DIR).join("config_tool/genesis/genesis.json");
 
     let mut data_path = tempdir.clone();
     data_path.push("data");
     env::set_var("DATA_PATH", data_path);
     let executor = Executor::init(
-        genesis_json.to_str().unwrap(),
+        genesis_path.to_str().unwrap(),
         "archive",
         5 * 1024 * 1024,
         tempdir.to_str().unwrap().to_string(),
@@ -286,7 +220,7 @@ pub fn generate_block_header() -> OpenHeader {
 
 pub fn generate_block_body() -> BlockBody {
     let mut stx = SignedTransaction::default();
-    use types::transaction::SignedTransaction;
+    use crate::types::transaction::SignedTransaction;
     stx.data = vec![1; 200];
     let transactions = vec![stx; 200];
     BlockBody { transactions }

@@ -17,7 +17,7 @@ blocks:
 - number: 2
   transactions:
   # Create a SimpleStorage contract
-  #  [Source Code]: contracts/HelloWorld.sol
+  #  [Source Code]: tests/contracts/HelloWorld.sol
   - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a' # Sender's private key
     nonce: 0
     quota: 200000
@@ -41,7 +41,7 @@ blocks:
 - number: 4
   transactions:
   # Create a Token contract
-  #  [Source Code]: contracts/ERC20-Token/StandardToken.sol
+  #  [Source Code]: tests/contracts/ERC20-Token/StandardToken.sol
   - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
     nonce: 2
     quota: 100000
@@ -52,7 +52,7 @@ blocks:
 - number: 5
   transactions:
   # Create a Token contract
-  #  [Source Code]: contracts/ERC20-Token/StandardToken.sol
+  #  [Source Code]: tests/contracts/ERC20-Token/StandardToken.sol
   - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
     nonce: 3
     quota: 100000
@@ -65,7 +65,7 @@ blocks:
 - number: 6
   transactions:
   # Create a Token contract
-  #  [Source Code]: contracts/ERC20-Token/StandardToken.sol
+  #  [Source Code]: tests/contracts/ERC20-Token/StandardToken.sol
   - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
     nonce: 4
     quota: 100000
@@ -77,7 +77,7 @@ blocks:
 
 - number: 7
   transactions:
-  #  [Source Code]: contracts/AccountGasLimitReached.sol
+  #  [Source Code]: tests/contracts/AccountGasLimitReached.sol
   - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
     nonce: 5
     # Should be NotEnoughBaseGas Receipt
@@ -88,7 +88,7 @@ blocks:
 
 - number: 8
   transactions:
-  #  [Source Code]: contracts/AccountGasLimitReached.sol
+  #  [Source Code]: tests/contracts/AccountGasLimitReached.sol
   - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
     nonce: 6
     # Should be OutOfGas Receipt (1073741824 + 1)
@@ -102,7 +102,7 @@ blocks:
 
 - number: 10
   transactions:
-  #  [Source Code]: contracts/AccountGasLimitReached.sol
+  #  [Source Code]: tests/contracts/AccountGasLimitReached.sol
   - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
     nonce: 8
     quota: 100000
@@ -114,7 +114,7 @@ blocks:
 
 - number: 11
   transactions:
-  #  [Source Code]: contracts/Reverted.sol
+  #  [Source Code]: tests/contracts/Reverted.sol
   - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
     nonce: 9
     # Should be Reverted Receipt
@@ -126,7 +126,7 @@ blocks:
 - number: 12
   transactions:
   # Create a contract
-  # [Source Code]: contracts/SimpleStorage.sol
+  # [Source Code]: tests/contracts/SimpleStorage.sol
   - privkey: 'ef98e68db428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a'
     nonce: 10
     quota: 1000000
@@ -134,7 +134,7 @@ blocks:
     to: ''
     data: '608060405234801561001057600080fd5b5060646000819055507f8fb1356be6b2a4e49ee94447eb9dcb8783f51c41dcddfe7919f945017d163bf3336064604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a161018a806100946000396000f30060806040526004361061004c576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b1146100515780636d4ce63c1461007e575b600080fd5b34801561005d57600080fd5b5061007c600480360381019080803590602001909291905050506100a9565b005b34801561008a57600080fd5b50610093610155565b6040518082815260200191505060405180910390f35b7fc6d8c0af6d21f291e7c359603aa97e0ed500f04db6e983b9fce75a91c6b8da6b816040518082815260200191505060405180910390a1806000819055507ffd28ec3ec2555238d8ad6f9faf3e4cd10e574ce7e7ef28b73caa53f9512f65b93382604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390a150565b600080549050905600a165627a7a723058200b008257b7c6ae78c1c2bde97f3c72005d0f7063ad98e02a3399ee94642fe7810029'
   # Create a HelloWorld contract
-  #  [Source Code]: contracts/HelloWorld.sol
+  #  [Source Code]: tests/contracts/HelloWorld.sol
   - privkey: '00000000b428906d626cd37782cdfb052ac282132beee53a99948738ea553b4a' # Fake Sender's private key
     nonce: 0
     quota: 100000
@@ -149,7 +149,7 @@ blocks:
     nonce: 11
     quota: 200000
     valid_until_block: 100
-    # In contracts/SimpleStorage.sol
+    # In tests/contracts/SimpleStorage.sol
     #  Call set(11228899)
     to: 'a31af83ee35e753a2bb19c2a82468080c2e92eee'
     data: '60fe47b10000000000000000000000000000000000000000000000000000000011228899'
@@ -160,7 +160,7 @@ blocks:
     nonce: 11
     quota: 200000
     valid_until_block: 100
-    # In contracts/SimpleStorage.sol
+    # In tests/contracts/SimpleStorage.sol
     #  Call set(11228899)
     to: 'a31af83ee35e753a2bb19c2a82468080c2e92eee'
     data: '60fe47b10000000000000000000000000000000000000000000000000000000011228899'
@@ -170,8 +170,8 @@ blocks:
     valid_until_block: 100
     # A special address to store contract ABI data
     to: 'ffffffffffffffffffffffffffffffffff010001'
-    # Store contracts/SimpleStorage.sol ABI to blockchain
+    # Store tests/contracts/SimpleStorage.sol ABI to blockchain
     # Data generated by commands:
-    #   $ solc --abi contracts/SimpleStorage.sol
+    #   $ solc --abi tests/contracts/SimpleStorage.sol
     #   $ ethabi params -v string "[data generated by above command]"
     data: 'a31af83ee35e753a2bb19c2a82468080c2e92eee0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000030f5b7b22636f6e7374616e74223a66616c73652c22696e70757473223a5b7b226e616d65223a2278222c2274797065223a2275696e74323536227d5d2c226e616d65223a22736574222c226f757470757473223a5b5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a226e6f6e70617961626c65222c2274797065223a2266756e6374696f6e227d2c7b22636f6e7374616e74223a747275652c22696e70757473223a5b5d2c226e616d65223a22676574222c226f757470757473223a5b7b226e616d65223a22222c2274797065223a2275696e74323536227d5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a2276696577222c2274797065223a2266756e6374696f6e227d2c7b22696e70757473223a5b5d2c2270617961626c65223a66616c73652c2273746174654d75746162696c697479223a226e6f6e70617961626c65222c2274797065223a22636f6e7374727563746f72227d2c7b22616e6f6e796d6f7573223a66616c73652c22696e70757473223a5b7b22696e6465786564223a66616c73652c226e616d65223a22222c2274797065223a2261646472657373227d2c7b22696e6465786564223a66616c73652c226e616d65223a22222c2274797065223a2275696e74323536227d5d2c226e616d65223a22496e6974222c2274797065223a226576656e74227d2c7b22616e6f6e796d6f7573223a66616c73652c22696e70757473223a5b7b22696e6465786564223a66616c73652c226e616d65223a22222c2274797065223a2261646472657373227d2c7b22696e6465786564223a66616c73652c226e616d65223a22222c2274797065223a2275696e74323536227d5d2c226e616d65223a22536574222c2274797065223a226576656e74227d2c7b22616e6f6e796d6f7573223a66616c73652c22696e70757473223a5b7b22696e6465786564223a66616c73652c226e616d65223a22222c2274797065223a2275696e74323536227d5d2c226e616d65223a2253746f726564222c2274797065223a226576656e74227d5d0000000000000000000000000000000000'

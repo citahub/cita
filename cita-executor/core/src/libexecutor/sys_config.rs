@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -16,14 +16,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::executor::Executor;
-use cita_types::{Address, U256};
-use contracts::solc::{
-    AccountQuotaLimit, EmergencyBrake, NodeManager, PermissionManagement, PriceManagement,
+use crate::contracts::solc::{
+    AccountQuotaLimit, EmergencyIntervention, NodeManager, PermissionManagement, PriceManagement,
     QuotaManager, Resource, SysConfig, UserManagement, VersionManager, AUTO_EXEC_QL_VALUE,
 };
-use libexecutor::economical_model::EconomicalModel;
+use crate::libexecutor::economical_model::EconomicalModel;
+use crate::types::ids::BlockId;
+use cita_types::{Address, U256};
 use std::collections::HashMap;
-use types::ids::BlockId;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct GlobalSysConfig {
@@ -34,7 +34,7 @@ pub struct GlobalSysConfig {
     pub changed_height: usize,
     /// Interval time for creating a block (milliseconds)
     pub block_interval: u64,
-    pub emergency_brake: bool,
+    pub emergency_intervention: bool,
     pub block_sys_config: BlockSysConfig,
 }
 
@@ -47,7 +47,7 @@ impl Default for GlobalSysConfig {
             delay_active_interval: 1,
             changed_height: 0,
             block_interval: 3000,
-            emergency_brake: false,
+            emergency_intervention: false,
             block_sys_config: BlockSysConfig::default(),
         }
     }
@@ -133,10 +133,10 @@ impl GlobalSysConfig {
             .set_specific_quota_limit(specific);
         conf.changed_height = executor.get_current_height() as usize;
 
-        let emergency_manager = EmergencyBrake::new(executor);
-        conf.emergency_brake = emergency_manager
+        let emergency_manager = EmergencyIntervention::new(executor);
+        conf.emergency_intervention = emergency_manager
             .state(block_id)
-            .unwrap_or_else(EmergencyBrake::default_state);
+            .unwrap_or_else(EmergencyIntervention::default_state);
 
         let version_manager = VersionManager::new(executor);
         conf.block_sys_config.chain_version = version_manager

@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -17,19 +17,19 @@
 //! Permission management.
 
 use super::ContractCallExt;
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::executor::Executor;
+use crate::types::ids::BlockId;
+use crate::types::reserved_addresses;
 use cita_types::{Address, H160, H256};
-use contracts::tools::{decode as decode_tools, method as method_tools};
-use libexecutor::executor::Executor;
 use std::collections::HashMap;
 use std::str::FromStr;
-use types::ids::BlockId;
-use types::reserved_addresses;
 
 const ALLACCOUNTS: &[u8] = &*b"queryAllAccounts()";
 const PERMISSIONS: &[u8] = &*b"queryPermissions(address)";
 const RESOURCES: &[u8] = &*b"queryResource()";
 #[cfg(test)]
-const DEFAULT_SUPER_ADEMIN: &str = "4b5ae4567ad5d9fb92bc9afd6a657e6fa1300000";
+const DEFAULT_SUPER_ADEMIN: &str = "4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523";
 
 lazy_static! {
     static ref ALLACCOUNTS_HASH: Vec<u8> = method_tools::encode_to_vec(ALLACCOUNTS);
@@ -182,17 +182,17 @@ pub fn contains_resource(
 
 #[cfg(test)]
 mod tests {
-    extern crate logger;
+    extern crate cita_logger as logger;
 
     use super::contains_resource;
     use super::{PermissionManagement, Resource, DEFAULT_SUPER_ADEMIN};
+    use crate::contracts::tools::method as method_tools;
+    use crate::tests::helpers::init_executor;
+    use crate::types::ids::BlockId;
+    use crate::types::reserved_addresses;
     use cita_types::{Address, H160, H256};
-    use contracts::tools::method as method_tools;
     use std::collections::HashMap;
     use std::str::FromStr;
-    use tests::helpers::init_executor;
-    use types::ids::BlockId;
-    use types::reserved_addresses;
 
     const NEW_PERMISSION: &[u8] = &*b"newPermission(bytes32,address[],bytes4[])";
     const DELETE_PERMISSION: &[u8] = &*b"deletePermission(address)";
@@ -227,6 +227,7 @@ mod tests {
     const SET_STATE: &[u8] = &*b"setState(bool)";
     const SET_QUOTA_PRICE: &[u8] = &*b"setQuotaPrice(uint256)";
     const SET_VERSION: &[u8] = &*b"setVersion(uint32)";
+    const SET_PROTOCOL_VERSION: &[u8] = &*b"setProtocolVersion(uint32)";
 
     #[test]
     fn test_contains_resource() {
@@ -280,10 +281,7 @@ mod tests {
 
     #[test]
     fn test_solc() {
-        let executor = init_executor(vec![(
-            "Authorization.superAdmin",
-            &format!("0x{}", DEFAULT_SUPER_ADEMIN),
-        )]);
+        let executor = init_executor();
 
         // Test all_accounts
         let permission_management = PermissionManagement::new(&executor);
@@ -329,7 +327,7 @@ mod tests {
             Address::from_str(reserved_addresses::PERMISSION_ACCOUNT_QUOTA).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_BLOCK_QUOTA).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_BATCH_TX).unwrap(),
-            Address::from_str(reserved_addresses::PERMISSION_EMERGENCY_BRAKE).unwrap(),
+            Address::from_str(reserved_addresses::PERMISSION_EMERGENCY_INTERVENTION).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_QUOTA_PRICE).unwrap(),
             Address::from_str(reserved_addresses::PERMISSION_VERSION).unwrap(),
         ];
@@ -496,9 +494,9 @@ mod tests {
                 cont: H160::from_str(reserved_addresses::BATCH_TX).unwrap(),
                 func: method_tools::encode_to_vec(MULTI_TXS),
             },
-            // emergencyBrake
+            // emergencyIntervention
             Resource {
-                cont: H160::from_str(reserved_addresses::EMERGENCY_BRAKE).unwrap(),
+                cont: H160::from_str(reserved_addresses::EMERGENCY_INTERVENTION).unwrap(),
                 func: method_tools::encode_to_vec(SET_STATE),
             },
             // quotaPrice
@@ -506,10 +504,15 @@ mod tests {
                 cont: H160::from_str(reserved_addresses::PRICE_MANAGEMENT).unwrap(),
                 func: method_tools::encode_to_vec(SET_QUOTA_PRICE),
             },
-            // version
+            // setVersion(Will deprecated)
             Resource {
                 cont: H160::from_str(reserved_addresses::VERSION_MANAGEMENT).unwrap(),
                 func: method_tools::encode_to_vec(SET_VERSION),
+            },
+            // setProtocolVersion
+            Resource {
+                cont: H160::from_str(reserved_addresses::VERSION_MANAGEMENT).unwrap(),
+                func: method_tools::encode_to_vec(SET_PROTOCOL_VERSION),
             },
         ];
         expected_resources.sort();
@@ -519,7 +522,7 @@ mod tests {
 
     #[test]
     fn test_resources() {
-        let executor = init_executor(vec![]);
+        let executor = init_executor();
         let permission = Address::from_str(reserved_addresses::PERMISSION_NEW_PERMISSION).unwrap();
 
         // Test resources

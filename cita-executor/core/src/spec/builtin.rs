@@ -53,8 +53,8 @@ pub struct Builtin {
 
 #[cfg(test)]
 mod tests {
+    use crate::spec::builtin::{Builtin, Linear, Pricing};
     use serde_json;
-    use spec::builtin::{Builtin, Linear, Pricing};
 
     #[test]
     fn builtin_deserialization() {

@@ -19,19 +19,20 @@
 
 //! Single account in the system.
 
-use cita_db::{trie, DBValue, HashDB, Trie, TrieFactory};
+use crate::cita_db::{trie, DBValue, HashDB, Trie, TrieFactory};
+use crate::pod_account::*;
+use crate::types::basic_account::BasicAccount;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use hashable::{Hashable, HASH_EMPTY, HASH_NULL_RLP};
 use lru_cache::LruCache;
-use pod_account::*;
 use rlp::*;
 use std::cell::{Cell, RefCell};
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::convert::Into;
 use std::fmt;
 use std::sync::Arc;
-use types::basic_account::BasicAccount;
 use util::*;
 
 const STORAGE_CACHE_ITEMS: usize = 8192;
@@ -560,6 +561,17 @@ impl Account {
         &self.storage_changes
     }
 
+    /// Return the storage cache
+    pub fn storage_cache(&self) -> BTreeMap<String, String> {
+        let mut result = BTreeMap::new();
+        for (k, v) in self.storage_cache.borrow().iter() {
+            let key = String::from("0x") + &hex::encode(*k);
+            let value = String::from("0x") + &hex::encode(*v);
+            result.insert(key.clone(), value.clone());
+        }
+        result
+    }
+
     /// Increment the nonce of the account by one.
     pub fn inc_nonce(&mut self) {
         self.nonce = self.nonce + U256::from(1u8);
@@ -708,8 +720,8 @@ impl fmt::Debug for Account {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use account_db::*;
-    use cita_db::MemoryDB;
+    use crate::account_db::*;
+    use crate::cita_db::MemoryDB;
     use rlp::{Compressible, RlpType, UntrustedRlp};
 
     #[test]

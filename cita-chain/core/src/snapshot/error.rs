@@ -18,9 +18,9 @@
 
 use std::fmt;
 
-use types::ids::BlockId;
+use crate::types::ids::BlockId;
 
-use cita_db::trie::TrieError;
+use crate::cita_db::trie::TrieError;
 use cita_types::H256;
 use rlp::DecoderError;
 use snappy::SnappyError;

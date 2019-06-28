@@ -17,12 +17,12 @@
 //! Trace filters type definitions
 
 use super::trace::{Action, Res};
-use basic_types::LogBloom;
-use bloomchain::{Bloom, Filter as BloomFilter, Number};
+use crate::basic_types::LogBloom;
+use crate::bloomchain::{Bloom, Filter as BloomFilter, Number};
+use crate::trace::flat::FlatTrace;
 use cita_types::traits::BloomTools;
 use cita_types::Address;
 use std::ops::Range;
-use trace::flat::FlatTrace;
 
 /// Addresses filter.
 ///
@@ -146,13 +146,13 @@ impl Filter {
 
 #[cfg(test)]
 mod tests {
-    use basic_types::LogBloom;
+    use crate::basic_types::LogBloom;
+    use crate::trace::flat::FlatTrace;
+    use crate::trace::trace::{Action, Call, Create, CreateResult, Res, Suicide};
+    use crate::trace::{AddressesFilter, Filter, TraceError};
     use cita_types::traits::BloomTools;
     use cita_types::Address;
     use evm::call_type::CallType;
-    use trace::flat::FlatTrace;
-    use trace::trace::{Action, Call, Create, CreateResult, Res, Suicide};
-    use trace::{AddressesFilter, Filter, TraceError};
 
     #[test]
     fn empty_trace_filter_bloom_possibilities() {

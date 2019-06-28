@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -28,5 +28,5 @@ pub mod lru_cache;
 pub mod sys_config;
 
 pub use self::genesis::Genesis;
-pub use cita_db::journaldb;
+pub use crate::cita_db::journaldb;
 pub use libproto::*;

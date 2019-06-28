@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use account_db::AccountDBMut;
-use cita_db::{sec_trie_root, HashDB, TrieFactory};
+use crate::account_db::AccountDBMut;
+use crate::cita_db::{sec_trie_root, HashDB, TrieFactory};
+use crate::state::Account;
 use cita_types::{H256, U256};
 use hashable::Hashable;
 use rlp::{self, RlpStream};
-use state::Account;
 use std::collections::BTreeMap;
 use std::fmt;
 use util::*;

@@ -14,12 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-// use std::cmp;
-
+use crate::header::BlockNumber;
 use cita_types::{Address, H256, U256};
-use header::BlockNumber;
 use std::sync::Arc;
-// use ethjson;
 
 /// Simple vector of hashes, should be at most 256 items large, can be smaller if being used
 /// for a block whose number is less than 257.
@@ -42,6 +39,7 @@ pub struct EnvInfo {
     pub last_hashes: Arc<LastHashes>,
     /// The quota used.
     pub quota_used: U256,
+    /// The account quota limit
     pub account_quota_limit: U256,
 }
 
@@ -60,41 +58,9 @@ impl Default for EnvInfo {
     }
 }
 
-// impl From<ethjson::vm::Env> for EnvInfo {
-//     fn from(e: ethjson::vm::Env) -> Self {
-//         let number = e.number.into();
-//         EnvInfo {
-//             number: number,
-//             author: e.author.into(),
-//             difficulty: e.difficulty.into(),
-//             quota_limit: e.quota_limit.into(),
-//             timestamp: e.timestamp.into(),
-//             last_hashes: Arc::new((1..cmp::min(number + 1, 257)).map(|i| format!("{}", number - i).as_bytes().crypt_hash()).collect()),
-//             quota_used: U256::default(),
-//         }
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // #[test]
-    // fn it_serializes_form_json() {
-    //     let env_info = EnvInfo::from(ethjson::vm::Env {
-    //         author: ethjson::hash::Address(Address::from_str("000000f00000000f000000000000f00000000f00").unwrap()),
-    //         number: ethjson::uint::Uint(U256::from(1_112_339)),
-    //         difficulty: ethjson::uint::Uint(U256::from(50_000)),
-    //         quota_limit: ethjson::uint::Uint(U256::from(40_000)),
-    //         timestamp: ethjson::uint::Uint(U256::from(1_100))
-    //     });
-
-    //     assert_eq!(env_info.number, 1112339);
-    //     assert_eq!(env_info.author, Address::from_str("000000f00000000f000000000000f00000000f00").unwrap());
-    //     assert_eq!(env_info.quota_limit, 40000.into());
-    //     assert_eq!(env_info.difficulty, 50000.into());
-    //     assert_eq!(env_info.quota_used, 0.into());
-    // }
 
     #[test]
     fn it_can_be_created_as_default() {

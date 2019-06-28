@@ -2,11 +2,12 @@
 name = "core-executor"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>", "Cryptape Technologies <contact@cryptape.com>"]
+edition = "2018"
 
 [dependencies]
+cita-logger = "0.1.0"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 byteorder = { version = "1", default-features = false }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -28,6 +29,7 @@ rust-crypto = "0.2.34"
 num = "0.1"
 rand = "0.3"
 time = "0.1"
+hex = "0.3"
 crossbeam = "0.2"
 crossbeam-channel = "0.2"
 transient-hashmap = "0.4.0"

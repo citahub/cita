@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -16,23 +16,23 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::helpers::*;
-use cita_types::{Address, U256};
-use contracts::{
+use crate::contracts::{
     grpc::{
         contract::{contract_creation_address, low_contract_address},
         service_registry,
     },
     native::factory::Factory as NativeFactory,
 };
-use engines::NullEngine;
+use crate::engines::NullEngine;
+use crate::executive::Executive;
+use crate::libexecutor::economical_model::EconomicalModel;
+use crate::state::Substate;
+use crate::trace::{ExecutiveTracer, ExecutiveVMTracer};
+use cita_types::{Address, U256};
 use evm;
 use evm::action_params::{ActionParams, ActionValue};
 use evm::env_info::EnvInfo;
 use evm::{Factory, VMType};
-use executive::Executive;
-use libexecutor::economical_model::EconomicalModel;
-use state::Substate;
-use trace::{ExecutiveTracer, ExecutiveVMTracer};
 use util::BytesRef;
 
 mod grpc_service {
@@ -69,7 +69,7 @@ mod grpc_service {
                     (*count).to_string()
                 }
                 "count" => {
-                    let mut count = self.init_count.lock().unwrap();
+                    let count = self.init_count.lock().unwrap();
                     (*count).to_string()
                 }
                 "hello" => "hello".to_string(),

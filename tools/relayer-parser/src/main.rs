@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,25 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate cita_crypto;
 #[macro_use]
 extern crate clap;
-extern crate ethabi;
-extern crate futures;
-extern crate hyper;
-extern crate parking_lot;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
-extern crate tokio_core;
-
-extern crate cita_types;
-extern crate core;
-extern crate jsonrpc_types;
-extern crate libproto;
 #[macro_use]
-extern crate logger;
+extern crate cita_logger as logger;
 
 mod arguments;
 mod communication;

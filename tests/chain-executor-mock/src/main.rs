@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,24 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate bincode;
 extern crate cita_crypto as crypto;
-extern crate cita_types;
-extern crate clap;
 #[macro_use]
 extern crate libproto;
-extern crate hashable;
-extern crate proof;
-extern crate rustc_serialize;
-
 #[macro_use]
-extern crate logger;
-extern crate pubsub;
-extern crate rlp;
+extern crate cita_logger as logger;
 #[macro_use]
 extern crate serde_derive;
-extern crate dotenv;
-extern crate serde_yaml;
 
 mod generate_block;
 
@@ -46,12 +35,11 @@ use std::sync::{Arc, Mutex};
 use std::time;
 use std::{fs, u8};
 
-use clap::App;
-
+use crate::crypto::{CreateKey, KeyPair, PrivKey};
+use crate::generate_block::BuildBlock;
 use cita_types::traits::LowerHex;
 use cita_types::{H256, U256};
-use crypto::{CreateKey, KeyPair, PrivKey};
-use generate_block::BuildBlock;
+use clap::App;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
 use libproto::TryFrom;
@@ -68,7 +56,7 @@ fn main() {
     info!("CITA:Chain executor mock");
 
     let matches = App::new("Chain executor mock")
-        .version("0.1")
+        .version("0.1.0")
         .author("Cryptape")
         .arg(
             clap::Arg::with_name("mock-data")
@@ -103,10 +91,10 @@ fn main() {
     info!("AMQP_URL={}", amqp_url);
     let sys_time = Arc::new(Mutex::new(time::SystemTime::now()));
 
-    let privkey: PrivKey = {
-        let privkey_str = mock_data["privkey"].as_str().unwrap();
-        PrivKey::from_str(privkey_str).unwrap()
-    };
+    let privkey = mock_data["privkey"]
+        .as_str()
+        .and_then(|p| PrivKey::from_str(p).ok())
+        .unwrap();
     let mut mock_blocks: HashMap<u64, &serde_yaml::Value> = HashMap::new();
     for block in mock_data["blocks"].as_sequence_mut().unwrap() {
         let block_number = block["number"].as_u64().unwrap();
@@ -130,7 +118,7 @@ fn main() {
         let (key, body) = rx_sub.recv().unwrap();
         info!("received: key={}", key);
         let mut msg = Message::try_from(&body).unwrap();
-        // 接受 chain 发送的 authorities_list
+        // Receive authorities_list from chain
         if RoutingKey::from(&key) == routing_key!(Chain >> RichStatus) {
             let rich_status = msg.take_rich_status().unwrap();
             let height = rich_status.height + 1;
@@ -194,7 +182,6 @@ fn send_block(
             let quota = tx["quota"].as_u64().unwrap();
             let nonce = tx["nonce"].as_u64().unwrap() as u32;
             let valid_until_block = tx["valid_until_block"].as_u64().unwrap();
-
             let sender = KeyPair::from_privkey(*privkey).unwrap().address();
             info!(
                 "sender={}, contract_address={}",
@@ -216,7 +203,7 @@ fn send_block(
         })
         .collect();
 
-    // 构造block
+    // Build block
     let (send_data, _block) = BuildBlock::build_block_with_proof(
         &txs[..],
         pre_hash,
@@ -224,11 +211,8 @@ fn send_block(
         privkey,
         GENESIS_TIMESTAMP + height * 3,
     );
-    info!(
-        "===============send block ({} transactions)===============",
-        txs.len()
-    );
-    (*sys_time.lock().unwrap()) = time::SystemTime::now();
+    info!("send block ({} transactions)", txs.len());
+    *sys_time.lock().unwrap() = time::SystemTime::now();
     pub_sender
         .send((
             routing_key!(Consensus >> BlockWithProof).into(),

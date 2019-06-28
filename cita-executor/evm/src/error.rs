@@ -16,7 +16,7 @@
 
 //! Evm errors
 
-use cita_db::trie;
+use crate::cita_db::trie;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]

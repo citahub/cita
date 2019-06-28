@@ -27,18 +27,18 @@ use std::usize::MAX;
 use super::io::{LooseReader, LooseWriter, SnapshotReader, SnapshotWriter};
 use super::{BlockRebuilder, ManifestData, RestorationStatus};
 
+use crate::error::Error;
 use cita_types::H256;
-use error::Error;
 
-use cita_db::kvdb::{Database, DatabaseConfig};
+use crate::cita_db::kvdb::{Database, DatabaseConfig};
 use snappy;
 use util::Bytes;
 use util::UtilError;
 use util::{Mutex, RwLock, RwLockReadGuard};
 
-use libchain::chain::{get_chain, get_chain_body_height, Chain};
+use crate::libchain::chain::{get_chain, get_chain_body_height, Chain};
 
-use filters::PollManager;
+use crate::filters::PollManager;
 
 /// External database restoration handler
 pub trait DatabaseRestore: Send + Sync {

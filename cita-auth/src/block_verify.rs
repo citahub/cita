@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -79,7 +79,7 @@ impl<'a> BlockVerify<'a> {
         unimplemented!();
     }
 
-    pub fn verify_emergency_brake() -> bool {
+    pub fn verify_emergency_intervention() -> bool {
         unimplemented!()
     }
 }

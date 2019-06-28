@@ -16,10 +16,10 @@
 
 //! Nonoperative tracer.
 
+use crate::trace::trace::{Call, Create, VMTrace};
+use crate::trace::{FlatTrace, TraceError, Tracer, VMTracer};
 use cita_types::{Address, U256};
 use evm::action_params::ActionParams;
-use trace::trace::{Call, Create, VMTrace};
-use trace::{FlatTrace, TraceError, Tracer, VMTracer};
 use util::Bytes;
 
 /// Nonoperative tracer. Does not trace anything.

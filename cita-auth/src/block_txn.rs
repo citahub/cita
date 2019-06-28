@@ -1,5 +1,5 @@
 // CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright 2016-2019 Cryptape Technologies LLC.
 
 // This program is free software: you can redistribute it
 // and/or modify it under the terms of the GNU General Public
@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::handler::verify_tx_sig;
+use crate::hashable::Hashable;
 use cita_types::H256;
-use handler::verify_tx_sig;
-use hashable::Hashable;
 use libproto::TryInto;
 use libproto::{BlockTxn, GetBlockTxn, Origin, SignedTransaction};
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};

@@ -356,20 +356,16 @@ main() {
     set_hosts
     echo "DONE"
 
-    echo -n "1) cleanup   ...  "
-    cleanup
-    echo "DONE"
-
-    echo -n "2) generate config  ...  "
+    echo -n "1) generate config  ...  "
     generate_config
     echo "DONE"
 
-    echo -n "3) pre start nodes[0..3]  ...  "
+    echo -n "2) pre start nodes[0..3]  ...  "
     pre_start_nodes
     echo "DONE"
 
     # Pre-check peer count, it is OK to check node0 only
-    echo -n "4) pre-check peer count  ...  "
+    echo -n "3) pre-check peer count  ...  "
     timeout=$(check_peer_count 0 3 90)||(echo "FAILED"
                                          echo "error msg: ${timeout}"
                                          exit 1)
@@ -402,11 +398,6 @@ main() {
     test_repeated_address
     test_max_connected_limit_as_client
     test_max_connected_limit_as_server
-
-    echo -n "5) cleanup ... "
-    clean_host
-    cleanup
-    echo "DONE"
 }
 
 main "$@"

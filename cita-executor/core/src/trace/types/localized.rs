@@ -17,8 +17,8 @@
 //! Localized traces type definitions
 
 use super::trace::{Action, Res};
+use crate::header::BlockNumber;
 use cita_types::H256;
-use header::BlockNumber;
 
 /// Localized trace.
 #[derive(Debug, PartialEq, Clone)]

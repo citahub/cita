@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::contracts::solc::permission_management::Resource;
 use cita_types::{Address, H256, U256};
-use contracts::solc::permission_management::Resource;
 use ethabi::{decode, ParamType, Token};
 
 /// Parse solidity return data `address[]` to rust `Vec<Address>`
@@ -86,6 +86,14 @@ pub fn to_u256(output: &[u8]) -> Option<U256> {
         .map(U256::from)
 }
 
+/// Parse solidity return data `Address` to rust `Address`
+pub fn to_address(output: &[u8]) -> Option<Address> {
+    decode(&[ParamType::Address], output)
+        .ok()
+        .and_then(|decoded| decoded.first().cloned())
+        .and_then(Token::to_address)
+        .map(Address::from)
+}
 /// Parse solidity return data `uint256` to rust `u64`
 pub fn to_u64(output: &[u8]) -> Option<u64> {
     to_u256(output).map(|x| x.low_u64())

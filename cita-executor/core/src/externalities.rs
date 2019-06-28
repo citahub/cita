@@ -18,9 +18,15 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+use crate::contracts::native::factory::Factory as NativeFactory;
+use crate::engines::Engine;
+use crate::executive::*;
+use crate::libexecutor::economical_model::EconomicalModel;
+use crate::state::backend::Backend as StateBackend;
+use crate::state::State;
+use crate::substate::Substate;
+use crate::trace::{Tracer, VMTracer};
 use cita_types::{Address, H256, U256};
-use contracts::native::factory::Factory as NativeFactory;
-use engines::Engine;
 use evm::action_params::{ActionParams, ActionValue};
 use evm::call_type::CallType;
 use evm::env_info::EnvInfo;
@@ -28,15 +34,9 @@ use evm::{
     self, ContractCreateResult, Factory, FinalizationResult, MessageCallResult, ReturnData,
     Schedule,
 };
-use executive::*;
 use hashable::Hashable;
-use libexecutor::economical_model::EconomicalModel;
-use state::backend::Backend as StateBackend;
-use state::State;
 use std::cmp;
 use std::sync::Arc;
-use substate::Substate;
-use trace::{Tracer, VMTracer};
 use util::*;
 
 /// Policy for handling output data on `RETURN` opcode.
@@ -401,7 +401,7 @@ where
     }
 
     fn log(&mut self, topics: Vec<H256>, data: &[u8]) -> evm::Result<()> {
-        use log_entry::LogEntry;
+        use crate::log_entry::LogEntry;
 
         if self.static_flag {
             return Err(evm::Error::MutableCallInStaticContext);

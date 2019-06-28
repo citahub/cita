@@ -16,7 +16,7 @@
 
 //! Database utilities and definitions.
 
-use cita_db::{DBTransaction, KeyValueDB};
+use crate::cita_db::{DBTransaction, KeyValueDB};
 use rlp::{decode, encode, Decodable, Encodable};
 use std::collections::HashMap;
 use std::hash::Hash;

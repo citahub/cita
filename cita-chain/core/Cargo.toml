@@ -2,6 +2,7 @@
 name = "core"
 version = "0.1.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>", "Parity Technologies <admin@parity.io>"]
+edition = "2018"
 
 [dependencies]
 byteorder = { version = "1", default-features = false }
@@ -15,8 +16,8 @@ bit-set = "0.4"
 time = "0.1"
 crossbeam = "0.2"
 transient-hashmap = "0.4.0"
+cita-logger = "0.1.0"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -37,7 +38,7 @@ pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develo
 rand = "0.3"
 cpuprofiler = "0.0.3"
 tempdir = "0.3.7"
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-logger = "0.1.0"
 
 [features]
 default = ["secp256k1", "sha3hash"]

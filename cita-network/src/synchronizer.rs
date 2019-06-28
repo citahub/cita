@@ -22,7 +22,6 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::{Message, OperateType, SyncRequest, SyncResponse};
 use libproto::{TryFrom, TryInto};
-use logger::{debug, error, info, warn};
 use pubsub::channel::{unbounded, Receiver, Sender};
 use rand::{thread_rng, Rng, ThreadRng};
 use std::collections::{BTreeMap, HashSet, VecDeque};

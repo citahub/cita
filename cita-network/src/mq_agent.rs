@@ -20,7 +20,6 @@ use crate::node_manager::NodesManagerClient;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::{Message, TryFrom};
-use logger::{trace, warn};
 use pubsub::channel::{unbounded, Receiver, Sender};
 use pubsub::start_pubsub;
 use std::thread;
@@ -67,6 +66,7 @@ impl MqAgent {
             "network",
             routing_key!([
                 Chain >> Status,
+                Chain >> RichStatus,
                 Chain >> SyncResponse,
                 Jsonrpc >> RequestNet,
                 Jsonrpc >> RequestPeersInfo,
