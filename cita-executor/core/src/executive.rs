@@ -232,6 +232,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     fn transact_set_abi(&mut self, data: &[u8]) -> bool {
+        if data.len() <= 20 {
+            return false;
+        }
         let account = H160::from(&data[0..20]);
         let abi = &data[20..];
         info!("set abi of contract address: {:?}", account);
@@ -242,6 +245,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     fn transact_set_code(&mut self, data: &[u8]) -> bool {
+        if data.len() <= 20 {
+            return false;
+        }
         let account = H160::from(&data[0..20]);
         let code = &data[20..];
         self.state.reset_code(&account, code.to_vec()).is_ok()
