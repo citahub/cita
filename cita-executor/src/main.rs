@@ -99,7 +99,6 @@ extern crate serde_derive;
 #[macro_use]
 extern crate util;
 
-use crate::core::contracts::grpc::grpc_vm_adapter;
 use crate::core::libexecutor::executor::Executor;
 use crate::postman::Postman;
 use cita_directories::DataPath;
@@ -203,17 +202,6 @@ fn main() {
             Some(message) => forward_resp_sender.send(message).unwrap(),
             None => return,
         }
-    });
-
-    // start grpc server thread background
-    let server = grpc_vm_adapter::vm_grpc_server(
-        options.grpc_port,
-        command_req_sender.clone(),
-        command_resp_receiver.clone(),
-    )
-    .expect("failed to initialize grpc server");
-    thread::spawn(move || {
-        grpc_vm_adapter::serve(&server);
     });
 
     loop {
