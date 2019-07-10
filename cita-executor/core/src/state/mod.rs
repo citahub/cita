@@ -155,7 +155,6 @@ pub struct State<B: Backend> {
     checkpoints: RefCell<Vec<HashMap<Address, Option<AccountEntry>>>>,
     account_start_nonce: U256,
     factories: Factories,
-    pub super_admin_account: Option<Address>,
 }
 
 #[derive(Copy, Clone)]
@@ -188,7 +187,6 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce,
             factories,
-            super_admin_account: None,
         }
     }
 
@@ -214,7 +212,6 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce,
             factories,
-            super_admin_account: None,
         };
 
         Ok(state)
