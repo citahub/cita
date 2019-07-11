@@ -60,7 +60,6 @@ extern crate cita_crypto;
 extern crate core;
 extern crate ethabi;
 
-extern crate grpc;
 #[cfg(feature = "privatetx")]
 extern crate zktx;
 

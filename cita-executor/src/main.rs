@@ -120,7 +120,6 @@ include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Options {
     prooftype: u8,
-    grpc_port: u16,
     journaldb_type: String,
     genesis_path: String,
     statedb_cache_size: usize,
@@ -131,7 +130,6 @@ impl Options {
     pub fn default() -> Self {
         Options {
             prooftype: 2,
-            grpc_port: 5000,
             journaldb_type: String::from("archive"),
             genesis_path: String::from("genesis.json"),
             statedb_cache_size: 5 * 1024 * 1024,
