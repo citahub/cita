@@ -664,10 +664,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         _substate: &mut Substate,
         _output: &BytesRef,
     ) -> evm::Result<FinalizationResult> {
-        // Must send from admin address
-        if Some(params.origin) != self.state.super_admin_account {
-            return Err(evm::error::Error::Internal("no permission".to_owned()));
-        }
         let atype = params.value.value().low_u32();
         let mut result = FinalizationResult {
             gas_left: params.gas,
