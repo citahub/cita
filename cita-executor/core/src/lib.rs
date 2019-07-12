@@ -74,6 +74,7 @@ pub mod account_db;
 #[cfg(test)]
 pub mod benches;
 pub mod builtin;
+pub mod cita_executive;
 pub mod executed;
 pub mod executive;
 pub mod externalities;
