@@ -77,6 +77,7 @@ pub mod benches;
 pub mod builtin;
 pub mod executed;
 pub mod executive;
+pub mod cita_executive;
 pub mod externalities;
 pub mod factory;
 pub mod pod_account;
