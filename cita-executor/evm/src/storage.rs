@@ -1,29 +1,17 @@
-// CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 use crate::Error as EvmError;
-use crate::Ext;
-use cita_types::{H256, U256};
+// use cita_vm::Error as EvmError;
+// use crate::Ext;
+use cita_types::{H160 as Address, H256, U256};
+// use ethereum_types::{Address, H256, U256};
+
 use std::boxed::Box;
 use std::convert::From;
 use std::string::FromUtf8Error;
 use util::sha3;
 
-////////////////////////////////////////////////////////////////////////////////
+use cita_trie::DB;
+use cita_vm::evm::DataProvider;
+
 pub trait Serialize {
     fn serialize(&self) -> Result<Vec<u8>, EvmError>;
 }
@@ -31,7 +19,6 @@ pub trait Deserialize: Sized {
     fn deserialize(bytes: &[u8]) -> Result<Self, EvmError>;
 }
 
-////////////////////////////////////////////////////////////////////////////////
 impl Serialize for U256 {
     fn serialize(&self) -> Result<Vec<u8>, EvmError> {
         //let mut vec = Vec::with_capacity(64);
@@ -46,7 +33,6 @@ impl Deserialize for U256 {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
 impl Serialize for String {
     fn serialize(&self) -> Result<Vec<u8>, EvmError> {
         Ok(self.to_owned().into_bytes())
@@ -58,7 +44,6 @@ impl Deserialize for String {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
 impl Serialize for Vec<u8> {
     fn serialize(&self) -> Result<Vec<u8>, EvmError> {
         Ok(self.clone())
@@ -70,14 +55,12 @@ impl Deserialize for Vec<u8> {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
 impl From<FromUtf8Error> for EvmError {
     fn from(err: FromUtf8Error) -> Self {
         EvmError::Internal(format!("Internal error: {}", err))
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Scalar {
     position: H256,
@@ -88,18 +71,28 @@ impl Scalar {
         Scalar { position }
     }
     // single element
-    pub fn set(self: &Self, ext: &mut Ext, value: U256) -> Result<(), EvmError> {
-        ext.set_storage(self.position, H256::from(value))?;
+    pub fn set(
+        self: &Self,
+        ext: &mut DataProvider,
+        addr: &Address,
+        value: U256,
+    ) -> Result<(), EvmError> {
+        ext.set_storage(addr, self.position, H256::from(value));
         Ok(())
     }
 
-    pub fn get(self: &Self, ext: &Ext) -> Result<U256, EvmError> {
-        let value = ext.storage_at(&self.position)?;
+    pub fn get(self: &Self, ext: &DataProvider, addr: &Address) -> Result<U256, EvmError> {
+        let value = ext.get_storage(addr, &self.position);
         Ok(U256::from(value))
     }
 
     // bytes & string
-    pub fn set_bytes<T>(self: &Self, ext: &mut Ext, value: &T) -> Result<(), EvmError>
+    pub fn set_bytes<T>(
+        self: &Self,
+        ext: &mut DataProvider,
+        addr: &Address,
+        value: &T,
+    ) -> Result<(), EvmError>
     where
         T: Serialize,
     {
@@ -109,25 +102,25 @@ impl Scalar {
             let mut byte32 = [0u8; 32];
             byte32[0..encoded.len()].copy_from_slice(&encoded);
             byte32[31] = (length * 2) as u8;
-            ext.set_storage(self.position, H256::from_slice(&byte32))?;
+            ext.set_storage(addr, self.position, H256::from_slice(&byte32));
         } else {
-            ext.set_storage(self.position, H256::from((length * 2 + 1) as u64))?;
+            ext.set_storage(addr, self.position, H256::from((length * 2 + 1) as u64));
             let mut key = U256::from(H256::from_slice(&sha3::keccak256(&self.position)));
             for chunk in encoded.chunks(32) {
                 let value = H256::from(chunk);
-                ext.set_storage(H256::from(key), value)?;
+                ext.set_storage(addr, H256::from(key), value);
                 key = key + U256::one();
             }
         }
         Ok(())
     }
 
-    pub fn get_bytes<T>(self: &Self, ext: &Ext) -> Result<Box<T>, EvmError>
+    pub fn get_bytes<T>(self: &Self, ext: &DataProvider, addr: &Address) -> Result<Box<T>, EvmError>
     where
         T: Deserialize,
     {
         let mut bytes = Vec::<u8>::new();
-        let first = ext.storage_at(&self.position)?;
+        let first = ext.get_storage(addr, &self.position);
         if first[31] % 2 == 0 {
             let len = (first[31] / 2) as usize;
             bytes.extend_from_slice(&first[0..len]);
@@ -138,7 +131,7 @@ impl Scalar {
             let mut key = U256::from(H256::from_slice(&sha3::keccak256(&self.position)));
             let mut bytes = Vec::new();
             while len > 0 {
-                let v = ext.storage_at(&H256::from(key))?;
+                let v = ext.get_storage(addr, &H256::from(key));
                 if len > 32 {
                     bytes.extend_from_slice(v.as_ref());
                     key = key + U256::one();
@@ -153,7 +146,6 @@ impl Scalar {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Array {
     position: H256,
@@ -162,45 +154,74 @@ impl Array {
     pub fn new(position: H256) -> Self {
         Array { position }
     }
+
     #[inline]
     fn key(&self, index: u64) -> H256 {
         let mut key = U256::from(H256::from_slice(&sha3::keccak256(&self.position)));
         key = key + U256::from(index);
         H256::from(key)
     }
-    pub fn set(self: &Self, ext: &mut Ext, index: u64, value: &U256) -> Result<(), EvmError> {
+
+    pub fn set(
+        self: &Self,
+        ext: &mut DataProvider,
+        addr: &Address,
+        index: u64,
+        value: &U256,
+    ) -> Result<(), EvmError> {
         let scalar = Scalar::new(self.key(index));
-        scalar.set(ext, *value)
+        scalar.set(ext, addr, *value)
     }
 
-    pub fn get(self: &Self, ext: &Ext, index: u64) -> Result<U256, EvmError> {
+    pub fn get(
+        self: &Self,
+        ext: &DataProvider,
+        addr: &Address,
+        index: u64,
+    ) -> Result<U256, EvmError> {
         let scalar = Scalar::new(self.key(index));
-        scalar.get(ext)
+        scalar.get(ext, addr)
     }
 
-    pub fn set_bytes<T>(self: &Self, ext: &mut Ext, index: u64, value: &T) -> Result<(), EvmError>
+    pub fn set_bytes<T>(
+        self: &Self,
+        ext: &mut DataProvider,
+        addr: &Address,
+        index: u64,
+        value: &T,
+    ) -> Result<(), EvmError>
     where
         T: Serialize,
     {
         let scalar = Scalar::new(self.key(index));
-        scalar.set_bytes(ext, value)
+        scalar.set_bytes(ext, addr, value)
     }
 
-    pub fn get_bytes<T>(self: &Self, ext: &Ext, index: u64) -> Result<Box<T>, EvmError>
+    pub fn get_bytes<T>(
+        self: &Self,
+        ext: &DataProvider,
+        addr: &Address,
+        index: u64,
+    ) -> Result<Box<T>, EvmError>
     where
         T: Deserialize,
     {
         let scalar = Scalar::new(self.key(index));
-        scalar.get_bytes(ext)
+        scalar.get_bytes(ext, addr)
     }
 
-    pub fn set_len(self: &Self, ext: &mut Ext, len: u64) -> Result<(), EvmError> {
-        ext.set_storage(self.position, H256::from(len))?;
+    pub fn set_len(
+        self: &Self,
+        ext: &mut DataProvider,
+        addr: &Address,
+        len: u64,
+    ) -> Result<(), EvmError> {
+        ext.set_storage(addr, self.position, H256::from(len));
         Ok(())
     }
 
-    pub fn get_len(self: &Self, ext: &Ext) -> Result<u64, EvmError> {
-        let len = ext.storage_at(&self.position)?;
+    pub fn get_len(self: &Self, ext: &DataProvider, addr: &Address) -> Result<u64, EvmError> {
+        let len = ext.get_storage(addr, &self.position);
         Ok(len.low_u64())
     }
 
@@ -212,7 +233,6 @@ impl Array {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Map {
     position: H256,
@@ -222,6 +242,7 @@ impl Map {
     pub fn new(position: H256) -> Self {
         Map { position }
     }
+
     #[inline]
     fn key<Key>(&self, key: &Key) -> Result<H256, EvmError>
     where
@@ -232,23 +253,36 @@ impl Map {
         bytes.extend_from_slice(self.position.as_ref());
         Ok(H256::from_slice(&sha3::keccak256(&bytes)))
     }
-    pub fn set<Key>(self: &Self, ext: &mut Ext, key: &Key, value: U256) -> Result<(), EvmError>
+
+    pub fn set<Key>(
+        self: &Self,
+        ext: &mut DataProvider,
+        addr: &Address,
+        key: &Key,
+        value: U256,
+    ) -> Result<(), EvmError>
     where
         Key: Serialize,
     {
-        Scalar::new(self.key(key)?).set(ext, value)
+        Scalar::new(self.key(key)?).set(ext, addr, value)
     }
 
-    pub fn get<Key>(self: &Self, ext: &Ext, key: &Key) -> Result<U256, EvmError>
+    pub fn get<Key>(
+        self: &Self,
+        ext: &DataProvider,
+        addr: &Address,
+        key: &Key,
+    ) -> Result<U256, EvmError>
     where
         Key: Serialize,
     {
-        Scalar::new(self.key(key)?).get(ext)
+        Scalar::new(self.key(key)?).get(ext, addr)
     }
 
     pub fn set_bytes<Key, Value>(
         self: &Self,
-        ext: &mut Ext,
+        ext: &mut DataProvider,
+        addr: &Address,
         key: &Key,
         value: &Value,
     ) -> Result<(), EvmError>
@@ -256,15 +290,20 @@ impl Map {
         Key: Serialize,
         Value: Serialize,
     {
-        Scalar::new(self.key(key)?).set_bytes(ext, value)
+        Scalar::new(self.key(key)?).set_bytes(ext, addr, value)
     }
 
-    pub fn get_bytes<Key, Value>(self: &Self, ext: &Ext, key: &Key) -> Result<Value, EvmError>
+    pub fn get_bytes<Key, Value>(
+        self: &Self,
+        ext: &DataProvider,
+        addr: &Address,
+        key: &Key,
+    ) -> Result<Value, EvmError>
     where
         Key: Serialize,
         Value: Deserialize,
     {
-        Ok(*Scalar::new(self.key(key)?).get_bytes(ext)?)
+        Ok(*Scalar::new(self.key(key)?).get_bytes(ext, addr)?)
     }
 
     pub fn get_array<Key>(self: &mut Self, key: &Key) -> Result<Array, EvmError>

@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-mod crosschain_verify;
+// mod crosschain_verify;
 pub mod factory;
-#[cfg(test)]
+// #[cfg(test)]
 mod storage;
 #[cfg(feature = "privatetx")]
 mod zk_privacy;
