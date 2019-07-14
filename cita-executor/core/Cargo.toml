@@ -39,6 +39,10 @@ cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "de
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto-trait = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
+cita-vm = { git = "https://github.com/ouwenkg/cita-vm.git", branch = "cita" }
+cita_trie = "2.0"
+ethereum-types = "0.4"
+
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }

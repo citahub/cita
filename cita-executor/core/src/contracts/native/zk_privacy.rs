@@ -29,6 +29,10 @@ use zktx::incrementalmerkletree::*;
 use zktx::p2c::*;
 use zktx::pedersen::PedersenDigest;
 
+use cita_trie::DB;
+use cita_vm::evm::InterpreterResult;
+use cita_vm::DataProvider;
+
 static TREE_DEPTH: usize = 60;
 #[derive(Clone)]
 // address 512  balance 512
@@ -46,7 +50,14 @@ pub struct ZkPrivacy {
 }
 
 impl Contract for ZkPrivacy {
-    fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn exec<B: DB>(
+        &mut self,
+        params: &ActionParams,
+        ext: &mut DataProvider<B>,
+    ) -> Result<InterpreterResult, Error>
+    where
+        Self: Sized,
+    {
         if let Some(ref data) = params.data {
             method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
                 0 => self.init(params, ext),

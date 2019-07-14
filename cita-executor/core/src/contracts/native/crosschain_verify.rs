@@ -25,7 +25,12 @@ use core::libchain::chain::TxProof;
 use ethabi;
 use evm::action_params::ActionParams;
 use evm::storage::Map;
-use evm::{Error, Ext, GasLeft, ReturnData};
+// use evm::{Error, Ext, GasLeft, ReturnData};
+
+use cita_trie::DB;
+use cita_vm::DataProvider;
+use cita_vm::Error;
+use cita_vm::evm::InterpreterResult;
 
 lazy_static! {
     static ref VERIFY_TRANSACTION_FUNC: u32 =
@@ -46,7 +51,14 @@ pub struct CrossChainVerify {
 }
 
 impl Contract for CrossChainVerify {
-    fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, Error> {
+    fn exec<B: DB>(
+        &mut self,
+        params: &ActionParams,
+        ext: &mut DataProvider<B>,
+    ) -> Result<InterpreterResult, Error>
+    where
+        Self: Sized,
+    {
         if let Some(ref data) = params.data {
             method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
                 sig if sig == *VERIFY_TRANSACTION_FUNC => self.verify_transaction(params, ext),
@@ -55,10 +67,10 @@ impl Contract for CrossChainVerify {
                 sig if sig == *GET_EXPECTED_BLOCK_NUMBER_FUNC => {
                     self.get_expected_block_number(params, ext)
                 }
-                _ => Err(Error::OutOfGas),
+                _ => Err(Error::Evm(evm::Error)),
             })
         } else {
-            Err(Error::OutOfGas)
+            Err(Error::Evm(evm::Error))
         }
     }
     fn create(&self) -> Box<Contract> {

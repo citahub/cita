@@ -1,28 +1,24 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 use crate::types::reserved_addresses;
+use cita_trie::DB;
 use cita_types::Address;
+use cita_vm::evm::DataProvider;
+use cita_vm::evm::{Context, InterpreterResult};
+use cita_vm::state;
+use cita_vm::Error;
+use cita_vm::{BlockDataProvider, Transaction};
 use evm::action_params::ActionParams;
-use evm::{self, Ext, GasLeft};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::Arc;
 
-////////////////////////////////////////////////////////////////////////////////
+// FixMe: Just for Mock, Use config in cita-executive.rs later
+#[derive(Clone, Debug)]
+pub struct Config {
+    pub block_gas_limit: u64, // gas limit for a block.
+    pub check_nonce: bool,
+}
+
 pub type Signature = u32;
 pub trait ContractClone {
     fn clone_box(&self) -> Box<Contract>;
@@ -46,11 +42,17 @@ impl Clone for Box<Contract> {
 
 // Contract
 pub trait Contract: Sync + Send + ContractClone {
-    fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error>;
+    fn exec(
+        &mut self,
+        params: &ActionParams,
+        ext: &mut DataProvider,
+    ) -> Result<InterpreterResult, Error>
+    where
+        Self: Sized;
+
     fn create(&self) -> Box<Contract>;
 }
 
-////////////////////////////////////////////////////////////////////////////////
 #[derive(Clone)]
 pub struct Factory {
     contracts: HashMap<Address, Box<Contract>>,
@@ -78,14 +80,14 @@ impl Default for Factory {
             contracts: HashMap::new(),
         };
         // here we register contracts with addresses defined in genesis.json.
-        {
-            use super::crosschain_verify::CrossChainVerify;
-            factory.register(
-                Address::from_str(reserved_addresses::NATIVE_CROSS_CHAIN_VERIFY).unwrap(),
-                Box::new(CrossChainVerify::default()),
-            );
-        }
-        #[cfg(test)]
+        // {
+        //     use super::crosschain_verify::CrossChainVerify;
+        //     factory.register(
+        //         Address::from_str(reserved_addresses::NATIVE_CROSS_CHAIN_VERIFY).unwrap(),
+        //         Box::new(CrossChainVerify::default()),
+        //     );
+        // }
+        // #[cfg(test)]
         {
             use super::storage::SimpleStorage;
             factory.register(
