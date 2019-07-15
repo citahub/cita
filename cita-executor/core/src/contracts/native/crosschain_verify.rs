@@ -28,9 +28,9 @@ use evm::storage::Map;
 // use evm::{Error, Ext, GasLeft, ReturnData};
 
 use cita_trie::DB;
+use cita_vm::evm::InterpreterResult;
 use cita_vm::DataProvider;
 use cita_vm::Error;
-use cita_vm::evm::InterpreterResult;
 
 lazy_static! {
     static ref VERIFY_TRANSACTION_FUNC: u32 =

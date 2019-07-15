@@ -1,16 +1,11 @@
 use crate::types::reserved_addresses;
-use cita_trie::DB;
 use cita_types::Address;
 use cita_vm::evm::DataProvider;
-use cita_vm::evm::{Context, InterpreterResult};
-use cita_vm::state;
-use cita_vm::Error;
-use cita_vm::{BlockDataProvider, Transaction};
+use cita_vm::evm::Error as EVMError;
+use cita_vm::evm::InterpreterResult;
 use evm::action_params::ActionParams;
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::str::FromStr;
-use std::sync::Arc;
 
 // FixMe: Just for Mock, Use config in cita-executive.rs later
 #[derive(Clone, Debug)]
@@ -46,9 +41,7 @@ pub trait Contract: Sync + Send + ContractClone {
         &mut self,
         params: &ActionParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, Error>
-    where
-        Self: Sized;
+    ) -> Result<InterpreterResult, EVMError>;
 
     fn create(&self) -> Box<Contract>;
 }
@@ -80,13 +73,13 @@ impl Default for Factory {
             contracts: HashMap::new(),
         };
         // here we register contracts with addresses defined in genesis.json.
-        // {
-        //     use super::crosschain_verify::CrossChainVerify;
-        //     factory.register(
-        //         Address::from_str(reserved_addresses::NATIVE_CROSS_CHAIN_VERIFY).unwrap(),
-        //         Box::new(CrossChainVerify::default()),
-        //     );
-        // }
+        {
+            use super::crosschain_verify::CrossChainVerify;
+            factory.register(
+                Address::from_str(reserved_addresses::NATIVE_CROSS_CHAIN_VERIFY).unwrap(),
+                Box::new(CrossChainVerify::default()),
+            );
+        }
         // #[cfg(test)]
         {
             use super::storage::SimpleStorage;

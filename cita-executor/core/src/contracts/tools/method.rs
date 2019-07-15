@@ -17,7 +17,8 @@
 
 /// Calculate contract method signature hash and return different types.
 use byteorder::{BigEndian, ByteOrder};
-use evm::Error as EvmError;
+// use evm::Error as EvmError;
+use cita_vm::evm::Error as EvmError;
 use util::sha3;
 
 pub fn encode_to_array(name: &[u8]) -> [u8; 4] {
