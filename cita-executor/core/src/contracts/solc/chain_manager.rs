@@ -35,32 +35,39 @@ lazy_static! {
 
 pub struct ChainManagement;
 
+use cita_vm::evm::DataProvider;
+
 impl ChainManagement {
-    pub fn ext_chain_id(ext: &mut Ext, gas: &U256, sender: &Address) -> Option<(U256, U256)> {
+    pub fn ext_chain_id(
+        ext: &mut DataProvider,
+        gas: &U256,
+        sender: &Address,
+    ) -> Option<(U256, U256)> {
         trace!("call system contract ChainManagement.ext_chain_id()");
         let contract = &*CONTRACT_ADDRESS;
         let tx_data = CHAIN_ID_ENCODED.to_vec();
         let data = &tx_data.as_slice();
         let mut output = Vec::<u8>::new();
-        match ext.call(
-            gas,
-            sender,
-            contract,
-            None,
-            data,
-            contract,
-            &mut output,
-            CallType::Call,
-        ) {
-            MessageCallResult::Success(gas_left, return_data) => {
-                decode_tools::to_u256(&*return_data).map(|x| (gas_left, x))
-            }
-            MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
-        }
+        // match ext.call(
+        //     gas,
+        //     sender,
+        //     contract,
+        //     None,
+        //     data,
+        //     contract,
+        //     &mut output,
+        //     CallType::Call,
+        // ) {
+        //     MessageCallResult::Success(gas_left, return_data) => {
+        //         decode_tools::to_u256(&*return_data).map(|x| (gas_left, x))
+        //     }
+        //     MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
+        // }
+        None
     }
 
     pub fn ext_authorities(
-        ext: &mut Ext,
+        ext: &mut DataProvider,
         gas: &U256,
         sender: &Address,
         chain_id: U256,
@@ -75,24 +82,25 @@ impl ChainManagement {
         tx_data.extend(param.to_vec());
         let data = &tx_data.as_slice();
         let mut output = Vec::<u8>::new();
-        match ext.call(
-            gas,
-            sender,
-            contract,
-            None,
-            data,
-            contract,
-            &mut output,
-            CallType::Call,
-        ) {
-            MessageCallResult::Success(gas_left, return_data) => {
-                trace!(
-                    "call system contract ChainManagement.ext_authorities() return [{:?}]",
-                    return_data
-                );
-                decode_tools::to_address_vec(&*return_data).map(|addrs| (gas_left, addrs))
-            }
-            MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
-        }
+        // match ext.call(
+        //     gas,
+        //     sender,
+        //     contract,
+        //     None,
+        //     data,
+        //     contract,
+        //     &mut output,
+        //     CallType::Call,
+        // ) {
+        //     MessageCallResult::Success(gas_left, return_data) => {
+        //         trace!(
+        //             "call system contract ChainManagement.ext_authorities() return [{:?}]",
+        //             return_data
+        //         );
+        //         decode_tools::to_address_vec(&*return_data).map(|addrs| (gas_left, addrs))
+        //     }
+        //     MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
+        // }
+        None
     }
 }
