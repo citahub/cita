@@ -16,6 +16,8 @@
 
 //! Rust VM implementation
 
+// FIXME: This file will be deleted later. Just deal with compile error for now.
+
 #[macro_use]
 mod informant;
 mod gasometer;
@@ -801,7 +803,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                         TWO_POW_96 => a >> 96,
                         TWO_POW_224 => a >> 224,
                         TWO_POW_248 => a >> 248,
-                        _ => a.overflowing_div(b).0,
+                        _ => a.checked_div(b).unwrap(),
                     }
                 } else {
                     U256::zero()
@@ -811,7 +813,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 let a = stack.pop_back();
                 let b = stack.pop_back();
                 stack.push(if !self.is_zero(&b) {
-                    a.overflowing_rem(b).0
+                    a.checked_rem(b).unwrap()
                 } else {
                     U256::zero()
                 });
@@ -827,7 +829,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 } else if a == min && b == !U256::zero() {
                     min
                 } else {
-                    let c = a.overflowing_div(b).0;
+                    let c = a.checked_div(b).unwrap();
                     set_sign(c, sign_a ^ sign_b)
                 });
             }
@@ -838,7 +840,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 let b = get_and_reset_sign(ub).0;
 
                 stack.push(if !self.is_zero(&b) {
-                    let c = a.overflowing_rem(b).0;
+                    let c = a.checked_rem(b).unwrap();
                     set_sign(c, sign_a)
                 } else {
                     U256::zero()
@@ -929,7 +931,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                     // upcast to 512
                     let a5 = U512::from(a);
                     let res = a5.overflowing_add(U512::from(b)).0;
-                    let x = res.overflowing_rem(U512::from(c)).0;
+                    let x = res.checked_rem(U512::from(c)).unwrap();
                     U256::from(x)
                 } else {
                     U256::zero()
@@ -943,7 +945,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 stack.push(if !self.is_zero(&c) {
                     let a5 = U512::from(a);
                     let res = a5.overflowing_mul(U512::from(b)).0;
-                    let x = res.overflowing_rem(U512::from(c)).0;
+                    let x = res.checked_rem(U512::from(c)).unwrap();
                     U256::from(x)
                 } else {
                     U256::zero()
