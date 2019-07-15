@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::contracts::solc::{permission_management::contains_resource, Resource};
-use crate::executed::ExecutionError;
 use crate::libexecutor::sys_config::CheckOptions;
 use crate::types::reserved_addresses;
 use crate::types::transaction::{Action, SignedTransaction};
@@ -31,7 +30,7 @@ pub fn check_permission(
     account_permissions: &HashMap<Address, Vec<Resource>>,
     t: &SignedTransaction,
     options: CheckOptions,
-) -> Result<(), ExecutionError> {
+) -> Result<(), AuthenticationError> {
     let sender = *t.sender();
     // It's eth_call when the account is zero.
     // No need to check the options in case that the option is true.
@@ -61,14 +60,14 @@ pub fn check_permission(
                 }
 
                 if t.data.len() < 4 {
-                    return Err(ExecutionError::TransactionMalformed(
+                    return Err(AuthenticationError::TransactionMalformed(
                         "The length of transaction data is less than four bytes".to_string(),
                     ));
                 }
 
                 if address == group_management_addr {
                     if t.data.len() < 36 {
-                        return Err(ExecutionError::TransactionMalformed(
+                        return Err(AuthenticationError::TransactionMalformed(
                             "Data should have at least one parameter".to_string(),
                         ));
                     }
@@ -101,7 +100,7 @@ fn check_send_tx(
     group_accounts: &HashMap<Address, Vec<Address>>,
     account_permissions: &HashMap<Address, Vec<Resource>>,
     account: &Address,
-) -> Result<(), ExecutionError> {
+) -> Result<(), AuthenticationError> {
     let cont = Address::from_str(reserved_addresses::PERMISSION_SEND_TX).unwrap();
     let func = vec![0; 4];
     let has_permission = has_resource(
@@ -115,7 +114,7 @@ fn check_send_tx(
     trace!("has send tx permission: {:?}", has_permission);
 
     if !has_permission {
-        return Err(ExecutionError::NoTransactionPermission);
+        return Err(AuthenticationError::NoTransactionPermission);
     }
 
     Ok(())
@@ -126,7 +125,7 @@ fn check_create_contract(
     group_accounts: &HashMap<Address, Vec<Address>>,
     account_permissions: &HashMap<Address, Vec<Resource>>,
     account: &Address,
-) -> Result<(), ExecutionError> {
+) -> Result<(), AuthenticationError> {
     let cont = Address::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap();
     let func = vec![0; 4];
     let has_permission = has_resource(
@@ -140,7 +139,7 @@ fn check_create_contract(
     trace!("has create contract permission: {:?}", has_permission);
 
     if !has_permission {
-        return Err(ExecutionError::NoContractPermission);
+        return Err(AuthenticationError::NoContractPermission);
     }
 
     Ok(())
@@ -153,13 +152,13 @@ fn check_call_contract(
     account: &Address,
     cont: &Address,
     func: &[u8],
-) -> Result<(), ExecutionError> {
+) -> Result<(), AuthenticationError> {
     let has_permission = has_resource(group_accounts, account_permissions, account, cont, func);
 
     trace!("has call contract permission: {:?}", has_permission);
 
     if !has_permission {
-        return Err(ExecutionError::NoCallPermission);
+        return Err(AuthenticationError::NoCallPermission);
     }
 
     Ok(())
@@ -172,13 +171,13 @@ fn check_origin_group(
     cont: &Address,
     func: &[u8],
     param: &Address,
-) -> Result<(), ExecutionError> {
+) -> Result<(), AuthenticationError> {
     let has_permission = contains_resource(account_permissions, account, *cont, func);
 
     trace!("Sender has call contract permission: {:?}", has_permission);
 
     if !has_permission && !contains_resource(account_permissions, param, *cont, func) {
-        return Err(ExecutionError::NoCallPermission);
+        return Err(AuthenticationError::NoCallPermission);
     }
 
     Ok(())
@@ -220,4 +219,12 @@ fn get_groups(group_accounts: &HashMap<Address, Vec<Address>>, account: &Address
     }
 
     groups
+}
+
+#[derive(Debug)]
+pub enum AuthenticationError {
+    NoTransactionPermission,
+    NoContractPermission,
+    NoCallPermission,
+    TransactionMalformed(String),
 }
