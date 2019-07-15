@@ -39,9 +39,6 @@ cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "de
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto-trait = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
-cita-vm = { git = "https://github.com/cryptape/cita-vm.git", branch = "cita" }
-cita_trie = "2.0"
-
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
@@ -53,13 +50,21 @@ enum_primitive = "0.1.1"
 largest-remainder-method = "0.1"
 db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
+cita-vm = { git = "https://github.com/cryptape/cita-vm.git", branch = "cita" }
+cita_trie = "2.0"
+numext-fixed-hash = "0.1"
+numext-fixed-uint = "0.1"
+ethbloom = "0.6"
+sha3 = { version="0.8", optional=true }
+tiny-keccak = { version="1.4", optional=true }
+
 [dev-dependencies]
 rand = "0.3"
 cpuprofiler = "0.0.3"
 tempdir = "0.3.7"
 
 [features]
-default = ["secp256k1", "sha3hash"]
+default = ["secp256k1", "sha3hash", "hashlib-keccak"]
 secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1", "proof/secp256k1"]
 ed25519 = ["cita-crypto/ed25519", "libproto/ed25519", "proof/ed25519"]
 sm2 = ["cita-crypto/sm2", "libproto/sm2", "proof/sm2"]
@@ -69,4 +74,5 @@ sm3hash = ["hashable/sm3hash", "libproto/sm3hash", "proof/sm3hash"]
 privatetx = ["zktx"]
 evm-debug = ["evm/evm-debug"]
 evm-debug-tests = ["evm-debug", "evm/evm-debug-tests"]
-
+hashlib-keccak = ["tiny-keccak"]
+hashlib-sha3 = ["sha3"]
