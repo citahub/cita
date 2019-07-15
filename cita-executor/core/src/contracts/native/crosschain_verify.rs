@@ -1,20 +1,3 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 use crate::contracts::{
     native::factory::Contract, solc::ChainManagement, tools::method as method_tools,
 };
@@ -29,8 +12,9 @@ use evm::storage::Map;
 
 use cita_trie::DB;
 use cita_vm::evm::InterpreterResult;
-use cita_vm::DataProvider;
-use cita_vm::Error;
+// use cita_vm::Error;
+use cita_vm::evm::DataProvider;
+use cita_vm::evm::Error as EVMError;
 
 lazy_static! {
     static ref VERIFY_TRANSACTION_FUNC: u32 =
@@ -51,14 +35,11 @@ pub struct CrossChainVerify {
 }
 
 impl Contract for CrossChainVerify {
-    fn exec<B: DB>(
+    fn exec(
         &mut self,
         params: &ActionParams,
-        ext: &mut DataProvider<B>,
-    ) -> Result<InterpreterResult, Error>
-    where
-        Self: Sized,
-    {
+        ext: &mut DataProvider,
+    ) -> Result<InterpreterResult, EVMError> {
         if let Some(ref data) = params.data {
             method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
                 sig if sig == *VERIFY_TRANSACTION_FUNC => self.verify_transaction(params, ext),
@@ -67,10 +48,10 @@ impl Contract for CrossChainVerify {
                 sig if sig == *GET_EXPECTED_BLOCK_NUMBER_FUNC => {
                     self.get_expected_block_number(params, ext)
                 }
-                _ => Err(Error::Evm(evm::Error)),
+                _ => Err(EVMError::OutOfGas),
             })
         } else {
-            Err(Error::Evm(evm::Error))
+            Err(EVMError::OutOfGas)
         }
     }
     fn create(&self) -> Box<Contract> {
@@ -92,16 +73,17 @@ impl CrossChainVerify {
     fn verify_transaction(
         &mut self,
         params: &ActionParams,
-        ext: &mut Ext,
-    ) -> Result<GasLeft, Error> {
+        ext: &mut DataProvider,
+    ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(Error::OutOfGas);
+            return Err(EVMError::OutOfGas);
         }
         let gas_left = params.gas - gas_cost;
 
         if params.data.is_none() {
-            return Err(Error::Internal("no data".to_string()));
+            // return Err(EVMError::Internal("no data".to_string()));
+            return Err(EVMError::OutOfData);
         }
 
         let data = params.data.to_owned().unwrap();
@@ -115,20 +97,23 @@ impl CrossChainVerify {
 
         let result = ethabi::decode(&tokens, &data[4..]);
         if result.is_err() {
-            return Err(Error::Internal("decode failed".to_string()));
+            // return Err(Error::Internal("decode failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let mut decoded = result.unwrap();
         trace!("decoded = {:?}", decoded);
 
         let result = decoded.remove(0).to_address();
         if result.is_none() {
-            return Err(Error::Internal("decode 1st param failed".to_string()));
+            // return Err(Error::Internal("decode 1st param failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let addr = Address::from(result.unwrap());
         trace!("addr = {}", addr);
         let result = decoded.remove(0).to_fixed_bytes();
         if result.is_none() {
-            return Err(Error::Internal("decode 2nd param failed".to_string()));
+            // return Err(Error::Internal("decode 2nd param failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let hasher = result.unwrap()[..4].iter().take(4).enumerate().fold(
             [0u8; 4],
@@ -140,13 +125,15 @@ impl CrossChainVerify {
         trace!("hasher = {:?}", hasher);
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
-            return Err(Error::Internal("decode 3rd param failed".to_string()));
+            // return Err(Error::Internal("decode 3rd param failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let nonce = U256::from_big_endian(&result.unwrap()).low_u64();
         trace!("nonce = {}", nonce);
         let result = decoded.remove(0).to_bytes();
         if result.is_none() {
-            return Err(Error::Internal("decode 4th param failed".to_string()));
+            // return Err(Error::Internal("decode 4th param failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let proof_data = result.unwrap();
         trace!("data = {:?}", proof_data);
@@ -155,14 +142,16 @@ impl CrossChainVerify {
 
         let relay_info = proof.extract_relay_info();
         if relay_info.is_none() {
-            return Err(Error::Internal("extract relay info failed".to_string()));
+            // return Err(Error::Internal("extract relay info failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let relay_info = relay_info.unwrap();
         trace!("relay_info {:?}", proof_data);
 
         let ret = ChainManagement::ext_chain_id(ext, &gas_left, &params.sender);
         if ret.is_none() {
-            return Err(Error::Internal("get chain id failed".to_owned()));
+            // return Err(Error::Internal("get chain id failed".to_owned()));
+            return Err(EVMError::OutOfData);
         }
         let (gas_left, chain_id) = ret.unwrap();
 
@@ -173,15 +162,17 @@ impl CrossChainVerify {
             relay_info.from_chain_id,
         );
         if ret.is_none() {
-            return Err(Error::Internal("get authorities failed".to_owned()));
+            // return Err(Error::Internal("get authorities failed".to_owned()));
+            return Err(EVMError::OutOfData);
         }
         let (gas_left, authorities) = ret.unwrap();
 
         let ret = proof.extract_crosschain_data(addr, hasher, nonce, chain_id, &authorities[..]);
         if ret.is_none() {
-            return Err(Error::Internal(
-                "extract_crosschain_data failed".to_string(),
-            ));
+            // return Err(Error::Internal(
+            //     "extract_crosschain_data failed".to_string(),
+            // ));
+            return Err(EVMError::OutOfData);
         }
         let (sender, tx_data) = ret.unwrap();
 
@@ -194,22 +185,32 @@ impl CrossChainVerify {
 
         self.output = result;
 
-        Ok(GasLeft::NeedsReturn {
-            gas_left,
-            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-            apply_state: true,
-        })
+        // Ok(GasLeft::NeedsReturn {
+        //     gas_left,
+        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
+        //     apply_state: true,
+        // })
+        Ok(InterpreterResult::Normal(
+            self.output.clone(),
+            gas_left.low_u64(),
+            vec![],
+        ))
     }
 
-    fn verify_state(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, Error> {
+    fn verify_state(
+        &mut self,
+        params: &ActionParams,
+        ext: &mut DataProvider,
+    ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(Error::OutOfGas);
+            return Err(EVMError::OutOfGas);
         }
         let gas_left = params.gas - gas_cost;
 
         if params.data.is_none() {
-            return Err(Error::Internal("no data".to_string()));
+            // return Err(Error::Internal("no data".to_string()));
+            return Err(EVMError::OutOfData);
         }
 
         let data = params.data.to_owned().unwrap();
@@ -222,52 +223,59 @@ impl CrossChainVerify {
 
         let result = ethabi::decode(&tokens, &data[4..]);
         if result.is_err() {
-            return Err(Error::Internal("decode failed".to_string()));
+            // return Err(Error::Internal("decode failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let mut decoded = result.unwrap();
         trace!("decoded = {:?}", decoded);
 
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
-            return Err(Error::Internal("decode 1th param failed".to_string()));
+            // return Err(Error::Internal("decode 1th param failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let chain_id = U256::from_big_endian(&result.unwrap());
         trace!("chain_id = {}", chain_id);
 
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
-            return Err(Error::Internal("decode 2nd param failed".to_string()));
+            // return Err(Error::Internal("decode 2nd param failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let block_number = U256::from_big_endian(&result.unwrap()).low_u64();
         trace!("block_number = {}", block_number);
 
-        let result = self
-            .state_roots
-            .get_array(&chain_id)
-            .unwrap()
-            .get(ext, block_number);
+        let result = self.state_roots.get_array(&chain_id).unwrap().get(
+            ext,
+            &params.code_address,
+            block_number,
+        );
         if result.is_err() {
-            return Err(Error::Internal("get state root failed".to_string()));
+            // return Err(Error::Internal("get state root failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
-        let result1 = self
-            .state_roots
-            .get_array(&chain_id)
-            .unwrap()
-            .get(ext, block_number + 1);
+        let result1 = self.state_roots.get_array(&chain_id).unwrap().get(
+            ext,
+            &params.code_address,
+            block_number + 1,
+        );
         if result1.is_err() {
-            return Err(Error::Internal("get next state root failed".to_string()));
+            // return Err(Error::Internal("get next state root failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let state_root: H256 = result.unwrap().into();
         trace!("state_root = {:?}", state_root);
         let next_state_root: H256 = result1.unwrap().into();
         trace!("next_state_root = {:?}", next_state_root);
         if state_root == H256::zero() || next_state_root == H256::zero() {
-            return Err(Error::Internal("state root have not confirmed".to_string()));
+            // return Err(Error::Internal("state root have not confirmed".to_string()));
+            return Err(EVMError::OutOfData);
         }
 
         let result = decoded.remove(0).to_bytes();
         if result.is_none() {
-            return Err(Error::Internal("decode 3rd param failed".to_string()));
+            // return Err(Error::Internal("decode 3rd param failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let state_proof_bytes = result.unwrap();
         trace!("state_proof_bytes = {:?}", state_proof_bytes);
@@ -276,7 +284,8 @@ impl CrossChainVerify {
 
         let maybe_val = state_proof.verify(state_root);
         if maybe_val.is_none() {
-            return Err(Error::Internal("state proof verify failed".to_string()));
+            // return Err(Error::Internal("state proof verify failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let val = maybe_val.unwrap();
         trace!("val = {:?}", val);
@@ -291,26 +300,32 @@ impl CrossChainVerify {
 
         self.output = result;
 
-        Ok(GasLeft::NeedsReturn {
-            gas_left,
-            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-            apply_state: true,
-        })
+        // Ok(GasLeft::NeedsReturn {
+        //     gas_left,
+        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
+        //     apply_state: true,
+        // })
+        Ok(InterpreterResult::Normal(
+            self.output.clone(),
+            gas_left.low_u64(),
+            vec![],
+        ))
     }
 
     fn verify_block_header(
         &mut self,
         params: &ActionParams,
-        ext: &mut Ext,
-    ) -> Result<GasLeft, Error> {
+        ext: &mut DataProvider,
+    ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(Error::OutOfGas);
+            return Err(EVMError::OutOfGas);
         }
         let mut gas_left = params.gas - gas_cost;
 
         if params.data.is_none() {
-            return Err(Error::Internal("no data".to_string()));
+            // return Err(Error::Internal("no data".to_string()));
+            return Err(EVMError::OutOfData);
         }
 
         let data = params.data.to_owned().unwrap();
@@ -319,26 +334,31 @@ impl CrossChainVerify {
 
         let result = ethabi::decode(&tokens, &data[4..]);
         if result.is_err() {
-            return Err(Error::Internal("decode failed".to_string()));
+            // return Err(Error::Internal("decode failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let mut decoded = result.unwrap();
         trace!("decoded = {:?}", decoded);
 
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
-            return Err(Error::Internal("decode 1th param failed".to_string()));
+            // return Err(Error::Internal("decode 1th param failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let chain_id = U256::from_big_endian(&result.unwrap());
         trace!("chain_id = {}", chain_id);
         let result = decoded.remove(0).to_bytes();
         if result.is_none() {
-            return Err(Error::Internal("decode 2nd param failed".to_string()));
+            // return Err(Error::Internal("decode 2nd param failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let block_header_curr_bytes = result.unwrap();
         trace!("data = {:?}", block_header_curr_bytes);
         let block_header_curr = Header::from_bytes(&block_header_curr_bytes);
 
-        let block_header_prev_bytes: Vec<u8> = self.block_headers.get_bytes(ext, &chain_id)?;
+        let block_header_prev_bytes: Vec<u8> =
+            self.block_headers
+                .get_bytes(ext, &params.code_address, &chain_id)?;
 
         let verify_result = if block_header_prev_bytes.is_empty() {
             trace!("sync first block header");
@@ -348,7 +368,8 @@ impl CrossChainVerify {
 
             let ret = ChainManagement::ext_authorities(ext, &gas_left, &params.sender, chain_id);
             if ret.is_none() {
-                return Err(Error::Internal("get authorities failed".to_owned()));
+                // return Err(Error::Internal("get authorities failed".to_owned()));
+                return Err(EVMError::OutOfData);
             }
             let (gas_left_new, authorities) = ret.unwrap();
             gas_left = gas_left_new;
@@ -358,8 +379,12 @@ impl CrossChainVerify {
 
         if verify_result {
             trace!("store the {} block header", block_header_curr.number());
-            self.block_headers
-                .set_bytes(ext, &chain_id, &block_header_curr_bytes)?;
+            self.block_headers.set_bytes(
+                ext,
+                &params.code_address,
+                &chain_id,
+                &block_header_curr_bytes,
+            )?;
             trace!(
                 "store the {} block state root {}",
                 block_header_curr.number(),
@@ -367,6 +392,7 @@ impl CrossChainVerify {
             );
             self.state_roots.get_array(&chain_id).unwrap().set(
                 ext,
+                &params.code_address,
                 block_header_curr.number(),
                 &U256::from(block_header_curr.state_root()),
             )?;
@@ -378,26 +404,32 @@ impl CrossChainVerify {
 
         self.output = result;
 
-        Ok(GasLeft::NeedsReturn {
-            gas_left,
-            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-            apply_state: true,
-        })
+        // Ok(GasLeft::NeedsReturn {
+        //     gas_left,
+        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
+        //     apply_state: true,
+        // })
+        Ok(InterpreterResult::Normal(
+            self.output.clone(),
+            gas_left.low_u64(),
+            vec![],
+        ))
     }
 
     fn get_expected_block_number(
         &mut self,
         params: &ActionParams,
-        ext: &mut Ext,
-    ) -> Result<GasLeft, Error> {
+        ext: &mut DataProvider,
+    ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(Error::OutOfGas);
+            return Err(EVMError::OutOfGas);
         }
         let gas_left = params.gas - gas_cost;
 
         if params.data.is_none() {
-            return Err(Error::Internal("no data".to_string()));
+            // return Err(Error::Internal("no data".to_string()));
+            return Err(EVMError::OutOfData);
         }
 
         let data = params.data.to_owned().unwrap();
@@ -406,19 +438,23 @@ impl CrossChainVerify {
 
         let result = ethabi::decode(&tokens, &data[4..]);
         if result.is_err() {
-            return Err(Error::Internal("decode failed".to_string()));
+            // return Err(Error::Internal("decode failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let mut decoded = result.unwrap();
         trace!("decoded = {:?}", decoded);
 
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
-            return Err(Error::Internal("decode 1th param failed".to_string()));
+            // return Err(Error::Internal("decode 1th param failed".to_string()));
+            return Err(EVMError::OutOfData);
         }
         let chain_id = U256::from_big_endian(&result.unwrap());
         trace!("chain_id = {}", chain_id);
 
-        let block_header_bytes: Vec<u8> = self.block_headers.get_bytes(ext, &chain_id)?;
+        let block_header_bytes: Vec<u8> =
+            self.block_headers
+                .get_bytes(ext, &params.code_address, &chain_id)?;
 
         let block_number = if block_header_bytes.is_empty() {
             0
@@ -434,10 +470,15 @@ impl CrossChainVerify {
 
         self.output = result;
 
-        Ok(GasLeft::NeedsReturn {
-            gas_left,
-            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-            apply_state: true,
-        })
+        // Ok(GasLeft::NeedsReturn {
+        //     gas_left,
+        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
+        //     apply_state: true,
+        // })
+        Ok(InterpreterResult::Normal(
+            self.output.clone(),
+            gas_left.low_u64(),
+            vec![],
+        ))
     }
 }
