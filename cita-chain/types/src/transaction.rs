@@ -18,7 +18,7 @@
 use crate::crypto::{
     pubkey_to_address, PubKey, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN,
 };
-use crate::reserved_addresses::{ABI_ADDRESS, AMEND_ADDRESS, GO_CONTRACT, STORE_ADDRESS};
+use crate::reserved_addresses::{ABI_ADDRESS, AMEND_ADDRESS, STORE_ADDRESS};
 use crate::BlockNumber;
 use cita_types::traits::LowerHex;
 use cita_types::{clean_0x, Address, H256, U256};
@@ -51,8 +51,6 @@ pub enum Action {
     Call(Address),
     /// Store the contract ABI
     AbiStore,
-    /// Create creates new contract for grpc.
-    GoCreate,
     /// amend data in state
     AmendData,
 }
@@ -70,15 +68,12 @@ impl Decodable for Action {
         } else {
             let store_addr: Address = STORE_ADDRESS.into();
             let abi_addr: Address = ABI_ADDRESS.into();
-            let go_addr: Address = GO_CONTRACT.into();
             let amend_addr: Address = AMEND_ADDRESS.into();
             let addr: Address = rlp.as_val()?;
             if addr == store_addr {
                 Ok(Action::Store)
             } else if addr == abi_addr {
                 Ok(Action::AbiStore)
-            } else if addr == go_addr {
-                Ok(Action::GoCreate)
             } else if addr == amend_addr {
                 Ok(Action::AmendData)
             } else {
@@ -92,14 +87,12 @@ impl Encodable for Action {
     fn rlp_append(&self, s: &mut RlpStream) {
         let store_addr: Address = STORE_ADDRESS.into();
         let abi_addr: Address = ABI_ADDRESS.into();
-        let go_addr: Address = GO_CONTRACT.into();
         let amend_addr: Address = AMEND_ADDRESS.into();
         match *self {
             Action::Create => s.append_internal(&""),
             Action::Call(ref addr) => s.append_internal(addr),
             Action::Store => s.append_internal(&store_addr),
             Action::AbiStore => s.append_internal(&abi_addr),
-            Action::GoCreate => s.append_internal(&go_addr),
             Action::AmendData => s.append_internal(&amend_addr),
         };
     }
@@ -227,7 +220,6 @@ impl Transaction {
                         "" => Action::Create,
                         STORE_ADDRESS => Action::Store,
                         ABI_ADDRESS => Action::AbiStore,
-                        GO_CONTRACT => Action::GoCreate,
                         AMEND_ADDRESS => Action::AmendData,
                         _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
                     }
@@ -240,7 +232,6 @@ impl Transaction {
                         match to_addr.lower_hex().as_str() {
                             STORE_ADDRESS => Action::Store,
                             ABI_ADDRESS => Action::AbiStore,
-                            GO_CONTRACT => Action::GoCreate,
                             AMEND_ADDRESS => Action::AmendData,
                             _ => Action::Call(to_addr),
                         }
@@ -325,7 +316,6 @@ impl Transaction {
                 Action::Call(ref to) => pt.set_to(to.lower_hex()),
                 Action::Store => pt.set_to(STORE_ADDRESS.into()),
                 Action::AbiStore => pt.set_to(ABI_ADDRESS.into()),
-                Action::GoCreate => pt.set_to(GO_CONTRACT.into()),
                 Action::AmendData => pt.set_to(AMEND_ADDRESS.into()),
             }
         } else {
@@ -334,7 +324,6 @@ impl Transaction {
                 Action::Call(ref to) => pt.set_to_v1(to.to_vec()),
                 Action::Store => pt.set_to_v1(Address::from_str(STORE_ADDRESS).unwrap().to_vec()),
                 Action::AbiStore => pt.set_to_v1(Address::from_str(ABI_ADDRESS).unwrap().to_vec()),
-                Action::GoCreate => pt.set_to_v1(Address::from_str(GO_CONTRACT).unwrap().to_vec()),
                 Action::AmendData => {
                     pt.set_to_v1(Address::from_str(AMEND_ADDRESS).unwrap().to_vec())
                 }

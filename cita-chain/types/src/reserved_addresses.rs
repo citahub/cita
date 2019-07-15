@@ -83,10 +83,6 @@ pub const EDRECOVER_ADDRESS: &str = "0000000000000000000000000000000000ff0001";
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010000";
 pub const ABI_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010001";
 pub const AMEND_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010002";
-// Go Action Address
-pub const GO_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff018000";
-pub const GO_CONTRACT_MIN: &str = "ffffffffffffffffffffffffffffffffff018001";
-pub const GO_CONTRACT_MAX: &str = "ffffffffffffffffffffffffffffffffff018fff";
 // Normal System Contracts
 pub const SYS_CONFIG: &str = "ffffffffffffffffffffffffffffffffff020000";
 pub const NODE_MANAGER: &str = "ffffffffffffffffffffffffffffffffff020001";

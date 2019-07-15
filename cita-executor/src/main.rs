@@ -99,7 +99,6 @@ extern crate serde_derive;
 #[macro_use]
 extern crate util;
 
-use crate::core::contracts::grpc::grpc_vm_adapter;
 use crate::core::libexecutor::executor::Executor;
 use crate::postman::Postman;
 use cita_directories::DataPath;
@@ -121,7 +120,6 @@ include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Options {
     prooftype: u8,
-    grpc_port: u16,
     journaldb_type: String,
     genesis_path: String,
     statedb_cache_size: usize,
@@ -132,7 +130,6 @@ impl Options {
     pub fn default() -> Self {
         Options {
             prooftype: 2,
-            grpc_port: 5000,
             journaldb_type: String::from("archive"),
             genesis_path: String::from("genesis.json"),
             statedb_cache_size: 5 * 1024 * 1024,
@@ -203,17 +200,6 @@ fn main() {
             Some(message) => forward_resp_sender.send(message).unwrap(),
             None => return,
         }
-    });
-
-    // start grpc server thread background
-    let server = grpc_vm_adapter::vm_grpc_server(
-        options.grpc_port,
-        command_req_sender.clone(),
-        command_resp_receiver.clone(),
-    )
-    .expect("failed to initialize grpc server");
-    thread::spawn(move || {
-        grpc_vm_adapter::serve(&server);
     });
 
     loop {
