@@ -1,27 +1,19 @@
 use self::bincode::internal::serialize_into;
 use self::bincode::Infinite;
-use super::factory::{Contract, Factory};
+use super::factory::Contract;
 use crate::contracts::tools::method as method_tools;
-use crate::types::reserved_addresses;
+
 use bincode;
-use cita_types::{H160 as Address, H256, U256};
-// use ethereum_types::{Address, H256, U256};
-use evm;
-use evm::fake_tests::FakeExt;
+use cita_types::{H256, U256};
 use std::io::Write;
-use std::str::FromStr;
 
 use byteorder::BigEndian;
 use evm::action_params::ActionParams;
-// use evm::ext::Ext;
-// use evm::return_data::{GasLeft, ReturnData};
 use evm::storage::*;
 
-use cita_trie::DB;
-use cita_vm::err::Error as EVMError;
-use cita_vm::evm::InterpreterResult;
-// use cita_vm::DataProvider;
 use cita_vm::evm::DataProvider;
+use cita_vm::evm::Error as EVMError;
+use cita_vm::evm::InterpreterResult;
 
 #[derive(Clone)]
 pub struct SimpleStorage {
@@ -37,10 +29,7 @@ impl Contract for SimpleStorage {
         &mut self,
         params: &ActionParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError>
-    where
-        Self: Sized,
-    {
+    ) -> Result<InterpreterResult, EVMError> {
         if let Some(ref data) = params.data {
             method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
                 0 => self.init(params, ext),
@@ -52,12 +41,10 @@ impl Contract for SimpleStorage {
                 0x180a4bbf => self.array_get(params, ext),
                 0xaaf27175 => self.map_set(params, ext),
                 0xc567dff6 => self.map_get(params, ext),
-                // _ => Err(evm::Error::OutOfGas),
-                _ => Err(EVMError::NotEnoughBaseGas),
+                _ => Err(EVMError::OutOfGas),
             })
         } else {
-            // Err(evm::Error::OutOfGas)
-            Err(EVMError::NotEnoughBaseGas)
+            Err(EVMError::OutOfGas)
         }
     }
     fn create(&self) -> Box<Contract> {
@@ -82,7 +69,7 @@ impl SimpleStorage {
         &mut self,
         _params: &ActionParams,
         _ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError> {
+    ) -> Result<InterpreterResult, cita_vm::evm::Error> {
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
         // Ok(GasLeft::Known(U256::from(100)))
     }
@@ -119,7 +106,7 @@ impl SimpleStorage {
         //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
         //     apply_state: true,
         // })
-        Ok(InterpreterResult::Normal(self.output, 100, vec![]))
+        Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 
     // 2) stringGasLeft
@@ -152,7 +139,7 @@ impl SimpleStorage {
         self.output.resize(0, 0);
         let str = self
             .string_value
-            .get_bytes::<String>(ext, params.code_address)?;
+            .get_bytes::<String>(ext, &params.code_address)?;
         for i in U256::from(32).0.iter().rev() {
             serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
                 .expect("failed to serialize u64");
@@ -174,7 +161,7 @@ impl SimpleStorage {
         //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
         //     apply_state: true,
         // })
-        Ok(InterpreterResult::Normal(self.output, 100, vec![]))
+        Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 
     // 3) array
@@ -189,7 +176,7 @@ impl SimpleStorage {
         pilot += 32;
         let value = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
         self.array_value
-            .set(ext, params.code_address, index, &value)?;
+            .set(ext, &params.code_address, index, &value)?;
         // Ok(GasLeft::Known(U256::from(100)))
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
@@ -216,7 +203,7 @@ impl SimpleStorage {
         //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
         //     apply_state: true,
         // })
-        Ok(InterpreterResult::Normal(self.output, 100, vec![]))
+        Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 
     // 4) map
@@ -257,12 +244,19 @@ impl SimpleStorage {
         //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
         //     apply_state: true,
         // })
-        Ok(InterpreterResult::Normal(self.output, 100, vec![]))
+        Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 }
 
 #[test]
+
 fn test_native_contract() {
+    use super::factory::Factory;
+    use crate::types::reserved_addresses;
+    use cita_types::Address;
+    use evm::fake_tests::FakeExt;
+    use std::str::FromStr;
+
     let factory = Factory::default();
     let mut ext = FakeExt::new();
     let native_addr = Address::from_str(reserved_addresses::NATIVE_SIMPLE_STORAGE).unwrap();

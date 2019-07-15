@@ -1,12 +1,9 @@
-use crate::Error as EvmError;
-// use cita_vm::Error as EvmError;
+// use crate::Error as EvmError;
+use cita_vm::evm::Error as EvmError;
 // use crate::Ext;
 use cita_types::{H160 as Address, H256, U256};
-// use ethereum_types::{Address, H256, U256};
-
 use std::boxed::Box;
 use std::convert::From;
-use std::string::FromUtf8Error;
 use util::sha3;
 
 use cita_trie::DB;
@@ -40,7 +37,7 @@ impl Serialize for String {
 }
 impl Deserialize for String {
     fn deserialize(bytes: &[u8]) -> Result<Self, EvmError> {
-        Ok(Self::from_utf8(bytes.to_owned())?)
+        Self::from_utf8(bytes.to_owned()).map_err(|_| EvmError::OutOfCode)
     }
 }
 
@@ -55,11 +52,11 @@ impl Deserialize for Vec<u8> {
     }
 }
 
-impl From<FromUtf8Error> for EvmError {
-    fn from(err: FromUtf8Error) -> Self {
-        EvmError::Internal(format!("Internal error: {}", err))
-    }
-}
+// impl From<FromUtf8Error> for EvmError {
+//     fn from(err: FromUtf8Error) -> Self {
+//         EvmError::Internal(format!("Internal error: {}", err))
+//     }
+// }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Scalar {
