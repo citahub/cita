@@ -17,6 +17,7 @@
 
 use crate::block_txn::{BlockTxnMessage, BlockTxnReq};
 use crate::block_verify::BlockVerify;
+use crate::config::Config;
 use crate::dispatcher::Dispatcher;
 use crate::history::HistoryHeights;
 use crate::transaction_verify::Error;
@@ -26,7 +27,7 @@ use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use error::ErrorCode;
 use evm::Schedule;
 use jsonrpc_types::rpc_types::TxResponse;
-use libproto::auth::{Miscellaneous, MiscellaneousReq};
+use libproto::auth::{BalanceVerifyRes, BalanceVerifyTransaction, Miscellaneous, MiscellaneousReq};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction, Transaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
@@ -91,6 +92,7 @@ pub struct MsgHandler {
     history_hashes: HashMap<u64, HashSet<H256>>,
     dispatcher: Dispatcher,
     tx_request: Sender<Request>,
+    tx_balance_verify_tx: Sender<BalanceVerifyTransaction>,
     tx_pool_limit: usize,
     is_snapshot: bool,
     black_list_cache: HashMap<Address, i8>,
@@ -106,24 +108,24 @@ impl MsgHandler {
         tx_pub: Sender<(String, Vec<u8>)>,
         dispatcher: Dispatcher,
         tx_request: Sender<Request>,
-        tx_pool_limit: usize,
-        tx_verify_thread_num: usize,
-        tx_verify_cache_size: usize,
+        tx_balance_verify_tx: Sender<BalanceVerifyTransaction>,
+        config: Config,
     ) -> Self {
         ThreadPoolBuilder::new()
-            .num_threads(tx_verify_thread_num)
+            .num_threads(config.tx_verify_thread_num)
             .build_global()
             .unwrap();
         MsgHandler {
             rx_sub,
             tx_pub,
-            cache: LruCache::new(tx_verify_cache_size),
+            cache: LruCache::new(config.tx_verify_cache_size),
             chain_id: None,
             history_heights: HistoryHeights::new(),
             history_hashes: HashMap::with_capacity(BLOCKLIMIT as usize),
             dispatcher,
             tx_request,
-            tx_pool_limit,
+            tx_balance_verify_tx,
+            tx_pool_limit: config.tx_pool_limit,
             is_snapshot: false,
             black_list_cache: HashMap::new(),
             is_need_proposal_new_block: false,
@@ -366,6 +368,40 @@ impl MsgHandler {
         let _ = self.tx_request.send(tx_req);
     }
 
+    fn send_balance_verify_req(&self, bv_tx: BalanceVerifyTransaction) {
+        let _ = self.tx_balance_verify_tx.send(bv_tx);
+    }
+
+    fn handle_balance_verify_res(&self, bv_res: BalanceVerifyRes) {
+        for bv_result in bv_res.bv_results.iter() {
+            let bv_tx = bv_result.get_bv_tx();
+            let is_local = bv_tx.get_is_local();
+            let request_id = bv_tx.get_request_id().to_vec();
+            if bv_result.get_passed() {
+                let signed_tx = bv_tx.get_signed_tx();
+                self.accept_tx_req(signed_tx, request_id, is_local);
+            } else if is_local {
+                self.publish_tx_failed_result(request_id.clone(), &Error::Forbidden);
+            }
+        }
+    }
+
+    fn accept_tx_req(&self, signed_tx: &SignedTransaction, request_id: Vec<u8>, is_local: bool) {
+        if self.dispatcher.add_tx_to_pool(&signed_tx) {
+            if is_local {
+                self.publish_tx_success_result(request_id.clone(), signed_tx.get_tx_hash().into());
+            }
+            // new tx need forward to other nodes
+            let mut tx_req = Request::new();
+            tx_req.set_request_id(request_id);
+            tx_req.set_un_tx(signed_tx.get_transaction_with_sig().clone());
+            self.forward_request(tx_req);
+        } else if is_local {
+            // dup with transaction in tx pool
+            self.publish_tx_failed_result(request_id, &Error::Dup);
+        }
+    }
+
     fn send_single_block_tx_hashes_req(&mut self, height: u64) {
         let mut req = BlockTxHashesReq::new();
         req.set_height(height);
@@ -459,6 +495,16 @@ impl MsgHandler {
                         self.deal_request(is_local, newtx_req);
                     } else {
                         error!("Can not get request from message {:?}.", msg);
+                    }
+                }
+                routing_key!(Executor >> BalanceVerifyRes) => {
+                    if let Some(bv_res) = msg.take_balance_verify_res() {
+                        self.handle_balance_verify_res(bv_res);
+                    } else {
+                        error!(
+                            "Can not get balance verify res from message {:?}.",
+                            msg
+                        );
                     }
                 }
                 routing_key!(Executor >> Miscellaneous) => {
@@ -742,16 +788,14 @@ impl MsgHandler {
                     signed_tx.set_signer(req.get_signer().to_vec());
                     signed_tx.set_tx_hash(tx_hash.to_vec());
                     let request_id = tx_req.get_request_id().to_vec();
-                    if self.dispatcher.add_tx_to_pool(&signed_tx) {
-                        if is_local {
-                            self.publish_tx_success_result(request_id, tx_hash);
-                        }
-                        // new tx need forward to other nodes
-                        self.forward_request(tx_req.clone());
-                    } else if is_local {
-                        // dup with transaction in tx pool
-                        self.publish_tx_failed_result(request_id, &Error::Dup);
-                    }
+
+                    let mut bv_tx = BalanceVerifyTransaction::new();
+                    bv_tx.set_is_local(is_local);
+                    bv_tx.set_request_id(request_id);
+                    bv_tx.set_signed_tx(signed_tx);
+                    let address = pubkey_to_address(&PubKey::from_slice(req.get_signer()));
+                    bv_tx.set_sender(address.to_vec());
+                    self.send_balance_verify_req(bv_tx);
                 });
         } else if newtx_req.has_un_tx() {
             trace!("get single new tx request from Jsonrpc");
@@ -830,16 +874,14 @@ impl MsgHandler {
             signed_tx.set_transaction_with_sig(newtx_req.get_un_tx().clone());
             signed_tx.set_signer(req.get_signer().to_vec());
             signed_tx.set_tx_hash(tx_hash.to_vec());
-            if self.dispatcher.add_tx_to_pool(&signed_tx) {
-                if is_local {
-                    self.publish_tx_success_result(request_id, tx_hash);
-                }
-                // new tx need forward to other nodes
-                self.forward_request(newtx_req);
-            } else if is_local {
-                // dup with transaction in tx pool
-                self.publish_tx_failed_result(request_id, &Error::Dup);
-            }
+
+            let mut bv_tx = BalanceVerifyTransaction::new();
+            bv_tx.set_is_local(is_local);
+            bv_tx.set_request_id(request_id);
+            bv_tx.set_signed_tx(signed_tx);
+            let address = pubkey_to_address(&PubKey::from_slice(req.get_signer()));
+            bv_tx.set_sender(address.to_vec());
+            self.send_balance_verify_req(bv_tx);
         }
     }
 

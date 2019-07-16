@@ -61,6 +61,7 @@ pub enum Command {
     ChainID,
     Metadata(String),
     EconomicalModel,
+    CurrentQuotaPrice,
     LoadExecutedResult(u64),
     Grow(ClosedBlock),
     Exit(BlockId),
@@ -81,6 +82,7 @@ pub enum CommandResp {
     ChainID(Option<ChainId>),
     Metadata(Result<MetaData, String>),
     EconomicalModel(EconomicalModel),
+    CurrentQuotaPrice(Option<U256>),
     LoadExecutedResult(ExecutedResult),
     Grow(ExecutedResult),
     Exit,
@@ -102,6 +104,7 @@ impl fmt::Display for Command {
             Command::ChainID => write!(f, "Command::ChainID "),
             Command::Metadata(_) => write!(f, "Command::Metadata"),
             Command::EconomicalModel => write!(f, "Command::EconomicalModel"),
+            Command::CurrentQuotaPrice => write!(f, "Command::CurrentQuotaPrice"),
             Command::LoadExecutedResult(_) => write!(f, "Command::LoadExecutedResult"),
             Command::Grow(_) => write!(f, "Command::Grow"),
             Command::Exit(_) => write!(f, "Command::Exit"),
@@ -125,6 +128,7 @@ impl fmt::Display for CommandResp {
             CommandResp::ChainID(_) => write!(f, "CommandResp::ChainID "),
             CommandResp::Metadata(_) => write!(f, "CommandResp::Metadata"),
             CommandResp::EconomicalModel(_) => write!(f, "CommandResp::EconomicalModel"),
+            CommandResp::CurrentQuotaPrice(_) => write!(f, "CommandResp::CurrentQuotaPrice"),
             CommandResp::LoadExecutedResult(_) => write!(f, "CommandResp::LoadExecutedResult"),
             CommandResp::Grow(_) => write!(f, "CommandResp::Grow"),
             CommandResp::Exit => write!(f, "CommandResp::Exit"),
@@ -152,6 +156,7 @@ pub trait Commander {
     fn chain_id(&self) -> Option<ChainId>;
     fn metadata(&self, data: String) -> Result<MetaData, String>;
     fn economical_model(&self) -> EconomicalModel;
+    fn current_quota_price(&self) -> Option<U256>;
     fn load_executed_result(&self, height: u64) -> ExecutedResult;
     fn grow(&mut self, closed_block: ClosedBlock) -> ExecutedResult;
     fn exit(&mut self, rollback_id: BlockId);
@@ -187,6 +192,9 @@ impl Commander for Executor {
             Command::ChainID => CommandResp::ChainID(self.chain_id()),
             Command::Metadata(data) => CommandResp::Metadata(self.metadata(data)),
             Command::EconomicalModel => CommandResp::EconomicalModel(self.economical_model()),
+            Command::CurrentQuotaPrice => {
+                CommandResp::CurrentQuotaPrice(self.current_quota_price())
+            }
             Command::LoadExecutedResult(height) => {
                 CommandResp::LoadExecutedResult(self.load_executed_result(height))
             }
@@ -421,6 +429,10 @@ impl Commander for Executor {
         self.sys_config.block_sys_config.economical_model
     }
 
+    fn current_quota_price(&self) -> Option<U256> {
+        Some(self.sys_config.block_sys_config.quota_price)
+    }
+
     fn load_executed_result(&self, height: u64) -> ExecutedResult {
         self.executed_result_by_height(height)
     }
@@ -648,6 +660,17 @@ pub fn economical_model(
     command_req_sender.send(Command::EconomicalModel);
     match command_resp_receiver.recv().unwrap() {
         CommandResp::EconomicalModel(r) => r,
+        _ => unimplemented!(),
+    }
+}
+
+pub fn current_quota_price(
+    command_req_sender: &Sender<Command>,
+    command_resp_receiver: &Receiver<CommandResp>,
+) -> Option<U256> {
+    command_req_sender.send(Command::CurrentQuotaPrice);
+    match command_resp_receiver.recv().unwrap() {
+        CommandResp::CurrentQuotaPrice(r) => r,
         _ => unimplemented!(),
     }
 }

@@ -6,15 +6,15 @@ edition = "2018"
 
 [dependencies]
 cita-logger = "0.1.0"
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
+hashable = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
 lazy_static = "0.2"
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
 bit-set = "0.4"
 common-types = { path = "../../cita-chain/types" }
-rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+rlp = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
 rustc-hex = "1.0"
-db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+db = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
 
 [features]
 evm-debug = []

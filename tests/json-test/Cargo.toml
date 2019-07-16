@@ -15,7 +15,7 @@ tiny-keccak = "1.4.2"
 env_logger = "0.6.1"
 log = "0.4.0"
 
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
 core-executor = { path="../../cita-executor/core"}
 evm = { path="../../cita-executor/evm"}
 

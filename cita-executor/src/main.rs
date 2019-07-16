@@ -186,6 +186,7 @@ fn main() {
             Net >> SyncResponse,
             Snapshot >> SnapshotReq,
             Auth >> MiscellaneousReq,
+            Auth >> BalanceVerifyReq,
         ]),
         forward_req_sender,
         forward_resp_receiver,

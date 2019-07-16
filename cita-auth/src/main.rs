@@ -86,6 +86,7 @@ extern crate util;
 extern crate db as cita_db;
 extern crate hashable;
 
+use balance_verify_req_publisher::BalanceVerifyReqPublisher;
 use batch_forward::BatchForward;
 use clap::App;
 use config::Config;
@@ -98,6 +99,7 @@ use pubsub::start_pubsub;
 use std::thread;
 use util::set_panic_handler;
 
+mod balance_verify_req_publisher;
 pub mod batch_forward;
 pub mod block_txn;
 pub mod block_verify;
@@ -151,9 +153,6 @@ fn main() {
 
     let count_per_batch = config.count_per_batch;
     let buffer_duration = config.buffer_duration;
-    let tx_verify_thread_num = config.tx_verify_thread_num;
-    let tx_verify_cache_size = config.tx_verify_cache_size;
-    let tx_pool_limit = config.tx_pool_limit;
     let wal_enable = config.wal_enable;
 
     // start profiler
@@ -180,6 +179,7 @@ fn main() {
             Executor >> Miscellaneous,
             Net >> GetBlockTxn,
             Net >> BlockTxn,
+            Executor >> BalanceVerifyRes,
         ]),
         tx_sub,
         rx_pub,
@@ -194,6 +194,19 @@ fn main() {
         batch_forward.run();
     });
 
+    // a single thread to batch publish verify request
+    let tx_req_pub = tx_pub.clone();
+    let (tx_balance_verify_tx, rx_balance_verify_tx) = channel::unbounded();
+    thread::spawn(move || {
+        let mut bv_req_publisher = BalanceVerifyReqPublisher::new(
+            count_per_batch,
+            buffer_duration,
+            rx_balance_verify_tx,
+            tx_req_pub,
+        );
+        bv_req_publisher.run();
+    });
+
     let dispatcher = Dispatcher::new(wal_enable);
 
     // handle message from MQ
@@ -202,9 +215,8 @@ fn main() {
         tx_pub,
         dispatcher,
         tx_request,
-        tx_pool_limit,
-        tx_verify_thread_num,
-        tx_verify_cache_size,
+        tx_balance_verify_tx,
+        config,
     );
     msg_handler.handle_remote_msg();
 }

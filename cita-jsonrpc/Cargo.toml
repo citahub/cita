@@ -16,12 +16,12 @@ cpuprofiler = "0.0.3"
 dotenv = "0.13.0"
 clap = "2"
 cita-logger = "0.1.0"
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc-proto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
+error = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
+jsonrpc-proto = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
 http = "0.1"
 httparse = "1.0"
 bytes = "0.4"
@@ -38,7 +38,7 @@ tokio = "0.1.13"
 tokio-executor = "0.1.5"
 
 [build-dependencies]
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/luqz/cita-common.git", branch = "develop" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]

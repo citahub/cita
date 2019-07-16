@@ -26,7 +26,7 @@ use cita_types::{Address, H256, U256};
 use crossbeam_channel::{Receiver, Sender};
 use error::ErrorCode;
 use jsonrpc_types::rpc_types::{BlockNumber, CountOrCode};
-use libproto::auth::Miscellaneous;
+use libproto::auth::{BalanceVerifyReq, BalanceVerifyRes, BalanceVerifyResult, Miscellaneous};
 use libproto::blockchain::{RichStatus, StateSignal};
 use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -172,6 +172,12 @@ impl Postman {
         match RoutingKey::from(key) {
             routing_key!(Auth >> MiscellaneousReq) => {
                 self.reply_auth_miscellaneous();
+            }
+
+            routing_key!(Auth >> BalanceVerifyReq) => {
+                if let Some(bv_req) = msg.take_balance_verify_req() {
+                    self.reply_auth_request(bv_req);
+                }
             }
 
             routing_key!(Chain >> Request) => {
@@ -465,6 +471,50 @@ impl Postman {
         let msg: Message = miscellaneous.into();
         self.response_mq(
             routing_key!(Executor >> Miscellaneous).into(),
+            msg.try_into().unwrap(),
+        );
+    }
+
+    fn reply_auth_request(&self, bv_req: BalanceVerifyReq) {
+        let opt_quota_price =
+            command::current_quota_price(&self.command_req_sender, &self.command_resp_receiver);
+
+        let result: Vec<BalanceVerifyResult> = bv_req
+            .bv_txs
+            .into_iter()
+            .map(|bv_tx| {
+                let mut bv_result = BalanceVerifyResult::new();
+
+                if let Some(quota_price) = opt_quota_price {
+                    let address = Address::from(bv_tx.get_sender());
+                    if let Some(balance) = command::balance_at(
+                        &self.command_req_sender,
+                        &self.command_resp_receiver,
+                        address,
+                        BlockId::Pending,
+                    ) {
+                        let quota = bv_tx.get_signed_tx().get_transaction().get_quota();
+                        bv_result.set_passed(
+                            U256::from(balance.as_slice()) >= U256::from(quota) * quota_price,
+                        );
+                    } else {
+                        bv_result.set_passed(false);
+                    }
+                } else {
+                    bv_result.set_passed(false);
+                }
+
+                bv_result.set_bv_tx(bv_tx);
+                bv_result
+            })
+            .collect();
+
+        let mut bv_res = BalanceVerifyRes::new();
+        bv_res.set_bv_results(result.into());
+
+        let msg: Message = bv_res.into();
+        self.response_mq(
+            routing_key!(Executor >> BalanceVerifyRes).into(),
             msg.try_into().unwrap(),
         );
     }
