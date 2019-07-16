@@ -7,13 +7,6 @@ use evm::action_params::ActionParams;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-// FixMe: Just for Mock, Use config in cita-executive.rs later
-#[derive(Clone, Debug)]
-pub struct Config {
-    pub block_gas_limit: u64, // gas limit for a block.
-    pub check_nonce: bool,
-}
-
 pub type Signature = u32;
 pub trait ContractClone {
     fn clone_box(&self) -> Box<Contract>;
@@ -80,6 +73,7 @@ impl Default for Factory {
                 Box::new(CrossChainVerify::default()),
             );
         }
+        // Fix: uncommented cfg
         // #[cfg(test)]
         {
             use super::storage::SimpleStorage;
@@ -88,7 +82,7 @@ impl Default for Factory {
                 Box::new(SimpleStorage::default()),
             );
         }
-        // #[cfg(feature = "privatetx")]
+        #[cfg(feature = "privatetx")]
         {
             use super::zk_privacy::ZkPrivacy;
             factory.register(

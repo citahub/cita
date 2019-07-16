@@ -71,8 +71,8 @@ impl SimpleStorage {
         _ext: &mut DataProvider,
     ) -> Result<InterpreterResult, cita_vm::evm::Error> {
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
-        // Ok(GasLeft::Known(U256::from(100)))
     }
+
     // 1) uint
     fn uint_set(
         &mut self,
@@ -88,7 +88,6 @@ impl SimpleStorage {
                 .expect("no enough data"),
         );
         self.uint_value.set(ext, &params.code_address, value)?;
-        // Ok(GasLeft::Known(U256::from(100)))
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
@@ -101,15 +100,10 @@ impl SimpleStorage {
         self.uint_value
             .get(ext, &params.code_address)?
             .to_big_endian(self.output.as_mut_slice());
-        // Ok(GasLeft::NeedsReturn {
-        //     gas_left: U256::from(100),
-        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-        //     apply_state: true,
-        // })
         Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 
-    // 2) stringGasLeft
+    // 2) string
     fn string_set(
         &mut self,
         params: &ActionParams,
@@ -127,7 +121,6 @@ impl SimpleStorage {
 
         self.string_value
             .set_bytes(ext, &params.code_address, &value)?;
-        // Ok(GasLeft::Known(U256::from(100)))
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
@@ -156,11 +149,6 @@ impl SimpleStorage {
         self.output
             .write(&vec![0u8; 32 - str.len() % 32])
             .expect("failed to write [u8]");
-        // Ok(InterpreterResult::NeedsReturn {
-        //     gas_left: U256::from(100),
-        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-        //     apply_state: true,
-        // })
         Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 
@@ -177,7 +165,6 @@ impl SimpleStorage {
         let value = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
         self.array_value
             .set(ext, &params.code_address, index, &value)?;
-        // Ok(GasLeft::Known(U256::from(100)))
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
@@ -198,11 +185,6 @@ impl SimpleStorage {
             serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
                 .expect("failed to serialize u64");
         }
-        // Ok(GasLeft::NeedsReturn {
-        //     gas_left: U256::from(100),
-        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-        //     apply_state: true,
-        // })
         Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 
@@ -218,7 +200,6 @@ impl SimpleStorage {
         pilot += 32;
         let value = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
         self.map_value.set(ext, &params.code_address, &key, value)?;
-        // Ok(GasLeft::Known(U256::from(100)))
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
@@ -239,11 +220,6 @@ impl SimpleStorage {
             serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
                 .expect("failed to serialize u64");
         }
-        // Ok(GasLeft::NeedsReturn {
-        //     gas_left: U256::from(100),
-        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-        //     apply_state: true,
-        // })
         Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 }
@@ -274,7 +250,6 @@ fn test_native_contract() {
         params.data = Some(input);
         let mut contract = factory.new_contract(native_addr).unwrap();
         let output = contract.exec(&params, &mut ext).unwrap();
-        println!("===={:?}", output);
     }
     {
         let mut input = Vec::new();

@@ -8,13 +8,10 @@ use core::libchain::chain::TxProof;
 use ethabi;
 use evm::action_params::ActionParams;
 use evm::storage::Map;
-// use evm::{Error, Ext, GasLeft, ReturnData};
 
-use cita_trie::DB;
-use cita_vm::evm::InterpreterResult;
-// use cita_vm::Error;
 use cita_vm::evm::DataProvider;
 use cita_vm::evm::Error as EVMError;
+use cita_vm::evm::InterpreterResult;
 
 lazy_static! {
     static ref VERIFY_TRANSACTION_FUNC: u32 =
@@ -275,12 +272,6 @@ impl CrossChainVerify {
         trace!("encoded {:?}", result);
 
         self.output = result;
-
-        // Ok(GasLeft::NeedsReturn {
-        //     gas_left,
-        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-        //     apply_state: true,
-        // })
         Ok(InterpreterResult::Normal(
             self.output.clone(),
             gas_left.low_u64(),
@@ -374,12 +365,6 @@ impl CrossChainVerify {
         trace!("encoded {:?}", result);
 
         self.output = result;
-
-        // Ok(GasLeft::NeedsReturn {
-        //     gas_left,
-        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-        //     apply_state: true,
-        // })
         Ok(InterpreterResult::Normal(
             self.output.clone(),
             gas_left.low_u64(),
@@ -437,12 +422,6 @@ impl CrossChainVerify {
         trace!("encoded {:?}", result);
 
         self.output = result;
-
-        // Ok(GasLeft::NeedsReturn {
-        //     gas_left,
-        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-        //     apply_state: true,
-        // })
         Ok(InterpreterResult::Normal(
             self.output.clone(),
             gas_left.low_u64(),
