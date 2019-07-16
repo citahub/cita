@@ -16,10 +16,6 @@ rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" 
 rustc-hex = "1.0"
 db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
-cita-vm = { git = "https://github.com/cryptape/cita-vm", branch = "cita" }
-cita_trie = "2.0"
-ethereum-types = "0.4"
-
 [features]
 evm-debug = []
 evm-debug-tests = ["evm-debug"]
