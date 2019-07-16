@@ -463,6 +463,7 @@ dependencies = [
  "db 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "dotenv 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "error 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "evm 0.1.0",
  "hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "jsonrpc-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",

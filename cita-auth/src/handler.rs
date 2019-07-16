@@ -24,9 +24,10 @@ use cita_types::traits::LowerHex;
 use cita_types::{clean_0x, Address, H256, U256};
 use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use error::ErrorCode;
+use evm::Schedule;
 use jsonrpc_types::rpc_types::TxResponse;
 use libproto::auth::{Miscellaneous, MiscellaneousReq};
-use libproto::blockchain::{AccountGasLimit, SignedTransaction};
+use libproto::blockchain::{AccountGasLimit, SignedTransaction, Transaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
 use libproto::{
@@ -183,7 +184,7 @@ impl MsgHandler {
         true
     }
 
-    // verify to and version
+    // verify to and version and min quota
     fn verify_request(&self, req: &Request) -> Result<(), Error> {
         let un_tx = req.get_un_tx();
         let tx = un_tx.get_transaction();
@@ -213,6 +214,10 @@ impl MsgHandler {
         } else {
             error!("unexpected version {}!", tx_version);
             return Err(Error::InvalidValue);
+        }
+
+        if !verify_base_quota_required(tx) {
+            return Err(Error::QuotaNotEnough);
         }
 
         Ok(())
@@ -1089,4 +1094,22 @@ fn snapshot_response(sender: &Sender<(String, Vec<u8>)>, ack: Resp, flag: bool) 
             (&msg).try_into().unwrap(),
         ))
         .unwrap();
+}
+
+// only verify if tx.version > 2
+pub fn verify_base_quota_required(tx: &Transaction) -> bool {
+    match tx.get_version() {
+        0...2 => true,
+        _ => {
+            let schedule = Schedule::new_v1();
+            let to = tx.get_to_v1();
+            if to.is_empty() || Address::from(to) == Address::zero() {
+                tx.get_quota() as usize
+                    >= tx.data.len() * schedule.tx_data_non_zero_gas + schedule.tx_create_gas
+            } else {
+                tx.get_quota() as usize
+                    >= tx.data.len() * schedule.tx_data_non_zero_gas + schedule.tx_gas
+            }
+        }
+    }
 }

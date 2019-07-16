@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::handler::verify_base_quota_required;
 use cita_types::traits::LowerHex;
 use cita_types::Address;
 use crypto::{pubkey_to_address, PubKey};
@@ -49,6 +50,10 @@ impl<'a> BlockVerify<'a> {
             let signer = pubkey_to_address(&PubKey::from(tx.get_signer()));
 
             if block_quota_limit < quota {
+                return false;
+            }
+
+            if !verify_base_quota_required(tx.get_transaction_with_sig().get_transaction()) {
                 return false;
             }
 

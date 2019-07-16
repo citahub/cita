@@ -317,6 +317,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         let base_gas_required = match t.action {
             Action::Create => schedule.tx_create_gas,
             _ => schedule.tx_gas,
+        } + match t.version {
+            0...2 => 0,
+            _ => t.data.len() * schedule.tx_data_non_zero_gas,
         };
 
         if sender != Address::zero() && t.gas < U256::from(base_gas_required) {

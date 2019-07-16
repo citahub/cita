@@ -27,6 +27,7 @@ lru = "0.1"
 rayon = "1.0"
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+evm = {path = "../cita-executor/evm"}
 
 [dev-dependencies]
 tempfile = "2"
