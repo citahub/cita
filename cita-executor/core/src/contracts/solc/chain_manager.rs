@@ -17,11 +17,12 @@
 
 //! Chain manager.
 
-use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+// use crate::contracts::tools::decode as decode_tools;
+use crate::contracts::tools::method as method_tools;
 use crate::types::reserved_addresses;
 use cita_types::{Address, H160, H256, U256};
-use evm::call_type::CallType;
-use evm::ext::{Ext, MessageCallResult};
+// use evm::call_type::CallType;
+// use evm::ext::{Ext, MessageCallResult};
 use std::str::FromStr;
 
 const CHAIN_ID: &[u8] = &*b"getChainId()";
@@ -39,15 +40,15 @@ use cita_vm::evm::DataProvider;
 
 impl ChainManagement {
     pub fn ext_chain_id(
-        ext: &mut DataProvider,
-        gas: &U256,
-        sender: &Address,
+        _ext: &mut DataProvider,
+        _gas: &U256,
+        _sender: &Address,
     ) -> Option<(U256, U256)> {
         trace!("call system contract ChainManagement.ext_chain_id()");
-        let contract = &*CONTRACT_ADDRESS;
+        let _contract = &*CONTRACT_ADDRESS;
         let tx_data = CHAIN_ID_ENCODED.to_vec();
-        let data = &tx_data.as_slice();
-        let mut output = Vec::<u8>::new();
+        let _data = &tx_data.as_slice();
+        let _output = Vec::<u8>::new();
         // match ext.call(
         //     gas,
         //     sender,
@@ -67,21 +68,21 @@ impl ChainManagement {
     }
 
     pub fn ext_authorities(
-        ext: &mut DataProvider,
-        gas: &U256,
-        sender: &Address,
+        _ext: &mut DataProvider,
+        _gas: &U256,
+        _sender: &Address,
         chain_id: U256,
     ) -> Option<(U256, Vec<Address>)> {
         trace!(
             "call system contract ChainManagement.ext_authorities({})",
             chain_id
         );
-        let contract = &*CONTRACT_ADDRESS;
+        let _contract = &*CONTRACT_ADDRESS;
         let mut tx_data = AUTHORITIES_ENCODED.to_vec();
         let param = H256::from(chain_id);
         tx_data.extend(param.to_vec());
-        let data = &tx_data.as_slice();
-        let mut output = Vec::<u8>::new();
+        let _data = &tx_data.as_slice();
+        let _output = Vec::<u8>::new();
         // match ext.call(
         //     gas,
         //     sender,

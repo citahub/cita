@@ -1,25 +1,7 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 use crate::contracts::{native::factory::Contract, tools::method as method_tools};
 use cita_types::{H256, U256};
 use evm::action_params::ActionParams;
 use evm::storage::*;
-// use evm::{Ext, GasLeft, ReturnData};
 use std::collections::VecDeque;
 use zktx::base::*;
 use zktx::c2p::*;
@@ -103,7 +85,6 @@ impl ZkPrivacy {
         }
         let sender = U256::from(H256::from(params.sender));
         self.admin.set(ext, &params.code_address, sender)?;
-        // Ok(GasLeft::Known(params.gas - gas_cost))
         let gas_left = params.gas - gas_cost;
         Ok(InterpreterResult::Normal(
             vec![],
@@ -141,7 +122,6 @@ impl ZkPrivacy {
 
         self.balances
             .set_bytes(ext, &params.code_address, &addr, &balance)?;
-        // Ok(GasLeft::Known(params.gas - gas_cost))
         let gas_left = params.gas - gas_cost;
         Ok(InterpreterResult::Normal(
             vec![],
@@ -175,11 +155,6 @@ impl ZkPrivacy {
         }
         trace!("get_balance {} {}", addr, balance);
 
-        // Ok(GasLeft::NeedsReturn {
-        //     gas_left: params.gas - gas_cost,
-        //     data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-        //     apply_state: true,
-        // })
         let gas_left = params.gas - gas_cost;
         Ok(InterpreterResult::Normal(
             self.output.clone(),
@@ -239,6 +214,7 @@ impl ZkPrivacy {
         ))
         .unwrap();
 
+        // FIXME !!! get block number from data provider
         // get block_number
         // let block_number = U256::from(ext.env_info().number);
         let block_number = U256::from(200);
@@ -386,8 +362,6 @@ impl ZkPrivacy {
         // );
 
         trace!("send_verify OK data len {}", data.len());
-
-        // Ok(InterpreterResult::Known(params.gas - gas_cost))
         let gas_left = params.gas - gas_cost;
         Ok(InterpreterResult::Normal(
             vec![],
@@ -520,7 +494,6 @@ impl ZkPrivacy {
 
         trace!("receive_verify OK");
 
-        // Ok(GasLeft::Known(params.gas - gas_cost))
         let gas_left = params.gas - gas_cost;
         Ok(InterpreterResult::Normal(
             vec![],

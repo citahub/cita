@@ -18,7 +18,8 @@
 
 //use crate::authentication::check_permission;
 use crate::builtin::Builtin;
-use crate::contracts::native::factory::{Contract as NativeContract, Factory as NativeFactory};
+// use crate::contracts::native::factory::Contract as NativeContract;
+use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::engines::Engine;
 use crate::error::ExecutionError;
 pub use crate::executed::{Executed, ExecutionResult};
@@ -562,7 +563,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // backup used in case of running out of gas
         self.state.checkpoint();
 
-        let static_call = params.call_type == CallType::StaticCall;
+        let _static_call = params.call_type == CallType::StaticCall;
 
         // at first, transfer value to destination
         // TODO Keep it for compatibility. Remove it later.
