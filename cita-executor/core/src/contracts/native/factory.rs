@@ -88,7 +88,7 @@ impl Default for Factory {
                 Box::new(SimpleStorage::default()),
             );
         }
-        #[cfg(feature = "privatetx")]
+        // #[cfg(feature = "privatetx")]
         {
             use super::zk_privacy::ZkPrivacy;
             factory.register(
