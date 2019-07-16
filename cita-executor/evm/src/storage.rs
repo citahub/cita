@@ -4,7 +4,6 @@ use std::boxed::Box;
 use std::convert::From;
 use util::sha3;
 
-use cita_trie::DB;
 use cita_vm::evm::DataProvider;
 
 pub trait Serialize {
@@ -313,186 +312,223 @@ impl Map {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fake_tests::FakeExt;
+    use cita_vm::evm::extmock::DataProviderMock;
+    use std::str::FromStr;
 
     #[test]
+
     fn test_scalar_bytes() {
-        let mut ext = FakeExt::new();
+        // let mut ext = DataProviderMock::default();
+        let mut ext = DataProviderMock::default();
+
         let scalar = Scalar::new(H256::from(0));
+        let code_address = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
 
         // 1) length=30
         let expected = format!("012345678901234567890123456789");
-        assert!(scalar.set_bytes(&mut ext, &expected).is_ok());
-        let value = scalar.get_bytes::<String>(&ext);
+        assert!(scalar.set_bytes(&mut ext, &code_address, &expected).is_ok());
+        let value = scalar.get_bytes::<String>(&ext, &code_address);
         assert!(value.is_ok());
         assert_eq!(*value.unwrap().as_ref(), expected.clone());
 
         // 2) length=31
         let expected = format!("0123456789012345678901234567890");
-        assert!(scalar.set_bytes(&mut ext, &expected).is_ok());
-        let value = scalar.get_bytes::<String>(&ext);
+        assert!(scalar.set_bytes(&mut ext, &code_address, &expected).is_ok());
+        let value = scalar.get_bytes::<String>(&ext, &code_address);
         assert!(value.is_ok());
         assert_eq!(*value.unwrap().as_ref(), expected.clone());
 
         // 3) length=32
         let expected = format!("01234567890123456789012345678901");
-        assert!(scalar.set_bytes(&mut ext, &expected).is_ok());
-        let value = scalar.get_bytes::<String>(&ext);
+        assert!(scalar.set_bytes(&mut ext, &code_address, &expected).is_ok());
+        let value = scalar.get_bytes::<String>(&ext, &code_address);
         assert!(value.is_ok());
         assert_eq!(*value.unwrap().as_ref(), expected.clone());
 
         // 4) length=43
         let expected = format!("012345678901234567890123456789012");
-        assert!(scalar.set_bytes(&mut ext, &expected).is_ok());
-        let value = scalar.get_bytes::<String>(&ext);
+        assert!(scalar.set_bytes(&mut ext, &code_address, &expected).is_ok());
+        let value = scalar.get_bytes::<String>(&ext, &code_address);
         assert!(value.is_ok());
         assert_eq!(*value.unwrap().as_ref(), expected.clone());
     }
 
     #[test]
     fn test_scalar_u256() {
-        let mut ext = FakeExt::new();
+        let mut ext = DataProviderMock::default();
         let scalar = Scalar::new(H256::from(0));
+        let code_address = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
 
         let expected = U256::from(0x123456);
-        assert!(scalar.set(&mut ext, expected.clone()).is_ok());
-        let value = scalar.get(&ext);
+        assert!(scalar
+            .set(&mut ext, &code_address, expected.clone())
+            .is_ok());
+        let value = scalar.get(&ext, &code_address);
         assert!(value.is_ok());
         assert_eq!(value.unwrap(), expected.clone());
     }
 
     #[test]
     fn test_array_simple() {
-        let mut ext = FakeExt::new();
+        let mut ext = DataProviderMock::default();
         let length = 7u64;
         let array = Array {
             position: H256::from(0),
         };
+        let code_address = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
+
         // 1) length
-        assert!(array.set_len(&mut ext, length).is_ok());
-        assert_eq!(array.get_len(&ext).unwrap(), length);
+        assert!(array.set_len(&mut ext, &code_address, length).is_ok());
+        assert_eq!(array.get_len(&ext, &code_address).unwrap(), length);
 
         // 2) array[1] = 0x1234
         let index = 1;
         let expected = U256::from(0x1234);
-        assert!(array.set(&mut ext, index, &expected).is_ok());
-        let value = array.get(&ext, index);
+        assert!(array.set(&mut ext, &code_address, index, &expected).is_ok());
+        let value = array.get(&ext, &code_address, index);
         assert_eq!(value.unwrap(), expected.clone());
 
         // 3) array[3] = 0x2234
         let index = 3;
         let expected = U256::from(0x2234);
-        assert!(array.set(&mut ext, index, &expected).is_ok());
-        let value = array.get(&ext, index);
+        assert!(array.set(&mut ext, &code_address, index, &expected).is_ok());
+        let value = array.get(&ext, &code_address, index);
         assert_eq!(value.unwrap(), expected.clone());
     }
 
     #[test]
     fn test_array_with_sub_array() {
-        let mut ext = FakeExt::new();
+        let mut ext = DataProviderMock::default();
         let mut array = Array::new(H256::from(0));
+        let code_address = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
 
         // 1) length = 7
         let length = 7;
-        assert!(array.set_len(&mut ext, length).is_ok());
-        assert_eq!(array.get_len(&ext).unwrap(), length);
+        assert!(array.set_len(&mut ext, &code_address, length).is_ok());
+        assert_eq!(array.get_len(&ext, &code_address).unwrap(), length);
 
         // 2) array[1].len = 8
         let index = 1;
         let subarray_length = 8;
         let subarray = array.get_array(index);
-        assert!(subarray.set_len(&mut ext, subarray_length).is_ok());
-        assert_eq!(subarray.get_len(&mut ext).unwrap(), subarray_length);
+        assert!(subarray
+            .set_len(&mut ext, &code_address, subarray_length)
+            .is_ok());
+        assert_eq!(
+            subarray.get_len(&mut ext, &code_address).unwrap(),
+            subarray_length
+        );
 
         // 3) array[1][2] = 0x1234
         let index = 2;
         let expected = U256::from(0x1234);
-        assert!(subarray.set(&mut ext, index, &expected).is_ok());
-        assert_eq!(subarray.get(&ext, index).unwrap(), expected);
+        assert!(subarray
+            .set(&mut ext, &code_address, index, &expected)
+            .is_ok());
+        assert_eq!(subarray.get(&ext, &code_address, index).unwrap(), expected);
 
         // 4) array[1][4] = 0x2234
         let index = 4;
         let expected = U256::from(0x2234);
-        assert!(subarray.set(&mut ext, index, &expected).is_ok());
-        assert_eq!(subarray.get(&ext, index).unwrap(), expected);
+        assert!(subarray
+            .set(&mut ext, &code_address, index, &expected)
+            .is_ok());
+        assert_eq!(subarray.get(&ext, &code_address, index).unwrap(), expected);
     }
 
     #[test]
     fn test_array_with_sub_map() {
-        let mut ext = FakeExt::new();
+        let mut ext = DataProviderMock::default();
         let mut array = Array::new(H256::from(0));
+        let code_address = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
 
         // 1) length = 7
         let length = 7;
-        assert!(array.set_len(&mut ext, length).is_ok());
-        assert_eq!(array.get_len(&ext).unwrap(), length);
+        assert!(array.set_len(&mut ext, &code_address, length).is_ok());
+        assert_eq!(array.get_len(&ext, &code_address).unwrap(), length);
 
         // 2) array[1][2] = 0x1234
         let index = 1;
         let key = U256::from(2);
         let submap = array.get_map(index);
         let expected = U256::from(0x1234);
-        assert!(submap.set(&mut ext, &key, expected).is_ok());
-        assert_eq!(submap.get::<U256>(&ext, &key).unwrap(), expected);
+        assert!(submap.set(&mut ext, &code_address, &key, expected).is_ok());
+        assert_eq!(
+            submap.get::<U256>(&ext, &code_address, &key).unwrap(),
+            expected
+        );
 
         // 4) array[1]["key"] = "1234"
         let key = String::from("key");
         let expected = String::from("1234");
         assert!(submap
-            .set_bytes::<String, String>(&mut ext, &key, &expected)
+            .set_bytes::<String, String>(&mut ext, &code_address, &key, &expected)
             .is_ok());
         assert_eq!(
-            submap.get_bytes::<String, String>(&ext, &key).unwrap(),
+            submap
+                .get_bytes::<String, String>(&ext, &code_address, &key)
+                .unwrap(),
             expected.clone()
         );
     }
 
     #[test]
     fn test_map_simple() {
-        let mut ext = FakeExt::new();
+        let mut ext = DataProviderMock::default();
         let map = Map::new(H256::from(1));
+        let code_address = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
 
         // 1) map["key"] = "value"
         let key = U256::from(1);
         let value = U256::from(0x1234);
-        assert!(map.set(&mut ext, &key, value).is_ok());
-        assert_eq!(map.get(&ext, &key).unwrap(), value);
+        assert!(map.set(&mut ext, &code_address, &key, value).is_ok());
+        assert_eq!(map.get(&ext, &code_address, &key).unwrap(), value);
 
         // 2) map[0] = "1234567890"
         let key = U256::from(1);
         let value = String::from("1234567890");
-        assert!(map.set_bytes(&mut ext, &key, &value).is_ok());
+        assert!(map.set_bytes(&mut ext, &code_address, &key, &value).is_ok());
         assert_eq!(
-            map.get_bytes::<U256, String>(&ext, &key).unwrap(),
+            map.get_bytes::<U256, String>(&ext, &code_address, &key)
+                .unwrap(),
             value.clone()
         );
 
         // 3) map[0] = "123456789012345678901234567890123"
         let key = U256::from(1);
         let value = String::from("123456789012345678901234567890123");
-        assert!(map.set_bytes(&mut ext, &key, &value).is_ok());
-        assert_eq!(map.get_bytes::<U256, String>(&ext, &key).unwrap(), value);
+        assert!(map.set_bytes(&mut ext, &code_address, &key, &value).is_ok());
+        assert_eq!(
+            map.get_bytes::<U256, String>(&ext, &code_address, &key)
+                .unwrap(),
+            value
+        );
 
         // 4) map["key"] = 0x1234;
         let key = String::from("key");
         let value = U256::from(0x1234);
-        assert!(map.set(&mut ext, &key, value).is_ok());
-        assert_eq!(map.get(&ext, &key).unwrap(), value);;
+        assert!(map.set(&mut ext, &code_address, &key, value).is_ok());
+        assert_eq!(map.get(&ext, &code_address, &key).unwrap(), value);;
     }
 
     #[test]
     fn test_map_with_sub_array() {
-        let mut ext = FakeExt::new();
+        let mut ext = DataProviderMock::default();
         let mut map = Map::new(H256::from(1));
+        let code_address = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
 
         // 1) map["key1"]["key2"] = "1234567890"
         let key1 = String::from("key1");
         let index = 2u64;
         let value = String::from("1234567890");
         let sub_array = map.get_array(&key1).unwrap();
-        assert!(sub_array.set_bytes(&mut ext, index.clone(), &value).is_ok());
+        assert!(sub_array
+            .set_bytes(&mut ext, &code_address, index.clone(), &value)
+            .is_ok());
         assert_eq!(
-            *sub_array.get_bytes::<String>(&ext, index.clone()).unwrap(),
+            *sub_array
+                .get_bytes::<String>(&ext, &code_address, index.clone())
+                .unwrap(),
             value.clone()
         );
 
@@ -501,26 +537,35 @@ mod tests {
         let index = 4u64;
         let value = String::from("1234567890");
         let sub_array = map.get_array(&key1).unwrap();
-        assert!(sub_array.set_bytes(&mut ext, index.clone(), &value).is_ok());
+        assert!(sub_array
+            .set_bytes(&mut ext, &code_address, index.clone(), &value)
+            .is_ok());
         assert_eq!(
-            *sub_array.get_bytes::<String>(&ext, index.clone()).unwrap(),
+            *sub_array
+                .get_bytes::<String>(&ext, &code_address, index.clone())
+                .unwrap(),
             value.clone()
         );
     }
 
     #[test]
     fn test_map_with_sub_map() {
-        let mut ext = FakeExt::new();
+        let mut ext = DataProviderMock::default();
         let mut map = Map::new(H256::from(1));
+        let code_address = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
 
         // 1) map["key1"]["key2"] = "1234567890"
         let key1 = String::from("key1");
         let key2 = String::from("key2");
         let value = String::from("1234567890");
         let sub_map = map.get_map(&key1).unwrap();
-        assert!(sub_map.set_bytes(&mut ext, &key2, &value).is_ok());
+        assert!(sub_map
+            .set_bytes(&mut ext, &code_address, &key2, &value)
+            .is_ok());
         assert_eq!(
-            sub_map.get_bytes::<String, String>(&ext, &key2).unwrap(),
+            sub_map
+                .get_bytes::<String, String>(&ext, &code_address, &key2)
+                .unwrap(),
             value.clone()
         );
 
@@ -529,9 +574,13 @@ mod tests {
         let key2 = U256::from(2);
         let value = String::from("1234567890");
         let sub_map = map.get_map(&key1).unwrap();
-        assert!(sub_map.set_bytes(&mut ext, &key2, &value).is_ok());
+        assert!(sub_map
+            .set_bytes(&mut ext, &code_address, &key2, &value)
+            .is_ok());
         assert_eq!(
-            sub_map.get_bytes::<_, String>(&ext, &key2).unwrap(),
+            sub_map
+                .get_bytes::<_, String>(&ext, &code_address, &key2)
+                .unwrap(),
             value.clone()
         );
     }
