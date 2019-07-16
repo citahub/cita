@@ -258,18 +258,16 @@ impl ZkPrivacy {
         for i in 0..coins_len {
             let coin_added: String = *self.coins.get_bytes(ext, &params.code_address, i)?;
             if coin == coin_added {
-                // return Err(EVMError::Internal("dup coin".to_string()));
-                return Err(EVMError::OutOfGas);
+                return Err(EVMError::Internal("dup coin".to_string()));
             }
         }
 
         // compare block number
         let last_block_number = self.last_spent.get(ext, &params.code_address, &addr)?;
         if last_block_number >= block_number {
-            // return Err(EVMError::Internal(
-            //     "block_number less than last".to_string(),
-            // ));
-            return Err(EVMError::OutOfGas);
+            return Err(EVMError::Internal(
+                "block_number less than last".to_string(),
+            ));
         }
 
         // get balance
@@ -285,13 +283,11 @@ impl ZkPrivacy {
             proof,
         );
         if ret.is_err() {
-            // return Err(EVMError::Internal("p2c_verify error".to_string()));
-            return Err(EVMError::OutOfGas);
+            return Err(EVMError::Internal("p2c_verify error".to_string()));
         }
 
         if !ret.unwrap() {
-            // return Err(EVMError::Internal("p2c_verify failed".to_string()));
-            return Err(EVMError::OutOfGas);
+            return Err(EVMError::Internal("p2c_verify failed".to_string()));
         }
 
         // update last spent
@@ -466,8 +462,7 @@ impl ZkPrivacy {
             let nullifier_in_set: String =
                 *self.nullifier_set.get_bytes(ext, &params.code_address, i)?;
             if nullifier == nullifier_in_set {
-                // return Err(EVMError::Internal("dup nullifier".to_string()));
-                return Err(EVMError::OutOfCode);
+                return Err(EVMError::Internal("dup nullifier".to_string()));
             }
         }
 
@@ -500,19 +495,16 @@ impl ZkPrivacy {
         }
         tree.restore(tree_left, tree_right, parents);
         if str2u644(root.clone()) != tree.root().0 {
-            // return Err(EVMError::Internal("invalid root hash".to_string()));
-            return Err(EVMError::OutOfCode);
+            return Err(EVMError::Internal("invalid root hash".to_string()));
         }
 
         let ret = c2p_verify(nullifier.clone(), root, delt_ba.clone(), proof);
         if ret.is_err() {
-            // return Err(EVMError::Internal("c2p_verify error".to_string()));
-            return Err(EVMError::OutOfCode);
+            return Err(EVMError::Internal("c2p_verify error".to_string()));
         }
 
         if !ret.unwrap() {
-            // return Err(EVMError::Internal("c2p_verify failed".to_string()));
-            return Err(EVMError::OutOfCode);
+            return Err(EVMError::Internal("c2p_verify failed".to_string()));
         }
         // add nullifier into nullifier_set
         self.nullifier_set
