@@ -457,6 +457,7 @@ pub enum ExecutionError {
     Internal(String),
     TransactionMalformed(String),
     Authentication(AuthenticationError),
+    NativeExec(String),
 }
 
 impl Error for ExecutionError {}
@@ -470,6 +471,7 @@ impl fmt::Display for ExecutionError {
             ExecutionError::Internal(ref err) => format!("internal error: {:?}", err),
             ExecutionError::TransactionMalformed(ref err) => format!("internal error: {:?}", err),
             ExecutionError::Authentication(ref err) => format!("internal error: {:?}", err),
+            ExecutionError::NativeExec(ref err) => format!("internal error: {:?}", err),
         };
         write!(f, "{}", printable)
     }

@@ -1,8 +1,7 @@
-use crate::cita_executive::ExecParams;
+use crate::cita_executive::{ExecParams, ExecutionError};
 use crate::types::reserved_addresses;
 use cita_types::Address;
 use cita_vm::evm::DataProvider;
-use cita_vm::evm::Error as EVMError;
 use cita_vm::evm::InterpreterResult;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -34,7 +33,7 @@ pub trait Contract: Sync + Send + ContractClone {
         &mut self,
         params: &ExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError>;
+    ) -> Result<InterpreterResult, ExecutionError>;
 
     fn create(&self) -> Box<Contract>;
 }

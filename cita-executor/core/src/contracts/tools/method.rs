@@ -15,10 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::cita_executive::ExecutionError;
 /// Calculate contract method signature hash and return different types.
 use byteorder::{BigEndian, ByteOrder};
-// use evm::Error as EvmError;
-use cita_vm::evm::Error as EvmError;
 use util::sha3;
 
 pub fn encode_to_array(name: &[u8]) -> [u8; 4] {
@@ -36,11 +35,11 @@ pub fn encode_to_u32(name: &[u8]) -> u32 {
 }
 
 // Extract first four bytes (function signature hash) as u32.
-pub fn extract_to_u32(data: &[u8]) -> Result<u32, EvmError> {
+pub fn extract_to_u32(data: &[u8]) -> Result<u32, ExecutionError> {
     if let Some(ref bytes4) = data.get(0..4) {
         Ok(BigEndian::read_u32(bytes4))
     } else {
-        Err(EvmError::OutOfGas)
+        Err(ExecutionError::NativeExec("Out of gas".to_string()))
     }
 }
 

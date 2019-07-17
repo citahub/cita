@@ -31,8 +31,6 @@ pub mod ext;
 pub mod interpreter;
 pub mod return_data;
 #[macro_use]
-pub mod storage;
-#[macro_use]
 pub mod factory;
 pub mod instructions;
 pub mod schedule;
