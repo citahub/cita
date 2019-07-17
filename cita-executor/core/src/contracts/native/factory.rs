@@ -76,7 +76,7 @@ impl Default for Factory {
         // Fix: uncommented cfg
         // #[cfg(test)]
         {
-            use super::storage::SimpleStorage;
+            use super::simple_storage::SimpleStorage;
             factory.register(
                 Address::from_str(reserved_addresses::NATIVE_SIMPLE_STORAGE).unwrap(),
                 Box::new(SimpleStorage::default()),
