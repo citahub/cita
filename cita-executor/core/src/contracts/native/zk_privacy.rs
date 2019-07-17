@@ -1,6 +1,5 @@
 use crate::contracts::{native::factory::Contract, tools::method as method_tools};
 use cita_types::{H256, U256};
-use evm::action_params::ActionParams;
 use evm::storage::*;
 use std::collections::VecDeque;
 use zktx::base::*;
@@ -10,6 +9,7 @@ use zktx::incrementalmerkletree::*;
 use zktx::p2c::*;
 use zktx::pedersen::PedersenDigest;
 
+use crate::cita_executive::ExecParams;
 use cita_vm::evm::DataProvider;
 use cita_vm::evm::Error as EVMError;
 use cita_vm::evm::InterpreterResult;
@@ -33,7 +33,7 @@ pub struct ZkPrivacy {
 impl Contract for ZkPrivacy {
     fn exec(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError>
     where
@@ -76,7 +76,7 @@ impl Default for ZkPrivacy {
 impl ZkPrivacy {
     fn init(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(5000);
@@ -95,7 +95,7 @@ impl ZkPrivacy {
 
     fn set_balance(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(10000);
@@ -132,7 +132,7 @@ impl ZkPrivacy {
 
     fn get_balance(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(10000);
@@ -165,7 +165,7 @@ impl ZkPrivacy {
 
     fn send_verify(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(10_000_000);
@@ -372,7 +372,7 @@ impl ZkPrivacy {
 
     fn receive_verify(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(1_000_000);

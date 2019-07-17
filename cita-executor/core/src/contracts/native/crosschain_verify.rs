@@ -1,3 +1,4 @@
+use crate::cita_executive::ExecParams;
 use crate::contracts::{
     native::factory::Contract, solc::ChainManagement, tools::method as method_tools,
 };
@@ -6,7 +7,6 @@ use cita_types::{Address, H256, U256};
 use core::header::Header;
 use core::libchain::chain::TxProof;
 use ethabi;
-use evm::action_params::ActionParams;
 use evm::storage::Map;
 
 use cita_vm::evm::DataProvider;
@@ -34,7 +34,7 @@ pub struct CrossChainVerify {
 impl Contract for CrossChainVerify {
     fn exec(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         if let Some(ref data) = params.data {
@@ -69,7 +69,7 @@ impl Default for CrossChainVerify {
 impl CrossChainVerify {
     fn verify_transaction(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(10000);
@@ -180,7 +180,7 @@ impl CrossChainVerify {
 
     fn verify_state(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(10000);
@@ -281,7 +281,7 @@ impl CrossChainVerify {
 
     fn verify_block_header(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(10000);
@@ -374,7 +374,7 @@ impl CrossChainVerify {
 
     fn get_expected_block_number(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let gas_cost = U256::from(10000);
