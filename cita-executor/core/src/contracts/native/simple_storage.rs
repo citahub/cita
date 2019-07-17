@@ -8,11 +8,10 @@ use cita_types::{H256, U256};
 use std::io::Write;
 
 use byteorder::BigEndian;
-use evm::storage::*;
 
-use crate::cita_executive::ExecParams;
+use crate::cita_executive::{ExecParams, ExecutionError};
+use crate::storage::{Array, Map, Scalar};
 use cita_vm::evm::DataProvider;
-use cita_vm::evm::Error as EVMError;
 use cita_vm::evm::InterpreterResult;
 
 #[derive(Clone)]
@@ -29,7 +28,7 @@ impl Contract for SimpleStorage {
         &mut self,
         params: &ExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError> {
+    ) -> Result<InterpreterResult, ExecutionError> {
         if let Some(ref data) = params.data {
             method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
                 0 => self.init(params, ext),
@@ -41,10 +40,10 @@ impl Contract for SimpleStorage {
                 0x180a4bbf => self.array_get(params, ext),
                 0xaaf27175 => self.map_set(params, ext),
                 0xc567dff6 => self.map_get(params, ext),
-                _ => Err(EVMError::OutOfGas),
+                _ => Err(ExecutionError::NativeExec("Out of gas".to_string())),
             })
         } else {
-            Err(EVMError::OutOfGas)
+            Err(ExecutionError::NativeExec("Out of gas".to_string()))
         }
     }
     fn create(&self) -> Box<Contract> {
@@ -69,7 +68,7 @@ impl SimpleStorage {
         &mut self,
         _params: &ExecParams,
         _ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, cita_vm::evm::Error> {
+    ) -> Result<InterpreterResult, ExecutionError> {
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
@@ -78,7 +77,7 @@ impl SimpleStorage {
         &mut self,
         params: &ExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError> {
+    ) -> Result<InterpreterResult, ExecutionError> {
         let value = U256::from(
             params
                 .data
@@ -95,7 +94,7 @@ impl SimpleStorage {
         &mut self,
         params: &ExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError> {
+    ) -> Result<InterpreterResult, ExecutionError> {
         self.output.resize(32, 0);
         self.uint_value
             .get(ext, &params.code_address)?
@@ -108,7 +107,7 @@ impl SimpleStorage {
         &mut self,
         params: &ExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError> {
+    ) -> Result<InterpreterResult, ExecutionError> {
         let data = params.data.to_owned().expect("invalid data");
         let index = U256::from(data.get(4..36).expect("no enough data")).low_u64() as usize + 4;
         let length =
@@ -128,7 +127,7 @@ impl SimpleStorage {
         &mut self,
         params: &ExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError> {
+    ) -> Result<InterpreterResult, ExecutionError> {
         self.output.resize(0, 0);
         let str = self
             .string_value
@@ -157,7 +156,7 @@ impl SimpleStorage {
         &mut self,
         params: &ExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError> {
+    ) -> Result<InterpreterResult, ExecutionError> {
         let data = params.data.to_owned().expect("invalid data");
         let mut pilot = 4;
         let index = U256::from(data.get(pilot..pilot + 32).expect("no enough data")).low_u64();
@@ -172,7 +171,7 @@ impl SimpleStorage {
         &mut self,
         params: &ExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError> {
+    ) -> Result<InterpreterResult, ExecutionError> {
         let data = params.data.to_owned().expect("invalid data");
         let index = U256::from(data.get(4..4 + 32).expect("no enough data")).low_u64();
         for i in self
@@ -193,7 +192,7 @@ impl SimpleStorage {
         &mut self,
         params: &ExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError> {
+    ) -> Result<InterpreterResult, ExecutionError> {
         let data = params.data.to_owned().expect("invalid data");
         let mut pilot = 4;
         let key = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
@@ -207,7 +206,7 @@ impl SimpleStorage {
         &mut self,
         params: &ExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, EVMError> {
+    ) -> Result<InterpreterResult, ExecutionError> {
         let data = params.data.to_owned().expect("invalid data");
         let key = U256::from(data.get(4..4 + 32).expect("no enough data"));
         for i in self

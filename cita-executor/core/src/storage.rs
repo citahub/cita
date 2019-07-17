@@ -1,20 +1,20 @@
 use cita_types::{Address, H256, U256};
-use cita_vm::evm::Error as EvmError;
 use std::boxed::Box;
 use std::convert::From;
 use util::sha3;
 
+use crate::cita_executive::ExecutionError;
 use cita_vm::evm::DataProvider;
 
 pub trait Serialize {
-    fn serialize(&self) -> Result<Vec<u8>, EvmError>;
+    fn serialize(&self) -> Result<Vec<u8>, ExecutionError>;
 }
 pub trait Deserialize: Sized {
-    fn deserialize(bytes: &[u8]) -> Result<Self, EvmError>;
+    fn deserialize(bytes: &[u8]) -> Result<Self, ExecutionError>;
 }
 
 impl Serialize for U256 {
-    fn serialize(&self) -> Result<Vec<u8>, EvmError> {
+    fn serialize(&self) -> Result<Vec<u8>, ExecutionError> {
         //let mut vec = Vec::with_capacity(64);
         let mut vec = vec![0; 32];
         self.to_big_endian(&mut vec);
@@ -22,29 +22,30 @@ impl Serialize for U256 {
     }
 }
 impl Deserialize for U256 {
-    fn deserialize(bytes: &[u8]) -> Result<Self, EvmError> {
+    fn deserialize(bytes: &[u8]) -> Result<Self, ExecutionError> {
         Ok(U256::from(bytes))
     }
 }
 
 impl Serialize for String {
-    fn serialize(&self) -> Result<Vec<u8>, EvmError> {
+    fn serialize(&self) -> Result<Vec<u8>, ExecutionError> {
         Ok(self.to_owned().into_bytes())
     }
 }
 impl Deserialize for String {
-    fn deserialize(bytes: &[u8]) -> Result<Self, EvmError> {
-        Self::from_utf8(bytes.to_owned()).map_err(|_| EvmError::Internal("dup coin".to_string()))
+    fn deserialize(bytes: &[u8]) -> Result<Self, ExecutionError> {
+        Self::from_utf8(bytes.to_owned())
+            .map_err(|_| ExecutionError::NativeExec("dup coin".to_string()))
     }
 }
 
 impl Serialize for Vec<u8> {
-    fn serialize(&self) -> Result<Vec<u8>, EvmError> {
+    fn serialize(&self) -> Result<Vec<u8>, ExecutionError> {
         Ok(self.clone())
     }
 }
 impl Deserialize for Vec<u8> {
-    fn deserialize(bytes: &[u8]) -> Result<Self, EvmError> {
+    fn deserialize(bytes: &[u8]) -> Result<Self, ExecutionError> {
         Ok(Vec::from(bytes))
     }
 }
@@ -64,12 +65,12 @@ impl Scalar {
         ext: &mut DataProvider,
         addr: &Address,
         value: U256,
-    ) -> Result<(), EvmError> {
+    ) -> Result<(), ExecutionError> {
         ext.set_storage(addr, self.position, H256::from(value));
         Ok(())
     }
 
-    pub fn get(self: &Self, ext: &DataProvider, addr: &Address) -> Result<U256, EvmError> {
+    pub fn get(self: &Self, ext: &DataProvider, addr: &Address) -> Result<U256, ExecutionError> {
         let value = ext.get_storage(addr, &self.position);
         Ok(U256::from(value))
     }
@@ -80,7 +81,7 @@ impl Scalar {
         ext: &mut DataProvider,
         addr: &Address,
         value: &T,
-    ) -> Result<(), EvmError>
+    ) -> Result<(), ExecutionError>
     where
         T: Serialize,
     {
@@ -103,7 +104,11 @@ impl Scalar {
         Ok(())
     }
 
-    pub fn get_bytes<T>(self: &Self, ext: &DataProvider, addr: &Address) -> Result<Box<T>, EvmError>
+    pub fn get_bytes<T>(
+        self: &Self,
+        ext: &DataProvider,
+        addr: &Address,
+    ) -> Result<Box<T>, ExecutionError>
     where
         T: Deserialize,
     {
@@ -156,7 +161,7 @@ impl Array {
         addr: &Address,
         index: u64,
         value: &U256,
-    ) -> Result<(), EvmError> {
+    ) -> Result<(), ExecutionError> {
         let scalar = Scalar::new(self.key(index));
         scalar.set(ext, addr, *value)
     }
@@ -166,7 +171,7 @@ impl Array {
         ext: &DataProvider,
         addr: &Address,
         index: u64,
-    ) -> Result<U256, EvmError> {
+    ) -> Result<U256, ExecutionError> {
         let scalar = Scalar::new(self.key(index));
         scalar.get(ext, addr)
     }
@@ -177,7 +182,7 @@ impl Array {
         addr: &Address,
         index: u64,
         value: &T,
-    ) -> Result<(), EvmError>
+    ) -> Result<(), ExecutionError>
     where
         T: Serialize,
     {
@@ -190,7 +195,7 @@ impl Array {
         ext: &DataProvider,
         addr: &Address,
         index: u64,
-    ) -> Result<Box<T>, EvmError>
+    ) -> Result<Box<T>, ExecutionError>
     where
         T: Deserialize,
     {
@@ -203,12 +208,12 @@ impl Array {
         ext: &mut DataProvider,
         addr: &Address,
         len: u64,
-    ) -> Result<(), EvmError> {
+    ) -> Result<(), ExecutionError> {
         ext.set_storage(addr, self.position, H256::from(len));
         Ok(())
     }
 
-    pub fn get_len(self: &Self, ext: &DataProvider, addr: &Address) -> Result<u64, EvmError> {
+    pub fn get_len(self: &Self, ext: &DataProvider, addr: &Address) -> Result<u64, ExecutionError> {
         let len = ext.get_storage(addr, &self.position);
         Ok(len.low_u64())
     }
@@ -232,7 +237,7 @@ impl Map {
     }
 
     #[inline]
-    fn key<Key>(&self, key: &Key) -> Result<H256, EvmError>
+    fn key<Key>(&self, key: &Key) -> Result<H256, ExecutionError>
     where
         Key: Serialize,
     {
@@ -248,7 +253,7 @@ impl Map {
         addr: &Address,
         key: &Key,
         value: U256,
-    ) -> Result<(), EvmError>
+    ) -> Result<(), ExecutionError>
     where
         Key: Serialize,
     {
@@ -260,7 +265,7 @@ impl Map {
         ext: &DataProvider,
         addr: &Address,
         key: &Key,
-    ) -> Result<U256, EvmError>
+    ) -> Result<U256, ExecutionError>
     where
         Key: Serialize,
     {
@@ -273,7 +278,7 @@ impl Map {
         addr: &Address,
         key: &Key,
         value: &Value,
-    ) -> Result<(), EvmError>
+    ) -> Result<(), ExecutionError>
     where
         Key: Serialize,
         Value: Serialize,
@@ -286,7 +291,7 @@ impl Map {
         ext: &DataProvider,
         addr: &Address,
         key: &Key,
-    ) -> Result<Value, EvmError>
+    ) -> Result<Value, ExecutionError>
     where
         Key: Serialize,
         Value: Deserialize,
@@ -294,14 +299,14 @@ impl Map {
         Ok(*Scalar::new(self.key(key)?).get_bytes(ext, addr)?)
     }
 
-    pub fn get_array<Key>(self: &mut Self, key: &Key) -> Result<Array, EvmError>
+    pub fn get_array<Key>(self: &mut Self, key: &Key) -> Result<Array, ExecutionError>
     where
         Key: Serialize,
     {
         Ok(Array::new(self.key(key)?))
     }
 
-    pub fn get_map<Key>(self: &mut Self, key: &Key) -> Result<Map, EvmError>
+    pub fn get_map<Key>(self: &mut Self, key: &Key) -> Result<Map, ExecutionError>
     where
         Key: Serialize,
     {
