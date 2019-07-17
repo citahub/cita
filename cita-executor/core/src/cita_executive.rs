@@ -1,8 +1,9 @@
 use cita_trie::DB;
 use cita_types::{Address, H160, H256, U256, U512};
 use cita_vm::{
+    evm::{Context as EVMContext, InterpreterResult, Log as EVMLog},
     state::{Error as StateError, State, StateObjectInfo},
-    BlockDataProvider, Config, Error as VMError,
+    BlockDataProvider, Config as VMConfig, Error as VMError, Transaction as EVMTransaction,
 };
 use std::cell::RefCell;
 use std::error::Error;
@@ -11,11 +12,16 @@ use std::sync::Arc;
 use util::Bytes;
 
 use crate::authentication::{check_permission, AuthenticationError};
-use crate::core_types::{receipt::Receipt, TypesError};
+use crate::core_types::{Bloom, BloomInput, Hash, LogEntry, Receipt, TypesError};
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::tx_gas_schedule::TxGasSchedule;
 use crate::types::transaction::{Action, SignedTransaction};
+use crate::types::BlockNumber;
+
+/// Simple vector of hashes, should be at most 256 items large, can be smaller if being used
+/// for a block whose number is less than 257.
+pub type LastHashes = Vec<H256>;
 
 ///amend the abi data
 const AMEND_ABI: u32 = 1;
@@ -28,9 +34,9 @@ const AMEND_ACCOUNT_BALANCE: u32 = 5;
 
 // FIXME: CITAExecutive need rename to Executive after all works ready.
 pub struct CitaExecutive<B> {
-    _block_provider: Arc<BlockDataProvider>,
+    block_provider: Arc<BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
-    _config: Config,
+    env_info: EnvInfo,
     economical_model: EconomicalModel,
 }
 
@@ -38,13 +44,13 @@ impl<B: DB + 'static> CitaExecutive<B> {
     pub fn new(
         block_provider: Arc<BlockDataProvider>,
         state_provider: State<B>,
-        config: Config,
+        env_info: EnvInfo,
         economical_model: EconomicalModel,
     ) -> Self {
         Self {
-            _block_provider: block_provider,
+            block_provider,
             state_provider: Arc::new(RefCell::new(state_provider)),
-            _config: config,
+            env_info,
             economical_model,
         }
     }
@@ -55,7 +61,7 @@ impl<B: DB + 'static> CitaExecutive<B> {
         conf: &BlockSysConfig,
     ) -> Result<Receipt, ExecutionError> {
         let sender = *t.sender();
-        let _nonce = self.state_provider.borrow_mut().nonce(&sender)?;
+        let nonce = self.state_provider.borrow_mut().nonce(&sender)?;
         self.state_provider.borrow_mut().inc_nonce(&sender)?;
 
         trace!(
@@ -123,50 +129,49 @@ impl<B: DB + 'static> CitaExecutive<B> {
         }
 
         let init_gas = t.gas - U256::from(base_gas_required);
-        let _result = match t.action {
+        let result = match t.action {
             Action::Store | Action::AbiStore => {
                 // Maybe use tx_gas_schedule.tx_data_non_zero_gas for each byte store, it is more reasonable.
                 // But for the data compatible, just let it as tx_gas_schedule.create_data_gas for now.
                 let store_gas_used = U256::from(t.data.len() * tx_gas_schedule.create_data_gas);
-                if let Some(gas_left) = init_gas.checked_sub(store_gas_used) {
-                    Ok(TxExecResult { gas_left })
+                if init_gas.checked_sub(store_gas_used).is_some() {
+                    let mut receipt = Receipt::default();
+                    receipt.quota_used = store_gas_used.as_u64();
+                    Ok(receipt)
                 } else {
-                    return Err(ExecutionError::VM(VMError::NotEnoughBaseGas));
+                    Err(ExecutionError::VM(VMError::NotEnoughBaseGas))
                 }
             }
             Action::Create => {
-                // Call cita-vm interface.
-                //                let account_address = &H160::from(t.sender().into_fixed_bytes());
-                //                let nonce = match self.state_provider.borrow_mut().get_state_object(account_address) {
-                //                    Ok(opt_account) => {
-                //                        if let Some(account) = opt_account {
-                //                            account.nonce
-                //                        } else {
-                //                            U256::zero()
-                //                        }
-                //                    }
-                //                    Err(e) => {
-                //                        log::error!(target: "evm executor", "{}", e);
-                //                        U256::zero()
-                //                    }
-                //                };
-                //                let evm_transaction = build_evm_transaction(&t, nonce);
-                //                if cita_vm::exec(
-                //                    self.block_provider,
-                //                    self.state_provider,
-                //                    evm_context,
-                //                    evm_config,
-                //                    evm_transaction,
-                //                ).is_ok() {
-                //
-                //                }
-                Ok(TxExecResult { gas_left: init_gas })
+                let params = VmExecParams {
+                    code_address: None,
+                    sender,
+                    to_address: None,
+                    gas: init_gas,
+                    gas_price: t.gas_price(),
+                    value: t.value,
+                    nonce,
+                    data: t.data.clone(),
+                };
+
+                self.create(
+                    self.block_provider.clone(),
+                    self.state_provider.clone(),
+                    &params,
+                )
             }
-            Action::AmendData => self.call_amend_data(init_gas, t.value, Some(t.data.clone())),
+
+            Action::AmendData => {
+                // Note: Do not need a checkpoint for amend data.
+                match self.call_amend_data(t.value, Some(t.data.clone())) {
+                    Ok(_) => Ok(Receipt::default()),
+                    Err(e) => Err(e),
+                }
+            }
             Action::Call(ref _address) => unimplemented!(),
         };
 
-        Ok(Receipt::default())
+        result
     }
 
     fn payment_required(&self) -> bool {
@@ -256,32 +261,26 @@ impl<B: DB + 'static> CitaExecutive<B> {
         true
     }
 
-    fn call_amend_data(
-        &mut self,
-        init_gas: U256,
-        value: U256,
-        data: Option<Bytes>,
-    ) -> Result<TxExecResult, ExecutionError> {
+    fn call_amend_data(&mut self, value: U256, data: Option<Bytes>) -> Result<(), ExecutionError> {
         let amend_type = value.low_u32();
-        let result = TxExecResult { gas_left: init_gas };
         match amend_type {
             AMEND_ABI => {
                 if self.transact_set_abi(&(data.to_owned().unwrap())) {
-                    Ok(result)
+                    Ok(())
                 } else {
                     Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
                 }
             }
             AMEND_CODE => {
                 if self.transact_set_code(&(data.to_owned().unwrap())) {
-                    Ok(result)
+                    Ok(())
                 } else {
                     Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
                 }
             }
             AMEND_KV_H256 => {
                 if self.transact_set_kv_h256(&(data.to_owned().unwrap())) {
-                    Ok(result)
+                    Ok(())
                 } else {
                     Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
                 }
@@ -289,7 +288,7 @@ impl<B: DB + 'static> CitaExecutive<B> {
 
             AMEND_ACCOUNT_BALANCE => {
                 if self.transact_set_balance(&(data.to_owned().unwrap())) {
-                    Ok(result)
+                    Ok(())
                 } else {
                     Err(ExecutionError::Internal(
                         "Account doesn't exist or incomplete trie error".to_owned(),
@@ -297,8 +296,122 @@ impl<B: DB + 'static> CitaExecutive<B> {
                 }
             }
 
-            _ => Ok(result),
+            _ => Ok(()),
         }
+    }
+
+    fn create(
+        &mut self,
+        block_provider: Arc<BlockDataProvider>,
+        state_provider: Arc<RefCell<State<B>>>,
+        params: &VmExecParams,
+    ) -> Result<Receipt, ExecutionError> {
+        let evm_transaction = build_evm_transaction(params);
+        let evm_config = build_evm_config(self.env_info.gas_limit.clone().as_u64());
+        let evm_context = build_evm_context(&self.env_info);
+        let receipt = match cita_vm::exec(
+            block_provider,
+            state_provider,
+            evm_context,
+            evm_config,
+            evm_transaction,
+        ) {
+            Ok(evm_result) => build_receipt_with_ok(params.gas, evm_result),
+            Err(e) => build_receipt_with_err(e),
+        };
+        Ok(receipt)
+    }
+}
+
+fn build_evm_transaction(params: &VmExecParams) -> EVMTransaction {
+    EVMTransaction {
+        from: params.sender,
+        value: params.value,
+        gas_limit: params.gas.as_u64(),
+        gas_price: params.gas_price,
+        input: params.data.clone(),
+        to: params.to_address,
+        nonce: params.nonce,
+    }
+}
+
+fn build_evm_context(env_info: &EnvInfo) -> EVMContext {
+    EVMContext {
+        gas_limit: env_info.gas_limit.as_u64(),
+        coinbase: env_info.author,
+        number: U256::from(env_info.number),
+        timestamp: env_info.timestamp,
+        difficulty: env_info.difficulty,
+    }
+}
+
+fn build_evm_config(block_gas_limit: u64) -> VMConfig {
+    VMConfig {
+        // block_gas_limit is meaningless in cita_vm, so let it as default_block_quota_limit.
+        block_gas_limit,
+        ..Default::default()
+    }
+}
+
+fn build_receipt_with_ok(init_gas: U256, result: InterpreterResult) -> Receipt {
+    let mut receipt = Receipt::default();
+
+    match result {
+        InterpreterResult::Normal(_data, quota_left, logs) => {
+            receipt.quota_used = init_gas.as_u64() - quota_left;
+            receipt.logs = transform_logs(logs);
+            receipt.logs_bloom = logs_to_bloom(&receipt.logs);
+        }
+        InterpreterResult::Revert(_data, quota_left) => {
+            receipt.quota_used = init_gas.as_u64() - quota_left;
+        }
+        InterpreterResult::Create(_data, quota_left, logs, contract_address) => {
+            receipt.quota_used = init_gas.as_u64() - quota_left;
+            receipt.logs = transform_logs(logs);
+            receipt.logs_bloom = logs_to_bloom(&receipt.logs);
+
+            let address_slice: &[u8] = contract_address.as_ref();
+            receipt.contract_address = Some(H160::from(address_slice));
+        }
+    };
+    receipt
+}
+
+fn build_receipt_with_err(err: VMError) -> Receipt {
+    let mut receipt = Receipt::default();
+    receipt.receipt_error = err.to_string();
+    receipt
+}
+
+fn transform_logs(logs: Vec<EVMLog>) -> Vec<LogEntry> {
+    logs.into_iter()
+        .map(|log| {
+            let EVMLog(address, topics, data) = log;
+
+            LogEntry {
+                address,
+                topics: topics
+                    .into_iter()
+                    .map(|topic| Hash::from_bytes(topic.as_ref()).expect("never returns an error"))
+                    .collect(),
+                data,
+            }
+        })
+        .collect()
+}
+
+fn logs_to_bloom(logs: &[LogEntry]) -> Bloom {
+    let mut bloom = Bloom::default();
+
+    logs.iter().for_each(|log| accrue_log(&mut bloom, log));
+    bloom
+}
+
+fn accrue_log(bloom: &mut Bloom, log: &LogEntry) {
+    bloom.accrue(BloomInput::Raw(&log.address.0));
+    for topic in &log.topics {
+        let input = BloomInput::Hash(topic.as_fixed_bytes());
+        bloom.accrue(input);
     }
 }
 
@@ -366,25 +479,72 @@ pub struct TxExecResult {
 }
 
 #[derive(Clone, Debug)]
-pub struct ExecParams {
+pub struct VmExecParams {
     /// Address of currently executed code.
-    pub code_address: Address,
+    pub code_address: Option<Address>,
     /// Sender of current part of the transaction.
     pub sender: Address,
+    /// Receive address. Usually equal to code_address,
+    pub to_address: Option<Address>,
     /// Gas paid up front for transaction execution
     pub gas: U256,
+    /// Gas price.
+    pub gas_price: U256,
+    /// Transaction value.
+    pub value: U256,
+    /// nonce
+    pub nonce: U256,
     /// Input data.
-    pub data: Option<Bytes>,
+    pub data: Bytes,
 }
 
-impl Default for ExecParams {
+impl Default for VmExecParams {
     /// Returns default ActionParams initialized with zeros
-    fn default() -> ExecParams {
-        ExecParams {
-            code_address: Address::new(),
+    fn default() -> VmExecParams {
+        VmExecParams {
+            code_address: None,
             sender: Address::new(),
+            to_address: None,
             gas: U256::zero(),
-            data: None,
+            gas_price: U256::zero(),
+            value: U256::zero(),
+            nonce: U256::zero(),
+            data: vec![],
+        }
+    }
+}
+
+/// Information concerning the execution environment for vm.
+#[derive(Debug)]
+pub struct EnvInfo {
+    /// The block number.
+    pub number: BlockNumber,
+    /// The block author.
+    pub author: Address,
+    /// The block timestamp.
+    pub timestamp: u64,
+    /// The block difficulty.
+    pub difficulty: U256,
+    /// The block gas limit.
+    pub gas_limit: U256,
+    /// The last 256 block hashes.
+    pub last_hashes: Arc<LastHashes>,
+    /// The gas used.
+    pub gas_used: U256,
+    pub account_gas_limit: U256,
+}
+
+impl Default for EnvInfo {
+    fn default() -> Self {
+        EnvInfo {
+            number: 0,
+            author: Address::default(),
+            timestamp: 0,
+            difficulty: 0.into(),
+            gas_limit: U256::from(u64::max_value()),
+            last_hashes: Arc::new(vec![]),
+            gas_used: 0.into(),
+            account_gas_limit: 0.into(),
         }
     }
 }
