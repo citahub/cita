@@ -8,9 +8,9 @@ use cita_types::{H256, U256};
 use std::io::Write;
 
 use byteorder::BigEndian;
-use evm::action_params::ActionParams;
 use evm::storage::*;
 
+use crate::cita_executive::ExecParams;
 use cita_vm::evm::DataProvider;
 use cita_vm::evm::Error as EVMError;
 use cita_vm::evm::InterpreterResult;
@@ -27,7 +27,7 @@ pub struct SimpleStorage {
 impl Contract for SimpleStorage {
     fn exec(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         if let Some(ref data) = params.data {
@@ -67,7 +67,7 @@ impl Default for SimpleStorage {
 impl SimpleStorage {
     fn init(
         &mut self,
-        _params: &ActionParams,
+        _params: &ExecParams,
         _ext: &mut DataProvider,
     ) -> Result<InterpreterResult, cita_vm::evm::Error> {
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
@@ -76,7 +76,7 @@ impl SimpleStorage {
     // 1) uint
     fn uint_set(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let value = U256::from(
@@ -93,7 +93,7 @@ impl SimpleStorage {
 
     fn uint_get(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         self.output.resize(32, 0);
@@ -106,7 +106,7 @@ impl SimpleStorage {
     // 2) string
     fn string_set(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let data = params.data.to_owned().expect("invalid data");
@@ -126,7 +126,7 @@ impl SimpleStorage {
 
     fn string_get(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         self.output.resize(0, 0);
@@ -155,7 +155,7 @@ impl SimpleStorage {
     // 3) array
     fn array_set(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let data = params.data.to_owned().expect("invalid data");
@@ -170,7 +170,7 @@ impl SimpleStorage {
 
     fn array_get(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let data = params.data.to_owned().expect("invalid data");
@@ -191,7 +191,7 @@ impl SimpleStorage {
     // 4) map
     fn map_set(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let data = params.data.to_owned().expect("invalid data");
@@ -205,7 +205,7 @@ impl SimpleStorage {
 
     fn map_get(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError> {
         let data = params.data.to_owned().expect("invalid data");
@@ -238,7 +238,7 @@ fn test_native_contract() {
     let native_addr = Address::from_str(reserved_addresses::NATIVE_SIMPLE_STORAGE).unwrap();
     let value = U256::from(0x1234);
     {
-        let mut params = ActionParams::default();
+        let mut params = ExecParams::default();
         let mut input = Vec::new();
         let index = 0xaa91543eu32;
         serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite)
@@ -253,7 +253,7 @@ fn test_native_contract() {
     }
     {
         let mut input = Vec::new();
-        let mut params = ActionParams::default();
+        let mut params = ExecParams::default();
         let index = 0x832b4580u32;
         serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite)
             .expect("failed to serialize u32");

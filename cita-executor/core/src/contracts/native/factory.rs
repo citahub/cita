@@ -1,9 +1,9 @@
+use crate::cita_executive::ExecParams;
 use crate::types::reserved_addresses;
 use cita_types::Address;
 use cita_vm::evm::DataProvider;
 use cita_vm::evm::Error as EVMError;
 use cita_vm::evm::InterpreterResult;
-use evm::action_params::ActionParams;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -32,7 +32,7 @@ impl Clone for Box<Contract> {
 pub trait Contract: Sync + Send + ContractClone {
     fn exec(
         &mut self,
-        params: &ActionParams,
+        params: &ExecParams,
         ext: &mut DataProvider,
     ) -> Result<InterpreterResult, EVMError>;
 
