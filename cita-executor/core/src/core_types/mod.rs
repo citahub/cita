@@ -4,6 +4,8 @@ pub mod common;
 pub mod errors;
 pub mod receipt;
 
+pub use receipt::{LogEntry, Receipt};
+
 // FIXME: upgrade ethereum-types in cita-types, and then replace this.
 pub use common::{Address, Balance, Hash, H256, U256};
 pub use errors::TypesError;

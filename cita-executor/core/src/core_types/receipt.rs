@@ -1,5 +1,6 @@
 // FIXME: This file will replace ../cita-chain/types/Receipt.rs
-use crate::core_types::{Address, Bloom, Hash};
+use crate::core_types::{Bloom, Hash};
+use cita_types::Address;
 use rlp::{Encodable, RlpStream};
 
 #[derive(Default, Debug, Clone)]
