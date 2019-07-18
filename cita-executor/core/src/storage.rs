@@ -35,7 +35,7 @@ impl Serialize for String {
 impl Deserialize for String {
     fn deserialize(bytes: &[u8]) -> Result<Self, ExecutionError> {
         Self::from_utf8(bytes.to_owned())
-            .map_err(|_| ExecutionError::NativeExec("dup coin".to_string()))
+            .map_err(|_| ExecutionError::NativeContract("dup coin".to_string()))
     }
 }
 

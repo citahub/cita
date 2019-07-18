@@ -45,10 +45,10 @@ impl Contract for ZkPrivacy {
                 0xd0b0_7e52 => self.get_balance(params, ext),
                 0xc73b_5a8f => self.send_verify(params, ext),
                 0x882b_30d2 => self.receive_verify(params, ext),
-                _ => Err(ExecutionError::NativeExec("Out of gas".to_string())),
+                _ => Err(ExecutionError::NativeContract("Out of gas".to_string())),
             })
         } else {
-            Err(ExecutionError::NativeExec("Out of gas".to_string()))
+            Err(ExecutionError::NativeContract("Out of gas".to_string()))
         }
     }
     fn create(&self) -> Box<Contract> {
@@ -80,7 +80,7 @@ impl ZkPrivacy {
     ) -> Result<InterpreterResult, ExecutionError> {
         let gas_cost = U256::from(5000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeExec("Out of gas".to_string()));
+            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
         }
         let sender = U256::from(H256::from(params.sender));
         self.admin.set(ext, &params.code_address, sender)?;
@@ -99,7 +99,7 @@ impl ZkPrivacy {
     ) -> Result<InterpreterResult, ExecutionError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeExec("Out of gas".to_string()));
+            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
         }
         let data = params.data.to_owned().expect("invalid data");
         let mut index = 4;
@@ -136,7 +136,7 @@ impl ZkPrivacy {
     ) -> Result<InterpreterResult, ExecutionError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeExec("Out of gas".to_string()));
+            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
         }
         let data = params.data.to_owned().expect("invalid data");
         let index = 4;
@@ -169,7 +169,7 @@ impl ZkPrivacy {
     ) -> Result<InterpreterResult, ExecutionError> {
         let gas_cost = U256::from(10_000_000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeExec("Out of gas".to_string()));
+            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
         }
         let data = params.data.to_owned().expect("invalid data");
         let mut index = 4;
@@ -233,14 +233,14 @@ impl ZkPrivacy {
         for i in 0..coins_len {
             let coin_added: String = *self.coins.get_bytes(ext, &params.code_address, i)?;
             if coin == coin_added {
-                return Err(ExecutionError::NativeExec("dup coin".to_string()));
+                return Err(ExecutionError::NativeContract("dup coin".to_string()));
             }
         }
 
         // compare block number
         let last_block_number = self.last_spent.get(ext, &params.code_address, &addr)?;
         if last_block_number >= block_number {
-            return Err(ExecutionError::NativeExec(
+            return Err(ExecutionError::NativeContract(
                 "block_number less than last".to_string(),
             ));
         }
@@ -258,11 +258,15 @@ impl ZkPrivacy {
             proof,
         );
         if ret.is_err() {
-            return Err(ExecutionError::NativeExec("p2c_verify error".to_string()));
+            return Err(ExecutionError::NativeContract(
+                "p2c_verify error".to_string(),
+            ));
         }
 
         if !ret.unwrap() {
-            return Err(ExecutionError::NativeExec("p2c_verify failed".to_string()));
+            return Err(ExecutionError::NativeContract(
+                "p2c_verify failed".to_string(),
+            ));
         }
 
         // update last spent
@@ -376,7 +380,7 @@ impl ZkPrivacy {
     ) -> Result<InterpreterResult, ExecutionError> {
         let gas_cost = U256::from(1_000_000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeExec("Out of gas".to_string()));
+            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
         }
         let data = params.data.to_owned().expect("invalid data");
         let mut index = 4;
@@ -435,7 +439,7 @@ impl ZkPrivacy {
             let nullifier_in_set: String =
                 *self.nullifier_set.get_bytes(ext, &params.code_address, i)?;
             if nullifier == nullifier_in_set {
-                return Err(ExecutionError::NativeExec("dup nullifier".to_string()));
+                return Err(ExecutionError::NativeContract("dup nullifier".to_string()));
             }
         }
 
@@ -468,16 +472,22 @@ impl ZkPrivacy {
         }
         tree.restore(tree_left, tree_right, parents);
         if str2u644(root.clone()) != tree.root().0 {
-            return Err(ExecutionError::NativeExec("invalid root hash".to_string()));
+            return Err(ExecutionError::NativeContract(
+                "invalid root hash".to_string(),
+            ));
         }
 
         let ret = c2p_verify(nullifier.clone(), root, delt_ba.clone(), proof);
         if ret.is_err() {
-            return Err(ExecutionError::NativeExec("c2p_verify error".to_string()));
+            return Err(ExecutionError::NativeContract(
+                "c2p_verify error".to_string(),
+            ));
         }
 
         if !ret.unwrap() {
-            return Err(ExecutionError::NativeExec("c2p_verify failed".to_string()));
+            return Err(ExecutionError::NativeContract(
+                "c2p_verify failed".to_string(),
+            ));
         }
         // add nullifier into nullifier_set
         self.nullifier_set
