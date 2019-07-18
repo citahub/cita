@@ -8,7 +8,8 @@ use zktx::incrementalmerkletree::*;
 use zktx::p2c::*;
 use zktx::pedersen::PedersenDigest;
 
-use crate::cita_executive::{ExecParams, ExecutionError};
+use crate::cita_executive::VmExecParams;
+use crate::contracts::native::factory::NativeError;
 use crate::storage::{Array, Map, Scalar};
 use cita_vm::evm::DataProvider;
 use cita_vm::evm::InterpreterResult;
@@ -32,9 +33,9 @@ pub struct ZkPrivacy {
 impl Contract for ZkPrivacy {
     fn exec(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError>
+    ) -> Result<InterpreterResult, NativeError>
     where
         Self: Sized,
     {
@@ -45,10 +46,10 @@ impl Contract for ZkPrivacy {
                 0xd0b0_7e52 => self.get_balance(params, ext),
                 0xc73b_5a8f => self.send_verify(params, ext),
                 0x882b_30d2 => self.receive_verify(params, ext),
-                _ => Err(ExecutionError::NativeContract("Out of gas".to_string())),
+                _ => Err(NativeError::OutOfGas),
             })
         } else {
-            Err(ExecutionError::NativeContract("Out of gas".to_string()))
+            Err(NativeError::OutOfGas)
         }
     }
     fn create(&self) -> Box<Contract> {
@@ -75,15 +76,15 @@ impl Default for ZkPrivacy {
 impl ZkPrivacy {
     fn init(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError> {
+    ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(5000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
+            return Err(NativeError::OutOfGas);
         }
         let sender = U256::from(H256::from(params.sender));
-        self.admin.set(ext, &params.code_address, sender)?;
+        self.admin.set(ext, &params.code_address.unwrap(), sender)?;
         let gas_left = params.gas - gas_cost;
         Ok(InterpreterResult::Normal(
             vec![],
@@ -94,12 +95,12 @@ impl ZkPrivacy {
 
     fn set_balance(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError> {
+    ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
+            return Err(NativeError::OutOfGas);
         }
         let data = params.data.to_owned().expect("invalid data");
         let mut index = 4;
@@ -120,7 +121,7 @@ impl ZkPrivacy {
         trace!("set_balance {} {}", addr, balance);
 
         self.balances
-            .set_bytes(ext, &params.code_address, &addr, &balance)?;
+            .set_bytes(ext, &params.code_address.unwrap(), &addr, &balance)?;
         let gas_left = params.gas - gas_cost;
         Ok(InterpreterResult::Normal(
             vec![],
@@ -131,12 +132,12 @@ impl ZkPrivacy {
 
     fn get_balance(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError> {
+    ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
+            return Err(NativeError::OutOfGas);
         }
         let data = params.data.to_owned().expect("invalid data");
         let index = 4;
@@ -148,7 +149,9 @@ impl ZkPrivacy {
         .unwrap();
 
         self.output.clear();
-        let balance: String = self.balances.get_bytes(ext, &params.code_address, &addr)?;
+        let balance: String = self
+            .balances
+            .get_bytes(ext, &params.code_address.unwrap(), &addr)?;
         for v in balance.as_bytes() {
             self.output.push(*v);
         }
@@ -164,12 +167,12 @@ impl ZkPrivacy {
 
     fn send_verify(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError> {
+    ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10_000_000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
+            return Err(NativeError::OutOfGas);
         }
         let data = params.data.to_owned().expect("invalid data");
         let mut index = 4;
@@ -229,24 +232,31 @@ impl ZkPrivacy {
         );
 
         // check coin is dup
-        let coins_len = self.coins.get_len(ext, &params.code_address)?;
+        let coins_len = self.coins.get_len(ext, &params.code_address.unwrap())?;
         for i in 0..coins_len {
-            let coin_added: String = *self.coins.get_bytes(ext, &params.code_address, i)?;
+            let coin_added: String =
+                *self
+                    .coins
+                    .get_bytes(ext, &params.code_address.unwrap(), i)?;
             if coin == coin_added {
-                return Err(ExecutionError::NativeContract("dup coin".to_string()));
+                return Err(NativeError::Internal("dup coin".to_string()));
             }
         }
 
         // compare block number
-        let last_block_number = self.last_spent.get(ext, &params.code_address, &addr)?;
+        let last_block_number = self
+            .last_spent
+            .get(ext, &params.code_address.unwrap(), &addr)?;
         if last_block_number >= block_number {
-            return Err(ExecutionError::NativeContract(
+            return Err(NativeError::Internal(
                 "block_number less than last".to_string(),
             ));
         }
 
         // get balance
-        let balance: String = self.balances.get_bytes(ext, &params.code_address, &addr)?;
+        let balance: String = self
+            .balances
+            .get_bytes(ext, &params.code_address.unwrap(), &addr)?;
         trace!("balance {}", balance);
 
         let ret = p2c_verify(
@@ -258,44 +268,43 @@ impl ZkPrivacy {
             proof,
         );
         if ret.is_err() {
-            return Err(ExecutionError::NativeContract(
-                "p2c_verify error".to_string(),
-            ));
+            return Err(NativeError::Internal("p2c_verify error".to_string()));
         }
 
         if !ret.unwrap() {
-            return Err(ExecutionError::NativeContract(
-                "p2c_verify failed".to_string(),
-            ));
+            return Err(NativeError::Internal("p2c_verify failed".to_string()));
         }
 
         // update last spent
         self.last_spent
-            .set(ext, &params.code_address, &addr, block_number)?;
+            .set(ext, &params.code_address.unwrap(), &addr, block_number)?;
         // add coin
         self.coins
-            .set_bytes(ext, &params.code_address, coins_len, &coin)?;
+            .set_bytes(ext, &params.code_address.unwrap(), coins_len, &coin)?;
         self.coins
-            .set_len(ext, &params.code_address, coins_len + 1)?;
+            .set_len(ext, &params.code_address.unwrap(), coins_len + 1)?;
 
         // restore merkle tree form storage
         let mut tree = IncrementalMerkleTree::new(TREE_DEPTH);
-        let left_str: String = *self.left.get_bytes(ext, &params.code_address)?;
+        let left_str: String = *self.left.get_bytes(ext, &params.code_address.unwrap())?;
         let tree_left = if left_str.is_empty() {
             None
         } else {
             Some(PedersenDigest(str2u644(left_str)))
         };
-        let right_str: String = *self.right.get_bytes(ext, &params.code_address)?;
+        let right_str: String = *self.right.get_bytes(ext, &params.code_address.unwrap())?;
         let tree_right = if right_str.is_empty() {
             None
         } else {
             Some(PedersenDigest(str2u644(right_str)))
         };
         let mut parents = Vec::new();
-        let parents_len = self.parents.get_len(ext, &params.code_address)?;
+        let parents_len = self.parents.get_len(ext, &params.code_address.unwrap())?;
         for i in 0..parents_len {
-            let hash_str: String = *self.parents.get_bytes(ext, &params.code_address, i)?;
+            let hash_str: String =
+                *self
+                    .parents
+                    .get_bytes(ext, &params.code_address.unwrap(), i)?;
             let hash = if hash_str.is_empty() {
                 None
             } else {
@@ -318,13 +327,15 @@ impl ZkPrivacy {
             Some(hash) => u6442str(hash.0),
             None => "".to_string(),
         };
-        self.left.set_bytes(ext, &params.code_address, &left)?;
+        self.left
+            .set_bytes(ext, &params.code_address.unwrap(), &left)?;
 
         let right = match tree.export_right() {
             Some(hash) => u6442str(hash.0),
             None => "".to_string(),
         };
-        self.right.set_bytes(ext, &params.code_address, &right)?;
+        self.right
+            .set_bytes(ext, &params.code_address.unwrap(), &right)?;
 
         let mut i = 0;
         for opt_hash in tree.export_parents().iter() {
@@ -332,15 +343,17 @@ impl ZkPrivacy {
                 Some(ref hash) => u6442str(hash.0),
                 None => "".to_string(),
             };
-            self.parents.set_bytes(ext, &params.code_address, i, &str)?;
+            self.parents
+                .set_bytes(ext, &params.code_address.unwrap(), i, &str)?;
             i += 1;
         }
-        self.parents.set_len(ext, &params.code_address, i)?;
+        self.parents
+            .set_len(ext, &params.code_address.unwrap(), i)?;
 
         // sub balance
         let new_balance = ecc_sub(balance, delt_ba);
         self.balances
-            .set_bytes(ext, &params.code_address, &addr, &new_balance)?;
+            .set_bytes(ext, &params.code_address.unwrap(), &addr, &new_balance)?;
 
         let mut data = Vec::new();
         data.extend_from_slice(coin.as_bytes());
@@ -375,12 +388,12 @@ impl ZkPrivacy {
 
     fn receive_verify(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError> {
+    ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(1_000_000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
+            return Err(NativeError::OutOfGas);
         }
         let data = params.data.to_owned().expect("invalid data");
         let mut index = 4;
@@ -434,12 +447,16 @@ impl ZkPrivacy {
         );
 
         // check nullifier is dup
-        let nullifier_set_len = self.nullifier_set.get_len(ext, &params.code_address)?;
+        let nullifier_set_len = self
+            .nullifier_set
+            .get_len(ext, &params.code_address.unwrap())?;
         for i in 0..nullifier_set_len {
             let nullifier_in_set: String =
-                *self.nullifier_set.get_bytes(ext, &params.code_address, i)?;
+                *self
+                    .nullifier_set
+                    .get_bytes(ext, &params.code_address.unwrap(), i)?;
             if nullifier == nullifier_in_set {
-                return Err(ExecutionError::NativeContract("dup nullifier".to_string()));
+                return Err(NativeError::Internal("dup nullifier".to_string()));
             }
         }
 
@@ -447,22 +464,25 @@ impl ZkPrivacy {
         // str2u644(root.clone()) == tree.root()
         // restore merkle tree form storage
         let mut tree = IncrementalMerkleTree::new(TREE_DEPTH);
-        let left_str: String = *self.left.get_bytes(ext, &params.code_address)?;
+        let left_str: String = *self.left.get_bytes(ext, &params.code_address.unwrap())?;
         let tree_left = if left_str.is_empty() {
             None
         } else {
             Some(PedersenDigest(str2u644(left_str)))
         };
-        let right_str: String = *self.right.get_bytes(ext, &params.code_address)?;
+        let right_str: String = *self.right.get_bytes(ext, &params.code_address.unwrap())?;
         let tree_right = if right_str.is_empty() {
             None
         } else {
             Some(PedersenDigest(str2u644(right_str)))
         };
         let mut parents = Vec::new();
-        let parents_len = self.parents.get_len(ext, &params.code_address)?;
+        let parents_len = self.parents.get_len(ext, &params.code_address.unwrap())?;
         for i in 0..parents_len {
-            let hash_str: String = *self.parents.get_bytes(ext, &params.code_address, i)?;
+            let hash_str: String =
+                *self
+                    .parents
+                    .get_bytes(ext, &params.code_address.unwrap(), i)?;
             let hash = if hash_str.is_empty() {
                 None
             } else {
@@ -472,34 +492,34 @@ impl ZkPrivacy {
         }
         tree.restore(tree_left, tree_right, parents);
         if str2u644(root.clone()) != tree.root().0 {
-            return Err(ExecutionError::NativeContract(
-                "invalid root hash".to_string(),
-            ));
+            return Err(NativeError::Internal("invalid root hash".to_string()));
         }
 
         let ret = c2p_verify(nullifier.clone(), root, delt_ba.clone(), proof);
         if ret.is_err() {
-            return Err(ExecutionError::NativeContract(
-                "c2p_verify error".to_string(),
-            ));
+            return Err(NativeError::Internal("c2p_verify error".to_string()));
         }
 
         if !ret.unwrap() {
-            return Err(ExecutionError::NativeContract(
-                "c2p_verify failed".to_string(),
-            ));
+            return Err(NativeError::Internal("c2p_verify failed".to_string()));
         }
         // add nullifier into nullifier_set
+        self.nullifier_set.set_bytes(
+            ext,
+            &params.code_address.unwrap(),
+            nullifier_set_len,
+            &nullifier,
+        )?;
         self.nullifier_set
-            .set_bytes(ext, &params.code_address, nullifier_set_len, &nullifier)?;
-        self.nullifier_set
-            .set_len(ext, &params.code_address, nullifier_set_len + 1)?;
+            .set_len(ext, &params.code_address.unwrap(), nullifier_set_len + 1)?;
         // add balance
-        let balance: String = self.balances.get_bytes(ext, &params.code_address, &addr)?;
+        let balance: String = self
+            .balances
+            .get_bytes(ext, &params.code_address.unwrap(), &addr)?;
         trace!("balance {}", balance);
         let new_balance = ecc_add(balance, delt_ba);
         self.balances
-            .set_bytes(ext, &params.code_address, &addr, &new_balance)?;
+            .set_bytes(ext, &params.code_address.unwrap(), &addr, &new_balance)?;
 
         trace!("receive_verify OK");
 
