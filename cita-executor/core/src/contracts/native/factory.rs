@@ -1,9 +1,10 @@
-use crate::cita_executive::{ExecParams, ExecutionError};
+use crate::cita_executive::VmExecParams;
 use crate::types::reserved_addresses;
 use cita_types::Address;
 use cita_vm::evm::DataProvider;
 use cita_vm::evm::InterpreterResult;
 use std::collections::HashMap;
+use std::fmt;
 use std::str::FromStr;
 
 pub type Signature = u32;
@@ -31,9 +32,9 @@ impl Clone for Box<Contract> {
 pub trait Contract: Sync + Send + ContractClone {
     fn exec(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError>;
+    ) -> Result<InterpreterResult, NativeError>;
 
     fn create(&self) -> Box<Contract>;
 }
@@ -90,5 +91,21 @@ impl Default for Factory {
             );
         }
         factory
+    }
+}
+
+#[derive(Debug)]
+pub enum NativeError {
+    OutOfGas,
+    Internal(String),
+}
+
+impl fmt::Display for NativeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let printable = match self {
+            NativeError::OutOfGas => "Out of gas".to_string(),
+            NativeError::Internal(str) => format!("Internal error {:?}", str),
+        };
+        write!(f, "{}", printable)
     }
 }

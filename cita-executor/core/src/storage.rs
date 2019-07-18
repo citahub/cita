@@ -3,18 +3,18 @@ use std::boxed::Box;
 use std::convert::From;
 use util::sha3;
 
-use crate::cita_executive::ExecutionError;
+use crate::contracts::native::factory::NativeError;
 use cita_vm::evm::DataProvider;
 
 pub trait Serialize {
-    fn serialize(&self) -> Result<Vec<u8>, ExecutionError>;
+    fn serialize(&self) -> Result<Vec<u8>, NativeError>;
 }
 pub trait Deserialize: Sized {
-    fn deserialize(bytes: &[u8]) -> Result<Self, ExecutionError>;
+    fn deserialize(bytes: &[u8]) -> Result<Self, NativeError>;
 }
 
 impl Serialize for U256 {
-    fn serialize(&self) -> Result<Vec<u8>, ExecutionError> {
+    fn serialize(&self) -> Result<Vec<u8>, NativeError> {
         //let mut vec = Vec::with_capacity(64);
         let mut vec = vec![0; 32];
         self.to_big_endian(&mut vec);
@@ -22,30 +22,29 @@ impl Serialize for U256 {
     }
 }
 impl Deserialize for U256 {
-    fn deserialize(bytes: &[u8]) -> Result<Self, ExecutionError> {
+    fn deserialize(bytes: &[u8]) -> Result<Self, NativeError> {
         Ok(U256::from(bytes))
     }
 }
 
 impl Serialize for String {
-    fn serialize(&self) -> Result<Vec<u8>, ExecutionError> {
+    fn serialize(&self) -> Result<Vec<u8>, NativeError> {
         Ok(self.to_owned().into_bytes())
     }
 }
 impl Deserialize for String {
-    fn deserialize(bytes: &[u8]) -> Result<Self, ExecutionError> {
-        Self::from_utf8(bytes.to_owned())
-            .map_err(|_| ExecutionError::NativeContract("dup coin".to_string()))
+    fn deserialize(bytes: &[u8]) -> Result<Self, NativeError> {
+        Self::from_utf8(bytes.to_owned()).map_err(|_| NativeError::Internal("dup coin".to_string()))
     }
 }
 
 impl Serialize for Vec<u8> {
-    fn serialize(&self) -> Result<Vec<u8>, ExecutionError> {
+    fn serialize(&self) -> Result<Vec<u8>, NativeError> {
         Ok(self.clone())
     }
 }
 impl Deserialize for Vec<u8> {
-    fn deserialize(bytes: &[u8]) -> Result<Self, ExecutionError> {
+    fn deserialize(bytes: &[u8]) -> Result<Self, NativeError> {
         Ok(Vec::from(bytes))
     }
 }
@@ -65,12 +64,12 @@ impl Scalar {
         ext: &mut DataProvider,
         addr: &Address,
         value: U256,
-    ) -> Result<(), ExecutionError> {
+    ) -> Result<(), NativeError> {
         ext.set_storage(addr, self.position, H256::from(value));
         Ok(())
     }
 
-    pub fn get(self: &Self, ext: &DataProvider, addr: &Address) -> Result<U256, ExecutionError> {
+    pub fn get(self: &Self, ext: &DataProvider, addr: &Address) -> Result<U256, NativeError> {
         let value = ext.get_storage(addr, &self.position);
         Ok(U256::from(value))
     }
@@ -81,7 +80,7 @@ impl Scalar {
         ext: &mut DataProvider,
         addr: &Address,
         value: &T,
-    ) -> Result<(), ExecutionError>
+    ) -> Result<(), NativeError>
     where
         T: Serialize,
     {
@@ -108,7 +107,7 @@ impl Scalar {
         self: &Self,
         ext: &DataProvider,
         addr: &Address,
-    ) -> Result<Box<T>, ExecutionError>
+    ) -> Result<Box<T>, NativeError>
     where
         T: Deserialize,
     {
@@ -161,7 +160,7 @@ impl Array {
         addr: &Address,
         index: u64,
         value: &U256,
-    ) -> Result<(), ExecutionError> {
+    ) -> Result<(), NativeError> {
         let scalar = Scalar::new(self.key(index));
         scalar.set(ext, addr, *value)
     }
@@ -171,7 +170,7 @@ impl Array {
         ext: &DataProvider,
         addr: &Address,
         index: u64,
-    ) -> Result<U256, ExecutionError> {
+    ) -> Result<U256, NativeError> {
         let scalar = Scalar::new(self.key(index));
         scalar.get(ext, addr)
     }
@@ -182,7 +181,7 @@ impl Array {
         addr: &Address,
         index: u64,
         value: &T,
-    ) -> Result<(), ExecutionError>
+    ) -> Result<(), NativeError>
     where
         T: Serialize,
     {
@@ -195,7 +194,7 @@ impl Array {
         ext: &DataProvider,
         addr: &Address,
         index: u64,
-    ) -> Result<Box<T>, ExecutionError>
+    ) -> Result<Box<T>, NativeError>
     where
         T: Deserialize,
     {
@@ -208,12 +207,12 @@ impl Array {
         ext: &mut DataProvider,
         addr: &Address,
         len: u64,
-    ) -> Result<(), ExecutionError> {
+    ) -> Result<(), NativeError> {
         ext.set_storage(addr, self.position, H256::from(len));
         Ok(())
     }
 
-    pub fn get_len(self: &Self, ext: &DataProvider, addr: &Address) -> Result<u64, ExecutionError> {
+    pub fn get_len(self: &Self, ext: &DataProvider, addr: &Address) -> Result<u64, NativeError> {
         let len = ext.get_storage(addr, &self.position);
         Ok(len.low_u64())
     }
@@ -237,7 +236,7 @@ impl Map {
     }
 
     #[inline]
-    fn key<Key>(&self, key: &Key) -> Result<H256, ExecutionError>
+    fn key<Key>(&self, key: &Key) -> Result<H256, NativeError>
     where
         Key: Serialize,
     {
@@ -253,7 +252,7 @@ impl Map {
         addr: &Address,
         key: &Key,
         value: U256,
-    ) -> Result<(), ExecutionError>
+    ) -> Result<(), NativeError>
     where
         Key: Serialize,
     {
@@ -265,7 +264,7 @@ impl Map {
         ext: &DataProvider,
         addr: &Address,
         key: &Key,
-    ) -> Result<U256, ExecutionError>
+    ) -> Result<U256, NativeError>
     where
         Key: Serialize,
     {
@@ -278,7 +277,7 @@ impl Map {
         addr: &Address,
         key: &Key,
         value: &Value,
-    ) -> Result<(), ExecutionError>
+    ) -> Result<(), NativeError>
     where
         Key: Serialize,
         Value: Serialize,
@@ -291,7 +290,7 @@ impl Map {
         ext: &DataProvider,
         addr: &Address,
         key: &Key,
-    ) -> Result<Value, ExecutionError>
+    ) -> Result<Value, NativeError>
     where
         Key: Serialize,
         Value: Deserialize,
@@ -299,14 +298,14 @@ impl Map {
         Ok(*Scalar::new(self.key(key)?).get_bytes(ext, addr)?)
     }
 
-    pub fn get_array<Key>(self: &mut Self, key: &Key) -> Result<Array, ExecutionError>
+    pub fn get_array<Key>(self: &mut Self, key: &Key) -> Result<Array, NativeError>
     where
         Key: Serialize,
     {
         Ok(Array::new(self.key(key)?))
     }
 
-    pub fn get_map<Key>(self: &mut Self, key: &Key) -> Result<Map, ExecutionError>
+    pub fn get_map<Key>(self: &mut Self, key: &Key) -> Result<Map, NativeError>
     where
         Key: Serialize,
     {

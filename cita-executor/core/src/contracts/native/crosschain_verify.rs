@@ -1,4 +1,4 @@
-use crate::cita_executive::{ExecParams, ExecutionError};
+use crate::cita_executive::VmExecParams;
 use crate::contracts::{
     native::factory::Contract, solc::ChainManagement, tools::method as method_tools,
 };
@@ -8,6 +8,7 @@ use core::header::Header;
 use core::libchain::chain::TxProof;
 use ethabi;
 
+use crate::contracts::native::factory::NativeError;
 use crate::storage::Map;
 use cita_vm::evm::DataProvider;
 use cita_vm::evm::InterpreterResult;
@@ -33,9 +34,9 @@ pub struct CrossChainVerify {
 impl Contract for CrossChainVerify {
     fn exec(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError> {
+    ) -> Result<InterpreterResult, NativeError> {
         if let Some(ref data) = params.data {
             method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
                 sig if sig == *VERIFY_TRANSACTION_FUNC => self.verify_transaction(params, ext),
@@ -44,10 +45,10 @@ impl Contract for CrossChainVerify {
                 sig if sig == *GET_EXPECTED_BLOCK_NUMBER_FUNC => {
                     self.get_expected_block_number(params, ext)
                 }
-                _ => Err(ExecutionError::NativeContract("Out of gas".to_string())),
+                _ => Err(NativeError::OutOfGas),
             })
         } else {
-            Err(ExecutionError::NativeContract("Out of gas".to_string()))
+            Err(NativeError::OutOfGas)
         }
     }
     fn create(&self) -> Box<Contract> {
@@ -68,17 +69,17 @@ impl Default for CrossChainVerify {
 impl CrossChainVerify {
     fn verify_transaction(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError> {
+    ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
+            return Err(NativeError::OutOfGas);
         }
         let gas_left = params.gas - gas_cost;
 
         if params.data.is_none() {
-            return Err(ExecutionError::NativeContract("no data".to_string()));
+            return Err(NativeError::Internal("no data".to_string()));
         }
 
         let data = params.data.to_owned().unwrap();
@@ -92,24 +93,20 @@ impl CrossChainVerify {
 
         let result = ethabi::decode(&tokens, &data[4..]);
         if result.is_err() {
-            return Err(ExecutionError::NativeContract("decode failed".to_string()));
+            return Err(NativeError::Internal("decode failed".to_string()));
         }
         let mut decoded = result.unwrap();
         trace!("decoded = {:?}", decoded);
 
         let result = decoded.remove(0).to_address();
         if result.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "decode 1st param failed".to_string(),
-            ));
+            return Err(NativeError::Internal("decode 1st param failed".to_string()));
         }
         let addr = Address::from(result.unwrap());
         trace!("addr = {}", addr);
         let result = decoded.remove(0).to_fixed_bytes();
         if result.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "decode 2nd param failed".to_string(),
-            ));
+            return Err(NativeError::Internal("decode 2nd param failed".to_string()));
         }
         let hasher = result.unwrap()[..4].iter().take(4).enumerate().fold(
             [0u8; 4],
@@ -121,17 +118,13 @@ impl CrossChainVerify {
         trace!("hasher = {:?}", hasher);
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "decode 3rd param failed".to_string(),
-            ));
+            return Err(NativeError::Internal("decode 3rd param failed".to_string()));
         }
         let nonce = U256::from_big_endian(&result.unwrap()).low_u64();
         trace!("nonce = {}", nonce);
         let result = decoded.remove(0).to_bytes();
         if result.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "decode 4th param failed".to_string(),
-            ));
+            return Err(NativeError::Internal("decode 4th param failed".to_string()));
         }
         let proof_data = result.unwrap();
         trace!("data = {:?}", proof_data);
@@ -140,7 +133,7 @@ impl CrossChainVerify {
 
         let relay_info = proof.extract_relay_info();
         if relay_info.is_none() {
-            return Err(ExecutionError::NativeContract(
+            return Err(NativeError::Internal(
                 "extract relay info failed".to_string(),
             ));
         }
@@ -149,9 +142,7 @@ impl CrossChainVerify {
 
         let ret = ChainManagement::ext_chain_id(ext, &gas_left, &params.sender);
         if ret.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "get chain id failed".to_owned(),
-            ));
+            return Err(NativeError::Internal("get chain id failed".to_owned()));
         }
         let (gas_left, chain_id) = ret.unwrap();
 
@@ -162,15 +153,13 @@ impl CrossChainVerify {
             relay_info.from_chain_id,
         );
         if ret.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "get authorities failed".to_owned(),
-            ));
+            return Err(NativeError::Internal("get authorities failed".to_owned()));
         }
         let (gas_left, authorities) = ret.unwrap();
 
         let ret = proof.extract_crosschain_data(addr, hasher, nonce, chain_id, &authorities[..]);
         if ret.is_none() {
-            return Err(ExecutionError::NativeContract(
+            return Err(NativeError::Internal(
                 "extract_crosschain_data failed".to_string(),
             ));
         }
@@ -193,17 +182,17 @@ impl CrossChainVerify {
 
     fn verify_state(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError> {
+    ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
+            return Err(NativeError::OutOfGas);
         }
         let gas_left = params.gas - gas_cost;
 
         if params.data.is_none() {
-            return Err(ExecutionError::NativeContract("no data".to_string()));
+            return Err(NativeError::Internal("no data".to_string()));
         }
 
         let data = params.data.to_owned().unwrap();
@@ -216,46 +205,40 @@ impl CrossChainVerify {
 
         let result = ethabi::decode(&tokens, &data[4..]);
         if result.is_err() {
-            return Err(ExecutionError::NativeContract("decode failed".to_string()));
+            return Err(NativeError::Internal("decode failed".to_string()));
         }
         let mut decoded = result.unwrap();
         trace!("decoded = {:?}", decoded);
 
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "decode 1th param failed".to_string(),
-            ));
+            return Err(NativeError::Internal("decode 1th param failed".to_string()));
         }
         let chain_id = U256::from_big_endian(&result.unwrap());
         trace!("chain_id = {}", chain_id);
 
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "decode 2nd param failed".to_string(),
-            ));
+            return Err(NativeError::Internal("decode 2nd param failed".to_string()));
         }
         let block_number = U256::from_big_endian(&result.unwrap()).low_u64();
         trace!("block_number = {}", block_number);
 
         let result = self.state_roots.get_array(&chain_id).unwrap().get(
             ext,
-            &params.code_address,
+            &params.code_address.unwrap(),
             block_number,
         );
         if result.is_err() {
-            return Err(ExecutionError::NativeContract(
-                "get state root failed".to_string(),
-            ));
+            return Err(NativeError::Internal("get state root failed".to_string()));
         }
         let result1 = self.state_roots.get_array(&chain_id).unwrap().get(
             ext,
-            &params.code_address,
+            &params.code_address.unwrap(),
             block_number + 1,
         );
         if result1.is_err() {
-            return Err(ExecutionError::NativeContract(
+            return Err(NativeError::Internal(
                 "get next state root failed".to_string(),
             ));
         }
@@ -264,16 +247,14 @@ impl CrossChainVerify {
         let next_state_root: H256 = result1.unwrap().into();
         trace!("next_state_root = {:?}", next_state_root);
         if state_root == H256::zero() || next_state_root == H256::zero() {
-            return Err(ExecutionError::NativeContract(
+            return Err(NativeError::Internal(
                 "state root have not confirmed".to_string(),
             ));
         }
 
         let result = decoded.remove(0).to_bytes();
         if result.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "decode 3rd param failed".to_string(),
-            ));
+            return Err(NativeError::Internal("decode 3rd param failed".to_string()));
         }
         let state_proof_bytes = result.unwrap();
         trace!("state_proof_bytes = {:?}", state_proof_bytes);
@@ -281,7 +262,7 @@ impl CrossChainVerify {
         let state_proof = StateProof::from_bytes(&state_proof_bytes);
         let maybe_val = state_proof.verify(state_root);
         if maybe_val.is_none() {
-            return Err(ExecutionError::NativeContract(
+            return Err(NativeError::Internal(
                 "state proof verify failed".to_string(),
             ));
         }
@@ -306,17 +287,17 @@ impl CrossChainVerify {
 
     fn verify_block_header(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError> {
+    ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
+            return Err(NativeError::OutOfGas);
         }
         let mut gas_left = params.gas - gas_cost;
 
         if params.data.is_none() {
-            return Err(ExecutionError::NativeContract("no data".to_string()));
+            return Err(NativeError::Internal("no data".to_string()));
         }
 
         let data = params.data.to_owned().unwrap();
@@ -325,24 +306,20 @@ impl CrossChainVerify {
 
         let result = ethabi::decode(&tokens, &data[4..]);
         if result.is_err() {
-            return Err(ExecutionError::NativeContract("decode failed".to_string()));
+            return Err(NativeError::Internal("decode failed".to_string()));
         }
         let mut decoded = result.unwrap();
         trace!("decoded = {:?}", decoded);
 
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "decode 1th param failed".to_string(),
-            ));
+            return Err(NativeError::Internal("decode 1th param failed".to_string()));
         }
         let chain_id = U256::from_big_endian(&result.unwrap());
         trace!("chain_id = {}", chain_id);
         let result = decoded.remove(0).to_bytes();
         if result.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "decode 2nd param failed".to_string(),
-            ));
+            return Err(NativeError::Internal("decode 2nd param failed".to_string()));
         }
         let block_header_curr_bytes = result.unwrap();
         trace!("data = {:?}", block_header_curr_bytes);
@@ -350,7 +327,7 @@ impl CrossChainVerify {
 
         let block_header_prev_bytes: Vec<u8> =
             self.block_headers
-                .get_bytes(ext, &params.code_address, &chain_id)?;
+                .get_bytes(ext, &params.code_address.unwrap(), &chain_id)?;
 
         let verify_result = if block_header_prev_bytes.is_empty() {
             trace!("sync first block header");
@@ -360,9 +337,7 @@ impl CrossChainVerify {
 
             let ret = ChainManagement::ext_authorities(ext, &gas_left, &params.sender, chain_id);
             if ret.is_none() {
-                return Err(ExecutionError::NativeContract(
-                    "get authorities failed".to_owned(),
-                ));
+                return Err(NativeError::Internal("get authorities failed".to_owned()));
             }
             let (gas_left_new, authorities) = ret.unwrap();
             gas_left = gas_left_new;
@@ -374,7 +349,7 @@ impl CrossChainVerify {
             trace!("store the {} block header", block_header_curr.number());
             self.block_headers.set_bytes(
                 ext,
-                &params.code_address,
+                &params.code_address.unwrap(),
                 &chain_id,
                 &block_header_curr_bytes,
             )?;
@@ -385,7 +360,7 @@ impl CrossChainVerify {
             );
             self.state_roots.get_array(&chain_id).unwrap().set(
                 ext,
-                &params.code_address,
+                &params.code_address.unwrap(),
                 block_header_curr.number(),
                 &U256::from(block_header_curr.state_root()),
             )?;
@@ -405,17 +380,17 @@ impl CrossChainVerify {
 
     fn get_expected_block_number(
         &mut self,
-        params: &ExecParams,
+        params: &VmExecParams,
         ext: &mut DataProvider,
-    ) -> Result<InterpreterResult, ExecutionError> {
+    ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(ExecutionError::NativeContract("Out of gas".to_string()));
+            return Err(NativeError::OutOfGas);
         }
         let gas_left = params.gas - gas_cost;
 
         if params.data.is_none() {
-            return Err(ExecutionError::NativeContract("no data".to_string()));
+            return Err(NativeError::Internal("no data".to_string()));
         }
 
         let data = params.data.to_owned().unwrap();
@@ -424,23 +399,21 @@ impl CrossChainVerify {
 
         let result = ethabi::decode(&tokens, &data[4..]);
         if result.is_err() {
-            return Err(ExecutionError::NativeContract("decode failed".to_string()));
+            return Err(NativeError::Internal("decode failed".to_string()));
         }
         let mut decoded = result.unwrap();
         trace!("decoded = {:?}", decoded);
 
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
-            return Err(ExecutionError::NativeContract(
-                "decode 1th param failed".to_string(),
-            ));
+            return Err(NativeError::Internal("decode 1th param failed".to_string()));
         }
         let chain_id = U256::from_big_endian(&result.unwrap());
         trace!("chain_id = {}", chain_id);
 
         let block_header_bytes: Vec<u8> =
             self.block_headers
-                .get_bytes(ext, &params.code_address, &chain_id)?;
+                .get_bytes(ext, &params.code_address.unwrap(), &chain_id)?;
 
         let block_number = if block_header_bytes.is_empty() {
             0
