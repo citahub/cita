@@ -8,7 +8,7 @@ use zktx::incrementalmerkletree::*;
 use zktx::p2c::*;
 use zktx::pedersen::PedersenDigest;
 
-use crate::cita_executive::VmExecParams;
+use crate::cita_executive::{EnvInfo, VmExecParams};
 use crate::contracts::native::factory::NativeError;
 use crate::storage::{Array, Map, Scalar};
 use cita_vm::evm::DataProvider;
@@ -34,6 +34,7 @@ impl Contract for ZkPrivacy {
     fn exec(
         &mut self,
         params: &VmExecParams,
+        env_info: &EnvInfo,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError>
     where
@@ -44,7 +45,7 @@ impl Contract for ZkPrivacy {
                 0 => self.init(params, data_provider),
                 0x05e3_cb61 => self.set_balance(params, data_provider),
                 0xd0b0_7e52 => self.get_balance(params, data_provider),
-                0xc73b_5a8f => self.send_verify(params, data_provider),
+                0xc73b_5a8f => self.send_verify(params, env_info, data_provider),
                 0x882b_30d2 => self.receive_verify(params, data_provider),
                 _ => Err(NativeError::OutOfGas),
             })
@@ -173,6 +174,7 @@ impl ZkPrivacy {
     fn send_verify(
         &mut self,
         params: &VmExecParams,
+        env_info: &EnvInfo,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10_000_000);
@@ -221,11 +223,8 @@ impl ZkPrivacy {
         ))
         .unwrap();
 
-        // FIXME !!! get block number from data provider
         // get block_number
-        // let block_number = U256::from(data_provider.env_info().number);
-        let block_number = U256::from(200);
-
+        let block_number = U256::from(env_info.number);
         trace!(
             "send_verify args: {} {} {} {} {} {}",
             addr,
@@ -393,14 +392,6 @@ impl ZkPrivacy {
                 data.push(0u8);
             }
         }
-        // FixMe !!! DataProvider may offer log() function.
-        // let _ = data_provider.log(
-        //     vec![H256::from_str(
-        //         "c73b5a8f31a1a078a14123cc93687f4a59389c76caf88d5d2154d3f3ce25ff49",
-        //     )
-        //     .unwrap()],
-        //     &data,
-        // );
 
         trace!("send_verify OK data len {}", data.len());
         let gas_left = params.gas - gas_cost;

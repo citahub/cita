@@ -1,4 +1,4 @@
-use crate::cita_executive::VmExecParams;
+use crate::cita_executive::{EnvInfo, VmExecParams};
 use crate::types::reserved_addresses;
 use cita_types::Address;
 use cita_vm::evm::DataProvider;
@@ -33,6 +33,7 @@ pub trait Contract: Sync + Send + ContractClone {
     fn exec(
         &mut self,
         params: &VmExecParams,
+        env_info: &EnvInfo,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError>;
 
