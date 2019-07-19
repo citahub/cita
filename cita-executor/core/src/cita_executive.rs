@@ -12,7 +12,7 @@ use std::sync::Arc;
 use util::Bytes;
 
 use crate::authentication::{check_permission, AuthenticationError};
-use crate::contracts::native::factory::{Factory as NativeFactory, NativeError;
+use crate::contracts::native::factory::{Factory as NativeFactory, NativeError};
 use crate::core_types::{Bloom, BloomInput, Hash, LogEntry, Receipt, TypesError};
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
@@ -177,7 +177,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                     gas_price: t.gas_price(),
                     value: t.value,
                     nonce,
-                    data: t.data.clone(),
+                    data: Some(t.data.clone()),
                 };
                 self.call(&params)
             }

@@ -9,7 +9,7 @@ use std::io::Write;
 
 use byteorder::BigEndian;
 
-use crate::cita_executive::VmExecParams;
+use crate::cita_executive::{EnvInfo, VmExecParams};
 use crate::contracts::native::factory::NativeError;
 use crate::storage::{Array, Map, Scalar};
 use cita_vm::evm::DataProvider;
@@ -28,6 +28,7 @@ impl Contract for SimpleStorage {
     fn exec(
         &mut self,
         params: &VmExecParams,
+        _env_info: &EnvInfo,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         if let Some(ref data) = params.data {

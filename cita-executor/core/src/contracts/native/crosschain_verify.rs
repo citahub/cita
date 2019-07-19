@@ -1,4 +1,4 @@
-use crate::cita_executive::VmExecParams;
+use crate::cita_executive::{EnvInfo, VmExecParams};
 use crate::contracts::{
     native::factory::Contract, solc::ChainManagement, tools::method as method_tools,
 };
@@ -35,6 +35,7 @@ impl Contract for CrossChainVerify {
     fn exec(
         &mut self,
         params: &VmExecParams,
+        _env_info: &EnvInfo,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         if let Some(ref data) = params.data {
