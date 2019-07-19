@@ -12,7 +12,7 @@ use std::sync::Arc;
 use util::Bytes;
 
 use crate::authentication::{check_permission, AuthenticationError};
-use crate::contracts::native::factory::Factory as NativeFactory;
+use crate::contracts::native::factory::{Factory as NativeFactory, NativeError};
 use crate::core_types::{Bloom, BloomInput, Hash, LogEntry, Receipt, TypesError};
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
@@ -155,7 +155,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                     gas_price: t.gas_price(),
                     value: t.value,
                     nonce,
-                    data: t.data.clone(),
+                    data: Some(t.data.clone()),
                 };
 
                 self.call_evm(&params)
@@ -177,7 +177,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                     gas_price: t.gas_price(),
                     value: t.value,
                     nonce,
-                    data: t.data.clone(),
+                    data: Some(t.data.clone()),
                 };
                 self.call(&params)
             }
@@ -362,7 +362,7 @@ fn build_evm_transaction(params: &VmExecParams) -> EVMTransaction {
         value: params.value,
         gas_limit: params.gas.as_u64(),
         gas_price: params.gas_price,
-        input: params.data.clone(),
+        input: params.data.clone().unwrap_or_default(),
         to: params.to_address,
         nonce: params.nonce,
     }
@@ -457,6 +457,7 @@ pub enum ExecutionError {
     Internal(String),
     TransactionMalformed(String),
     Authentication(AuthenticationError),
+    NativeContract(NativeError),
 }
 
 impl Error for ExecutionError {}
@@ -470,6 +471,7 @@ impl fmt::Display for ExecutionError {
             ExecutionError::Internal(ref err) => format!("internal error: {:?}", err),
             ExecutionError::TransactionMalformed(ref err) => format!("internal error: {:?}", err),
             ExecutionError::Authentication(ref err) => format!("internal error: {:?}", err),
+            ExecutionError::NativeContract(ref err) => format!("internal error: {:?}", err),
         };
         write!(f, "{}", printable)
     }
@@ -490,6 +492,12 @@ impl From<StateError> for ExecutionError {
 impl From<TypesError> for ExecutionError {
     fn from(err: TypesError) -> Self {
         ExecutionError::Types(err)
+    }
+}
+
+impl From<NativeError> for ExecutionError {
+    fn from(err: NativeError) -> Self {
+        ExecutionError::NativeContract(err)
     }
 }
 
@@ -528,7 +536,7 @@ pub struct VmExecParams {
     /// nonce
     pub nonce: U256,
     /// Input data.
-    pub data: Bytes,
+    pub data: Option<Bytes>,
 }
 
 impl Default for VmExecParams {
@@ -542,7 +550,7 @@ impl Default for VmExecParams {
             gas_price: U256::zero(),
             value: U256::zero(),
             nonce: U256::zero(),
-            data: vec![],
+            data: None,
         }
     }
 }

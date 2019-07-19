@@ -1,37 +1,19 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 use self::bincode::internal::serialize_into;
 use self::bincode::Infinite;
-use super::factory::{Contract, Factory};
+use super::factory::Contract;
 use crate::contracts::tools::method as method_tools;
-use crate::types::reserved_addresses;
+
 use bincode;
-use cita_types::{Address, H256, U256};
-use evm;
-use evm::fake_tests::FakeExt;
+use cita_types::{H256, U256};
 use std::io::Write;
-use std::str::FromStr;
 
 use byteorder::BigEndian;
-use evm::action_params::ActionParams;
-use evm::ext::Ext;
-use evm::return_data::{GasLeft, ReturnData};
-use evm::storage::*;
+
+use crate::cita_executive::{EnvInfo, VmExecParams};
+use crate::contracts::native::factory::NativeError;
+use crate::storage::{Array, Map, Scalar};
+use cita_vm::evm::DataProvider;
+use cita_vm::evm::InterpreterResult;
 
 #[derive(Clone)]
 pub struct SimpleStorage {
@@ -43,22 +25,27 @@ pub struct SimpleStorage {
 }
 
 impl Contract for SimpleStorage {
-    fn exec(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn exec(
+        &mut self,
+        params: &VmExecParams,
+        _env_info: &EnvInfo,
+        data_provider: &mut DataProvider,
+    ) -> Result<InterpreterResult, NativeError> {
         if let Some(ref data) = params.data {
             method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
-                0 => self.init(params, ext),
-                0xaa91543e => self.uint_set(params, ext),
-                0x832b4580 => self.uint_get(params, ext),
-                0xc9615770 => self.string_set(params, ext),
-                0xe3135d14 => self.string_get(params, ext),
-                0x118b229c => self.array_set(params, ext),
-                0x180a4bbf => self.array_get(params, ext),
-                0xaaf27175 => self.map_set(params, ext),
-                0xc567dff6 => self.map_get(params, ext),
-                _ => Err(evm::Error::OutOfGas),
+                0 => self.init(params, data_provider),
+                0xaa91543e => self.uint_set(params, data_provider),
+                0x832b4580 => self.uint_get(params, data_provider),
+                0xc9615770 => self.string_set(params, data_provider),
+                0xe3135d14 => self.string_get(params, data_provider),
+                0x118b229c => self.array_set(params, data_provider),
+                0x180a4bbf => self.array_get(params, data_provider),
+                0xaaf27175 => self.map_set(params, data_provider),
+                0xc567dff6 => self.map_get(params, data_provider),
+                _ => Err(NativeError::OutOfGas),
             })
         } else {
-            Err(evm::Error::OutOfGas)
+            Err(NativeError::OutOfGas)
         }
     }
     fn create(&self) -> Box<Contract> {
@@ -79,11 +66,20 @@ impl Default for SimpleStorage {
 }
 
 impl SimpleStorage {
-    fn init(&mut self, _params: &ActionParams, _ext: &mut Ext) -> Result<GasLeft, evm::Error> {
-        Ok(GasLeft::Known(U256::from(100)))
+    fn init(
+        &mut self,
+        _params: &VmExecParams,
+        _ext: &mut DataProvider,
+    ) -> Result<InterpreterResult, NativeError> {
+        Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
+
     // 1) uint
-    fn uint_set(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn uint_set(
+        &mut self,
+        params: &VmExecParams,
+        data_provider: &mut DataProvider,
+    ) -> Result<InterpreterResult, NativeError> {
         let value = U256::from(
             params
                 .data
@@ -92,23 +88,29 @@ impl SimpleStorage {
                 .get(4..36)
                 .expect("no enough data"),
         );
-        self.uint_value.set(ext, value)?;
-        Ok(GasLeft::Known(U256::from(100)))
+        self.uint_value
+            .set(data_provider, &params.code_address.unwrap(), value)?;
+        Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
-    fn uint_get(&mut self, _params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+
+    fn uint_get(
+        &mut self,
+        params: &VmExecParams,
+        data_provider: &mut DataProvider,
+    ) -> Result<InterpreterResult, NativeError> {
         self.output.resize(32, 0);
         self.uint_value
-            .get(ext)?
+            .get(data_provider, &params.code_address.unwrap())?
             .to_big_endian(self.output.as_mut_slice());
-        Ok(GasLeft::NeedsReturn {
-            gas_left: U256::from(100),
-            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-            apply_state: true,
-        })
+        Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 
     // 2) string
-    fn string_set(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn string_set(
+        &mut self,
+        params: &VmExecParams,
+        data_provider: &mut DataProvider,
+    ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let index = U256::from(data.get(4..36).expect("no enough data")).low_u64() as usize + 4;
         let length =
@@ -119,12 +121,20 @@ impl SimpleStorage {
         ))
         .unwrap();
 
-        self.string_value.set_bytes(ext, &value)?;
-        Ok(GasLeft::Known(U256::from(100)))
+        self.string_value
+            .set_bytes(data_provider, &params.code_address.unwrap(), &value)?;
+        Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
-    fn string_get(&mut self, _params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+
+    fn string_get(
+        &mut self,
+        params: &VmExecParams,
+        data_provider: &mut DataProvider,
+    ) -> Result<InterpreterResult, NativeError> {
         self.output.resize(0, 0);
-        let str = self.string_value.get_bytes::<String>(ext)?;
+        let str = self
+            .string_value
+            .get_bytes::<String>(data_provider, &params.code_address.unwrap())?;
         for i in U256::from(32).0.iter().rev() {
             serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
                 .expect("failed to serialize u64");
@@ -141,70 +151,97 @@ impl SimpleStorage {
         self.output
             .write(&vec![0u8; 32 - str.len() % 32])
             .expect("failed to write [u8]");
-        Ok(GasLeft::NeedsReturn {
-            gas_left: U256::from(100),
-            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-            apply_state: true,
-        })
+        Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 
     // 3) array
-    fn array_set(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn array_set(
+        &mut self,
+        params: &VmExecParams,
+        data_provider: &mut DataProvider,
+    ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let mut pilot = 4;
         let index = U256::from(data.get(pilot..pilot + 32).expect("no enough data")).low_u64();
         pilot += 32;
         let value = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
-        self.array_value.set(ext, index, &value)?;
-        Ok(GasLeft::Known(U256::from(100)))
+        self.array_value
+            .set(data_provider, &params.code_address.unwrap(), index, &value)?;
+        Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
-    fn array_get(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+
+    fn array_get(
+        &mut self,
+        params: &VmExecParams,
+        data_provider: &mut DataProvider,
+    ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let index = U256::from(data.get(4..4 + 32).expect("no enough data")).low_u64();
-        for i in self.array_value.get(ext, index)?.0.iter().rev() {
+        for i in self
+            .array_value
+            .get(data_provider, &params.code_address.unwrap(), index)?
+            .0
+            .iter()
+            .rev()
+        {
             serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
                 .expect("failed to serialize u64");
         }
-        Ok(GasLeft::NeedsReturn {
-            gas_left: U256::from(100),
-            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-            apply_state: true,
-        })
+        Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 
     // 4) map
-    fn map_set(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+    fn map_set(
+        &mut self,
+        params: &VmExecParams,
+        data_provider: &mut DataProvider,
+    ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let mut pilot = 4;
         let key = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
         pilot += 32;
         let value = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
-        self.map_value.set(ext, &key, value)?;
-        Ok(GasLeft::Known(U256::from(100)))
+        self.map_value
+            .set(data_provider, &params.code_address.unwrap(), &key, value)?;
+        Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
-    fn map_get(&mut self, params: &ActionParams, ext: &mut Ext) -> Result<GasLeft, evm::Error> {
+
+    fn map_get(
+        &mut self,
+        params: &VmExecParams,
+        data_provider: &mut DataProvider,
+    ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let key = U256::from(data.get(4..4 + 32).expect("no enough data"));
-        for i in self.map_value.get(ext, &key)?.0.iter().rev() {
+        for i in self
+            .map_value
+            .get(data_provider, &params.code_address.unwrap(), &key)?
+            .0
+            .iter()
+            .rev()
+        {
             serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
                 .expect("failed to serialize u64");
         }
-        Ok(GasLeft::NeedsReturn {
-            gas_left: U256::from(100),
-            data: ReturnData::new(self.output.clone(), 0, self.output.len()),
-            apply_state: true,
-        })
+        Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
 }
 
 #[test]
+
 fn test_native_contract() {
+    use super::factory::Factory;
+    use crate::types::reserved_addresses;
+    use cita_types::Address;
+    use evm::fake_tests::FakeExt;
+    use std::str::FromStr;
+
     let factory = Factory::default();
-    let mut ext = FakeExt::new();
+    let mut data_provider = FakeExt::new();
     let native_addr = Address::from_str(reserved_addresses::NATIVE_SIMPLE_STORAGE).unwrap();
     let value = U256::from(0x1234);
     {
-        let mut params = ActionParams::default();
+        let mut params = VmExecParams::default();
         let mut input = Vec::new();
         let index = 0xaa91543eu32;
         serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite)
@@ -215,19 +252,18 @@ fn test_native_contract() {
         }
         params.data = Some(input);
         let mut contract = factory.new_contract(native_addr).unwrap();
-        let output = contract.exec(&params, &mut ext).unwrap();
-        println!("===={:?}", output);
+        let output = contract.exec(&params, &mut data_provider).unwrap();
     }
     {
-        let mut params = ActionParams::default();
         let mut input = Vec::new();
+        let mut params = VmExecParams::default();
         let index = 0x832b4580u32;
         serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite)
             .expect("failed to serialize u32");
         params.data = Some(input);
 
         let mut contract = factory.new_contract(native_addr).unwrap();
-        match contract.exec(&params, &mut ext) {
+        match contract.exec(&params, &mut data_provider) {
             Ok(GasLeft::NeedsReturn {
                 gas_left: _,
                 data: return_data,

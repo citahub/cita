@@ -75,6 +75,7 @@ pub mod account_db;
 pub mod benches;
 pub mod builtin;
 pub mod cita_executive;
+pub mod storage;
 pub mod tx_gas_schedule;
 
 // FIXME: Rename this after this work finished

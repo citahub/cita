@@ -18,7 +18,8 @@
 
 //use crate::authentication::check_permission;
 use crate::builtin::Builtin;
-use crate::contracts::native::factory::{Contract as NativeContract, Factory as NativeFactory};
+// use crate::contracts::native::factory::Contract as NativeContract;
+use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::engines::Engine;
 use crate::error::ExecutionError;
 pub use crate::executed::{Executed, ExecutionResult};
@@ -562,7 +563,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         // backup used in case of running out of gas
         self.state.checkpoint();
 
-        let static_call = params.call_type == CallType::StaticCall;
+        let _static_call = params.call_type == CallType::StaticCall;
 
         // at first, transfer value to destination
         // TODO Keep it for compatibility. Remove it later.
@@ -571,17 +572,18 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                 .transfer_balance(&params.sender, &params.address, &val)?
         }
 
-        if let Some(native_contract) = self.native_factory.new_contract(params.code_address) {
-            // check and call Native Contract
-            self.call_native_contract(
-                params,
-                substate,
-                output,
-                tracer,
-                static_call,
-                native_contract,
-            )
-        } else if self.is_amend_data_address(params.code_address) {
+        // if let Some(native_contract) = self.native_factory.new_contract(params.code_address) {
+        // check and call Native Contract
+        // self.call_native_contract(
+        //     params,
+        //     substate,
+        //     output,
+        //     tracer,
+        //     static_call,
+        //     native_contract,
+        // )
+        // } else
+        if self.is_amend_data_address(params.code_address) {
             let res = self.call_amend_data(params, substate, &output);
             self.enact_self_defined_res(&res);
             res
@@ -809,40 +811,40 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         }
     }
 
-    fn call_native_contract<T>(
-        &mut self,
-        params: &ActionParams,
-        substate: &mut Substate,
-        output: BytesRef,
-        tracer: &mut T,
-        static_call: bool,
-        mut contract: Box<NativeContract>,
-    ) -> evm::Result<FinalizationResult>
-    where
-        T: Tracer,
-    {
-        let mut unconfirmed_substate = Substate::new();
-        let mut trace_output = tracer.prepare_trace_output();
-        let output_policy = OutputPolicy::Return(output, trace_output.as_mut());
-        let res = {
-            let mut tracer = NoopTracer;
-            let mut vmtracer = NoopVMTracer;
-            let economical_model = self.economical_model;
-            let mut ext = self.as_externalities(
-                OriginInfo::from(&params),
-                &mut unconfirmed_substate,
-                output_policy,
-                &mut tracer,
-                &mut vmtracer,
-                static_call,
-                economical_model,
-            );
-            contract.exec(&params, &mut ext).finalize(ext)
-        };
-        self.enact_result(&res, substate, unconfirmed_substate);
-        trace!(target: "executive", "enacted: substate={:?}\n", substate);
-        res
-    }
+    // fn call_native_contract<T>(
+    //     &mut self,
+    //     params: &ActionParams,
+    //     substate: &mut Substate,
+    //     output: BytesRef,
+    //     tracer: &mut T,
+    //     static_call: bool,
+    //     mut contract: Box<NativeContract>,
+    // ) -> evm::Result<FinalizationResult>
+    // where
+    //     T: Tracer,
+    // {
+    //     let mut unconfirmed_substate = Substate::new();
+    //     let mut trace_output = tracer.prepare_trace_output();
+    //     let output_policy = OutputPolicy::Return(output, trace_output.as_mut());
+    //     let res = {
+    //         let mut tracer = NoopTracer;
+    //         let mut vmtracer = NoopVMTracer;
+    //         let economical_model = self.economical_model;
+    //         let mut ext = self.as_externalities(
+    //             OriginInfo::from(&params),
+    //             &mut unconfirmed_substate,
+    //             output_policy,
+    //             &mut tracer,
+    //             &mut vmtracer,
+    //             static_call,
+    //             economical_model,
+    //         );
+    //         contract.exec(&params, &mut ext).finalize(ext)
+    //     };
+    //     self.enact_result(&res, substate, unconfirmed_substate);
+    //     trace!(target: "executive", "enacted: substate={:?}\n", substate);
+    //     res
+    // }
 
     /// Creates contract with given contract params.
     /// NOTE. It does not finalize the transaction (doesn't do refunds, nor suicides).

@@ -17,12 +17,14 @@
 
 //! Chain manager.
 
-use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::contracts::tools::decode as decode_tools;
+use crate::contracts::tools::method as method_tools;
 use crate::types::reserved_addresses;
 use cita_types::{Address, H160, H256, U256};
-use evm::call_type::CallType;
-use evm::ext::{Ext, MessageCallResult};
 use std::str::FromStr;
+
+use cita_vm::evm::OpCode;
+use cita_vm::evm::{DataProvider, InterpreterParams, InterpreterResult};
 
 const CHAIN_ID: &[u8] = &*b"getChainId()";
 const AUTHORITIES: &[u8] = &*b"getAuthorities(uint256)";
@@ -36,63 +38,46 @@ lazy_static! {
 pub struct ChainManagement;
 
 impl ChainManagement {
-    pub fn ext_chain_id(ext: &mut Ext, gas: &U256, sender: &Address) -> Option<(U256, U256)> {
-        trace!("call system contract ChainManagement.ext_chain_id()");
-        let contract = &*CONTRACT_ADDRESS;
-        let tx_data = CHAIN_ID_ENCODED.to_vec();
-        let data = &tx_data.as_slice();
-        let mut output = Vec::<u8>::new();
-        match ext.call(
-            gas,
-            sender,
-            contract,
-            None,
-            data,
-            contract,
-            &mut output,
-            CallType::Call,
-        ) {
-            MessageCallResult::Success(gas_left, return_data) => {
-                decode_tools::to_u256(&*return_data).map(|x| (gas_left, x))
+    pub fn ext_chain_id(
+        data_provider: &mut DataProvider,
+        gas: &U256,
+        sender: &Address,
+    ) -> Option<(U256, U256)> {
+        trace!("Call chainManagement ext_chain_id()");
+        let mut params = InterpreterParams::default();
+        params.receiver = *CONTRACT_ADDRESS;
+        params.sender = *sender;
+        params.gas_limit = gas.low_u64();
+        params.input = CHAIN_ID_ENCODED.to_vec();
+
+        match data_provider.call(OpCode::CALL, params) {
+            Ok(InterpreterResult::Normal(output, gas_left, _)) => {
+                decode_tools::to_u256(&output).map(|x| (U256::from(gas_left), x))
             }
-            MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
+            _ => None,
         }
     }
 
     pub fn ext_authorities(
-        ext: &mut Ext,
+        data_provider: &mut DataProvider,
         gas: &U256,
         sender: &Address,
         chain_id: U256,
     ) -> Option<(U256, Vec<Address>)> {
-        trace!(
-            "call system contract ChainManagement.ext_authorities({})",
-            chain_id
-        );
-        let contract = &*CONTRACT_ADDRESS;
+        trace!("call chainManagement ext_authorities({})", chain_id);
+        let mut params = InterpreterParams::default();
+        params.receiver = *CONTRACT_ADDRESS;
+        params.sender = *sender;
+        params.gas_limit = gas.low_u64();
         let mut tx_data = AUTHORITIES_ENCODED.to_vec();
-        let param = H256::from(chain_id);
-        tx_data.extend(param.to_vec());
-        let data = &tx_data.as_slice();
-        let mut output = Vec::<u8>::new();
-        match ext.call(
-            gas,
-            sender,
-            contract,
-            None,
-            data,
-            contract,
-            &mut output,
-            CallType::Call,
-        ) {
-            MessageCallResult::Success(gas_left, return_data) => {
-                trace!(
-                    "call system contract ChainManagement.ext_authorities() return [{:?}]",
-                    return_data
-                );
-                decode_tools::to_address_vec(&*return_data).map(|addrs| (gas_left, addrs))
+        tx_data.extend(H256::from(chain_id).to_vec());
+
+        match data_provider.call(OpCode::CALL, params) {
+            Ok(InterpreterResult::Normal(output, gas_left, _logs)) => {
+                trace!("chainManagement ext_authorities() return [{:?}]", output);
+                decode_tools::to_address_vec(&output).map(|addrs| (U256::from(gas_left), addrs))
             }
-            MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
+            _ => None,
         }
     }
 }
