@@ -12,6 +12,7 @@ use std::sync::Arc;
 use util::Bytes;
 
 use crate::authentication::{check_permission, AuthenticationError};
+use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::core_types::{Bloom, BloomInput, Hash, LogEntry, Receipt, TypesError};
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
@@ -33,23 +34,26 @@ const AMEND_KV_H256: u32 = 3;
 const AMEND_ACCOUNT_BALANCE: u32 = 5;
 
 // FIXME: CITAExecutive need rename to Executive after all works ready.
-pub struct CitaExecutive<B> {
+pub struct CitaExecutive<'a, B> {
     block_provider: Arc<BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
+    native_factory: &'a NativeFactory,
     env_info: EnvInfo,
     economical_model: EconomicalModel,
 }
 
-impl<B: DB + 'static> CitaExecutive<B> {
+impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
     pub fn new(
         block_provider: Arc<BlockDataProvider>,
         state_provider: State<B>,
+        native_factory: &'a NativeFactory,
         env_info: EnvInfo,
         economical_model: EconomicalModel,
     ) -> Self {
         Self {
             block_provider,
             state_provider: Arc::new(RefCell::new(state_provider)),
+            native_factory,
             env_info,
             economical_model,
         }
@@ -154,11 +158,7 @@ impl<B: DB + 'static> CitaExecutive<B> {
                     data: t.data.clone(),
                 };
 
-                self.create(
-                    self.block_provider.clone(),
-                    self.state_provider.clone(),
-                    &params,
-                )
+                self.call_evm(&params)
             }
 
             Action::AmendData => {
@@ -168,7 +168,19 @@ impl<B: DB + 'static> CitaExecutive<B> {
                     Err(e) => Err(e),
                 }
             }
-            Action::Call(ref _address) => unimplemented!(),
+            Action::Call(ref address) => {
+                let params = VmExecParams {
+                    code_address: Some(*address),
+                    sender,
+                    to_address: Some(*address),
+                    gas: init_gas,
+                    gas_price: t.gas_price(),
+                    value: t.value,
+                    nonce,
+                    data: t.data.clone(),
+                };
+                self.call(&params)
+            }
         };
 
         result
@@ -300,18 +312,13 @@ impl<B: DB + 'static> CitaExecutive<B> {
         }
     }
 
-    fn create(
-        &mut self,
-        block_provider: Arc<BlockDataProvider>,
-        state_provider: Arc<RefCell<State<B>>>,
-        params: &VmExecParams,
-    ) -> Result<Receipt, ExecutionError> {
+    fn call_evm(&mut self, params: &VmExecParams) -> Result<Receipt, ExecutionError> {
         let evm_transaction = build_evm_transaction(params);
         let evm_config = build_evm_config(self.env_info.gas_limit.clone().as_u64());
         let evm_context = build_evm_context(&self.env_info);
         let receipt = match cita_vm::exec(
-            block_provider,
-            state_provider,
+            self.block_provider.clone(),
+            self.state_provider.clone(),
             evm_context,
             evm_config,
             evm_transaction,
@@ -320,6 +327,32 @@ impl<B: DB + 'static> CitaExecutive<B> {
             Err(e) => build_receipt_with_err(e),
         };
         Ok(receipt)
+    }
+
+    fn call(&mut self, params: &VmExecParams) -> Result<Receipt, ExecutionError> {
+        // Backup used in case of running out of gas
+        self.state_provider.borrow_mut().checkpoint();
+
+        // At first, transfer value to destination.
+        // TODO: Keep it for compatibility. Remove it later.
+        if self.payment_required() {
+            self.state_provider.borrow_mut().transfer_balance(
+                &params.sender,
+                &params.to_address.unwrap(),
+                params.value,
+            )?
+        }
+
+        // Check and call Native Contract.
+        if let Some(_native_contract) = self
+            .native_factory
+            .new_contract(params.code_address.unwrap())
+        {
+            unimplemented!()
+        } else {
+            // Call EVM contract
+            self.call_evm(params)
+        }
     }
 }
 
