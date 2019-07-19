@@ -33,7 +33,7 @@ pub trait Contract: Sync + Send + ContractClone {
     fn exec(
         &mut self,
         params: &VmExecParams,
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError>;
 
     fn create(&self) -> Box<Contract>;
@@ -73,8 +73,7 @@ impl Default for Factory {
                 Box::new(CrossChainVerify::default()),
             );
         }
-        // Fix: uncommented cfg
-        // #[cfg(test)]
+        #[cfg(test)]
         {
             use super::simple_storage::SimpleStorage;
             factory.register(

@@ -28,19 +28,19 @@ impl Contract for SimpleStorage {
     fn exec(
         &mut self,
         params: &VmExecParams,
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         if let Some(ref data) = params.data {
             method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
-                0 => self.init(params, ext),
-                0xaa91543e => self.uint_set(params, ext),
-                0x832b4580 => self.uint_get(params, ext),
-                0xc9615770 => self.string_set(params, ext),
-                0xe3135d14 => self.string_get(params, ext),
-                0x118b229c => self.array_set(params, ext),
-                0x180a4bbf => self.array_get(params, ext),
-                0xaaf27175 => self.map_set(params, ext),
-                0xc567dff6 => self.map_get(params, ext),
+                0 => self.init(params, data_provider),
+                0xaa91543e => self.uint_set(params, data_provider),
+                0x832b4580 => self.uint_get(params, data_provider),
+                0xc9615770 => self.string_set(params, data_provider),
+                0xe3135d14 => self.string_get(params, data_provider),
+                0x118b229c => self.array_set(params, data_provider),
+                0x180a4bbf => self.array_get(params, data_provider),
+                0xaaf27175 => self.map_set(params, data_provider),
+                0xc567dff6 => self.map_get(params, data_provider),
                 _ => Err(NativeError::OutOfGas),
             })
         } else {
@@ -77,7 +77,7 @@ impl SimpleStorage {
     fn uint_set(
         &mut self,
         params: &VmExecParams,
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let value = U256::from(
             params
@@ -88,18 +88,18 @@ impl SimpleStorage {
                 .expect("no enough data"),
         );
         self.uint_value
-            .set(ext, &params.code_address.unwrap(), value)?;
+            .set(data_provider, &params.code_address.unwrap(), value)?;
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
     fn uint_get(
         &mut self,
         params: &VmExecParams,
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         self.output.resize(32, 0);
         self.uint_value
-            .get(ext, &params.code_address.unwrap())?
+            .get(data_provider, &params.code_address.unwrap())?
             .to_big_endian(self.output.as_mut_slice());
         Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
@@ -108,7 +108,7 @@ impl SimpleStorage {
     fn string_set(
         &mut self,
         params: &VmExecParams,
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let index = U256::from(data.get(4..36).expect("no enough data")).low_u64() as usize + 4;
@@ -121,19 +121,19 @@ impl SimpleStorage {
         .unwrap();
 
         self.string_value
-            .set_bytes(ext, &params.code_address.unwrap(), &value)?;
+            .set_bytes(data_provider, &params.code_address.unwrap(), &value)?;
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
     fn string_get(
         &mut self,
         params: &VmExecParams,
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         self.output.resize(0, 0);
         let str = self
             .string_value
-            .get_bytes::<String>(ext, &params.code_address.unwrap())?;
+            .get_bytes::<String>(data_provider, &params.code_address.unwrap())?;
         for i in U256::from(32).0.iter().rev() {
             serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
                 .expect("failed to serialize u64");
@@ -157,7 +157,7 @@ impl SimpleStorage {
     fn array_set(
         &mut self,
         params: &VmExecParams,
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let mut pilot = 4;
@@ -165,20 +165,20 @@ impl SimpleStorage {
         pilot += 32;
         let value = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
         self.array_value
-            .set(ext, &params.code_address.unwrap(), index, &value)?;
+            .set(data_provider, &params.code_address.unwrap(), index, &value)?;
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
     fn array_get(
         &mut self,
         params: &VmExecParams,
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let index = U256::from(data.get(4..4 + 32).expect("no enough data")).low_u64();
         for i in self
             .array_value
-            .get(ext, &params.code_address.unwrap(), index)?
+            .get(data_provider, &params.code_address.unwrap(), index)?
             .0
             .iter()
             .rev()
@@ -193,7 +193,7 @@ impl SimpleStorage {
     fn map_set(
         &mut self,
         params: &VmExecParams,
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let mut pilot = 4;
@@ -201,20 +201,20 @@ impl SimpleStorage {
         pilot += 32;
         let value = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
         self.map_value
-            .set(ext, &params.code_address.unwrap(), &key, value)?;
+            .set(data_provider, &params.code_address.unwrap(), &key, value)?;
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
     fn map_get(
         &mut self,
         params: &VmExecParams,
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let key = U256::from(data.get(4..4 + 32).expect("no enough data"));
         for i in self
             .map_value
-            .get(ext, &params.code_address.unwrap(), &key)?
+            .get(data_provider, &params.code_address.unwrap(), &key)?
             .0
             .iter()
             .rev()
@@ -236,7 +236,7 @@ fn test_native_contract() {
     use std::str::FromStr;
 
     let factory = Factory::default();
-    let mut ext = FakeExt::new();
+    let mut data_provider = FakeExt::new();
     let native_addr = Address::from_str(reserved_addresses::NATIVE_SIMPLE_STORAGE).unwrap();
     let value = U256::from(0x1234);
     {
@@ -251,7 +251,7 @@ fn test_native_contract() {
         }
         params.data = Some(input);
         let mut contract = factory.new_contract(native_addr).unwrap();
-        let output = contract.exec(&params, &mut ext).unwrap();
+        let output = contract.exec(&params, &mut data_provider).unwrap();
     }
     {
         let mut input = Vec::new();
@@ -262,7 +262,7 @@ fn test_native_contract() {
         params.data = Some(input);
 
         let mut contract = factory.new_contract(native_addr).unwrap();
-        match contract.exec(&params, &mut ext) {
+        match contract.exec(&params, &mut data_provider) {
             Ok(GasLeft::NeedsReturn {
                 gas_left: _,
                 data: return_data,
