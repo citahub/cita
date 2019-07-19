@@ -39,7 +39,7 @@ pub struct ChainManagement;
 
 impl ChainManagement {
     pub fn ext_chain_id(
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
         gas: &U256,
         sender: &Address,
     ) -> Option<(U256, U256)> {
@@ -50,7 +50,7 @@ impl ChainManagement {
         params.gas_limit = gas.low_u64();
         params.input = CHAIN_ID_ENCODED.to_vec();
 
-        match ext.call(OpCode::CALL, params) {
+        match data_provider.call(OpCode::CALL, params) {
             Ok(InterpreterResult::Normal(output, gas_left, _)) => {
                 decode_tools::to_u256(&output).map(|x| (U256::from(gas_left), x))
             }
@@ -59,7 +59,7 @@ impl ChainManagement {
     }
 
     pub fn ext_authorities(
-        ext: &mut DataProvider,
+        data_provider: &mut DataProvider,
         gas: &U256,
         sender: &Address,
         chain_id: U256,
@@ -72,7 +72,7 @@ impl ChainManagement {
         let mut tx_data = AUTHORITIES_ENCODED.to_vec();
         tx_data.extend(H256::from(chain_id).to_vec());
 
-        match ext.call(OpCode::CALL, params) {
+        match data_provider.call(OpCode::CALL, params) {
             Ok(InterpreterResult::Normal(output, gas_left, _logs)) => {
                 trace!("chainManagement ext_authorities() return [{:?}]", output);
                 decode_tools::to_address_vec(&output).map(|addrs| (U256::from(gas_left), addrs))
