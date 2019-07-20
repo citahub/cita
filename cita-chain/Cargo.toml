@@ -21,7 +21,7 @@ jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = 
 core = { path = "./core" }
 common-types = { path = "./types" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita_db = { git = "https://github.com/cryptape/cita-database.git", branch = "parity-rocksdb", package = "cita-database" }
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -31,9 +31,9 @@ default = ["secp256k1", "sha3hash", "rabbitmq"]
 secp256k1 = ["libproto/secp256k1", "proof/secp256k1"]
 ed25519 = ["libproto/ed25519", "proof/ed25519"]
 sm2 = ["libproto/sm2", "proof/sm2"]
-sha3hash = ["libproto/sha3hash", "db/sha3hash", "proof/sha3hash"]
-blake2bhash = ["libproto/blake2bhash", "db/blake2bhash", "proof/blake2bhash"]
-sm3hash = ["libproto/sm3hash", "db/sm3hash", "proof/sm3hash"]
+sha3hash = ["libproto/sha3hash", "proof/sha3hash"]
+blake2bhash = ["libproto/blake2bhash", "proof/blake2bhash"]
+sm3hash = ["libproto/sm3hash", "proof/sm3hash"]
 rabbitmq = ["pubsub/rabbitmq"]
 zeromq = ["pubsub/zeromq"]
 kafka = ["pubsub/kafka"]
