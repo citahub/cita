@@ -111,7 +111,6 @@ use util::set_panic_handler;
 
 mod backlogs;
 mod postman;
-mod snapshot;
 #[cfg(test)]
 mod tests;
 

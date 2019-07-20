@@ -23,7 +23,6 @@ use cita_types::{H256, U256};
 use crate::cita_db::TrieError;
 pub use crate::executed::{CallError, ExecutionError};
 use crate::header::BlockNumber;
-use crate::snapshot::Error as SnapshotError;
 use snappy;
 use std::fmt;
 use util::*;
@@ -247,8 +246,6 @@ pub enum Error {
     Snappy(snappy::SnappyError),
     /// Ethkey error.
     Ethkey(EthkeyError),
-    /// Snapshot error
-    Snapshot(SnapshotError),
 }
 
 impl fmt::Display for Error {
@@ -268,7 +265,6 @@ impl fmt::Display for Error {
             Error::StdIo(ref err) => err.fmt(f),
             Error::Snappy(ref err) => err.fmt(f),
             Error::Ethkey(ref err) => err.fmt(f),
-            Error::Snapshot(ref err) => err.fmt(f),
         }
     }
 }
@@ -333,15 +329,5 @@ impl From<snappy::SnappyError> for Error {
 impl From<EthkeyError> for Error {
     fn from(err: EthkeyError) -> Error {
         Error::Ethkey(err)
-    }
-}
-
-impl From<SnapshotError> for Error {
-    fn from(err: SnapshotError) -> Error {
-        match err {
-            SnapshotError::Trie(err) => err.into(),
-            SnapshotError::Decoder(err) => err.into(),
-            other => Error::Snapshot(other),
-        }
     }
 }
