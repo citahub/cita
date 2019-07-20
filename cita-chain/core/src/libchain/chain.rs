@@ -20,8 +20,7 @@ use crate::bloomchain::group::{
     BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition as BloomGroupPosition,
 };
 use crate::bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
-use crate::db;
-use crate::db::*;
+use crate::cita_db::RocksDB;
 pub use byteorder::{BigEndian, ByteOrder};
 
 use crate::filters::{PollFilter, PollManager};
@@ -35,7 +34,6 @@ use libproto::blockchain::{
     RichStatus as ProtoRichStatus, StateSignal,
 };
 
-use crate::cita_db::kvdb::*;
 use crate::header::Header;
 use crate::receipt::{LocalizedReceipt, Receipt};
 use crate::types::cache_manager::CacheManager;
@@ -255,16 +253,8 @@ impl Config {
 }
 
 impl BloomGroupDatabase for Chain {
-    fn blooms_at(&self, position: &BloomGroupPosition) -> Option<BloomGroup> {
-        let position = LogGroupPosition::from(position.clone());
-        let result = self
-            .db
-            .read_with_cache(db::COL_EXTRA, &self.blocks_blooms, &position)
-            .map(Into::into);
-        self.cache_man
-            .lock()
-            .note_used(CacheId::BlocksBlooms(position));
-        result
+    fn blooms_at(&self, _position: &BloomGroupPosition) -> Option<BloomGroup> {
+        unimplemented!()
     }
 }
 
@@ -284,7 +274,7 @@ pub struct Chain {
     pub max_store_height: AtomicUsize,
     pub block_map: RwLock<BTreeMap<u64, BlockInQueue>>,
     pub proof_map: RwLock<BTreeMap<u64, ProtoProof>>,
-    pub db: Arc<KeyValueDB>,
+    pub db: Arc<RocksDB>,
 
     // block cache
     pub block_headers: RwLock<HashMap<BlockNumber, Header>>,
@@ -318,27 +308,12 @@ pub struct Chain {
 }
 
 /// Get latest status
-pub fn get_chain(db: &KeyValueDB) -> Option<Header> {
-    // CANNOT replace CurrentHash & hash with CurrentHeight to get current_height,
-    // because CurrentHeight is set after BlockBody is stored, and CurrentHash is set after BlockHeader is stored.
-    let h: Option<H256> = db.read(db::COL_EXTRA, &CurrentHash);
-    if let Some(hash) = h {
-        let hi: Option<BlockNumber> = db.read(db::COL_EXTRA, &hash);
-        if let Some(h) = hi {
-            trace!("get_chain hash {:?}  bn{:?}  CurrentHash", hash, h);
-            db.read(db::COL_HEADERS, &h)
-        } else {
-            warn!("not expected get_chain_current_head height");
-            None
-        }
-    } else {
-        warn!("not expected get_chain_current_head hash.");
-        None
-    }
+pub fn get_chain(_db: &RocksDB) -> Option<Header> {
+    unimplemented!()
 }
 
-pub fn get_chain_body_height(db: &KeyValueDB) -> Option<BlockNumber> {
-    db.read(db::COL_EXTRA, &CurrentHeight)
+pub fn get_chain_body_height(_db: &RocksDB) -> Option<BlockNumber> {
+    unimplemented!()
 }
 
 pub fn contract_address(address: &Address, nonce: &U256) -> Address {
@@ -351,7 +326,7 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
 }
 
 impl Chain {
-    pub fn init_chain(db: Arc<KeyValueDB>, chain_config: &Config) -> Chain {
+    pub fn init_chain(db: Arc<RocksDB>, chain_config: &Config) -> Chain {
         info!("chain config: {:?}", chain_config);
 
         // 400 is the avarage size of the key
@@ -446,12 +421,8 @@ impl Chain {
         *guard = new_map;
     }
 
-    pub fn block_height_by_hash(&self, hash: H256) -> Option<BlockNumber> {
-        let result = self
-            .db
-            .read_with_cache(db::COL_EXTRA, &self.block_hashes, &hash);
-        self.cache_man.lock().note_used(CacheId::BlockHashes(hash));
-        result
+    pub fn block_height_by_hash(&self, _hash: H256) -> Option<BlockNumber> {
+        unimplemented!()
     }
 
     fn set_config(&self, ret: &ExecutedResult) {
@@ -489,126 +460,8 @@ impl Chain {
         *self.version.write() = Some(version);
     }
 
-    pub fn set_db_result(&self, ret: &ExecutedResult, block: &OpenBlock) {
-        let info = ret.get_executed_info();
-        let number = info.get_header().get_height();
-        let log_bloom = LogBloom::from(info.get_header().get_log_bloom());
-        let hdr = Header::from_executed_info(ret.get_executed_info(), &block.header);
-
-        let hash = hdr.hash().unwrap();
-        trace!(
-            "commit block in db hash {:?}, height {:?}, version {}",
-            hash,
-            number,
-            block.version()
-        );
-        let block_transaction_addresses = block.body().transaction_addresses(hash);
-        let blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup> = if log_bloom.is_zero() {
-            HashMap::new()
-        } else {
-            let bgroup = BloomGroupChain::new(self.blooms_config, self);
-            bgroup
-                .insert(
-                    number as BloomChainNumber,
-                    Bloom::from(Into::<[u8; 256]>::into(log_bloom)),
-                )
-                .into_iter()
-                .map(|p| (From::from(p.0), From::from(p.1)))
-                .collect()
-        };
-
-        let mut batch = DBTransaction::new();
-        if !info.get_receipts().is_empty() {
-            let receipts: Vec<Receipt> = info
-                .get_receipts()
-                .iter()
-                .map(|receipt_with_option| Receipt::from(receipt_with_option.get_receipt().clone()))
-                .collect();
-
-            let block_receipts = BlockReceipts::new(receipts.clone());
-            let mut write_receipts = self.block_receipts.write();
-            batch.write_with_cache(
-                db::COL_EXTRA,
-                &mut *write_receipts,
-                hash,
-                block_receipts,
-                CacheUpdatePolicy::Overwrite,
-            );
-            self.cache_man
-                .lock()
-                .note_used(CacheId::BlockReceipts(hash));
-        }
-        if !block_transaction_addresses.is_empty() {
-            let mut write_txs = self.transaction_addresses.write();
-            batch.extend_with_cache(
-                db::COL_EXTRA,
-                &mut *write_txs,
-                block_transaction_addresses,
-                CacheUpdatePolicy::Overwrite,
-            );
-            for key in block.body.transaction_hashes() {
-                self.cache_man
-                    .lock()
-                    .note_used(CacheId::TransactionAddresses(key));
-            }
-        }
-
-        let mut write_headers = self.block_headers.write();
-        let mut write_bodies = self.block_bodies.write();
-        let mut write_blooms = self.blocks_blooms.write();
-        let mut write_hashes = self.block_hashes.write();
-
-        batch.write_with_cache(
-            db::COL_HEADERS,
-            &mut *write_headers,
-            number as BlockNumber,
-            hdr.clone(),
-            CacheUpdatePolicy::Overwrite,
-        );
-        let mheight = self.get_max_store_height();
-        if mheight < number || (number == 0 && mheight == 0) {
-            batch.write_with_cache(
-                db::COL_BODIES,
-                &mut *write_bodies,
-                number,
-                block.body().clone(),
-                CacheUpdatePolicy::Overwrite,
-            );
-        }
-        batch.write_with_cache(
-            db::COL_EXTRA,
-            &mut *write_hashes,
-            hash,
-            number as BlockNumber,
-            CacheUpdatePolicy::Overwrite,
-        );
-        batch.extend_with_cache(
-            db::COL_EXTRA,
-            &mut *write_blooms,
-            blocks_blooms.clone(),
-            CacheUpdatePolicy::Overwrite,
-        );
-
-        //note used
-        self.cache_man.lock().note_used(CacheId::BlockHashes(hash));
-        self.cache_man
-            .lock()
-            .note_used(CacheId::BlockHeaders(number as BlockNumber));
-        self.cache_man
-            .lock()
-            .note_used(CacheId::BlockBodies(number as BlockNumber));
-
-        for (key, _) in blocks_blooms {
-            self.cache_man.lock().note_used(CacheId::BlocksBlooms(key));
-        }
-
-        batch.write(db::COL_EXTRA, &CurrentHash, &hash);
-        self.db.write(batch).expect("DB write failed.");
-        {
-            *self.current_header.write() = hdr;
-        }
-        self.current_height.store(number as usize, Ordering::SeqCst);
-        self.clean_proof_with_height(number);
+    pub fn set_db_result(&self, _ret: &ExecutedResult, _block: &OpenBlock) {
+        unimplemented!()
     }
 
     pub fn broadcast_current_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
@@ -762,18 +615,8 @@ impl Chain {
             .and_then(|h| self.block_header_by_height(h))
     }
 
-    fn block_header_by_height(&self, idx: BlockNumber) -> Option<Header> {
-        {
-            let header = self.current_header.read();
-            if header.number() == idx {
-                return Some(header.clone());
-            }
-        }
-        let result = self
-            .db
-            .read_with_cache(db::COL_HEADERS, &self.block_headers, &idx);
-        self.cache_man.lock().note_used(CacheId::BlockHeaders(idx));
-        result
+    fn block_header_by_height(&self, _idx: BlockNumber) -> Option<Header> {
+        unimplemented!()
     }
 
     /// Get block body by BlockId
@@ -799,14 +642,8 @@ impl Chain {
     }
 
     /// Get block body by height
-    fn block_body_by_height(&self, number: BlockNumber) -> Option<BlockBody> {
-        let result = self
-            .db
-            .read_with_cache(db::COL_BODIES, &self.block_bodies, &number);
-        self.cache_man
-            .lock()
-            .note_used(CacheId::BlockBodies(number));
-        result
+    fn block_body_by_height(&self, _number: BlockNumber) -> Option<BlockBody> {
+        unimplemented!()
     }
 
     /// Get block tx hashes
@@ -825,14 +662,8 @@ impl Chain {
     }
 
     /// Get address of transaction by hash.
-    fn transaction_address(&self, hash: TransactionId) -> Option<TransactionAddress> {
-        let result = self
-            .db
-            .read_with_cache(db::COL_EXTRA, &self.transaction_addresses, &hash);
-        self.cache_man
-            .lock()
-            .note_used(CacheId::TransactionAddresses(hash));
-        result
+    fn transaction_address(&self, _hash: TransactionId) -> Option<TransactionAddress> {
+        unimplemented!()
     }
 
     /// Get transaction by address
@@ -1070,15 +901,11 @@ impl Chain {
 
     #[inline]
     pub fn current_block_poof(&self) -> Option<ProtoProof> {
-        self.db.read(db::COL_EXTRA, &CurrentProof)
+        unimplemented!()
     }
 
-    pub fn save_current_block_poof(&self, proof: &ProtoProof) {
-        let mut batch = DBTransaction::new();
-        batch.write(db::COL_EXTRA, &CurrentProof, proof);
-        self.db
-            .write(batch)
-            .expect("save_current_block_poof DB write failed.");
+    pub fn save_current_block_poof(&self, _proof: &ProtoProof) {
+        unimplemented!()
     }
 
     pub fn get_chain_prooftype(&self) -> Option<ProofType> {
@@ -1295,14 +1122,8 @@ impl Chain {
     }
 
     /// Get receipts of block with given hash.
-    pub fn block_receipts(&self, hash: H256) -> Option<BlockReceipts> {
-        let result = self
-            .db
-            .read_with_cache(db::COL_EXTRA, &self.block_receipts, &hash);
-        self.cache_man
-            .lock()
-            .note_used(CacheId::BlockReceipts(hash));
-        result
+    pub fn block_receipts(&self, _hash: H256) -> Option<BlockReceipts> {
+        unimplemented!()
     }
 
     /// Get transaction receipt.
@@ -1389,23 +1210,8 @@ impl Chain {
             .unwrap();
     }
 
-    pub fn set_block_body(&self, height: BlockNumber, block: &OpenBlock) {
-        let mut batch = DBTransaction::new();
-        {
-            let mut write_bodies = self.block_bodies.write();
-            batch.write_with_cache(
-                db::COL_BODIES,
-                &mut *write_bodies,
-                height,
-                block.body().clone(),
-                CacheUpdatePolicy::Overwrite,
-            );
-            self.cache_man
-                .lock()
-                .note_used(CacheId::BlockBodies(height as BlockNumber));
-        }
-        batch.write(db::COL_EXTRA, &CurrentHeight, &height);
-        let _ = self.db.write(batch);
+    pub fn set_block_body(&self, _height: BlockNumber, _block: &OpenBlock) {
+        unimplemented!()
     }
 
     pub fn compare_status(&self, st: &Status) -> (u64, u64) {
