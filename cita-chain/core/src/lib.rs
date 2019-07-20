@@ -57,6 +57,5 @@ pub mod env_info;
 pub mod error;
 pub mod filters;
 pub mod libchain;
-pub mod snapshot;
 pub use crate::cita_db::journaldb;
 pub use crate::types::*;
