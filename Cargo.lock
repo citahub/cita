@@ -551,6 +551,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cita-database"
+version = "0.1.0"
+source = "git+https://github.com/cryptape/cita-database.git?branch=parity-rocksdb#f37e873ffef934a6e905e4335eac67f8289eb028"
+dependencies = [
+ "cita-logger 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-rocksdb 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "cita-directories"
 version = "0.1.0"
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#f5935c4198eaf82399f93eb57033bcf2fdcdbbe0"
@@ -579,6 +588,7 @@ version = "0.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "cita-database 0.1.0 (git+https://github.com/cryptape/cita-database.git?branch=parity-rocksdb)",
  "cita-directories 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-logger 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -587,7 +597,6 @@ dependencies = [
  "common-types 0.1.0",
  "core-executor 0.1.0",
  "crossbeam-channel 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "db 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "dotenv 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "error 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "evm 0.1.0",
@@ -4436,6 +4445,7 @@ dependencies = [
 "checksum chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "45912881121cb26fad7c38c17ba7daa18764771836b34fab7d3fbd93ed633878"
 "checksum cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
 "checksum cita-crypto-trait 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
+"checksum cita-database 0.1.0 (git+https://github.com/cryptape/cita-database.git?branch=parity-rocksdb)" = "<none>"
 "checksum cita-directories 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
 "checksum cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
 "checksum cita-logger 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5c0fccf6b33be6ab71808f2b5bb36206acef2eee9f5d0d29f87b81327242b521"
