@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::core::libexecutor::block::{ClosedBlock, OpenBlock};
-use crate::cita_db::Itertools;
 use cita_types::Address;
 use libproto::{ExecutedResult, Proof};
 use std::cmp::min;
@@ -388,7 +387,7 @@ impl Backlogs {
     }
 
     pub fn completed_keys(&self) -> ::std::vec::Vec<&u64> {
-        self.completed.keys().sorted()
+        unimplemented!()
     }
 
     pub fn prune(&mut self, height: u64) {
