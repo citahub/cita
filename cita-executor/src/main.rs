@@ -87,7 +87,7 @@ extern crate common_types as types;
 extern crate core_executor as core;
 #[macro_use]
 extern crate crossbeam_channel;
-extern crate db as cita_db;
+extern crate cita_database as cita_db;
 #[cfg(test)]
 extern crate hashable;
 #[macro_use]

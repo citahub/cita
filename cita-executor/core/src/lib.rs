@@ -65,6 +65,7 @@ extern crate zktx;
 
 #[macro_use]
 extern crate enum_primitive;
+extern crate cita_database;
 extern crate ethcore_bloom_journal;
 extern crate largest_remainder_method;
 extern crate num;
@@ -98,6 +99,7 @@ pub mod substate;
 pub mod authentication;
 pub mod contracts;
 pub mod libexecutor;
+pub mod trie_db;
 
 mod spec;
 
@@ -105,3 +107,4 @@ pub use crate::cita_db::journaldb;
 pub use crate::factory::*;
 pub use crate::types::*;
 pub use evm::Error;
+pub use trie_db::TrieDB;
