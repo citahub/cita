@@ -210,7 +210,7 @@ impl Commander for Executor {
     /// Generate block's final state.
     fn gen_state(&self, root: H256, parent_hash: H256) -> Option<State<StateDB>> {
         let db = self.state_db.read().boxed_clone_canon(&parent_hash);
-        State::from_existing(db, root, U256::from(0), self.factories.clone()).ok()
+        State::from_existing(db, root, self.factories.clone()).ok()
     }
 
     /// Get code by address
