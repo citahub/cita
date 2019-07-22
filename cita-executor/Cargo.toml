@@ -25,6 +25,7 @@ common-types = { path = "../cita-chain/types" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 evm = { path = "evm" }
 cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "parity-rocksdb" }
+itertools = "0.5"
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

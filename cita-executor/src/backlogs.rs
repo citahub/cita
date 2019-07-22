@@ -20,6 +20,7 @@ use cita_types::Address;
 use libproto::{ExecutedResult, Proof};
 use std::cmp::min;
 use std::collections::BTreeMap;
+use itertools::Itertools;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Priority {
@@ -387,7 +388,7 @@ impl Backlogs {
     }
 
     pub fn completed_keys(&self) -> ::std::vec::Vec<&u64> {
-        unimplemented!()
+        self.completed.keys().sorted()
     }
 
     pub fn prune(&mut self, height: u64) {
