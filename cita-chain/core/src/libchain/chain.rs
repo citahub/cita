@@ -1,54 +1,25 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 use crate::basic_types::{LogBloom, LogBloomGroup};
 use crate::bloomchain::group::{
     BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition as BloomGroupPosition,
 };
 use crate::bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
 use crate::cita_db::RocksDB;
-pub use byteorder::{BigEndian, ByteOrder};
-
 use crate::filters::{PollFilter, PollManager};
-use crate::header::*;
-use crate::libchain::cache::CacheSize;
-use crate::libchain::status::Status;
-pub use crate::types::block::*;
-use crate::types::extras::*;
+use crate::header::{BlockNumber, Header};
+use crate::libchain::{cache::CacheSize, status::Status};
+use crate::receipt::{LocalizedReceipt, Receipt};
+use cita_merklehash;
+use hashable::Hashable;
+
 use libproto::blockchain::{
     AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
     RichStatus as ProtoRichStatus, StateSignal,
 };
 
-use crate::header::Header;
-use crate::receipt::{LocalizedReceipt, Receipt};
-use crate::types::cache_manager::CacheManager;
-use crate::types::filter::Filter;
-use crate::types::ids::{BlockId, TransactionId};
-use crate::types::log_entry::{LocalizedLogEntry, LogEntry};
-use crate::types::transaction::{Action, SignedTransaction};
-use cita_merklehash;
-use cita_types::traits::LowerHex;
-use cita_types::{Address, H256, U256};
-use hashable::Hashable;
-use libproto::executor::ExecutedResult;
-use libproto::router::{MsgType, RoutingKey, SubModules};
-use libproto::TryInto;
-use libproto::{BlockTxHashes, FullTransaction, Message};
+use libproto::{
+    executor::ExecutedResult, router::MsgType, router::RoutingKey, router::SubModules,
+    BlockTxHashes, FullTransaction, Message, TryInto,
+};
 use proof::BftProof;
 use pubsub::channel::Sender;
 use rlp::{self, Encodable};
@@ -56,8 +27,17 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::Into;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
-use util::HeapSizeOf;
-use util::{Mutex, RwLock};
+use util::{HeapSizeOf, Mutex, RwLock};
+
+use crate::types::block::{Block, BlockBody, OpenBlock};
+use crate::types::extras::{BlockReceipts, LogGroupPosition, TransactionAddress};
+use crate::types::{
+    cache_manager::CacheManager, filter::Filter, ids::BlockId, ids::TransactionId,
+    log_entry::LocalizedLogEntry, log_entry::LogEntry, transaction::Action,
+    transaction::SignedTransaction,
+};
+use cita_types::traits::LowerHex;
+use cita_types::{Address, H256, U256};
 
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
