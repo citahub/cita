@@ -88,7 +88,7 @@ impl ExecutedBlock {
         last_hashes: Arc<LastHashes>,
         eth_compatibility: bool,
     ) -> Result<Self, Error> {
-        let state = State::from_existing(db, state_root, U256::default(), factories)?;
+        let state = State::from_existing(db, state_root, factories)?;
 
         let r = ExecutedBlock {
             block,

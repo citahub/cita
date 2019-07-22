@@ -112,7 +112,6 @@ impl Genesis {
         let mut state = State::from_existing(
             state_db.boxed_clone_canon(&self.spec.prevhash),
             *self.block.state_root(),
-            U256::from(0),
             factories.clone(),
         )
         .expect("state db error");

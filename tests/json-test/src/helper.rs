@@ -57,7 +57,7 @@ pub fn secret_2_address(secret: &str) -> Address {
 
 pub fn get_temp_state() -> State<StateDB> {
     let state_db = get_temp_state_db();
-    State::new(state_db, 0.into(), Default::default())
+    State::new(state_db, Default::default())
 }
 
 pub fn new_db() -> Arc<KeyValueDB> {

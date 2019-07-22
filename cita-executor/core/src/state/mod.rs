@@ -153,7 +153,6 @@ pub struct State<B: Backend> {
     cache: RefCell<HashMap<Address, AccountEntry>>,
     // The original account is preserved in
     checkpoints: RefCell<Vec<HashMap<Address, Option<AccountEntry>>>>,
-    account_start_nonce: U256,
     factories: Factories,
 }
 
@@ -173,7 +172,7 @@ const SEC_TRIE_DB_UNWRAP_STR: &str =
 
 impl<B: Backend> State<B> {
     /// Creates new state with empty state root
-    pub fn new(mut db: B, account_start_nonce: U256, factories: Factories) -> State<B> {
+    pub fn new(mut db: B, factories: Factories) -> State<B> {
         let mut root = H256::new();
         {
             // init trie and reset root to null
@@ -185,7 +184,6 @@ impl<B: Backend> State<B> {
             root,
             cache: RefCell::new(HashMap::new()),
             checkpoints: RefCell::new(Vec::new()),
-            account_start_nonce,
             factories,
         }
     }
@@ -195,12 +193,7 @@ impl<B: Backend> State<B> {
     }
 
     /// Creates new state with existing state root
-    pub fn from_existing(
-        db: B,
-        root: H256,
-        account_start_nonce: U256,
-        factories: Factories,
-    ) -> Result<State<B>, TrieError> {
+    pub fn from_existing(db: B, root: H256, factories: Factories) -> Result<State<B>, TrieError> {
         if !db.as_hashdb().contains(&root) {
             return Err(TrieError::InvalidStateRoot(root));
         }
@@ -210,7 +203,6 @@ impl<B: Backend> State<B> {
             root,
             cache: RefCell::new(HashMap::new()),
             checkpoints: RefCell::new(Vec::new()),
-            account_start_nonce,
             factories,
         };
 
@@ -311,13 +303,10 @@ impl<B: Backend> State<B> {
 
     /// Create a new contract at address `contract`. If there is already an account at the address
     /// it will have its code reset, ready for `init_code()`.
-    pub fn new_contract(&mut self, contract: &Address, balance: U256, nonce_offset: U256) {
+    pub fn new_contract(&mut self, contract: &Address, balance: U256, nonce: U256) {
         self.insert_cache(
             contract,
-            AccountEntry::new_dirty(Some(Account::new_contract(
-                balance,
-                self.account_start_nonce + nonce_offset,
-            ))),
+            AccountEntry::new_dirty(Some(Account::new_contract(balance, nonce))),
         );
     }
 
@@ -344,7 +333,7 @@ impl<B: Backend> State<B> {
     pub fn exists_and_has_code_or_nonce(&self, a: &Address) -> trie::Result<bool> {
         self.ensure_cached(a, RequireCache::CodeSize, false, |a| {
             a.map_or(false, |a| {
-                a.code_hash() != HASH_EMPTY || *a.nonce() != self.account_start_nonce
+                a.code_hash() != HASH_EMPTY || *a.nonce() != U256::zero()
             })
         })
     }
@@ -367,8 +356,7 @@ impl<B: Backend> State<B> {
     /// Get the nonce of account `a`.
     pub fn nonce(&self, a: &Address) -> trie::Result<U256> {
         self.ensure_cached(a, RequireCache::None, true, |a| {
-            a.as_ref()
-                .map_or(self.account_start_nonce, |account| *account.nonce())
+            a.as_ref().map_or(U256::zero(), |account| *account.nonce())
         })
     }
 
@@ -593,7 +581,7 @@ impl<B: Backend> State<B> {
             a,
             true,
             false,
-            || Account::new_contract(0.into(), self.account_start_nonce),
+            || Account::new_contract(0.into(), 0.into()),
             |_| {},
         )?
         .init_code(code);
@@ -606,7 +594,7 @@ impl<B: Backend> State<B> {
             a,
             true,
             false,
-            || Account::new_contract(0.into(), self.account_start_nonce),
+            || Account::new_contract(0.into(), 0.into()),
             |_| {},
         )?
         .reset_code(code);
@@ -620,7 +608,7 @@ impl<B: Backend> State<B> {
             a,
             false,
             true,
-            || Account::new_contract(0.into(), self.account_start_nonce),
+            || Account::new_contract(0.into(), 0.into()),
             |_| {},
         )?
         .init_abi(abi);
@@ -633,7 +621,7 @@ impl<B: Backend> State<B> {
             a,
             false,
             true,
-            || Account::new_contract(0.into(), self.account_start_nonce),
+            || Account::new_contract(0.into(), 0.into()),
             |_| {},
         )?
         .reset_abi(abi);
@@ -1004,7 +992,7 @@ impl<B: Backend> State<B> {
             a,
             require_code,
             require_abi,
-            || Account::new_basic(0u8.into(), self.account_start_nonce),
+            || Account::new_basic(0u8.into(), 0.into()),
             |_| {},
         )
     }
