@@ -73,14 +73,13 @@ extern crate libproto;
 extern crate cita_logger as logger;
 #[macro_use]
 extern crate util;
-extern crate db as cita_db;
 
 mod block_processor;
 mod forward;
 
 use crate::block_processor::BlockProcessor;
-use crate::cita_db::kvdb::{Database, DatabaseConfig};
 use crate::forward::Forward;
+use cita_db::{Config as DatabaseConfig, RocksDB};
 use cita_directories::DataPath;
 use clap::App;
 use core::db;
@@ -133,8 +132,9 @@ fn main() {
 
     let nosql_path = DataPath::nosql_path();
     trace!("nosql_path is {:?}", nosql_path);
-    let db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-    let db = Database::open(&db_config, &nosql_path).unwrap();
+    let db_config = DatabaseConfig::with_category_num(db::NUM_COLUMNS);
+    // TODO Fix the unwrap
+    let db = RocksDB::open(&nosql_path, &db_config).unwrap();
 
     let chain_config = libchain::chain::Config::new(config_path);
     let chain = Arc::new(libchain::chain::Chain::init_chain(

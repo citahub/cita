@@ -30,7 +30,8 @@ extern crate snappy;
 extern crate serde_derive;
 #[macro_use]
 extern crate util;
-extern crate db as cita_db;
+extern crate cita_database as cita_db;
+extern crate cita_trie;
 
 #[macro_use]
 extern crate rlp_derive;
@@ -57,5 +58,4 @@ pub mod env_info;
 pub mod error;
 pub mod filters;
 pub mod libchain;
-pub use crate::cita_db::journaldb;
 pub use crate::types::*;
