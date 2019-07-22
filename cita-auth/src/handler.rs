@@ -24,7 +24,6 @@ use cita_types::traits::LowerHex;
 use cita_types::{clean_0x, Address, H256, U256};
 use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use error::ErrorCode;
-use evm::Schedule;
 use jsonrpc_types::rpc_types::TxResponse;
 use libproto::auth::{Miscellaneous, MiscellaneousReq};
 use libproto::blockchain::{AccountGasLimit, SignedTransaction, Transaction};
@@ -47,6 +46,12 @@ use std::time::Duration;
 use util::BLOCKLIMIT;
 
 const TX_OK: &str = "OK";
+// Paid for every non-zero byte of data or code for a transaction
+const G_TX_DATA_NON_ZERO: usize = 68;
+// Paid for every transaction
+const G_TRANSACTION: usize = 21000;
+// Paid for contract create
+const G_CREATE: usize = 32000;
 
 // verify signature
 pub fn verify_tx_sig(crypto: Crypto, hash: &H256, sig_bytes: &[u8]) -> Result<Vec<u8>, ()> {
@@ -1101,14 +1106,12 @@ pub fn verify_base_quota_required(tx: &Transaction) -> bool {
     match tx.get_version() {
         0...2 => true,
         _ => {
-            let schedule = Schedule::new_v1();
             let to = tx.get_to_v1();
             if to.is_empty() || Address::from(to) == Address::zero() {
                 tx.get_quota() as usize
-                    >= tx.data.len() * schedule.tx_data_non_zero_gas + schedule.tx_create_gas
+                    >= tx.data.len() * G_TX_DATA_NON_ZERO + G_TRANSACTION + G_CREATE
             } else {
-                tx.get_quota() as usize
-                    >= tx.data.len() * schedule.tx_data_non_zero_gas + schedule.tx_gas
+                tx.get_quota() as usize >= tx.data.len() * G_TX_DATA_NON_ZERO + G_TRANSACTION
             }
         }
     }

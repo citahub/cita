@@ -69,7 +69,6 @@
 //!
 
 extern crate cita_crypto as crypto;
-extern crate core as chain_core;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
@@ -83,7 +82,6 @@ extern crate serde_derive;
 extern crate tempfile;
 #[macro_use]
 extern crate util;
-extern crate db as cita_db;
 extern crate hashable;
 
 use batch_forward::BatchForward;
