@@ -26,8 +26,7 @@ use std::sync::Arc;
 /// used to persist transaction pools message
 #[derive(Clone)]
 pub struct TxWal {
-    // TODO use Database: Replace the Path with &str of restore interface
-    db: Arc<RocksDB>,
+    db: Arc<Database>,
 }
 
 impl TxWal {
@@ -41,8 +40,7 @@ impl TxWal {
 
     pub fn regenerate(&mut self, path: &str) {
         let nosql_path = DataPath::root_node_path() + path;
-        // FIXME
-        let _ = self.db.restore(&nosql_path, &String::from(path));
+        let _ = self.db.restore(&nosql_path);
     }
 
     pub fn write(&self, tx: &SignedTransaction) {
@@ -89,11 +87,10 @@ impl TxWal {
             .collect()
     }
 
-    // FIXME Implement it.
     pub fn get(&self, _tx_hash: &[u8]) -> Option<SignedTransaction> {
-        unimplemented!()
-        // let result = self.db.get(None, tx_hash).unwrap();
-        // result.map(|item| SignedTransaction::try_from(item).unwrap())
+        // TODO fix the unwrap
+        let result = self.db.get(None, tx_hash).unwrap();
+        result.map(|item| SignedTransaction::try_from(&item).unwrap())
     }
 }
 
