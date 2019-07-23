@@ -26,7 +26,7 @@ use std::sync::Arc;
 pub type LastHashes = Vec<H256>;
 
 /// Information concerning the execution environment for a message-call/contract-creation.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnvInfo {
     /// The block number.
     pub number: BlockNumber,

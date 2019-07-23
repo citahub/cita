@@ -48,7 +48,6 @@ extern crate cita_types;
 pub extern crate common_types as types;
 extern crate crossbeam;
 extern crate crypto;
-extern crate evm;
 extern crate jsonrpc_types;
 #[macro_use]
 extern crate lazy_static;
@@ -103,5 +102,4 @@ mod spec;
 pub use crate::cita_db::journaldb;
 pub use crate::factory::*;
 pub use crate::types::*;
-pub use evm::Error;
 pub use trie_db::TrieDB;

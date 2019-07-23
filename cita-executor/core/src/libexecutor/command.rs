@@ -19,23 +19,27 @@ use super::economical_model::EconomicalModel;
 use super::executor::{make_consensus_config, Executor};
 use super::sys_config::GlobalSysConfig;
 use crate::call_analytics::CallAnalytics;
+use crate::cita_executive::{CitaExecutive, EnvInfo, ExecutedResult as CitaExecuted};
+use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::solc::{
     sys_config::ChainId, PermissionManagement, SysConfig, VersionManager,
 };
 use crate::engines::NullEngine;
 use crate::error::CallError;
-use crate::executive::{Executed, Executive};
+use crate::libexecutor::block::EVMBlockDataProvider;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::call_request::CallRequest;
 use crate::state::State;
 use crate::state_db::StateDB;
+use crate::trie_db::TrieDB;
 use crate::types::ids::BlockId;
 use crate::types::transaction::{Action, SignedTransaction, Transaction};
 pub use byteorder::{BigEndian, ByteOrder};
+use cita_database::RocksDB;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
+use cita_vm::state::State as CitaState;
 use crossbeam_channel::{Receiver, Sender};
-use evm::env_info::EnvInfo;
 use jsonrpc_types::rpc_types::{
     BlockNumber, BlockTag, EconomicalModel as RpcEconomicalModel, MetaData,
 };
@@ -77,7 +81,7 @@ pub enum CommandResp {
     NonceAt(Option<U256>),
     ETHCall(Result<Bytes, String>),
     SignCall(SignedTransaction),
-    Call(Result<Executed, CallError>),
+    Call(Result<CitaExecuted, CallError>),
     ChainID(Option<ChainId>),
     Metadata(Result<MetaData, String>),
     EconomicalModel(EconomicalModel),
@@ -148,7 +152,7 @@ pub trait Commander {
         t: &SignedTransaction,
         block_id: BlockId,
         analytics: CallAnalytics,
-    ) -> Result<Executed, CallError>;
+    ) -> Result<CitaExecuted, CallError>;
     fn chain_id(&self) -> Option<ChainId>;
     fn metadata(&self, data: String) -> Result<MetaData, String>;
     fn economical_model(&self) -> EconomicalModel;
@@ -272,12 +276,12 @@ impl Commander for Executor {
         t: &SignedTransaction,
         block_id: BlockId,
         _analytics: CallAnalytics,
-    ) -> Result<Executed, CallError> {
+    ) -> Result<CitaExecuted, CallError> {
         let header = self.block_header(block_id).ok_or(CallError::StatePruned)?;
         let last_hashes = self.build_last_hashes(Some(header.hash().unwrap()), header.number());
         let env_info = EnvInfo {
             number: header.number(),
-            author: *header.proposer(),
+            coin_base: *header.proposer(),
             timestamp: if self.eth_compatibility {
                 header.timestamp() / 1000
             } else {
@@ -289,24 +293,44 @@ impl Commander for Executor {
             gas_limit: *header.quota_limit(),
             account_gas_limit: u64::max_value().into(),
         };
+
+        // FIXME: Need to implement state_at
         // that's just a copy of the state.
-        let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
+        //        let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
 
         // Never check permission and quota
         let mut conf = self.sys_config.block_sys_config.clone();
         conf.exempt_checking();
 
-        Executive::new(
-            &mut state,
+        let block_data_provider = EVMBlockDataProvider::new(env_info.clone());
+        let native_factory = NativeFactory::default();
+
+        let state_root = if let Some(h) = self.block_header(block_id) {
+            (*h.state_root()).clone()
+        } else {
+            error!("Can not get state rott from trie db!");
+            return Err(CallError::StatePruned);
+        };
+
+        let state_db = match CitaState::from_existing(
+            Arc::<TrieDB<RocksDB>>::clone(&self.trie_db),
+            state_root,
+        ) {
+            Ok(state_db) => state_db,
+            Err(e) => {
+                error!("Can not get state from trie db! error: {:?}", e);
+                return Err(CallError::StatePruned);
+            }
+        };
+
+        CitaExecutive::new(
+            Arc::new(block_data_provider),
+            state_db,
+            &native_factory,
             &env_info,
-            &*self.engine,
-            &self.factories.vm,
-            &self.factories.native,
-            false,
-            EconomicalModel::Quota,
-            self.sys_config.block_sys_config.chain_version,
+            conf.economical_model,
         )
-        .transact(t, &conf)
+        .exec(t, &conf)
         .map_err(Into::into)
     }
 
@@ -468,6 +492,7 @@ impl Commander for Executor {
 
     fn clone_executor_reader(&mut self) -> Self {
         let current_header = self.current_header.read().clone();
+        let trie_db = self.trie_db.clone();
         let db = self.db.clone();
         let fake_parent_hash: H256 = Default::default();
         let state_db = self.state_db.read().boxed_clone_canon(&fake_parent_hash);
@@ -481,6 +506,7 @@ impl Commander for Executor {
         let eth_compatibility = self.eth_compatibility;
         Executor {
             current_header: RwLock::new(current_header),
+            trie_db,
             db,
             state_db: Arc::new(RwLock::new(state_db)),
             factories,
@@ -605,7 +631,7 @@ pub fn call(
     signed_transaction: SignedTransaction,
     block_id: BlockId,
     call_analytics: CallAnalytics,
-) -> Result<Executed, CallError> {
+) -> Result<CitaExecuted, CallError> {
     command_req_sender.send(Command::Call(signed_transaction, block_id, call_analytics));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::Call(r) => r,

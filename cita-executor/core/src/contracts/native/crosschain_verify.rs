@@ -50,10 +50,10 @@ impl Contract for CrossChainVerify {
                 sig if sig == *GET_EXPECTED_BLOCK_NUMBER_FUNC => {
                     self.get_expected_block_number(params, data_provider)
                 }
-                _ => Err(NativeError::OutOfGas),
+                _ => Err(NativeError::Internal("out of gas".to_string())),
             })
         } else {
-            Err(NativeError::OutOfGas)
+            Err(NativeError::Internal("out of gas".to_string()))
         }
     }
     fn create(&self) -> Box<Contract> {
@@ -79,7 +79,7 @@ impl CrossChainVerify {
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(NativeError::OutOfGas);
+            return Err(NativeError::Internal("out of gas".to_string()));
         }
         let gas_left = params.gas - gas_cost;
 
@@ -192,7 +192,7 @@ impl CrossChainVerify {
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(NativeError::OutOfGas);
+            return Err(NativeError::Internal("out of gas".to_string()));
         }
         let gas_left = params.gas - gas_cost;
 
@@ -297,7 +297,7 @@ impl CrossChainVerify {
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(NativeError::OutOfGas);
+            return Err(NativeError::Internal("out of gas".to_string()));
         }
         let mut gas_left = params.gas - gas_cost;
 
@@ -397,7 +397,7 @@ impl CrossChainVerify {
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(NativeError::OutOfGas);
+            return Err(NativeError::Internal("out of gas".to_string()));
         }
         let gas_left = params.gas - gas_cost;
 

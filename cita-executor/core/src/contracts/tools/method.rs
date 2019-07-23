@@ -39,7 +39,7 @@ pub fn extract_to_u32(data: &[u8]) -> Result<u32, NativeError> {
     if let Some(ref bytes4) = data.get(0..4) {
         Ok(BigEndian::read_u32(bytes4))
     } else {
-        Err(NativeError::OutOfGas)
+        Err(NativeError::Internal("out of gas".to_string()))
     }
 }
 

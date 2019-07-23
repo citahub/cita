@@ -30,9 +30,11 @@ use crate::header::*;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::genesis::Genesis;
 use crate::state_db::StateDB;
+use crate::trie_db::TrieDB;
 use crate::types::extras::*;
 use crate::types::ids::BlockId;
 pub use byteorder::{BigEndian, ByteOrder};
+use cita_database::{Config, RocksDB, NUM_COLUMNS};
 use cita_types::H256;
 use crossbeam_channel::{Receiver, Sender};
 use evm::env_info::LastHashes;
@@ -46,6 +48,7 @@ use util::UtilError;
 
 pub struct Executor {
     pub current_header: RwLock<Header>,
+    pub trie_db: Arc<TrieDB<RocksDB>>,
     pub db: Arc<KeyValueDB>,
     pub state_db: Arc<RwLock<StateDB>>,
     pub factories: Factories,
@@ -75,6 +78,13 @@ impl Executor {
         eth_compatibility: bool,
     ) -> Executor {
         let mut genesis = Genesis::init(&genesis_path);
+
+        // TODO: Can remove NUM_COLUMNS(useless)
+        let config = Config::with_category_num(NUM_COLUMNS);
+        let rocks_db = RocksDB::open(&data_path, &config).unwrap();
+        let trie_db = Arc::new(TrieDB::new(Arc::new(rocks_db)));
+
+        // FIXME: remove this old db later.
         let database = open_state_db(data_path);
         let database: Arc<KeyValueDB> = Arc::new(database);
         let journaldb_type = journaldb_type
@@ -101,6 +111,7 @@ impl Executor {
         };
         let mut executor = Executor {
             current_header: RwLock::new(current_header),
+            trie_db,
             db: database,
             state_db: Arc::new(RwLock::new(state_db)),
             factories,
@@ -398,6 +409,7 @@ impl Executor {
             self.factories.clone(),
             &self.sys_config.block_sys_config,
             open_block,
+            self.trie_db.clone(),
             self.state_db.read().boxed_clone_canon(&parent_hash),
             current_state_root,
             last_hashes.into(),

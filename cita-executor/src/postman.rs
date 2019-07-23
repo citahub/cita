@@ -39,7 +39,7 @@ use std::u8;
 
 use crate::core::libexecutor::command;
 use crate::core::libexecutor::lru_cache::LRUCache;
-use evm::Schedule;
+use crate::core::tx_gas_schedule::TxGasSchedule as Schedule;
 
 use super::backlogs::{wrap_height, Backlogs};
 
@@ -379,7 +379,7 @@ impl Postman {
                     .filter(|hash| hash != &H256::default())
                     .collect();
 
-                let schedule = Schedule::new_v1();
+                let schedule = Schedule::default();
                 // Filter out accounts in the black list where the account balance has reached the benchmark value.
                 // Get the smaller value between tx_create_gas and tx_gas for the benchmark value.
                 let bm_value = std::cmp::min(schedule.tx_gas, schedule.tx_create_gas);

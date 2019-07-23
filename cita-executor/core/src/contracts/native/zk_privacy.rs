@@ -47,10 +47,10 @@ impl Contract for ZkPrivacy {
                 0xd0b0_7e52 => self.get_balance(params, data_provider),
                 0xc73b_5a8f => self.send_verify(params, env_info, data_provider),
                 0x882b_30d2 => self.receive_verify(params, data_provider),
-                _ => Err(NativeError::OutOfGas),
+                _ => Err(NativeError::Internal("out of gas".to_string())),
             })
         } else {
-            Err(NativeError::OutOfGas)
+            Err(NativeError::Internal("out of gas".to_string()))
         }
     }
     fn create(&self) -> Box<Contract> {
@@ -82,7 +82,7 @@ impl ZkPrivacy {
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(5000);
         if params.gas < gas_cost {
-            return Err(NativeError::OutOfGas);
+            return Err(NativeError::Internal("out of gas".to_string()));
         }
         let sender = U256::from(H256::from(params.sender));
         self.admin
@@ -102,7 +102,7 @@ impl ZkPrivacy {
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(NativeError::OutOfGas);
+            return Err(NativeError::Internal("out of gas".to_string()));
         }
         let data = params.data.to_owned().expect("invalid data");
         let mut index = 4;
@@ -143,7 +143,7 @@ impl ZkPrivacy {
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
-            return Err(NativeError::OutOfGas);
+            return Err(NativeError::Internal("out of gas".to_string()));
         }
         let data = params.data.to_owned().expect("invalid data");
         let index = 4;
@@ -179,7 +179,7 @@ impl ZkPrivacy {
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10_000_000);
         if params.gas < gas_cost {
-            return Err(NativeError::OutOfGas);
+            return Err(NativeError::Internal("out of gas".to_string()));
         }
         let data = params.data.to_owned().expect("invalid data");
         let mut index = 4;
@@ -409,7 +409,7 @@ impl ZkPrivacy {
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(1_000_000);
         if params.gas < gas_cost {
-            return Err(NativeError::OutOfGas);
+            return Err(NativeError::Internal("out of gas".to_string()));
         }
         let data = params.data.to_owned().expect("invalid data");
         let mut index = 4;

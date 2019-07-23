@@ -96,14 +96,12 @@ impl Default for Factory {
 
 #[derive(Debug)]
 pub enum NativeError {
-    OutOfGas,
     Internal(String),
 }
 
 impl fmt::Display for NativeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let printable = match self {
-            NativeError::OutOfGas => "Out of gas".to_string(),
             NativeError::Internal(str) => format!("Internal error {:?}", str),
         };
         write!(f, "{}", printable)
