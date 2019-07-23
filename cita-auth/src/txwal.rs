@@ -87,11 +87,10 @@ impl TxWal {
             .collect()
     }
 
-    // FIXME Implement it.
     pub fn get(&self, _tx_hash: &[u8]) -> Option<SignedTransaction> {
-        unimplemented!()
-        // let result = self.db.get(None, tx_hash).unwrap();
-        // result.map(|item| SignedTransaction::try_from(item).unwrap())
+        // TODO fix the unwrap
+        let result = self.db.get(None, tx_hash).unwrap();
+        result.map(|item| SignedTransaction::try_from(&item).unwrap())
     }
 }
 
