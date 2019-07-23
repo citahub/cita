@@ -158,7 +158,7 @@ impl Block {
 }
 
 /// body of block.
-#[derive(Default, Debug, Clone, PartialEq, RlpEncodableWrapper, RlpDecodableWrapper)]
+#[derive(Default, Debug, Clone, PartialEq, RlpEncodable, RlpDecodable)]
 pub struct BlockBody {
     /// The transactions in this body.
     pub transactions: Vec<SignedTransaction>,

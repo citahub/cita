@@ -3,7 +3,6 @@ use crate::bloomchain::group::{
     BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition as BloomGroupPosition,
 };
 use crate::bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
-use crate::cita_db::RocksDB;
 use crate::filters::{PollFilter, PollManager};
 use crate::header::{BlockNumber, Header};
 use crate::libchain::{cache::CacheSize, status::Status};
@@ -30,7 +29,9 @@ use std::sync::Arc;
 use util::{HeapSizeOf, Mutex, RwLock};
 
 use crate::types::block::{Block, BlockBody, OpenBlock};
-use crate::types::extras::{BlockReceipts, LogGroupPosition, TransactionAddress};
+use crate::types::extras::{
+    BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupPosition, TransactionAddress,
+};
 use crate::types::{
     cache_manager::CacheManager, filter::Filter, ids::BlockId, ids::TransactionId,
     log_entry::LocalizedLogEntry, log_entry::LogEntry, transaction::Action,
@@ -38,6 +39,10 @@ use crate::types::{
 };
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
+
+use crate::cita_db::RocksDB;
+use cita_db::Database;
+use types::extras::Key;
 
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
@@ -233,8 +238,15 @@ impl Config {
 }
 
 impl BloomGroupDatabase for Chain {
-    fn blooms_at(&self, _position: &BloomGroupPosition) -> Option<BloomGroup> {
-        unimplemented!()
+    fn blooms_at(&self, position: &BloomGroupPosition) -> Option<BloomGroup> {
+        let p = LogGroupPosition::from(position.clone());
+        self.db
+            .get(Some(cita_db::DataCategory::Extra), &p.key())
+            .unwrap_or(None)
+            .map(|blooms| {
+                let g: LogBloomGroup = rlp::decode(&blooms);
+                g.into()
+            })
     }
 }
 
@@ -281,19 +293,45 @@ pub struct Chain {
 
     // snapshot flag
     pub is_snapshot: RwLock<bool>,
-
     admin_address: RwLock<Option<Address>>,
-
     pub version: RwLock<Option<u32>>,
 }
 
 /// Get latest status
-pub fn get_chain(_db: &RocksDB) -> Option<Header> {
-    unimplemented!()
+pub fn get_chain(db: &RocksDB) -> Option<Header> {
+    let res = db
+        .get(
+            Some(cita_db::DataCategory::Extra),
+            &CurrentHash.key().to_vec(),
+        )
+        .unwrap_or(None)
+        .map(|h| H256::from_slice(&h));
+
+    if let Some(hash) = res {
+        let header = db
+            .get(Some(cita_db::DataCategory::Extra), &hash)
+            .unwrap_or(None)
+            .map(|n| {
+                db.get(Some(cita_db::DataCategory::Headers), &n)
+                    .unwrap_or(None)
+                    .map(|res| {
+                        let header: Header = rlp::decode(&res);
+                        header
+                    })
+            })
+            .and_then(|x| x);
+        return header;
+    }
+    None
 }
 
-pub fn get_chain_body_height(_db: &RocksDB) -> Option<BlockNumber> {
-    unimplemented!()
+pub fn get_chain_body_height(db: &RocksDB) -> Option<BlockNumber> {
+    db.get(Some(cita_db::DataCategory::Extra), &CurrentHeight.key())
+        .unwrap_or(None)
+        .map(|res| {
+            let block_number: BlockNumber = rlp::decode(&res);
+            block_number
+        })
 }
 
 pub fn contract_address(address: &Address, nonce: &U256) -> Address {
@@ -401,8 +439,11 @@ impl Chain {
         *guard = new_map;
     }
 
-    pub fn block_height_by_hash(&self, _hash: H256) -> Option<BlockNumber> {
-        unimplemented!()
+    pub fn block_height_by_hash(&self, hash: H256) -> Option<BlockNumber> {
+        self.db
+            .get(Some(cita_db::DataCategory::Extra), &hash.to_vec())
+            .unwrap_or(None)
+            .map(|res| H256::from_slice(&res).low_u64())
     }
 
     fn set_config(&self, ret: &ExecutedResult) {
@@ -440,8 +481,88 @@ impl Chain {
         *self.version.write() = Some(version);
     }
 
-    pub fn set_db_result(&self, _ret: &ExecutedResult, _block: &OpenBlock) {
-        unimplemented!()
+    pub fn set_db_result(&self, ret: &ExecutedResult, block: &OpenBlock) {
+        let info = ret.get_executed_info();
+        let number = info.get_header().get_height();
+        let log_bloom = LogBloom::from(info.get_header().get_log_bloom());
+        let header = Header::from_executed_info(ret.get_executed_info(), &block.header);
+        let header_hash = header.hash().unwrap();
+
+        let block_transaction_addresses = block.body().transaction_addresses(header_hash);
+        let blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup> = if log_bloom.is_zero() {
+            HashMap::new()
+        } else {
+            let group = BloomGroupChain::new(self.blooms_config, self);
+            group
+                .insert(
+                    number as BloomChainNumber,
+                    Bloom::from(Into::<[u8; 256]>::into(log_bloom)),
+                )
+                .into_iter()
+                .map(|p| (From::from(p.0), From::from(p.1)))
+                .collect()
+        };
+
+        // Save blocks blooms
+        for (k, v) in blocks_blooms.iter() {
+            let _ = self.db.insert(
+                Some(cita_db::DataCategory::Extra),
+                k.key().to_vec(),
+                rlp::encode(v).into_vec(),
+            );
+        }
+
+        // Save block transaction address
+        for (k, v) in block_transaction_addresses.iter() {
+            let _ = self.db.insert(
+                Some(cita_db::DataCategory::Extra),
+                k.to_vec(),
+                rlp::encode(v).into_vec(),
+            );
+        }
+
+        // Save receipts
+        if !info.get_receipts().is_empty() {
+            let receipts: Vec<Receipt> = info
+                .get_receipts()
+                .iter()
+                .map(|r| Receipt::from(r.get_receipt().clone()))
+                .collect();
+            let block_receipts = BlockReceipts::new(receipts);
+            let _ = self.db.insert(
+                Some(cita_db::DataCategory::Extra),
+                header_hash.to_vec(),
+                rlp::encode(&block_receipts).into_vec(),
+            );
+        }
+
+        // Save Header
+        let _ = self.db.insert(
+            Some(cita_db::DataCategory::Headers),
+            number.to_be_bytes().to_vec(),
+            rlp::encode(&header).into_vec(),
+        );
+
+        // Save Body
+        let mheight = self.get_max_store_height();
+        if mheight < number || (number == 0 && mheight == 0) {
+            let _ = self.db.insert(
+                Some(cita_db::DataCategory::Bodies),
+                number.to_be_bytes().to_vec(),
+                rlp::encode(block.body()).into_vec(),
+            );
+        }
+
+        // Save current hash
+        let _ = self.db.insert(
+            Some(cita_db::DataCategory::Extra),
+            CurrentHash.key().to_vec(),
+            header_hash.to_vec(),
+        );
+
+        *self.current_header.write() = header;
+        self.current_height.store(number as usize, Ordering::SeqCst);
+        self.clean_proof_with_height(number);
     }
 
     pub fn broadcast_current_status(&self, ctx_pub: &Sender<(String, Vec<u8>)>) {
@@ -595,8 +716,17 @@ impl Chain {
             .and_then(|h| self.block_header_by_height(h))
     }
 
-    fn block_header_by_height(&self, _idx: BlockNumber) -> Option<Header> {
-        unimplemented!()
+    fn block_header_by_height(&self, idx: BlockNumber) -> Option<Header> {
+        self.db
+            .get(
+                Some(cita_db::DataCategory::Headers),
+                &idx.to_be_bytes().to_vec(),
+            )
+            .unwrap_or(None)
+            .map(|res| {
+                let header: Header = rlp::decode(&res);
+                header
+            })
     }
 
     /// Get block body by BlockId
@@ -622,8 +752,17 @@ impl Chain {
     }
 
     /// Get block body by height
-    fn block_body_by_height(&self, _number: BlockNumber) -> Option<BlockBody> {
-        unimplemented!()
+    fn block_body_by_height(&self, number: BlockNumber) -> Option<BlockBody> {
+        self.db
+            .get(
+                Some(cita_db::DataCategory::Bodies),
+                &number.to_be_bytes().to_vec(),
+            )
+            .unwrap_or(None)
+            .map(|res| {
+                let body: BlockBody = rlp::decode(&res);
+                body
+            })
     }
 
     /// Get block tx hashes
@@ -642,8 +781,14 @@ impl Chain {
     }
 
     /// Get address of transaction by hash.
-    fn transaction_address(&self, _hash: TransactionId) -> Option<TransactionAddress> {
-        unimplemented!()
+    fn transaction_address(&self, hash: TransactionId) -> Option<TransactionAddress> {
+        self.db
+            .get(Some(cita_db::DataCategory::Extra), &hash.to_vec())
+            .unwrap_or(None)
+            .map(|res| {
+                let ta: TransactionAddress = rlp::decode(&res);
+                ta
+            })
     }
 
     /// Get transaction by address
@@ -881,11 +1026,21 @@ impl Chain {
 
     #[inline]
     pub fn current_block_poof(&self) -> Option<ProtoProof> {
-        unimplemented!()
+        self.db
+            .get(Some(cita_db::DataCategory::Extra), &CurrentProof.key())
+            .unwrap_or(None)
+            .map(|res| {
+                let proto_proof: ProtoProof = rlp::decode(&res);
+                proto_proof
+            })
     }
 
-    pub fn save_current_block_poof(&self, _proof: &ProtoProof) {
-        unimplemented!()
+    pub fn save_current_block_poof(&self, proof: &ProtoProof) {
+        let _ = self.db.insert(
+            Some(cita_db::DataCategory::Extra),
+            CurrentProof.key().to_vec(),
+            rlp::encode(proof).into_vec(),
+        );
     }
 
     pub fn get_chain_prooftype(&self) -> Option<ProofType> {
@@ -1102,8 +1257,14 @@ impl Chain {
     }
 
     /// Get receipts of block with given hash.
-    pub fn block_receipts(&self, _hash: H256) -> Option<BlockReceipts> {
-        unimplemented!()
+    pub fn block_receipts(&self, hash: H256) -> Option<BlockReceipts> {
+        self.db
+            .get(Some(cita_db::DataCategory::Extra), &hash.to_vec())
+            .unwrap_or(None)
+            .map(|res| {
+                let block_receipts: BlockReceipts = rlp::decode(&res);
+                block_receipts
+            })
     }
 
     /// Get transaction receipt.
@@ -1190,8 +1351,12 @@ impl Chain {
             .unwrap();
     }
 
-    pub fn set_block_body(&self, _height: BlockNumber, _block: &OpenBlock) {
-        unimplemented!()
+    pub fn set_block_body(&self, height: BlockNumber, block: &OpenBlock) {
+        let _ = self.db.insert(
+            Some(cita_db::DataCategory::Bodies),
+            height.to_be_bytes().to_vec(),
+            rlp::encode(block.body()).into_vec(),
+        );
     }
 
     pub fn compare_status(&self, st: &Status) -> (u64, u64) {
