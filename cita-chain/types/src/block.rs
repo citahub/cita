@@ -17,7 +17,7 @@
 
 use crate::header::{Header, OpenHeader};
 
-use crate::extras::TransactionAddress;
+use crate::extras::TransactionIndex;
 use cita_types::H256;
 use std::collections::HashMap;
 
@@ -206,12 +206,12 @@ impl BlockBody {
         self.transactions().iter().map(|ts| ts.hash()).collect()
     }
 
-    pub fn transaction_addresses(&self, hash: H256) -> HashMap<H256, TransactionAddress> {
+    pub fn transaction_addresses(&self, hash: H256) -> HashMap<H256, TransactionIndex> {
         let tx_hashs = self.transaction_hashes();
-        // Create TransactionAddress
+        // Create TransactionIndex
         let mut transactions = HashMap::new();
         for (i, tx_hash) in tx_hashs.into_iter().enumerate() {
-            let address = TransactionAddress {
+            let address = TransactionIndex {
                 block_hash: hash,
                 index: i,
             };

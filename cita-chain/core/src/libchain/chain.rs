@@ -30,7 +30,7 @@ use util::{HeapSizeOf, Mutex, RwLock};
 
 use crate::types::block::{Block, BlockBody, OpenBlock};
 use crate::types::extras::{
-    BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupPosition, TransactionAddress,
+    BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupPosition, TransactionIndex,
 };
 use crate::types::{
     cache_manager::CacheManager, filter::Filter, ids::BlockId, ids::TransactionId,
@@ -209,7 +209,7 @@ pub enum CacheId {
     BlockHeaders(BlockNumber),
     BlockBodies(BlockNumber),
     BlockHashes(H256),
-    TransactionAddresses(H256),
+    TransactionIndexes(H256),
     BlocksBlooms(LogGroupPosition),
     BlockReceipts(H256),
 }
@@ -274,7 +274,7 @@ pub struct Chain {
 
     // extra caches
     pub block_hashes: RwLock<HashMap<H256, BlockNumber>>,
-    pub transaction_addresses: RwLock<HashMap<TransactionId, TransactionAddress>>,
+    pub transaction_addresses: RwLock<HashMap<TransactionId, TransactionIndex>>,
     pub blocks_blooms: RwLock<HashMap<LogGroupPosition, LogBloomGroup>>,
     pub block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
     pub nodes: RwLock<Vec<Address>>,
@@ -781,12 +781,12 @@ impl Chain {
     }
 
     /// Get address of transaction by hash.
-    fn transaction_address(&self, hash: TransactionId) -> Option<TransactionAddress> {
+    fn transaction_address(&self, hash: TransactionId) -> Option<TransactionIndex> {
         self.db
             .get(Some(cita_db::DataCategory::Extra), &hash.to_vec())
             .unwrap_or(None)
             .map(|res| {
-                let ta: TransactionAddress = rlp::decode(&res);
+                let ta: TransactionIndex = rlp::decode(&res);
                 ta
             })
     }
@@ -1268,7 +1268,7 @@ impl Chain {
     }
 
     /// Get transaction receipt.
-    pub fn transaction_receipt(&self, address: &TransactionAddress) -> Option<Receipt> {
+    pub fn transaction_receipt(&self, address: &TransactionIndex) -> Option<Receipt> {
         self.block_receipts(address.block_hash)
             .map(|r| r.receipts[address.index].clone())
     }
@@ -1403,7 +1403,7 @@ impl Chain {
                     CacheId::BlockHashes(ref h) => {
                         block_hashes.remove(h);
                     }
-                    CacheId::TransactionAddresses(ref h) => {
+                    CacheId::TransactionIndexes(ref h) => {
                         transaction_addresses.remove(h);
                     }
                     CacheId::BlocksBlooms(ref h) => {
@@ -1466,7 +1466,7 @@ mod tests {
     }
     #[test]
     fn test_cache_size() {
-        let transaction_addresses: HashMap<TransactionId, TransactionAddress> = HashMap::new();
+        let transaction_addresses: HashMap<TransactionId, TransactionIndex> = HashMap::new();
         let blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup> = HashMap::new();
         let mut block_receipts: HashMap<H256, BlockReceipts> = HashMap::new();
 

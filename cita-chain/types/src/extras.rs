@@ -39,7 +39,7 @@ pub trait Key<T> {
 #[derive(Copy, Debug, Hash, Eq, PartialEq, Clone)]
 pub enum ExtrasIndex {
     /// Transaction address index
-    TransactionAddress = 0,
+    TransactionIndex = 0,
     /// Block receipts index
     BlockReceipts = 1,
     /// Block blooms index
@@ -183,11 +183,11 @@ fn with_index(hash: &H256, i: ExtrasIndex) -> H264 {
     result
 }
 
-impl Key<TransactionAddress> for H256 {
+impl Key<TransactionIndex> for H256 {
     type Target = H264;
 
     fn key(&self) -> H264 {
-        with_index(self, ExtrasIndex::TransactionAddress)
+        with_index(self, ExtrasIndex::TransactionIndex)
     }
 }
 
@@ -241,22 +241,22 @@ impl Key<LogBloomGroup> for LogGroupPosition {
 
 /// Represents address of certain transaction within block
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct TransactionAddress {
+pub struct TransactionIndex {
     /// Block hash
     pub block_hash: H256,
     /// Transaction index within the block
     pub index: usize,
 }
 
-impl HeapSizeOf for TransactionAddress {
+impl HeapSizeOf for TransactionIndex {
     fn heap_size_of_children(&self) -> usize {
         0
     }
 }
 
-impl Decodable for TransactionAddress {
+impl Decodable for TransactionIndex {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        let tx_address = TransactionAddress {
+        let tx_address = TransactionIndex {
             block_hash: rlp.val_at(0)?,
             index: rlp.val_at(1)?,
         };
@@ -265,7 +265,7 @@ impl Decodable for TransactionAddress {
     }
 }
 
-impl Encodable for TransactionAddress {
+impl Encodable for TransactionIndex {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.begin_list(2);
         s.append(&self.block_hash);
