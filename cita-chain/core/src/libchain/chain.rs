@@ -41,9 +41,8 @@ use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 
 use crate::cita_db::RocksDB;
+use crate::db::DBIndex;
 use cita_db::Database;
-// use types::extras::Key;
-use types::db::Key;
 
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
@@ -242,7 +241,7 @@ impl BloomGroupDatabase for Chain {
     fn blooms_at(&self, position: &BloomGroupPosition) -> Option<BloomGroup> {
         let p = LogGroupPosition::from(position.clone());
         self.db
-            .get(Some(cita_db::DataCategory::Extra), &p.key())
+            .get(Some(cita_db::DataCategory::Extra), &p.get_index())
             .unwrap_or(None)
             .map(|blooms| {
                 let g: LogBloomGroup = rlp::decode(&blooms);
@@ -303,7 +302,7 @@ pub fn get_chain(db: &RocksDB) -> Option<Header> {
     let res = db
         .get(
             Some(cita_db::DataCategory::Extra),
-            &CurrentHash.key().to_vec(),
+            &CurrentHash.get_index().to_vec(),
         )
         .unwrap_or(None)
         .map(|h| H256::from_slice(&h));
@@ -327,12 +326,15 @@ pub fn get_chain(db: &RocksDB) -> Option<Header> {
 }
 
 pub fn get_chain_body_height(db: &RocksDB) -> Option<BlockNumber> {
-    db.get(Some(cita_db::DataCategory::Extra), &CurrentHeight.key())
-        .unwrap_or(None)
-        .map(|res| {
-            let block_number: BlockNumber = rlp::decode(&res);
-            block_number
-        })
+    db.get(
+        Some(cita_db::DataCategory::Extra),
+        &CurrentHeight.get_index(),
+    )
+    .unwrap_or(None)
+    .map(|res| {
+        let block_number: BlockNumber = rlp::decode(&res);
+        block_number
+    })
 }
 
 pub fn contract_address(address: &Address, nonce: &U256) -> Address {
@@ -489,7 +491,7 @@ impl Chain {
         let header = Header::from_executed_info(ret.get_executed_info(), &block.header);
         let header_hash = header.hash().unwrap();
 
-        let block_transaction_addresses = block.body().transaction_addresses(header_hash);
+        let block_transaction_indexes = block.body().transaction_indexes(header_hash);
         let blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup> = if log_bloom.is_zero() {
             HashMap::new()
         } else {
@@ -508,13 +510,13 @@ impl Chain {
         for (k, v) in blocks_blooms.iter() {
             let _ = self.db.insert(
                 Some(cita_db::DataCategory::Extra),
-                k.key().to_vec(),
+                k.get_index().to_vec(),
                 rlp::encode(v).into_vec(),
             );
         }
 
-        // Save block transaction address
-        for (k, v) in block_transaction_addresses.iter() {
+        // Save block transaction indexed
+        for (k, v) in block_transaction_indexes.iter() {
             let _ = self.db.insert(
                 Some(cita_db::DataCategory::Extra),
                 k.to_vec(),
@@ -557,7 +559,7 @@ impl Chain {
         // Save current hash
         let _ = self.db.insert(
             Some(cita_db::DataCategory::Extra),
-            CurrentHash.key().to_vec(),
+            CurrentHash.get_index().to_vec(),
             header_hash.to_vec(),
         );
 
@@ -774,7 +776,7 @@ impl Chain {
 
     /// Get transaction by hash
     pub fn transaction(&self, hash: TransactionId) -> Option<SignedTransaction> {
-        self.transaction_address(hash).and_then(|addr| {
+        self.transaction_index(hash).and_then(|addr| {
             let index = addr.index;
             let hash = addr.block_hash;
             self.transaction_by_address(hash, index)
@@ -782,13 +784,13 @@ impl Chain {
     }
 
     /// Get address of transaction by hash.
-    fn transaction_address(&self, hash: TransactionId) -> Option<TransactionIndex> {
+    fn transaction_index(&self, hash: TransactionId) -> Option<TransactionIndex> {
         self.db
             .get(Some(cita_db::DataCategory::Extra), &hash.to_vec())
             .unwrap_or(None)
             .map(|res| {
-                let ta: TransactionIndex = rlp::decode(&res);
-                ta
+                let tx_index: TransactionIndex = rlp::decode(&res);
+                tx_index
             })
     }
 
@@ -805,7 +807,7 @@ impl Chain {
 
     /// Get full transaction by hash
     pub fn full_transaction(&self, hash: TransactionId) -> Option<FullTransaction> {
-        self.transaction_address(hash).and_then(|addr| {
+        self.transaction_index(hash).and_then(|addr| {
             let index = addr.index;
             let hash = addr.block_hash;
             self.block_by_hash(hash).map(|block| {
@@ -822,7 +824,7 @@ impl Chain {
     }
 
     pub fn get_transaction_proof(&self, hash: TransactionId) -> Option<(Vec<u8>)> {
-        self.transaction_address(hash)
+        self.transaction_index(hash)
             .and_then(|addr| {
                 self.block_by_hash(addr.block_hash)
                     .map(|block| (addr, block))
@@ -922,7 +924,7 @@ impl Chain {
     pub fn localized_receipt(&self, id: TransactionId) -> Option<LocalizedReceipt> {
         trace!("Get receipt id: {:?}", id);
 
-        let address = match self.transaction_address(id) {
+        let address = match self.transaction_index(id) {
             Some(addr) => addr,
             _ => return None,
         };
@@ -1028,7 +1030,10 @@ impl Chain {
     #[inline]
     pub fn current_block_poof(&self) -> Option<ProtoProof> {
         self.db
-            .get(Some(cita_db::DataCategory::Extra), &CurrentProof.key())
+            .get(
+                Some(cita_db::DataCategory::Extra),
+                &CurrentProof.get_index(),
+            )
             .unwrap_or(None)
             .map(|res| {
                 let proto_proof: ProtoProof = rlp::decode(&res);
@@ -1039,7 +1044,7 @@ impl Chain {
     pub fn save_current_block_poof(&self, proof: &ProtoProof) {
         let _ = self.db.insert(
             Some(cita_db::DataCategory::Extra),
-            CurrentProof.key().to_vec(),
+            CurrentProof.get_index().to_vec(),
             rlp::encode(proof).into_vec(),
         );
     }

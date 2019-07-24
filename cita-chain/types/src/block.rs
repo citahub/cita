@@ -206,19 +206,19 @@ impl BlockBody {
         self.transactions().iter().map(|ts| ts.hash()).collect()
     }
 
-    pub fn transaction_addresses(&self, hash: H256) -> HashMap<H256, TransactionIndex> {
+    pub fn transaction_indexes(&self, hash: H256) -> HashMap<H256, TransactionIndex> {
         let tx_hashs = self.transaction_hashes();
         // Create TransactionIndex
-        let mut transactions = HashMap::new();
+        let mut tx_indexes = HashMap::new();
         for (i, tx_hash) in tx_hashs.into_iter().enumerate() {
-            let address = TransactionIndex {
+            let index = TransactionIndex {
                 block_hash: hash,
                 index: i,
             };
-            transactions.insert(tx_hash, address);
+            tx_indexes.insert(tx_hash, index);
         }
 
-        trace!("closed block transactions {:?}", transactions);
-        transactions
+        trace!("closed block transactions {:?}", tx_indexes);
+        tx_indexes
     }
 }
