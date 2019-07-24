@@ -29,7 +29,7 @@ use std::sync::Arc;
 use util::{HeapSizeOf, Mutex, RwLock};
 
 use crate::types::block::{Block, BlockBody, OpenBlock};
-use crate::types::extras::{
+pub use crate::types::extras::{
     BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupPosition, TransactionIndex,
 };
 use crate::types::{
@@ -42,7 +42,8 @@ use cita_types::{Address, H256, U256};
 
 use crate::cita_db::RocksDB;
 use cita_db::Database;
-use types::extras::Key;
+// use types::extras::Key;
+use types::db::Key;
 
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;

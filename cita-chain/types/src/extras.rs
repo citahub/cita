@@ -18,6 +18,7 @@
 
 use crate::basic_types::LogBloomGroup;
 use crate::block::BlockBody;
+use crate::db::Key;
 use crate::header::{BlockNumber, Header};
 use crate::receipt::Receipt;
 use bloomchain::group::GroupPosition;
@@ -26,14 +27,6 @@ use libproto::blockchain::Proof;
 use rlp::*;
 use std::ops::{Deref, Index};
 use util::*;
-
-pub trait Key<T> {
-    /// The db key associated with this value.
-    type Target: Deref<Target = [u8]>;
-
-    /// Returns db key.
-    fn key(&self) -> Self::Target;
-}
 
 /// Represents index of extra data in database
 #[derive(Copy, Debug, Hash, Eq, PartialEq, Clone)]

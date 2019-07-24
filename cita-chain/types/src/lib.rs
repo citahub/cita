@@ -34,6 +34,7 @@ pub mod basic_types;
 pub mod block;
 pub mod cache_manager;
 pub mod call_analytics;
+pub mod db;
 pub mod extras;
 pub mod filter;
 pub mod header;
