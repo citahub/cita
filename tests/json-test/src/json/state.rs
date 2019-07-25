@@ -1,10 +1,10 @@
 use evm::cita_types::Address;
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use serde_json::Error;
 use std::collections::BTreeMap;
-use std::io::Read;
+use std::io::{Read, Write};
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Env {
     #[serde(rename = "currentCoinbase")]
     pub current_coinbase: Address,
@@ -25,7 +25,7 @@ pub struct Env {
     pub previous_hash: String,
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Transaction {
     #[serde(rename = "data")]
     pub data: Vec<String>,
@@ -49,7 +49,7 @@ pub struct Transaction {
     pub value: Vec<String>,
 }
 
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Deserialize, Clone, Serialize)]
 pub struct Account {
     pub balance: String,
     pub code: String,
@@ -57,7 +57,7 @@ pub struct Account {
     pub storage: BTreeMap<String, String>,
 }
 
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Deserialize, Clone, Serialize)]
 pub struct State(pub BTreeMap<Address, Account>);
 
 impl IntoIterator for State {
@@ -69,7 +69,7 @@ impl IntoIterator for State {
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct PostData {
     #[serde(rename = "hash")]
     pub hash: String,
@@ -81,7 +81,7 @@ pub struct PostData {
     pub logs: String,
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Post {
     #[serde(rename = "Byzantium")]
     pub byzantium: Option<Vec<PostData>>,
@@ -102,7 +102,7 @@ pub struct Post {
     pub homestead: Option<Vec<PostData>>,
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Vm {
     #[serde(rename = "env")]
     pub env: Env,
@@ -117,8 +117,8 @@ pub struct Vm {
     pub pre: Option<State>,
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
-pub struct Test(BTreeMap<String, Vm>);
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
+pub struct Test(pub BTreeMap<String, Vm>);
 
 impl IntoIterator for Test {
     type Item = <BTreeMap<String, Vm> as IntoIterator>::Item;
@@ -135,6 +135,13 @@ impl Test {
         R: Read,
     {
         serde_json::from_reader(reader)
+    }
+
+    pub fn store<W>(&self, wr: W) -> Result<(), serde_json::Error>
+    where
+        W: Write,
+    {
+        serde_json::to_writer_pretty(wr, self)
     }
 }
 

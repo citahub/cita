@@ -7,7 +7,7 @@ use core_executor::libexecutor::economical_model::EconomicalModel;
 use core_executor::libexecutor::sys_config::BlockSysConfig;
 use core_executor::state::ApplyResult;
 use core_executor::types::transaction::Transaction;
-use evm::cita_types::U256;
+use evm::cita_types::{traits::LowerHex, U256};
 use evm::env_info::EnvInfo;
 use libproto::blockchain::Transaction as ProtoTransaction;
 use std::fs;
@@ -15,14 +15,18 @@ use std::sync::Arc;
 
 pub fn test_json_file(p: &str) {
     let f = fs::File::open(p).unwrap();
-    let tests = Test::load(f).unwrap();
-    for (_name, test) in tests.into_iter() {
-        let data_post_homestead = test.post.unwrap().homestead;
-        if data_post_homestead.is_none() {
+    let mut tests = Test::load(f).unwrap();
+
+    // let mut flag = false;
+    for (_name, ref mut test) in tests.0.iter_mut() {
+        let post = test.post.as_mut().unwrap();
+        if post.homestead.is_none() {
             continue;
         }
 
-        for (_i, postdata) in data_post_homestead.unwrap().into_iter().enumerate() {
+        let data_post_homestead = post.homestead.as_mut().unwrap();
+
+        for (_i, ref mut postdata) in data_post_homestead.iter_mut().enumerate() {
             // Init state
             let mut state = get_temp_state();
             for (address, account) in test.pre.clone().unwrap() {
@@ -59,6 +63,7 @@ pub fn test_json_file(p: &str) {
             config.quota_price = string_2_u256(test.transaction.gas_price.clone());
             config.economical_model = EconomicalModel::Charge;
             config.quota_price = U256::from(1);
+            config.chain_version = 2;
 
             let idx_gas = &postdata.indexes[&String::from("gas")];
             let idx_value = &postdata.indexes[&String::from("value")];
@@ -76,7 +81,8 @@ pub fn test_json_file(p: &str) {
                 proto_tx.set_to(test.transaction.to.clone());
             }
 
-            let tx = Transaction::create(&proto_tx).unwrap();
+            let mut tx = Transaction::create(&proto_tx).unwrap();
+            tx.gas_price = string_2_u256(test.transaction.gas_price.clone());
             let sender = secret_2_address(&test.transaction.secret_key);
             let signed_transaction = tx.fake_sign(sender);
 
@@ -93,10 +99,22 @@ pub fn test_json_file(p: &str) {
             // check root hash
             state.commit().unwrap();
             let root = state.root();
-            debug!("state.root {}", root);
-            assert_eq!(*root, string_2_h256(postdata.hash));
+            let right = string_2_h256(postdata.hash.clone());
+
+            // saved  for write correct root hash of this version
+            /*if *root != right{
+                flag = true;
+                postdata.hash = root.lower_hex_with_0x();
+            }*/
+            assert_eq!(*root, right);
         }
     }
+
+    // As above, saved for write correct root hash of this version
+    /*if flag {
+        let wf = fs::OpenOptions::new().write(true).truncate(true).open(p).unwrap();
+        tests.store(wf);
+    }*/
 }
 
 pub fn test_json_path(p: &str) {

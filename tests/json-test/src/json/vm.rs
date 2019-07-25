@@ -1,10 +1,10 @@
 use evm::cita_types::Address;
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::io::Read;
+use std::io::{Read, Write};
 
-#[derive(Debug, PartialEq, Deserialize)]
-pub struct Test(BTreeMap<String, Vm>);
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
+pub struct Test(pub BTreeMap<String, Vm>);
 
 impl IntoIterator for Test {
     type Item = <BTreeMap<String, Vm> as IntoIterator>::Item;
@@ -22,9 +22,16 @@ impl Test {
     {
         serde_json::from_reader(reader)
     }
+
+    pub fn store<W>(&self, wr: W) -> Result<(), serde_json::Error>
+    where
+        W: Write,
+    {
+        serde_json::to_writer_pretty(wr, self)
+    }
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Vm {
     #[serde(rename = "callcreates")]
     pub call_creates: Option<Vec<Callcreates>>,
@@ -51,10 +58,10 @@ pub struct Vm {
     pub pre: Option<State>,
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Callcreates {}
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Env {
     #[serde(rename = "currentCoinbase")]
     pub current_coinbase: Address,
@@ -72,7 +79,7 @@ pub struct Env {
     pub current_timestamp: String,
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Exec {
     #[serde(rename = "address")]
     pub address: Address,
@@ -99,7 +106,7 @@ pub struct Exec {
     pub value: String,
 }
 
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
 pub struct Account {
     pub balance: String,
     pub code: String,
@@ -107,8 +114,8 @@ pub struct Account {
     pub storage: BTreeMap<String, String>,
 }
 
-#[derive(Debug, PartialEq, Deserialize, Clone)]
-pub struct State(BTreeMap<Address, Account>);
+#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+pub struct State(pub BTreeMap<Address, Account>);
 
 impl IntoIterator for State {
     type Item = <BTreeMap<Address, Account> as IntoIterator>::Item;
