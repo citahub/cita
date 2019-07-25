@@ -16,9 +16,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::authentication::AuthenticationError;
-use crate::cita_executive::{CitaExecutive, EnvInfo, ExecutedException, ExecutionError};
+use crate::cita_executive::{CitaExecutive, ExecutedException, ExecutionError};
 use crate::contracts::native::factory::Factory as NativeFactory;
-use crate::core::env_info::LastHashes;
+use crate::core::context::{Context, LastHashes};
 use crate::error::Error;
 use crate::libexecutor::auto_exec::auto_exec;
 use crate::libexecutor::economical_model::EconomicalModel;
@@ -123,9 +123,9 @@ impl ExecutedBlock {
     }
 
     /// Transaction execution env info.
-    pub fn env_info(&self) -> EnvInfo {
-        EnvInfo {
-            number: self.number(),
+    pub fn get_context(&self) -> Context {
+        Context {
+            block_number: self.number(),
             coin_base: *self.proposer(),
             timestamp: if self.eth_compatibility {
                 self.timestamp() / 1000
@@ -134,21 +134,21 @@ impl ExecutedBlock {
             },
             difficulty: U256::default(),
             last_hashes: Arc::clone(&self.last_hashes),
-            gas_used: self.current_quota_used,
-            gas_limit: *self.quota_limit(),
-            account_gas_limit: 0.into(),
+            quota_used: self.current_quota_used,
+            block_quota_limit: *self.quota_limit(),
+            account_quota_limit: 0.into(),
         }
     }
 
     #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn apply_transaction(&mut self, t: &SignedTransaction, conf: &BlockSysConfig) {
-        let mut env_info = self.env_info();
+        let mut context = self.get_context();
         self.account_gas
             .entry(*t.sender())
             .or_insert(self.account_gas_limit);
 
         //FIXME: set coin_base according to conf.
-        env_info.account_gas_limit = *self
+        context.account_quota_limit = *self
             .account_gas
             .get(t.sender())
             .expect("account should exist in account_gas_limit");
@@ -157,17 +157,17 @@ impl ExecutedBlock {
         if (*conf).check_options.fee_back_platform {
             // Set coin_base to chain_owner if check_fee_back_platform is true, and chain_owner is set.
             if (*conf).chain_owner != Address::from(0) {
-                env_info.coin_base = (*conf).chain_owner;
+                context.coin_base = (*conf).chain_owner;
             }
         }
-        let block_data_provider = EVMBlockDataProvider::new(env_info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let native_factory = NativeFactory::default();
 
         let tx_quota_used = match CitaExecutive::new(
             Arc::new(block_data_provider),
             self.state.clone(),
             &native_factory,
-            &env_info,
+            &context,
             conf.economical_model,
         )
         .exec(t, conf)
@@ -201,7 +201,7 @@ impl ExecutedBlock {
 
                 // Note: quota_used in Receipt is self.current_quota_used, this will be
                 // handled by localized_receipt() while getting a single transaction receipt.
-                let cumulative_gas_used = env_info.gas_used + ret.quota_used;
+                let cumulative_gas_used = context.quota_used + ret.quota_used;
                 let receipt = Receipt::new(
                     None,
                     cumulative_gas_used,
@@ -245,7 +245,7 @@ impl ExecutedBlock {
 
                 let schedule = TxGasSchedule::default();
                 let sender = *t.sender();
-                let tx_gas_used = match err {
+                let tx_quota_used = match err {
                     ExecutionError::Internal(_) => t.gas,
                     _ => cmp::min(
                         self.state
@@ -257,7 +257,7 @@ impl ExecutedBlock {
                 };
 
                 if (*conf).economical_model == EconomicalModel::Charge {
-                    let fee_value = tx_gas_used * t.gas_price();
+                    let fee_value = tx_quota_used * t.gas_price();
                     let sender_balance = self.state.borrow_mut().balance(&sender).unwrap();
 
                     let tx_fee_value = if fee_value > sender_balance {
@@ -272,7 +272,7 @@ impl ExecutedBlock {
                     if let Err(err) = self
                         .state
                         .borrow_mut()
-                        .add_balance(&env_info.coin_base, tx_fee_value)
+                        .add_balance(&context.coin_base, tx_fee_value)
                     {
                         error!(
                             "Add fee to coinbase failed, tx_fee_value={}, error={:?}",
@@ -281,10 +281,10 @@ impl ExecutedBlock {
                     }
                 }
 
-                let cumulative_gas_used = env_info.gas_used + tx_gas_used;
+                let cumulative_quota_used = context.quota_used + tx_quota_used;
                 let receipt = Receipt::new(
                     None,
-                    cumulative_gas_used,
+                    cumulative_quota_used,
                     Vec::new(),
                     receipt_error,
                     0.into(),
@@ -292,7 +292,7 @@ impl ExecutedBlock {
                 );
 
                 self.receipts.push(receipt);
-                tx_gas_used
+                tx_quota_used
             }
         };
 
@@ -307,21 +307,17 @@ impl ExecutedBlock {
 
     /// Turn this into a `ClosedBlock`.
     pub fn close(self, conf: &BlockSysConfig) -> ClosedBlock {
-        let mut env_info = self.env_info();
+        let mut context = self.get_context();
         // In protocol version 0, 1:
         // Auto Execution's env info author is default address
         // In protocol version > 1:
         // Auto Execution's env info author is block author
         if conf.chain_version < 2 {
-            env_info.coin_base = Address::default();
+            context.coin_base = Address::default();
         }
 
         if conf.auto_exec {
-            auto_exec(
-                Arc::clone(&self.state),
-                conf.auto_exec_quota_limit,
-                env_info,
-            );
+            auto_exec(Arc::clone(&self.state), conf.auto_exec_quota_limit, context);
             self.state.borrow_mut().commit().expect("commit trie error");
         }
         // Rebuild block
@@ -450,42 +446,42 @@ impl DerefMut for ClosedBlock {
 }
 
 pub struct EVMBlockDataProvider {
-    env_info: EnvInfo,
+    context: Context,
 }
 
 impl EVMBlockDataProvider {
-    pub fn new(env_info: EnvInfo) -> Self {
-        EVMBlockDataProvider { env_info }
+    pub fn new(context: Context) -> Self {
+        EVMBlockDataProvider { context }
     }
 }
 
 impl BlockDataProvider for EVMBlockDataProvider {
     fn get_block_hash(&self, number: &U256) -> H256 {
-        // TODO: comment out what this function expects from env_info, since it will produce panics if the latter is inconsistent
-        if *number < U256::from(self.env_info.number)
-            && number.low_u64() >= cmp::max(256, self.env_info.number) - 256
+        // TODO: comment out what this function expects from context, since it will produce panics if the latter is inconsistent
+        if *number < U256::from(self.context.block_number)
+            && number.low_u64() >= cmp::max(256, self.context.block_number) - 256
         {
-            let index = self.env_info.number - number.low_u64() - 1;
+            let index = self.context.block_number - number.low_u64() - 1;
             assert!(
-                index < self.env_info.last_hashes.len() as u64,
+                index < self.context.last_hashes.len() as u64,
                 format!(
-                    "Inconsistent env_info, should contain at least {:?} last hashes",
+                    "Inconsistent context, should contain at least {:?} last hashes",
                     index + 1
                 )
             );
-            let r = self.env_info.last_hashes[index as usize];
+            let r = self.context.last_hashes[index as usize];
             trace!(
-                "ext: blockhash({}) -> {} self.env_info.number={}\n",
+                "ext: blockhash({}) -> {} self.context.block_number={}\n",
                 number,
                 r,
-                self.env_info.number
+                self.context.block_number
             );
             r
         } else {
             trace!(
-                "ext: blockhash({}) -> null self.env_info.number={}\n",
+                "ext: blockhash({}) -> null self.context.block_number={}\n",
                 number,
-                self.env_info.number
+                self.context.block_number
             );
             H256::zero()
         }

@@ -52,8 +52,6 @@ extern crate transient_hashmap;
 #[cfg(test)]
 extern crate cita_crypto;
 
-pub mod env_info;
-
 #[macro_use]
 pub mod error;
 pub mod filters;

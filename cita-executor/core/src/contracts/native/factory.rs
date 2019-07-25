@@ -1,11 +1,14 @@
-use crate::cita_executive::{EnvInfo, VmExecParams};
-use crate::types::reserved_addresses;
-use cita_types::Address;
-use cita_vm::evm::DataProvider;
-use cita_vm::evm::InterpreterResult;
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
+
+use crate::cita_executive::VmExecParams;
+use crate::types::context::Context;
+use crate::types::reserved_addresses;
+
+use cita_types::Address;
+use cita_vm::evm::DataProvider;
+use cita_vm::evm::InterpreterResult;
 
 pub type Signature = u32;
 pub trait ContractClone {
@@ -33,7 +36,7 @@ pub trait Contract: Sync + Send + ContractClone {
     fn exec(
         &mut self,
         params: &VmExecParams,
-        env_info: &EnvInfo,
+        context: &Context,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError>;
 

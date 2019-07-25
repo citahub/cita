@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::cita_executive::EnvInfo;
 // use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::tools::method as method_tools;
 // use crate::engines::NullEngine;
@@ -27,6 +26,7 @@ use std::str::FromStr;
 // use util::BytesRef;
 use crate::cita_executive::{build_evm_config, build_evm_context};
 use crate::libexecutor::executor::CitaTrieDB;
+use crate::types::context::Context;
 use cita_vm::state::State as CitaState;
 use cita_vm::Transaction as EVMTransaction;
 use std::cell::RefCell;
@@ -42,7 +42,7 @@ lazy_static! {
 pub fn auto_exec(
     state: Arc<RefCell<CitaState<CitaTrieDB>>>,
     auto_exec_quota_limit: u64,
-    env_info: EnvInfo,
+    context: Context,
 ) {
     let hash = &*AUTO_EXEC_HASH;
     let evm_transaction = EVMTransaction {
@@ -56,9 +56,9 @@ pub fn auto_exec(
     };
 
     let evm_config = build_evm_config(auto_exec_quota_limit);
-    let evm_context = build_evm_context(&env_info);
+    let evm_context = build_evm_context(&context);
 
-    let block_provider = EVMBlockDataProvider::new(env_info.clone());
+    let block_provider = EVMBlockDataProvider::new(context.clone());
     match cita_vm::exec(
         Arc::new(block_provider),
         state,

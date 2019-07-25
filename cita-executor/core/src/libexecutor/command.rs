@@ -19,7 +19,7 @@ use super::economical_model::EconomicalModel;
 use super::executor::CitaTrieDB;
 use super::executor::{make_consensus_config, Executor};
 use super::sys_config::GlobalSysConfig;
-use crate::cita_executive::{CitaExecutive, EnvInfo, ExecutedResult as CitaExecuted};
+use crate::cita_executive::{CitaExecutive, ExecutedResult as CitaExecuted};
 use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::solc::{
     sys_config::ChainId, PermissionManagement, SysConfig, VersionManager,
@@ -29,6 +29,7 @@ use crate::libexecutor::block::EVMBlockDataProvider;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::call_request::CallRequest;
 use crate::trie_db::TrieDB;
+use crate::types::context::Context;
 use crate::types::ids::BlockId;
 use crate::types::transaction::{Action, SignedTransaction, Transaction};
 pub use byteorder::{BigEndian, ByteOrder};
@@ -263,8 +264,8 @@ impl Commander for Executor {
     fn call(&self, t: &SignedTransaction, block_id: BlockId) -> Result<CitaExecuted, CallError> {
         let header = self.block_header(block_id).ok_or(CallError::StatePruned)?;
         let last_hashes = self.build_last_hashes(Some(header.hash().unwrap()), header.number());
-        let env_info = EnvInfo {
-            number: header.number(),
+        let context = Context {
+            block_number: header.number(),
             coin_base: *header.proposer(),
             timestamp: if self.eth_compatibility {
                 header.timestamp() / 1000
@@ -273,9 +274,9 @@ impl Commander for Executor {
             },
             difficulty: U256::default(),
             last_hashes: ::std::sync::Arc::new(last_hashes),
-            gas_used: *header.quota_used(),
-            gas_limit: *header.quota_limit(),
-            account_gas_limit: u64::max_value().into(),
+            quota_used: *header.quota_used(),
+            block_quota_limit: *header.quota_limit(),
+            account_quota_limit: u64::max_value().into(),
         };
 
         // FIXME: Need to implement state_at
@@ -286,7 +287,7 @@ impl Commander for Executor {
         let mut conf = self.sys_config.block_sys_config.clone();
         conf.exempt_checking();
 
-        let block_data_provider = EVMBlockDataProvider::new(env_info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let native_factory = NativeFactory::default();
 
         let state_root = if let Some(h) = self.block_header(block_id) {
@@ -312,7 +313,7 @@ impl Commander for Executor {
             Arc::new(block_data_provider),
             state,
             &native_factory,
-            &env_info,
+            &context,
             conf.economical_model,
         )
         .exec(t, &conf)
