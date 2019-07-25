@@ -79,10 +79,9 @@ mod forward;
 
 use crate::block_processor::BlockProcessor;
 use crate::forward::Forward;
-use cita_db::{Config as DatabaseConfig, RocksDB};
+use cita_db::{Config as DatabaseConfig, RocksDB, NUM_COLUMNS};
 use cita_directories::DataPath;
 use clap::App;
-use core::db;
 use core::libchain;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::{channel, start_pubsub};
@@ -132,7 +131,7 @@ fn main() {
 
     let nosql_path = DataPath::nosql_path();
     trace!("nosql_path is {:?}", nosql_path);
-    let db_config = DatabaseConfig::with_category_num(db::NUM_COLUMNS);
+    let db_config = DatabaseConfig::with_category_num(NUM_COLUMNS);
     // TODO Fix the unwrap
     let db = RocksDB::open(&nosql_path, &db_config).unwrap();
 

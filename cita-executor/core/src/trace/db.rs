@@ -21,7 +21,7 @@ use crate::bloomchain::group::{BloomGroup, BloomGroupChain, BloomGroupDatabase, 
 use crate::bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
 use crate::cache_manager::CacheManager;
 use crate::cita_db::{DBTransaction, KeyValueDB};
-use crate::db::{self, CacheUpdatePolicy, Key, Readable, Writable};
+use crate::db::{self, CacheUpdatePolicy, DBIndex, Readable, Writable};
 use crate::header::BlockNumber;
 use crate::log_blooms::LogBloomGroup;
 use crate::trace::{
@@ -43,10 +43,10 @@ enum TraceDBIndex {
     BloomGroups = 1,
 }
 
-impl Key<FlatBlockTraces> for H256 {
-    type Target = H264;
+impl DBIndex<FlatBlockTraces> for H256 {
+    type Item = H264;
 
-    fn key(&self) -> H264 {
+    fn get_index(&self) -> H264 {
         let mut result = H264::default();
         result[0] = TraceDBIndex::BlockTraces as u8;
         result[1..33].copy_from_slice(self);
@@ -82,10 +82,10 @@ impl Deref for TraceGroupKey {
     }
 }
 
-impl Key<LogBloomGroup> for TraceGroupPosition {
-    type Target = TraceGroupKey;
+impl DBIndex<LogBloomGroup> for TraceGroupPosition {
+    type Item = TraceGroupKey;
 
-    fn key(&self) -> Self::Target {
+    fn get_index(&self) -> Self::Item {
         let mut result = [0u8; 6];
         result[0] = TraceDBIndex::BloomGroups as u8;
         result[1] = self.0.level as u8;

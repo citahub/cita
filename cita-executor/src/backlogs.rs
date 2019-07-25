@@ -17,10 +17,10 @@
 
 use super::core::libexecutor::block::{ClosedBlock, OpenBlock};
 use cita_types::Address;
+use itertools::Itertools;
 use libproto::{ExecutedResult, Proof};
 use std::cmp::min;
 use std::collections::BTreeMap;
-use itertools::Itertools;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Priority {

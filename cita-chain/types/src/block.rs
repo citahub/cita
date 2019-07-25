@@ -17,7 +17,7 @@
 
 use crate::header::{Header, OpenHeader};
 
-use crate::extras::TransactionAddress;
+use crate::extras::TransactionIndex;
 use cita_types::H256;
 use std::collections::HashMap;
 
@@ -158,7 +158,7 @@ impl Block {
 }
 
 /// body of block.
-#[derive(Default, Debug, Clone, PartialEq, RlpEncodableWrapper, RlpDecodableWrapper)]
+#[derive(Default, Debug, Clone, PartialEq, RlpEncodable, RlpDecodable)]
 pub struct BlockBody {
     /// The transactions in this body.
     pub transactions: Vec<SignedTransaction>,
@@ -206,19 +206,19 @@ impl BlockBody {
         self.transactions().iter().map(|ts| ts.hash()).collect()
     }
 
-    pub fn transaction_addresses(&self, hash: H256) -> HashMap<H256, TransactionAddress> {
+    pub fn transaction_indexes(&self, hash: H256) -> HashMap<H256, TransactionIndex> {
         let tx_hashs = self.transaction_hashes();
-        // Create TransactionAddress
-        let mut transactions = HashMap::new();
+        // Create TransactionIndex
+        let mut tx_indexes = HashMap::new();
         for (i, tx_hash) in tx_hashs.into_iter().enumerate() {
-            let address = TransactionAddress {
+            let index = TransactionIndex {
                 block_hash: hash,
                 index: i,
             };
-            transactions.insert(tx_hash, address);
+            tx_indexes.insert(tx_hash, index);
         }
 
-        trace!("closed block transactions {:?}", transactions);
-        transactions
+        trace!("closed block transactions {:?}", tx_indexes);
+        tx_indexes
     }
 }

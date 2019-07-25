@@ -18,7 +18,7 @@
 
 use crate::basic_types::LogBloomGroup;
 use crate::block::BlockBody;
-use crate::db::Key;
+use crate::db::DBIndex;
 use crate::header::{BlockNumber, Header};
 use crate::receipt::Receipt;
 use bloomchain::group::GroupPosition;
@@ -32,7 +32,7 @@ use util::*;
 #[derive(Copy, Debug, Hash, Eq, PartialEq, Clone)]
 pub enum ExtrasIndex {
     /// Transaction address index
-    TransactionAddress = 0,
+    TransactionIndex = 0,
     /// Block receipts index
     BlockReceipts = 1,
     /// Block blooms index
@@ -47,54 +47,54 @@ pub enum ExtrasIndex {
 
 pub struct CurrentHash;
 
-impl Key<H256> for CurrentHash {
-    type Target = H256;
+impl DBIndex<H256> for CurrentHash {
+    type Item = H256;
 
-    fn key(&self) -> H256 {
+    fn get_index(&self) -> H256 {
         H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f66")
     }
 }
 
 pub struct CurrentProof;
 
-impl Key<Proof> for CurrentProof {
-    type Target = H256;
+impl DBIndex<Proof> for CurrentProof {
+    type Item = H256;
 
-    fn key(&self) -> H256 {
+    fn get_index(&self) -> H256 {
         H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f67")
     }
 }
 
 pub struct CurrentHeight;
 
-impl Key<BlockNumber> for CurrentHeight {
-    type Target = H256;
+impl DBIndex<BlockNumber> for CurrentHeight {
+    type Item = H256;
 
-    fn key(&self) -> H256 {
+    fn get_index(&self) -> H256 {
         H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f68")
     }
 }
 
-impl Key<Header> for H256 {
-    type Target = H256;
+impl DBIndex<Header> for H256 {
+    type Item = H256;
 
-    fn key(&self) -> H256 {
+    fn get_index(&self) -> H256 {
         *self
     }
 }
 
-impl Key<BlockBody> for H256 {
-    type Target = H256;
+impl DBIndex<BlockBody> for H256 {
+    type Item = H256;
 
-    fn key(&self) -> H256 {
+    fn get_index(&self) -> H256 {
         *self
     }
 }
 
-impl Key<BlockNumber> for H256 {
-    type Target = H256;
+impl DBIndex<BlockNumber> for H256 {
+    type Item = H256;
 
-    fn key(&self) -> H256 {
+    fn get_index(&self) -> H256 {
         *self
     }
 }
@@ -119,10 +119,10 @@ impl Deref for BlockNumberKeyLong {
     }
 }
 
-impl Key<Header> for BlockNumber {
-    type Target = BlockNumberKeyLong;
+impl DBIndex<Header> for BlockNumber {
+    type Item = BlockNumberKeyLong;
 
-    fn key(&self) -> Self::Target {
+    fn get_index(&self) -> Self::Item {
         let mut result = [0u8; 9];
         result[0] = ExtrasIndex::BlockHeadHash as u8;
         result[1] = (self >> 56) as u8;
@@ -137,10 +137,10 @@ impl Key<Header> for BlockNumber {
     }
 }
 
-impl Key<BlockBody> for BlockNumber {
-    type Target = BlockNumberKeyLong;
+impl DBIndex<BlockBody> for BlockNumber {
+    type Item = BlockNumberKeyLong;
 
-    fn key(&self) -> Self::Target {
+    fn get_index(&self) -> Self::Item {
         let mut result = [0u8; 9];
         result[0] = ExtrasIndex::BlockBodyHash as u8;
         result[1] = (self >> 56) as u8;
@@ -155,10 +155,10 @@ impl Key<BlockBody> for BlockNumber {
     }
 }
 
-impl Key<H256> for BlockNumber {
-    type Target = BlockNumberKey;
+impl DBIndex<H256> for BlockNumber {
+    type Item = BlockNumberKey;
 
-    fn key(&self) -> Self::Target {
+    fn get_index(&self) -> Self::Item {
         let mut result = [0u8; 5];
         result[0] = ExtrasIndex::BlockHash as u8;
         result[1] = (self >> 24) as u8;
@@ -176,18 +176,18 @@ fn with_index(hash: &H256, i: ExtrasIndex) -> H264 {
     result
 }
 
-impl Key<TransactionAddress> for H256 {
-    type Target = H264;
+impl DBIndex<TransactionIndex> for H256 {
+    type Item = H264;
 
-    fn key(&self) -> H264 {
-        with_index(self, ExtrasIndex::TransactionAddress)
+    fn get_index(&self) -> H264 {
+        with_index(self, ExtrasIndex::TransactionIndex)
     }
 }
 
-impl Key<BlockReceipts> for H256 {
-    type Target = H264;
+impl DBIndex<BlockReceipts> for H256 {
+    type Item = H264;
 
-    fn key(&self) -> H264 {
+    fn get_index(&self) -> H264 {
         with_index(self, ExtrasIndex::BlockReceipts)
     }
 }
@@ -217,10 +217,10 @@ impl HeapSizeOf for LogGroupPosition {
     }
 }
 
-impl Key<LogBloomGroup> for LogGroupPosition {
-    type Target = LogGroupKey;
+impl DBIndex<LogBloomGroup> for LogGroupPosition {
+    type Item = LogGroupKey;
 
-    fn key(&self) -> Self::Target {
+    fn get_index(&self) -> Self::Item {
         let mut result = [0u8; 6];
         result[0] = ExtrasIndex::BlocksBlooms as u8;
         result[1] = self.0.level as u8;
@@ -234,22 +234,22 @@ impl Key<LogBloomGroup> for LogGroupPosition {
 
 /// Represents address of certain transaction within block
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct TransactionAddress {
+pub struct TransactionIndex {
     /// Block hash
     pub block_hash: H256,
     /// Transaction index within the block
     pub index: usize,
 }
 
-impl HeapSizeOf for TransactionAddress {
+impl HeapSizeOf for TransactionIndex {
     fn heap_size_of_children(&self) -> usize {
         0
     }
 }
 
-impl Decodable for TransactionAddress {
+impl Decodable for TransactionIndex {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        let tx_address = TransactionAddress {
+        let tx_address = TransactionIndex {
             block_hash: rlp.val_at(0)?,
             index: rlp.val_at(1)?,
         };
@@ -258,7 +258,7 @@ impl Decodable for TransactionAddress {
     }
 }
 
-impl Encodable for TransactionAddress {
+impl Encodable for TransactionIndex {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.begin_list(2);
         s.append(&self.block_hash);
