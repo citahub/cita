@@ -24,7 +24,7 @@ use crate::contracts::solc::{
 };
 use crate::engines::NullEngine;
 use crate::error::CallError;
-use crate::executive::{Executed, Executive, TransactOptions};
+use crate::executive::{Executed, Executive};
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::call_request::CallRequest;
 use crate::state::State;
@@ -271,7 +271,7 @@ impl Commander for Executor {
         &self,
         t: &SignedTransaction,
         block_id: BlockId,
-        analytics: CallAnalytics,
+        _analytics: CallAnalytics,
     ) -> Result<Executed, CallError> {
         let header = self.block_header(block_id).ok_or(CallError::StatePruned)?;
         let last_hashes = self.build_last_hashes(Some(header.hash().unwrap()), header.number());
@@ -292,11 +292,6 @@ impl Commander for Executor {
         // that's just a copy of the state.
         let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
 
-        let options = TransactOptions {
-            tracing: analytics.transaction_tracing,
-            vm_tracing: analytics.vm_tracing,
-        };
-
         // Never check permission and quota
         let mut conf = self.sys_config.block_sys_config.clone();
         conf.exempt_checking();
@@ -311,7 +306,7 @@ impl Commander for Executor {
             EconomicalModel::Quota,
             self.sys_config.block_sys_config.chain_version,
         )
-        .transact(t, options, &conf)
+        .transact(t, &conf)
         .map_err(Into::into)
     }
 

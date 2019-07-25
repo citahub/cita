@@ -25,7 +25,6 @@ use crate::libexecutor::economical_model::EconomicalModel;
 use crate::state::backend::Backend as StateBackend;
 use crate::state::State;
 use crate::substate::Substate;
-use crate::trace::{Tracer, VMTracer};
 use cita_types::{Address, H256, U256};
 use evm::action_params::{ActionParams, ActionValue};
 use evm::call_type::CallType;
@@ -71,10 +70,8 @@ impl OriginInfo {
 }
 
 /// Implementation of evm Externalities.
-pub struct Externalities<'a, T: 'a, V: 'a, B: 'a>
+pub struct Externalities<'a, B: 'a>
 where
-    T: Tracer,
-    V: VMTracer,
     B: StateBackend,
 {
     state: &'a mut State<B>,
@@ -87,17 +84,13 @@ where
     substate: &'a mut Substate,
     schedule: Schedule,
     output: OutputPolicy<'a, 'a>,
-    tracer: &'a mut T,
-    vm_tracer: &'a mut V,
     static_flag: bool,
     economical_model: EconomicalModel,
     chain_version: u32,
 }
 
-impl<'a, T: 'a, V: 'a, B: 'a> Externalities<'a, T, V, B>
+impl<'a, B: 'a> Externalities<'a, B>
 where
-    T: Tracer,
-    V: VMTracer,
     B: StateBackend,
 {
     /// Basic `Externalities` constructor.
@@ -112,8 +105,6 @@ where
         origin_info: OriginInfo,
         substate: &'a mut Substate,
         output: OutputPolicy<'a, 'a>,
-        tracer: &'a mut T,
-        vm_tracer: &'a mut V,
         static_flag: bool,
         economical_model: EconomicalModel,
         chain_version: u32,
@@ -129,8 +120,6 @@ where
             substate,
             schedule: Schedule::new_v1(),
             output,
-            tracer,
-            vm_tracer,
             static_flag,
             economical_model,
             chain_version,
@@ -138,10 +127,8 @@ where
     }
 }
 
-impl<'a, T: 'a, V: 'a, B: 'a> evm::Ext for Externalities<'a, T, V, B>
+impl<'a, B: 'a> evm::Ext for Externalities<'a, B>
 where
-    T: Tracer,
-    V: VMTracer,
     B: StateBackend,
 {
     fn storage_at(&self, key: &H256) -> evm::Result<H256> {
@@ -255,7 +242,7 @@ where
         );
 
         // TODO: handle internal error separately
-        match ex.create(&params, self.substate, self.tracer, self.vm_tracer) {
+        match ex.create(&params, self.substate) {
             Ok(FinalizationResult {
                 gas_left,
                 apply_state: true,
@@ -331,8 +318,6 @@ where
             &params,
             self.substate,
             BytesRef::Fixed(output),
-            self.tracer,
-            self.vm_tracer,
         ) {
             Ok(FinalizationResult {
                 gas_left,
@@ -433,7 +418,6 @@ where
             }
         }
 
-        self.tracer.trace_suicide(address, balance, *refund_address);
         self.substate.suicides.insert(address);
         Ok(())
     }
@@ -452,21 +436,5 @@ where
 
     fn inc_sstore_clears(&mut self) {
         self.substate.sstore_clears_count = self.substate.sstore_clears_count + U256::one();
-    }
-
-    fn trace_prepare_execute(&mut self, pc: usize, instruction: u8, gas_cost: &U256) -> bool {
-        self.vm_tracer
-            .trace_prepare_execute(pc, instruction, gas_cost)
-    }
-
-    fn trace_executed(
-        &mut self,
-        gas_used: U256,
-        stack_push: &[U256],
-        mem_diff: Option<(usize, &[u8])>,
-        store_diff: Option<(U256, U256)>,
-    ) {
-        self.vm_tracer
-            .trace_executed(gas_used, stack_push, mem_diff, store_diff)
     }
 }

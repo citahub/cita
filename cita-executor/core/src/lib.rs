@@ -88,7 +88,6 @@ pub mod state;
 pub mod state_db;
 #[cfg(test)]
 pub mod tests;
-pub mod trace;
 #[macro_use]
 pub mod engines;
 pub mod error;

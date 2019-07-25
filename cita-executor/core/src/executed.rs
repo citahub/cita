@@ -18,7 +18,6 @@
 
 use crate::cita_db::trie;
 use crate::receipt::ReceiptError;
-use crate::trace::{FlatTrace, VMTrace};
 use crate::types::log_entry::LogEntry;
 use crate::types::state_diff::StateDiff;
 use cita_types::{Address, U256, U512};
@@ -62,10 +61,6 @@ pub struct Executed {
     pub contracts_created: Vec<Address>,
     /// Transaction output.
     pub output: Bytes,
-    /// The trace of this transaction.
-    pub trace: Vec<FlatTrace>,
-    /// The VM trace of this transaction.
-    pub vm_trace: Option<VMTrace>,
     /// The state diff, if we traced it.
     pub state_diff: Option<StateDiff>,
     /// Transaction sender account nonce

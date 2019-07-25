@@ -23,8 +23,6 @@ use crate::libexecutor::economical_model::EconomicalModel;
 use crate::state::State;
 use crate::state::Substate;
 use crate::state_db::StateDB;
-use crate::trace::Tracer;
-use crate::trace::{NoopTracer, NoopVMTracer};
 use crate::types::reserved_addresses;
 use cita_types::{Address, H160, U256};
 use evm::action_params::{ActionParams, ActionValue};
@@ -64,16 +62,13 @@ pub fn auto_exec(
     };
 
     let mut substate = Substate::new();
-    let mut tracer = NoopTracer;
     let mut out = vec![];
-    let mut trace_output = tracer.prepare_trace_output();
-    let output = OutputPolicy::Return(BytesRef::Flexible(&mut out), trace_output.as_mut());
+    let output = OutputPolicy::Return(BytesRef::Flexible(&mut out), None);
     let factory = Factory::new(VMType::Interpreter, 1024 * 32);
 
     let engine = NullEngine::default();
     let native_factory = NativeFactory::default();
     let origin_info = OriginInfo::from(&params);
-    let mut vm_tracer = NoopVMTracer;
     let mut ext = Externalities::new(
         state,
         &env_info,
@@ -84,8 +79,6 @@ pub fn auto_exec(
         origin_info,
         &mut substate,
         output,
-        &mut tracer,
-        &mut vm_tracer,
         false,
         economical_model,
         chain_version,

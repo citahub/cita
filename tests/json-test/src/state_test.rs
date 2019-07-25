@@ -82,7 +82,7 @@ pub fn test_json_file(p: &str) {
 
             // Execute transactions
             let result: ApplyResult =
-                state.apply(&env_info, &engine, &signed_transaction, true, &config);
+                state.apply(&env_info, &engine, &signed_transaction, &config);
             match result {
                 Ok(outcome) => {
                     debug!("lalalal receipt error: {:?}", outcome.receipt.error);
