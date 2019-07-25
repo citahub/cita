@@ -20,7 +20,6 @@ use super::fsm::FSM;
 use super::sys_config::GlobalSysConfig;
 use crate::bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 use crate::cita_db::kvdb::{DBTransaction, Database, DatabaseConfig};
-use crate::cita_db::trie::{TrieFactory, TrieSpec};
 use crate::cita_db::{journaldb, KeyValueDB};
 use crate::contracts::{native::factory::Factory as NativeFactory, solc::NodeManager};
 use crate::db;
@@ -83,11 +82,11 @@ impl Executor {
             .unwrap_or(journaldb::Algorithm::Archive);
         let journal_db = journaldb::new(Arc::clone(&database), journaldb_type, COL_STATE);
         let state_db = StateDB::new(journal_db, statedb_cache_size);
-        let trie_factory = TrieFactory::new(TrieSpec::Generic);
+        // let trie_factory = TrieFactory::new(TrieSpec::Generic);
         let factories = Factories {
             vm: EvmFactory::default(),
             native: NativeFactory::default(),
-            trie: trie_factory,
+            // trie: trie_factory,
             // accountdb: Default::default(),
         };
         let current_header = match get_current_header(&*database) {
