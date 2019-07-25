@@ -16,7 +16,7 @@
 
 //! General error types for use in ethcore.
 
-use crate::basic_types::LogBloom;
+use crate::log_entry::LogBloom;
 use cita_ed25519::Error as EthkeyError;
 
 use crate::cita_trie::TrieError;

@@ -16,7 +16,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::authentication::AuthenticationError;
-use crate::basic_types::LogBloom;
 use crate::cita_executive::{CitaExecutive, EnvInfo, ExecutedException, ExecutionError};
 use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::core::env_info::LastHashes;
@@ -25,6 +24,7 @@ use crate::libexecutor::auto_exec::auto_exec;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::CitaTrieDB;
 use crate::libexecutor::sys_config::BlockSysConfig;
+use crate::log_entry::LogBloom;
 use crate::receipt::{Receipt, ReceiptError};
 use crate::tx_gas_schedule::TxGasSchedule;
 pub use crate::types::block::{Block, BlockBody, OpenBlock};

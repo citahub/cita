@@ -17,7 +17,6 @@
 
 //! Block header.
 
-use crate::basic_types::{LogBloom, ZERO_LOGBLOOM};
 use cita_types::{Address, H256, U256};
 use libproto::blockchain::{
     Block as ProtoBlock, BlockHeader as ProtoBlockHeader, Proof as ProtoProof, ProofType,
@@ -32,6 +31,13 @@ use time::get_time;
 pub use crate::BlockNumber;
 use hashable::{Hashable, HASH_NULL_RLP};
 use util::{Bytes, HeapSizeOf};
+
+// from parity
+pub use crate::log_blooms::LogBloomGroup;
+pub use crate::log_entry::LogBloom;
+lazy_static! {
+    pub static ref ZERO_LOGBLOOM: LogBloom = LogBloom::from([0x00; 256]);
+}
 
 #[derive(Debug, Clone, Eq)]
 pub struct OpenHeader {

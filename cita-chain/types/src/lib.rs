@@ -28,7 +28,6 @@ extern crate cita_database as cita_db;
 
 pub extern crate bloomchain;
 
-pub mod basic_types;
 pub mod block;
 pub mod db;
 pub mod extras;
