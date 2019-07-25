@@ -131,40 +131,45 @@ impl<'a, B: 'a> evm::Ext for Externalities<'a, B>
 where
     B: StateBackend,
 {
-    fn storage_at(&self, key: &H256) -> evm::Result<H256> {
-        self.state
-            .storage_at(&self.origin_info.address, key)
-            .map_err(Into::into)
+    fn storage_at(&self, _key: &H256) -> evm::Result<H256> {
+        unimplemented!()
+        // self.state
+        //     .storage_at(&self.origin_info.address, key)
+        //     .map_err(Into::into)
     }
 
-    fn set_storage(&mut self, key: H256, value: H256) -> evm::Result<()> {
-        if self.static_flag {
-            Err(evm::Error::MutableCallInStaticContext)
-        } else {
-            self.state
-                .set_storage(&self.origin_info.address, key, value)
-                .map_err(Into::into)
-        }
+    fn set_storage(&mut self, _key: H256, _value: H256) -> evm::Result<()> {
+        unimplemented!()
+        // if self.static_flag {
+        //     Err(evm::Error::MutableCallInStaticContext)
+        // } else {
+        //     self.state
+        //         .set_storage(&self.origin_info.address, key, value)
+        //         .map_err(Into::into)
+        // }
     }
 
     fn is_static(&self) -> bool {
         self.static_flag
     }
 
-    fn exists(&self, address: &Address) -> evm::Result<bool> {
-        self.state.exists(address).map_err(Into::into)
+    fn exists(&self, _address: &Address) -> evm::Result<bool> {
+        unimplemented!()
+        // self.state.exists(address).map_err(Into::into)
     }
 
-    fn exists_and_not_null(&self, address: &Address) -> evm::Result<bool> {
-        self.state.exists_and_not_null(address).map_err(Into::into)
+    fn exists_and_not_null(&self, _address: &Address) -> evm::Result<bool> {
+        unimplemented!()
+        // self.state.exists_and_not_null(address).map_err(Into::into)
     }
 
     fn origin_balance(&self) -> evm::Result<U256> {
         self.balance(&self.origin_info.address).map_err(Into::into)
     }
 
-    fn balance(&self, address: &Address) -> evm::Result<U256> {
-        self.state.balance(address).map_err(Into::into)
+    fn balance(&self, _address: &Address) -> evm::Result<U256> {
+        unimplemented!()
+        // self.state.balance(address).map_err(Into::into)
     }
 
     fn blockhash(&self, number: &U256) -> H256 {
@@ -314,11 +319,7 @@ where
             self.chain_version,
         );
 
-        match ex.call(
-            &params,
-            self.substate,
-            BytesRef::Fixed(output),
-        ) {
+        match ex.call(&params, self.substate, BytesRef::Fixed(output)) {
             Ok(FinalizationResult {
                 gas_left,
                 return_data,
@@ -333,15 +334,17 @@ where
         }
     }
 
-    fn extcode(&self, address: &Address) -> evm::Result<Arc<Bytes>> {
-        Ok(self
-            .state
-            .code(address)?
-            .unwrap_or_else(|| Arc::new(vec![])))
+    fn extcode(&self, _address: &Address) -> evm::Result<Arc<Bytes>> {
+        unimplemented!()
+        // Ok(self
+        //     .state
+        //     .code(address)?
+        //     .unwrap_or_else(|| Arc::new(vec![])))
     }
 
-    fn extcodesize(&self, address: &Address) -> evm::Result<usize> {
-        Ok(self.state.code_size(address)?.unwrap_or(0))
+    fn extcodesize(&self, _address: &Address) -> evm::Result<usize> {
+        unimplemented!()
+        // Ok(self.state.code_size(address)?.unwrap_or(0))
     }
 
     fn ret(mut self, gas: &U256, data: &ReturnData, apply_state: bool) -> evm::Result<U256>
@@ -377,8 +380,8 @@ where
 
                 handle_copy(copy);
 
-                self.state
-                    .init_code(&self.origin_info.address, data.to_vec())?;
+                // self.state
+                //     .init_code(&self.origin_info.address, data.to_vec())?;
                 Ok(*gas - return_cost)
             }
             OutputPolicy::InitContract(_) => Ok(*gas),
@@ -407,14 +410,14 @@ where
         }
 
         let address = self.origin_info.address;
-        let balance = self.balance(&address)?;
+        let _balance = self.balance(&address)?;
 
         if self.chain_version > 1 {
             if &address == refund_address {
-                self.state.sub_balance(&address, &balance)?;
+                // self.state.sub_balance(&address, &balance)?;
             } else {
-                self.state
-                    .transfer_balance(&address, refund_address, &balance)?;
+                // self.state
+                //     .transfer_balance(&address, refund_address, &balance)?;
             }
         }
 

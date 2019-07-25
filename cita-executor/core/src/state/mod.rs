@@ -22,7 +22,7 @@
 use crate::cita_db::{trie, TrieError};
 use crate::engines::Engine;
 use crate::error::{Error, ExecutionError};
-use crate::executive::{Executive};
+use crate::executive::Executive;
 use crate::factory::Factories;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
@@ -366,7 +366,6 @@ impl<B: Backend> State<B> {
 
     /// Mutate storage of account `address` so that it is `value` for `key`.
     pub fn storage_at(&self, _address: &Address, _key: &H256) -> trie::Result<H256> {
-
         unimplemented!()
         // Storage key search and update works like this:
         // 1. If there's an entry for the account in the local cache check for the key and return it if found.
@@ -749,9 +748,7 @@ impl<B: Backend> State<B> {
                     0.into(),
                     t.get_transaction_hash(),
                 );
-                Ok(ApplyOutcome {
-                    receipt,
-                })
+                Ok(ApplyOutcome { receipt })
             }
         }
     }
