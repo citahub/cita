@@ -5,7 +5,7 @@ use crate::bloomchain::group::{
 use crate::bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
 use crate::filters::{PollFilter, PollManager};
 use crate::header::{BlockNumber, Header};
-use crate::libchain::{cache::CacheSize, status::Status};
+use crate::libchain::status::Status;
 use crate::receipt::{LocalizedReceipt, Receipt};
 use cita_merklehash;
 use hashable::Hashable;
@@ -26,7 +26,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::Into;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
-use util::{HeapSizeOf, Mutex, RwLock};
+use util::{Mutex, RwLock};
 
 use crate::types::block::{Block, BlockBody, OpenBlock};
 pub use crate::types::extras::{
@@ -34,9 +34,8 @@ pub use crate::types::extras::{
     LogGroupPosition, TransactionIndex,
 };
 use crate::types::{
-    cache_manager::CacheManager, filter::Filter, ids::BlockId, ids::TransactionId,
-    log_entry::LocalizedLogEntry, log_entry::LogEntry, transaction::Action,
-    transaction::SignedTransaction,
+    filter::Filter, ids::BlockId, ids::TransactionId, log_entry::LocalizedLogEntry,
+    log_entry::LogEntry, transaction::Action, transaction::SignedTransaction,
 };
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, H264, U256};
@@ -219,22 +218,15 @@ pub enum CacheId {
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct Config {
     pub prooftype: u8,
-    pub cache_size: Option<usize>,
 }
 
 impl Config {
     pub fn default() -> Self {
-        Config {
-            prooftype: 2,
-            cache_size: Some(1 << 20),
-        }
+        Config { prooftype: 2 }
     }
 
     pub fn new(path: &str) -> Self {
-        let mut c: Config = parse_config!(Config, path);
-        if c.cache_size.is_none() {
-            c.cache_size = Some(1 << 20 as usize);
-        }
+        let c: Config = parse_config!(Config, path);
         c
     }
 }
@@ -276,15 +268,6 @@ pub struct Chain {
     pub proof_map: RwLock<BTreeMap<u64, ProtoProof>>,
     pub db: Arc<RocksDB>,
 
-    // block cache
-    pub block_headers: RwLock<HashMap<BlockNumber, Header>>,
-    pub block_bodies: RwLock<HashMap<BlockNumber, BlockBody>>,
-
-    // extra caches
-    pub block_hashes: RwLock<HashMap<H256, BlockNumber>>,
-    pub transaction_addresses: RwLock<HashMap<TransactionId, TransactionIndex>>,
-    pub blocks_blooms: RwLock<HashMap<LogGroupPosition, LogBloomGroup>>,
-    pub block_receipts: RwLock<HashMap<H256, BlockReceipts>>,
     pub nodes: RwLock<Vec<Address>>,
     pub validators: RwLock<Vec<Address>>,
     pub block_interval: RwLock<u64>,
@@ -293,12 +276,9 @@ pub struct Chain {
     pub account_quota_limit: RwLock<ProtoAccountGasLimit>,
     pub check_quota: AtomicBool,
 
-    pub cache_man: Mutex<CacheManager<CacheId>>,
     pub polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
-
     /// Proof type
     pub prooftype: u8,
-
     // snapshot flag
     pub is_snapshot: RwLock<bool>,
     admin_address: RwLock<Option<Address>>,
@@ -360,15 +340,8 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
 }
 
 impl Chain {
-    pub fn init_chain(db: Arc<RocksDB>, chain_config: &Config) -> Chain {
+    pub fn init_chain(db: Arc<RocksDB>, chain_config: Config) -> Chain {
         info!("chain config: {:?}", chain_config);
-
-        // 400 is the avarage size of the key
-        let cache_man = CacheManager::new(
-            chain_config.cache_size.unwrap() * 3 / 4,
-            chain_config.cache_size.unwrap(),
-            400,
-        );
 
         let blooms_config = BloomChainConfig {
             levels: LOG_BLOOMS_LEVELS,
@@ -394,13 +367,6 @@ impl Chain {
             current_height,
             max_store_height,
             block_map: RwLock::new(BTreeMap::new()),
-            block_headers: RwLock::new(HashMap::new()),
-            block_bodies: RwLock::new(HashMap::new()),
-            block_hashes: RwLock::new(HashMap::new()),
-            transaction_addresses: RwLock::new(HashMap::new()),
-            blocks_blooms: RwLock::new(HashMap::new()),
-            block_receipts: RwLock::new(HashMap::new()),
-            cache_man: Mutex::new(cache_man),
             db,
             polls_filter: Arc::new(Mutex::new(PollManager::default())),
             nodes: RwLock::new(Vec::new()),
@@ -1448,69 +1414,6 @@ impl Chain {
         } else {
             (0, 0)
         }
-    }
-
-    /// Get current cache size.
-    pub fn cache_size(&self) -> CacheSize {
-        CacheSize {
-            blocks: self.block_headers.read().heap_size_of_children()
-                + self.block_bodies.read().heap_size_of_children(),
-            transaction_addresses: self.transaction_addresses.read().heap_size_of_children(),
-            blocks_blooms: self.blocks_blooms.read().heap_size_of_children(),
-            block_receipts: self.block_receipts.read().heap_size_of_children(),
-        }
-    }
-
-    /// Ticks our cache system and throws out any old data.
-    pub fn collect_garbage(&self) {
-        let current_size = self.cache_size().total();
-
-        let mut block_headers = self.block_headers.write();
-        let mut block_bodies = self.block_bodies.write();
-        let mut block_hashes = self.block_hashes.write();
-        let mut transaction_addresses = self.transaction_addresses.write();
-        let mut blocks_blooms = self.blocks_blooms.write();
-        let mut block_receipts = self.block_receipts.write();
-
-        let mut cache_man = self.cache_man.lock();
-        cache_man.collect_garbage(current_size, |ids| {
-            for id in &ids {
-                match *id {
-                    CacheId::BlockHeaders(ref h) => {
-                        block_headers.remove(h);
-                    }
-                    CacheId::BlockBodies(ref h) => {
-                        block_bodies.remove(h);
-                    }
-                    CacheId::BlockHashes(ref h) => {
-                        block_hashes.remove(h);
-                    }
-                    CacheId::TransactionIndexes(ref h) => {
-                        transaction_addresses.remove(h);
-                    }
-                    CacheId::BlocksBlooms(ref h) => {
-                        blocks_blooms.remove(h);
-                    }
-                    CacheId::BlockReceipts(ref h) => {
-                        block_receipts.remove(h);
-                    }
-                }
-            }
-
-            block_headers.shrink_to_fit();
-            block_bodies.shrink_to_fit();
-            block_hashes.shrink_to_fit();
-            transaction_addresses.shrink_to_fit();
-            blocks_blooms.shrink_to_fit();
-            block_receipts.shrink_to_fit();
-
-            block_headers.heap_size_of_children()
-                + block_bodies.heap_size_of_children()
-                + block_hashes.heap_size_of_children()
-                + transaction_addresses.heap_size_of_children()
-                + blocks_blooms.heap_size_of_children()
-                + block_receipts.heap_size_of_children()
-        });
     }
 
     pub fn poll_filter(&self) -> Arc<Mutex<PollManager<PollFilter>>> {
