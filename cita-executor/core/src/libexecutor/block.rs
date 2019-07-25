@@ -24,7 +24,6 @@ use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::receipt::Receipt;
 use crate::state::State;
 use crate::state_db::StateDB;
-use crate::trace::FlatTrace;
 pub use crate::types::block::{Block, BlockBody, OpenBlock};
 use crate::types::transaction::SignedTransaction;
 use cita_merklehash;
@@ -55,7 +54,6 @@ pub struct ExecutedBlock {
     pub receipts: Vec<Receipt>,
     pub state: State<StateDB>,
     pub current_quota_used: U256,
-    traces: Option<Vec<Vec<FlatTrace>>>,
     last_hashes: Arc<LastHashes>,
     account_gas_limit: U256,
     account_gas: HashMap<Address, U256>,
@@ -81,7 +79,6 @@ impl ExecutedBlock {
     pub fn create(
         factories: Factories,
         conf: &BlockSysConfig,
-        tracing: bool,
         block: OpenBlock,
         db: StateDB,
         state_root: H256,
@@ -93,7 +90,6 @@ impl ExecutedBlock {
         let r = ExecutedBlock {
             block,
             state,
-            traces: if tracing { Some(Vec::new()) } else { None },
             last_hashes,
             account_gas_limit: conf.account_quota_limit.common_quota_limit.into(),
             account_gas: conf.account_quota_limit.specific_quota_limit.iter().fold(
@@ -149,13 +145,9 @@ impl ExecutedBlock {
             .get(t.sender())
             .expect("account should exist in account_gas_limit");
 
-        let has_traces = self.traces.is_some();
-        match self.state.apply(&env_info, engine, t, has_traces, conf) {
+        match self.state.apply(&env_info, engine, t, conf) {
             Ok(outcome) => {
                 trace!("apply signed transaction {} success", t.hash());
-                if let Some(ref mut traces) = self.traces {
-                    traces.push(outcome.trace);
-                }
                 let transaction_quota_used = outcome.receipt.quota_used - self.current_quota_used;
                 self.current_quota_used = outcome.receipt.quota_used;
                 if conf.check_options.quota {

@@ -34,7 +34,7 @@ impl Miner {
         // Cal contract address
         let contract_address = contract_address(&sender, &U256::from(0));
         // Apply tx and commit to state
-        let _ = state.apply(&env_info, &engine, &signed_transaction, false, &config);
+        let _ = state.apply(&env_info, &engine, &signed_transaction, &config);
         state.commit().unwrap();
 
         // Get account content according to contract address

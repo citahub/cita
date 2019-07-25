@@ -397,7 +397,6 @@ impl Executor {
         ExecutedBlock::create(
             self.factories.clone(),
             &self.sys_config.block_sys_config,
-            false,
             open_block,
             self.state_db.read().boxed_clone_canon(&parent_hash),
             current_state_root,

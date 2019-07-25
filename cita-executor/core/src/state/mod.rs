@@ -22,12 +22,11 @@
 use crate::cita_db::{trie, TrieError};
 use crate::engines::Engine;
 use crate::error::{Error, ExecutionError};
-use crate::executive::{Executive, TransactOptions};
+use crate::executive::{Executive};
 use crate::factory::Factories;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::receipt::{Receipt, ReceiptError};
-use crate::trace::FlatTrace;
 use crate::types::transaction::SignedTransaction;
 use cita_types::{Address, H256, U256};
 use evm::env_info::EnvInfo;
@@ -55,8 +54,6 @@ pub use crate::substate::Substate;
 pub struct ApplyOutcome {
     /// The receipt for the applied transaction.
     pub receipt: Receipt,
-    /// The trace for the applied transaction, if None if tracing is disabled.
-    pub trace: Vec<FlatTrace>,
 }
 
 /// Result type for the execution ("application") of a transaction.
@@ -638,13 +635,8 @@ impl<B: Backend> State<B> {
         env_info: &EnvInfo,
         engine: &Engine,
         t: &SignedTransaction,
-        tracing: bool,
         conf: &BlockSysConfig,
     ) -> ApplyResult {
-        let options = TransactOptions {
-            tracing,
-            vm_tracing: false,
-        };
         let vm_factory = self.factories.vm.clone();
         let native_factory = self.factories.native.clone();
 
@@ -658,7 +650,7 @@ impl<B: Backend> State<B> {
             conf.economical_model,
             conf.chain_version,
         )
-        .transact(t, options, conf)
+        .transact(t, conf)
         {
             Ok(e) => {
                 // trace!("Applied transaction. Diff:\n{}\n", state_diff::diff_pod(&old, &self.to_pod()));
@@ -686,7 +678,7 @@ impl<B: Backend> State<B> {
                 trace!(target: "state", "Transaction receipt: {:?}", receipt);
                 Ok(ApplyOutcome {
                     receipt,
-                    trace: e.trace,
+                    // trace: e.trace,
                 })
             }
             Err(err) => {
@@ -759,7 +751,6 @@ impl<B: Backend> State<B> {
                 );
                 Ok(ApplyOutcome {
                     receipt,
-                    trace: Vec::new(),
                 })
             }
         }
