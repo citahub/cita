@@ -171,12 +171,12 @@ enum RequireCache {
 //
 impl<B: Backend> State<B> {
     /// Creates new state with empty state root
-    pub fn new(mut db: B, factories: Factories) -> State<B> {
-        let mut root = H256::new();
-        {
-            // init trie and reset root to null
-            let _ = factories.trie.create(db.as_hashdb_mut(), &mut root);
-        }
+    pub fn new(db: B, factories: Factories) -> State<B> {
+        let root = H256::new();
+        // {
+        //     // init trie and reset root to null
+        //     let _ = factories.trie.create(db.as_hashdb_mut(), &mut root);
+        // }
 
         State {
             db,
