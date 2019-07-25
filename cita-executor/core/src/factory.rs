@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::cita_db::trie::TrieFactory;
 use crate::contracts::native::factory::Factory as NativeFactory;
 use evm::Factory as EvmFactory;
 
@@ -24,6 +23,4 @@ pub struct Factories {
     /// factory for evm.
     pub vm: EvmFactory,
     pub native: NativeFactory,
-    /// factory for tries.
-    pub trie: TrieFactory,
 }
