@@ -42,7 +42,7 @@ use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, H264, U256};
 
 use crate::cita_db::RocksDB;
-use crate::db::DBIndex;
+use crate::extras::DBIndex;
 use cita_db::Database;
 use rlp::decode;
 

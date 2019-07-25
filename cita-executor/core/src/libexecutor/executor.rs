@@ -26,7 +26,7 @@ pub use crate::libexecutor::block::*;
 use crate::libexecutor::genesis::Genesis;
 use crate::log_blooms::LogBloomGroup;
 use crate::trie_db::TrieDB;
-use crate::types::db::DBIndex;
+use crate::types::extras::DBIndex;
 use crate::types::extras::*;
 use crate::types::ids::BlockId;
 pub use byteorder::{BigEndian, ByteOrder};

@@ -17,7 +17,7 @@
 
 use crate::libexecutor::block::Block;
 use crate::libexecutor::executor::{CitaDB, CitaTrieDB};
-use crate::types::db::DBIndex;
+use crate::types::extras::DBIndex;
 use crate::types::extras::*;
 use crate::types::header::Header;
 use cita_database::{DataCategory, Database};

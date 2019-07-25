@@ -17,7 +17,6 @@
 //! Blockchain DB extras.
 
 use crate::block::BlockBody;
-use crate::db::DBIndex;
 use crate::header::{BlockNumber, Header};
 use crate::log_blooms::LogBloomGroup;
 use crate::receipt::Receipt;
@@ -43,6 +42,12 @@ pub enum ExtrasIndex {
     BlockHeadHash = 4,
     /// Block body index
     BlockBodyHash = 5,
+}
+
+pub trait DBIndex<T> {
+    type Item: Deref<Target = [u8]>;
+
+    fn get_index(&self) -> Self::Item;
 }
 
 pub struct CurrentHash;
