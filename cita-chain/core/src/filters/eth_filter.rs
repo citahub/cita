@@ -16,8 +16,8 @@
 
 use super::{limit_logs, PollFilter, PollId};
 use crate::libchain::chain::Chain;
+use crate::types::block_tag::{BlockTag, Tag};
 use crate::types::filter::Filter as EthcoreFilter;
-use crate::types::ids::BlockId;
 use cita_types::H256;
 use jsonrpc_types::rpc_types::{Filter, FilterChanges, Log};
 
@@ -73,8 +73,8 @@ impl EthFilter for Chain {
                     let current_number = self.get_current_height();
                     // build appropriate filter
                     let mut filter: EthcoreFilter = filter.clone().into();
-                    filter.from_block = BlockId::Number(*block_number);
-                    filter.to_block = BlockId::Latest;
+                    filter.from_block = BlockTag::Height(*block_number);
+                    filter.to_block = BlockTag::Tag(Tag::Latest);
                     // save the number of the next block as a first block from which
                     // we want to get logs
                     *block_number = current_number + 1;

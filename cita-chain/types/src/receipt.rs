@@ -16,8 +16,8 @@
 
 //! Receipt
 
+use crate::block_tag::BlockNumber;
 use crate::log_entry::{LocalizedLogEntry, LogBloom, LogEntry};
-use crate::BlockNumber;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use jsonrpc_types::rpc_types::Receipt as RpcReceipt;
@@ -26,7 +26,7 @@ use libproto::executor::{
 };
 use rlp::*;
 use std::str::FromStr;
-use util::{Bytes, HeapSizeOf};
+use util::Bytes;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {
@@ -328,12 +328,6 @@ impl Decodable for Receipt {
                 transaction_hash: rlp.val_at(6)?,
             })
         }
-    }
-}
-
-impl HeapSizeOf for Receipt {
-    fn heap_size_of_children(&self) -> usize {
-        self.logs.heap_size_of_children()
     }
 }
 

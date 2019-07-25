@@ -16,7 +16,7 @@
 
 //! Blockchain filter
 
-use crate::ids::BlockId;
+use crate::block_tag::BlockTag;
 use crate::log_entry::{LogBloom, LogEntry};
 use cita_types::traits::BloomTools;
 use cita_types::{Address, H256};
@@ -26,10 +26,10 @@ use jsonrpc_types::rpc_types::{Filter as RpcFilter, VariadicValue};
 #[derive(Debug, PartialEq)]
 pub struct Filter {
     /// Blockchain will be searched from this block.
-    pub from_block: BlockId,
+    pub from_block: BlockTag,
 
     /// Till this block.
-    pub to_block: BlockId,
+    pub to_block: BlockTag,
 
     /// Search addresses.
     ///
@@ -159,15 +159,15 @@ impl From<RpcFilter> for Filter {
 
 #[cfg(test)]
 mod tests {
+    use crate::block_tag::BlockTag;
     use crate::filter::Filter;
-    use crate::ids::BlockId;
     use crate::log_entry::{LogBloom, LogEntry};
 
     #[test]
     fn test_bloom_possibilities_none() {
         let none_filter = Filter {
-            from_block: BlockId::Earliest,
-            to_block: BlockId::Latest,
+            from_block: BlockTag::Earliest,
+            to_block: BlockTag::Latest,
             address: None,
             topics: vec![None, None, None, None],
             limit: None,
@@ -182,8 +182,8 @@ mod tests {
     #[test]
     fn test_bloom_possibilities_single_address_and_topic() {
         let filter = Filter {
-            from_block: BlockId::Earliest,
-            to_block: BlockId::Latest,
+            from_block: BlockTag::Earliest,
+            to_block: BlockTag::Latest,
             address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
             topics: vec![
                 Some(vec![
@@ -213,8 +213,8 @@ mod tests {
     #[test]
     fn test_bloom_possibilities_single_address_and_many_topics() {
         let filter = Filter {
-            from_block: BlockId::Earliest,
-            to_block: BlockId::Latest,
+            from_block: BlockTag::Earliest,
+            to_block: BlockTag::Latest,
             address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
             topics: vec![
                 Some(vec![
@@ -246,8 +246,8 @@ mod tests {
     #[test]
     fn test_bloom_possibilites_multiple_addresses_and_topics() {
         let filter = Filter {
-            from_block: BlockId::Earliest,
-            to_block: BlockId::Latest,
+            from_block: BlockTag::Earliest,
+            to_block: BlockTag::Latest,
             address: Some(vec![
                 "b372018f3be9e171df0581136b59d2faf73a7d5d".into(),
                 "b372018f3be9e171df0581136b59d2faf73a7d5d".into(),
@@ -351,8 +351,8 @@ mod tests {
     #[test]
     fn test_filter_matches() {
         let filter = Filter {
-            from_block: BlockId::Earliest,
-            to_block: BlockId::Latest,
+            from_block: BlockTag::Earliest,
+            to_block: BlockTag::Latest,
             address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
             topics: vec![
                 Some(vec![

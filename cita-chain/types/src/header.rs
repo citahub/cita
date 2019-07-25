@@ -28,7 +28,7 @@ use std::cmp;
 use std::ops::{Deref, DerefMut};
 use time::get_time;
 
-pub use crate::BlockNumber;
+pub use crate::block_tag::BlockNumber;
 use hashable::{Hashable, HASH_NULL_RLP};
 use util::{Bytes, HeapSizeOf};
 

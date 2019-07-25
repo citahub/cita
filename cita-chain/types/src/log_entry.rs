@@ -16,7 +16,7 @@
 
 //! Log entry type definition.
 
-use crate::BlockNumber;
+use crate::block_tag::BlockNumber;
 use cita_types::traits::BloomTools;
 use cita_types::{Address, Bloom, H256};
 use jsonrpc_types::rpc_types::Log as RpcLog;

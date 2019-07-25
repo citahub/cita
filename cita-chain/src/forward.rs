@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::types::block_tag::BlockTag;
 use crate::types::filter::Filter;
-use crate::types::ids::BlockId;
 use cita_types::H256;
 use core::filters::eth_filter::EthFilter;
 use core::libchain::chain::{BlockInQueue, Chain};
@@ -445,7 +445,7 @@ impl Forward {
             .into_iter()
             .filter(|height| *height <= self.chain.get_current_height())
         {
-            if let Some(block) = self.chain.block(BlockId::Number(height)) {
+            if let Some(block) = self.chain.block(BlockTag::Height(height)) {
                 res_vec.mut_blocks().push(block.protobuf());
                 //push double
                 if height == self.chain.get_current_height() {
@@ -580,7 +580,10 @@ impl Forward {
     fn deal_block_tx_req(&self, block_tx_hashes_req: &BlockTxHashesReq) {
         let block_height = block_tx_hashes_req.get_height();
 
-        if let Some(tx_hashes) = self.chain.transaction_hashes(BlockId::Number(block_height)) {
+        if let Some(tx_hashes) = self
+            .chain
+            .transaction_hashes(BlockTag::Height(block_height))
+        {
             //prepare and send the block tx hashes to auth
             let mut block_tx_hashes = BlockTxHashes::new();
             block_tx_hashes.set_height(block_height);
