@@ -14,7 +14,7 @@ bit-set = "0.4"
 common-types = { path = "../../cita-chain/types" }
 rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 rustc-hex = "1.0"
-db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "parity-rocksdb" }
 
 [features]
 evm-debug = []

@@ -16,7 +16,6 @@
 
 //! Evm errors
 
-use crate::cita_db::trie;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -64,12 +63,6 @@ pub enum Error {
     OutOfBounds,
     /// Execution has been reverted with REVERT.
     Reverted,
-}
-
-impl From<Box<trie::TrieError>> for Error {
-    fn from(err: Box<trie::TrieError>) -> Self {
-        Error::Internal(format!("Internal error: {}", err))
-    }
 }
 
 impl fmt::Display for Error {

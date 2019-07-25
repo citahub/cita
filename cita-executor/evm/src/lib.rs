@@ -20,7 +20,7 @@
 extern crate cita_logger as logger;
 pub extern crate cita_types;
 extern crate common_types as types;
-extern crate db as cita_db;
+extern crate cita_database as cita_db;
 
 pub mod action_params;
 pub mod call_type;

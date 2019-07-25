@@ -199,7 +199,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         _params: &ActionParams,
         _substate: &mut Substate,
     ) -> evm::Result<FinalizationResult>
-    where
     {
         unimplemented!()
     }
