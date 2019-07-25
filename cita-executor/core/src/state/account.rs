@@ -20,7 +20,6 @@
 //! Single account in the system.
 
 use crate::cita_db::{trie, DBValue, HashDB, Trie, TrieFactory};
-use crate::pod_account::*;
 use crate::types::basic_account::BasicAccount;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
@@ -126,37 +125,6 @@ impl Account {
         RefCell::new(LruCache::new(STORAGE_CACHE_ITEMS))
     }
 
-    /// General constructor.
-    pub fn from_pod(pod: PodAccount) -> Account {
-        Account {
-            balance: pod.balance,
-            nonce: pod.nonce,
-            storage_root: HASH_NULL_RLP,
-            storage_cache: Self::empty_storage_cache(),
-            storage_changes: pod.storage.into_iter().collect(),
-            code_hash: pod.code.as_ref().map_or(HASH_EMPTY, Hashable::crypt_hash),
-            code_filth: Filth::Dirty,
-            code_size: Some(pod.code.as_ref().map_or(0, Vec::len)),
-            code_cache: Arc::new(pod.code.map_or_else(
-                || {
-                    warn!("POD account with unknown code is being created! Assuming no code.");
-                    vec![]
-                },
-                |c| c,
-            )),
-            abi_hash: pod.abi.as_ref().map_or(HASH_EMPTY, Hashable::crypt_hash),
-            abi_filth: Filth::Dirty,
-            abi_size: Some(pod.abi.as_ref().map_or(0, Vec::len)),
-            abi_cache: Arc::new(pod.abi.map_or_else(
-                || {
-                    warn!("POD account with unknown ABI is being created! Assuming no abi.");
-                    vec![]
-                },
-                |c| c,
-            )),
-            address_hash: Cell::new(None),
-        }
-    }
 
     /// Create a new account.
     pub fn new_basic(balance: U256, nonce: U256) -> Account {
@@ -713,7 +681,7 @@ impl Account {
 
 impl fmt::Debug for Account {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", PodAccount::from_account(self))
+        write!(f, "{:?}", self)
     }
 }
 

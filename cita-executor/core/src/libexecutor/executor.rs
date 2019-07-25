@@ -88,7 +88,7 @@ impl Executor {
             vm: EvmFactory::default(),
             native: NativeFactory::default(),
             trie: trie_factory,
-            accountdb: Default::default(),
+            // accountdb: Default::default(),
         };
         let current_header = match get_current_header(&*database) {
             Some(header) => header,

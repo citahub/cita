@@ -71,7 +71,6 @@ extern crate largest_remainder_method;
 extern crate num;
 extern crate rand;
 
-pub mod account_db;
 #[cfg(test)]
 pub mod benches;
 pub mod builtin;
@@ -85,7 +84,6 @@ pub mod executed;
 pub mod executive;
 pub mod externalities;
 pub mod factory;
-pub mod pod_account;
 pub mod state;
 pub mod state_db;
 #[cfg(test)]
