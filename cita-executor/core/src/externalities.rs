@@ -319,11 +319,7 @@ where
             self.chain_version,
         );
 
-        match ex.call(
-            &params,
-            self.substate,
-            BytesRef::Fixed(output),
-        ) {
+        match ex.call(&params, self.substate, BytesRef::Fixed(output)) {
             Ok(FinalizationResult {
                 gas_left,
                 return_data,

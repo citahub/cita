@@ -125,7 +125,6 @@ impl Account {
         RefCell::new(LruCache::new(STORAGE_CACHE_ITEMS))
     }
 
-
     /// Create a new account.
     pub fn new_basic(balance: U256, nonce: U256) -> Account {
         Account {

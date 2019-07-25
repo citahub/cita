@@ -31,7 +31,7 @@ use cita_types::{Address, U256};
 use evm::action_params::ActionParams;
 use evm::env_info::EnvInfo;
 use evm::{self, Factory, FinalizationResult};
-use hashable::{Hashable};
+use hashable::Hashable;
 use util::*;
 
 /// Roughly estimate what stack size each level of evm depth will use
@@ -139,8 +139,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         static_call: bool,
         economical_model: EconomicalModel,
     ) -> Externalities<'any, B>
-    where
-    {
+where {
         let is_static = self.static_flag || static_call;
         Externalities::new(
             self.state,
@@ -172,8 +171,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         _t: &SignedTransaction,
         _conf: &BlockSysConfig,
     ) -> Result<Executed, ExecutionError>
-    where
-    {
+where {
         unimplemented!()
     }
 
@@ -186,8 +184,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         _params: &ActionParams,
         _substate: &mut Substate,
         _output: BytesRef,
-    ) -> evm::Result<FinalizationResult>
-    {
+    ) -> evm::Result<FinalizationResult> {
         unimplemented!()
     }
 
@@ -198,8 +195,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         &mut self,
         _params: &ActionParams,
         _substate: &mut Substate,
-    ) -> evm::Result<FinalizationResult>
-    {
+    ) -> evm::Result<FinalizationResult> {
         unimplemented!()
     }
 }
@@ -601,11 +597,7 @@ contract AbiTest {
                 conf.chain_version,
             );
             let mut out = vec![];
-            let _ = ex.call(
-                &params,
-                &mut substate,
-                BytesRef::Fixed(&mut out),
-            );
+            let _ = ex.call(&params, &mut substate, BytesRef::Fixed(&mut out));
         };
 
         // it was supposed that value's address is balance.
@@ -678,11 +670,7 @@ contract AbiTest {
                 conf.chain_version,
             );
             let mut out = vec![];
-            let res = ex.call(
-                &params,
-                &mut substate,
-                BytesRef::Fixed(&mut out),
-            );
+            let res = ex.call(&params, &mut substate, BytesRef::Fixed(&mut out));
             assert!(res.is_ok());
             match res {
                 Ok(gas_used) => println!("gas used: {:?}", gas_used),
@@ -760,11 +748,7 @@ contract AbiTest {
                 conf.chain_version,
             );
             let mut out = vec![];
-            let res = ex.call(
-                &params,
-                &mut substate,
-                BytesRef::Fixed(&mut out),
-            );
+            let res = ex.call(&params, &mut substate, BytesRef::Fixed(&mut out));
             assert!(res.is_ok());
             match res {
                 Ok(gas_used) => println!("gas used: {:?}", gas_used),
@@ -858,11 +842,7 @@ contract FakePermissionManagement {
                 conf.chain_version,
             );
             let mut out = vec![];
-            let res = ex.call(
-                &params,
-                &mut substate,
-                BytesRef::Fixed(&mut out),
-            );
+            let res = ex.call(&params, &mut substate, BytesRef::Fixed(&mut out));
 
             assert!(res.is_ok());
             match res {

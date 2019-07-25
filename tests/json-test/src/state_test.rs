@@ -81,8 +81,7 @@ pub fn test_json_file(p: &str) {
             let signed_transaction = tx.fake_sign(sender);
 
             // Execute transactions
-            let result: ApplyResult =
-                state.apply(&env_info, &engine, &signed_transaction, &config);
+            let result: ApplyResult = state.apply(&env_info, &engine, &signed_transaction, &config);
             match result {
                 Ok(outcome) => {
                     debug!("lalalal receipt error: {:?}", outcome.receipt.error);
