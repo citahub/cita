@@ -962,7 +962,6 @@ dependencies = [
  "ethabi 4.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethbloom 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethcore-bloom-journal 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
- "evm 0.1.0",
  "hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
@@ -1027,7 +1026,6 @@ dependencies = [
  "core-executor 0.1.0",
  "ethabi 7.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethereum-types 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "evm 0.1.0",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "json 0.11.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
@@ -1469,22 +1467,6 @@ version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "evm"
-version = "0.1.0"
-dependencies = [
- "bit-set 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-database 0.1.0 (git+https://github.com/cryptape/cita-database.git?branch=develop)",
- "cita-logger 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
- "common-types 0.1.0",
- "hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
- "lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
- "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "util 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
 ]
 
 [[package]]
@@ -3467,7 +3449,6 @@ dependencies = [
  "core-executor 0.1.0",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethereum-types 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "evm 0.1.0",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
  "libsecp256k1 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",

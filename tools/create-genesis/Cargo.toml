@@ -19,4 +19,3 @@ clap = "2.33.0"
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
 
 core-executor = { path="../../cita-executor/core", default-features = false}
-evm = { path="../../cita-executor/evm"}

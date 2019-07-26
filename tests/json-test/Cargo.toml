@@ -17,7 +17,6 @@ log = "0.4.0"
 
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
 core-executor = { path="../../cita-executor/core"}
-evm = { path="../../cita-executor/evm"}
 
 [features]
 default = ["secp256k1", "sha3hash"]
