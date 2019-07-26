@@ -16,16 +16,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::cita_executive::EnvInfo;
-use crate::contracts::native::factory::Factory as NativeFactory;
+// use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::tools::method as method_tools;
-use crate::engines::NullEngine;
-use crate::externalities::OutputPolicy;
+// use crate::engines::NullEngine;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::types::reserved_addresses;
 use cita_types::H160;
-use evm::{Factory, VMType};
+// use evm::{Factory, VMType};
 use std::str::FromStr;
-use util::BytesRef;
+// use util::BytesRef;
 
 const AUTO_EXEC: &[u8] = &*b"autoExec()";
 
@@ -42,7 +41,8 @@ pub fn auto_exec(
     _env_info: EnvInfo,
     _chain_version: u32,
 ) {
-    let _hash = &*AUTO_EXEC_HASH;
+    unimplemented!();
+    // let _hash = &*AUTO_EXEC_HASH;
     // let params = ActionParams {
     //     code_address: *AUTO_EXEC_ADDR,
     //     address: *AUTO_EXEC_ADDR,
@@ -57,12 +57,12 @@ pub fn auto_exec(
     //     call_type: CallType::Call,
     // };
 
-    let mut out = vec![];
-    let _output = OutputPolicy::Return(BytesRef::Flexible(&mut out), None);
-    let _factory = Factory::new(VMType::Interpreter, 1024 * 32);
+    // let mut out = vec![];
+    // let _output = OutputPolicy::Return(BytesRef::Flexible(&mut out), None);
+    // let _factory = Factory::new(VMType::Interpreter, 1024 * 32);
 
-    let _engine = NullEngine::default();
-    let _native_factory = NativeFactory::default();
+    // let _engine = NullEngine::default();
+    // let _native_factory = NativeFactory::default();
     // let _origin_info = OriginInfo::from(&params);
     //    let mut ext = Externalities::new(
     //        state,
