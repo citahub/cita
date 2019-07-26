@@ -42,7 +42,6 @@ cita-crypto-trait = { git = "https://github.com/cryptape/cita-common.git", branc
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
-evm = { path = "../evm" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
 ethabi = "4.2.0"
 zktx = { git = "https://github.com/cryptape/zktx.git", optional = true }
@@ -73,7 +72,5 @@ sha3hash = ["hashable/sha3hash", "libproto/sha3hash", "proof/sha3hash"]
 blake2bhash = ["hashable/blake2bhash", "libproto/blake2bhash", "proof/blake2bhash"]
 sm3hash = ["hashable/sm3hash", "libproto/sm3hash", "proof/sm3hash"]
 privatetx = ["zktx"]
-evm-debug = ["evm/evm-debug"]
-evm-debug-tests = ["evm-debug", "evm/evm-debug-tests"]
 hashlib-keccak = ["tiny-keccak"]
 hashlib-sha3 = ["sha3"]
