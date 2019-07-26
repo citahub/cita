@@ -17,7 +17,6 @@
 
 #[cfg(any(target_os = "linux"))]
 pub fn set_fd_limit() {
-    use libc;
     use std::io;
 
     unsafe {
@@ -39,7 +38,6 @@ pub fn set_fd_limit() {
 
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn set_fd_limit() {
-    use libc;
     use std::cmp;
     use std::io;
     use std::mem::size_of_val;
