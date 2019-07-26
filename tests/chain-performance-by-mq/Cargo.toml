@@ -9,16 +9,16 @@ serde = "1.0"
 serde_derive = "1.0"
 clap = "2"
 cita-logger = "0.1.0"
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
 rustc-serialize = "0.3"
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
 dotenv = "0.13.0"
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
 bincode = "0.8.0"
 cpuprofiler = "0.0.3"
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
 
 [dev-dependencies]
 common-types = { path = "../../cita-chain/types" }
