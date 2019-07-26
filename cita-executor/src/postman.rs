@@ -16,13 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::core::contracts::solc::sys_config::ChainId;
-use crate::core::libexecutor::blacklist::BlackList;
 use crate::core::libexecutor::block::{ClosedBlock, OpenBlock};
 use crate::core::libexecutor::call_request::CallRequest;
-use crate::core::libexecutor::economical_model::EconomicalModel;
-use crate::core::receipt::ReceiptError;
 use crate::types::ids::BlockId;
-use cita_types::{Address, H256, U256};
+use cita_types::{Address, H256};
 use crossbeam_channel::{Receiver, Sender};
 use error::ErrorCode;
 use jsonrpc_types::rpc_types::{BlockNumber, CountOrCode};
@@ -34,18 +31,15 @@ use libproto::{request, response, Message};
 use libproto::{TryFrom, TryInto};
 use serde_json;
 use std::convert::Into;
-use std::sync::RwLock;
 use std::u8;
 
 use crate::core::libexecutor::command;
-use crate::core::libexecutor::lru_cache::LRUCache;
-use crate::core::tx_gas_schedule::TxGasSchedule as Schedule;
 
 use super::backlogs::{wrap_height, Backlogs};
 
 pub struct Postman {
     backlogs: Backlogs,
-    black_list_cache: RwLock<LRUCache<u64, Address>>,
+    // black_list_cache: RwLock<LRUCache<u64, Address>>,
     mq_req_receiver: Receiver<(String, Vec<u8>)>,
     mq_resp_sender: Sender<(String, Vec<u8>)>,
     fsm_req_sender: Sender<OpenBlock>,
@@ -68,7 +62,7 @@ impl Postman {
     ) -> Self {
         Postman {
             backlogs: Backlogs::new(current_height, current_hash),
-            black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
+            // black_list_cache: RwLock::new(LRUCache::new(10_000_000)),
             mq_req_receiver,
             mq_resp_sender,
             fsm_req_sender,
@@ -357,85 +351,86 @@ impl Postman {
         }
     }
 
-    fn get_economical_model(&self) -> EconomicalModel {
-        command::economical_model(&self.command_req_sender, &self.command_resp_receiver)
-    }
+    // fn get_economical_model(&self) -> EconomicalModel {
+    //     command::economical_model(&self.command_req_sender, &self.command_resp_receiver)
+    // }
 
     /// Find the public key of all senders that caused the specified error message, and then publish it
     // TODO: I think it is not necessary to distinguish economical_model, maybe remove
     //       this opinion in the future
-    fn pub_black_list(&self, close_block: &ClosedBlock) {
-        match self.get_economical_model() {
-            EconomicalModel::Charge => {
-                // Get all transaction hash that is reported as not enough quota
-                let blacklist_transaction_hash: Vec<H256> = close_block
-                    .receipts
-                    .iter()
-                    .filter(|ref receipt| match receipt.error {
-                        Some(ReceiptError::NotEnoughBaseQuota) => true,
-                        _ => false,
-                    })
-                    .map(|receipt| receipt.transaction_hash)
-                    .filter(|hash| hash != &H256::default())
-                    .collect();
+    fn pub_black_list(&self, _close_block: &ClosedBlock) {
+        unimplemented!()
+        // match self.get_economical_model() {
+        //     EconomicalModel::Charge => {
+        //         // Get all transaction hash that is reported as not enough quota
+        //         let blacklist_transaction_hash: Vec<H256> = close_block
+        //             .receipts
+        //             .iter()
+        //             .filter(|ref receipt| match receipt.error {
+        //                 Some(ReceiptError::NotEnoughBaseQuota) => true,
+        //                 _ => false,
+        //             })
+        //             .map(|receipt| receipt.transaction_hash)
+        //             .filter(|hash| hash != &H256::default())
+        //             .collect();
 
-                let schedule = Schedule::default();
-                // Filter out accounts in the black list where the account balance has reached the benchmark value.
-                // Get the smaller value between tx_create_gas and tx_gas for the benchmark value.
-                let bm_value = std::cmp::min(schedule.tx_gas, schedule.tx_create_gas);
-                let mut clear_list: Vec<Address> = self
-                    .black_list_cache
-                    .read()
-                    .unwrap()
-                    .values()
-                    .filter(|address| {
-                        close_block
-                            .state
-                            .balance(address)
-                            .and_then(|x| Ok(x >= U256::from(bm_value)))
-                            .unwrap_or(false)
-                    })
-                    .cloned()
-                    .collect();
+        //         let schedule = Schedule::default();
+        //         // Filter out accounts in the black list where the account balance has reached the benchmark value.
+        //         // Get the smaller value between tx_create_gas and tx_gas for the benchmark value.
+        //         let bm_value = std::cmp::min(schedule.tx_gas, schedule.tx_create_gas);
+        //         let mut clear_list: Vec<Address> = self
+        //             .black_list_cache
+        //             .read()
+        //             .unwrap()
+        //             .values()
+        //             .filter(|address| {
+        //                 close_block
+        //                     .state
+        //                     .balance(address)
+        //                     .and_then(|x| Ok(x >= U256::from(bm_value)))
+        //                     .unwrap_or(false)
+        //             })
+        //             .cloned()
+        //             .collect();
 
-                // Get address of sending account by transaction hash
-                let blacklist: Vec<Address> = close_block
-                    .body()
-                    .transactions()
-                    .iter()
-                    .filter(|tx| blacklist_transaction_hash.contains(&tx.get_transaction_hash()))
-                    .map(|tx| *tx.sender())
-                    .collect();
+        //         // Get address of sending account by transaction hash
+        //         let blacklist: Vec<Address> = close_block
+        //             .body()
+        //             .transactions()
+        //             .iter()
+        //             .filter(|tx| blacklist_transaction_hash.contains(&tx.get_transaction_hash()))
+        //             .map(|tx| *tx.sender())
+        //             .collect();
 
-                {
-                    let mut black_list_cache = self.black_list_cache.write().unwrap();
-                    black_list_cache
-                        .prune(&clear_list)
-                        .extend(&blacklist[..], close_block.number());
-                    clear_list.extend(black_list_cache.lru().iter());
-                }
+        //         {
+        //             let mut black_list_cache = self.black_list_cache.write().unwrap();
+        //             black_list_cache
+        //                 .prune(&clear_list)
+        //                 .extend(&blacklist[..], close_block.number());
+        //             clear_list.extend(black_list_cache.lru().iter());
+        //         }
 
-                let black_list = BlackList::new()
-                    .set_black_list(blacklist)
-                    .set_clear_list(clear_list);
+        //         let black_list = BlackList::new()
+        //             .set_black_list(blacklist)
+        //             .set_clear_list(clear_list);
 
-                if !black_list.is_empty() {
-                    let black_list_bytes: Message = black_list.protobuf().into();
+        //         if !black_list.is_empty() {
+        //             let black_list_bytes: Message = black_list.protobuf().into();
 
-                    info!(
-                        "black list is {:?}, clear list is {:?}",
-                        black_list.black_list(),
-                        black_list.clear_list()
-                    );
+        //             info!(
+        //                 "black list is {:?}, clear list is {:?}",
+        //                 black_list.black_list(),
+        //                 black_list.clear_list()
+        //             );
 
-                    self.response_mq(
-                        routing_key!(Executor >> BlackList).into(),
-                        black_list_bytes.try_into().unwrap(),
-                    );
-                }
-            }
-            EconomicalModel::Quota => {}
-        }
+        //             self.response_mq(
+        //                 routing_key!(Executor >> BlackList).into(),
+        //                 black_list_bytes.try_into().unwrap(),
+        //             );
+        //         }
+        //     }
+        //     EconomicalModel::Quota => {}
+        // }
     }
 
     fn update_by_rich_status(&mut self, rich_status: &RichStatus) {

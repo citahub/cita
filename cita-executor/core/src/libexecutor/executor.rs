@@ -19,19 +19,12 @@ use super::command::{Command, CommandResp, Commander};
 use super::fsm::FSM;
 use super::sys_config::GlobalSysConfig;
 use crate::bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
-use crate::cita_db::kvdb::{DBTransaction, Database, DatabaseConfig};
-use crate::cita_db::{journaldb, KeyValueDB};
 use crate::contracts::{native::factory::Factory as NativeFactory, solc::NodeManager};
-use crate::db;
-use crate::db::*;
-use crate::engines::{Engine, NullEngine};
 use crate::factory::*;
 use crate::header::*;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::genesis::Genesis;
-use crate::state_db::StateDB;
 use crate::trie_db::TrieDB;
-use crate::types::extras::*;
 use crate::types::ids::BlockId;
 pub use byteorder::{BigEndian, ByteOrder};
 use cita_database::{Config, RocksDB, NUM_COLUMNS};
@@ -40,21 +33,15 @@ use crossbeam_channel::{Receiver, Sender};
 use evm::env_info::LastHashes;
 use evm::Factory as EvmFactory;
 use libproto::{ConsensusConfig, ExecutedResult};
-use std::convert::{From, Into};
+use std::convert::Into;
 use std::sync::Arc;
-use std::time::Instant;
 use util::RwLock;
-use util::UtilError;
 
 pub struct Executor {
     pub current_header: RwLock<Header>,
     pub trie_db: Arc<TrieDB<RocksDB>>,
-    pub db: Arc<KeyValueDB>,
-    pub state_db: Arc<RwLock<StateDB>>,
-    pub factories: Factories,
 
     pub sys_config: GlobalSysConfig,
-    pub engine: Box<Engine>,
 
     pub fsm_req_receiver: Receiver<OpenBlock>,
     pub fsm_resp_sender: Sender<ClosedBlock>,
@@ -68,8 +55,6 @@ impl Executor {
     #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn init(
         genesis_path: &str,
-        journaldb_type: &str,
-        statedb_cache_size: usize,
         data_path: String,
         fsm_req_receiver: Receiver<OpenBlock>,
         fsm_resp_sender: Sender<ClosedBlock>,
@@ -84,14 +69,6 @@ impl Executor {
         let rocks_db = RocksDB::open(&data_path, &config).unwrap();
         let trie_db = Arc::new(TrieDB::new(Arc::new(rocks_db)));
 
-        // FIXME: remove this old db later.
-        let database = open_state_db(data_path);
-        let database: Arc<KeyValueDB> = Arc::new(database);
-        let journaldb_type = journaldb_type
-            .parse()
-            .unwrap_or(journaldb::Algorithm::Archive);
-        let journal_db = journaldb::new(Arc::clone(&database), journaldb_type, COL_STATE);
-        let state_db = StateDB::new(journal_db, statedb_cache_size);
         // let trie_factory = TrieFactory::new(TrieSpec::Generic);
         let factories = Factories {
             vm: EvmFactory::default(),
@@ -99,12 +76,13 @@ impl Executor {
             // trie: trie_factory,
             // accountdb: Default::default(),
         };
-        let current_header = match get_current_header(&*database) {
+        let current_header = match get_current_header() {
             Some(header) => header,
             None => {
                 warn!("Not found exist block within database. Loading genesis block...");
                 genesis
-                    .lazy_execute(&state_db, &factories)
+                    // FIXME
+                    .lazy_execute(&factories)
                     .expect("failed to load genesis");
                 genesis.block.header().clone()
             }
@@ -112,11 +90,7 @@ impl Executor {
         let mut executor = Executor {
             current_header: RwLock::new(current_header),
             trie_db,
-            db: database,
-            state_db: Arc::new(RwLock::new(state_db)),
-            factories,
             sys_config: GlobalSysConfig::default(),
-            engine: Box::new(NullEngine::cita()),
             fsm_req_receiver,
             fsm_resp_sender,
             command_req_receiver,
@@ -135,15 +109,16 @@ impl Executor {
     }
 
     pub fn close(&mut self) {
+        unimplemented!();
         // IMPORTANT: close and release database handler so that it will not
         //            compact data/logs in background, which may effect snapshot
         //            changing database when restore snapshot.
-        self.db.close();
+        // self.db.close();
 
-        info!(
-            "executor closed, current_height: {}",
-            self.get_current_height()
-        );
+        // info!(
+        //     "executor closed, current_height: {}",
+        //     self.get_current_height()
+        // );
     }
 
     pub fn do_loop(&mut self) {
@@ -186,70 +161,73 @@ impl Executor {
         }
     }
 
-    pub fn rollback_current_height(&mut self, rollback_id: BlockId) {
-        let rollback_height: BlockNumber = match rollback_id {
-            BlockId::Number(height) => height,
-            BlockId::Earliest => 0,
-            _ => unimplemented!(),
-        };
-        if self.get_current_height() != rollback_height {
-            warn!(
-                "executor roll back from {} to {}",
-                self.get_current_height(),
-                rollback_height
-            );
-            let rollback_hash = self
-                .block_hash(rollback_height)
-                .expect("the target block to roll back should exist");
-            let mut batch = self.db.transaction();
-            batch.write(db::COL_EXTRA, &CurrentHash, &rollback_hash);
-            self.db.write(batch).unwrap();
-        }
+    pub fn rollback_current_height(&mut self, _rollback_id: BlockId) {
+        unimplemented!()
+        // let rollback_height: BlockNumber = match rollback_id {
+        //     BlockId::Number(height) => height,
+        //     BlockId::Earliest => 0,
+        //     _ => unimplemented!(),
+        // };
+        // if self.get_current_height() != rollback_height {
+        //     warn!(
+        //         "executor roll back from {} to {}",
+        //         self.get_current_height(),
+        //         rollback_height
+        //     );
+        //     let rollback_hash = self
+        //         .block_hash(rollback_height)
+        //         .expect("the target block to roll back should exist");
+        //     let mut batch = self.db.transaction();
+        //     batch.write(db::COL_EXTRA, &CurrentHash, &rollback_hash);
+        //     self.db.write(batch).unwrap();
+        // }
 
-        let rollback_header = self.block_header_by_height(rollback_height).unwrap();
-        self.current_header = RwLock::new(rollback_header);
+        // let rollback_header = self.block_header_by_height(rollback_height).unwrap();
+        // self.current_header = RwLock::new(rollback_header);
     }
 
     /// Write data to db
     /// 1. Header
     /// 2. CurrentHash
     /// 3. State
-    pub fn write_batch(&self, block: ClosedBlock) {
-        let mut batch = self.db.transaction();
-        let height = block.number();
-        let hash = block.hash().unwrap();
-        let version = block.version();
-        trace!(
-            "commit block in db hash {:?}, height {:?}, version {}",
-            hash,
-            height,
-            version
-        );
+    pub fn write_batch(&self, _block: ClosedBlock) {
+        unimplemented!();
+        // let mut batch = self.db.transaction();
+        // let height = block.number();
+        // let hash = block.hash().unwrap();
+        // let version = block.version();
+        // trace!(
+        //     "commit block in db hash {:?}, height {:?}, version {}",
+        //     hash,
+        //     height,
+        //     version
+        // );
 
-        batch.write(db::COL_HEADERS, &hash, block.header());
-        batch.write(db::COL_EXTRA, &CurrentHash, &hash);
-        batch.write(db::COL_EXTRA, &height, &hash);
+        // batch.write(db::COL_HEADERS, &hash, block.header());
+        // batch.write(db::COL_EXTRA, &CurrentHash, &hash);
+        // batch.write(db::COL_EXTRA, &height, &hash);
 
-        let mut state = block.drain();
-        // Store triedb changes in journal db
-        state
-            .journal_under(&mut batch, height, &hash)
-            .expect("DB commit failed");
-        // state.sync_cache();
-        self.db.write_buffered(batch);
+        // let mut state = block.drain();
+        // // Store triedb changes in journal db
+        // state
+        //     .journal_under(&mut batch, height, &hash)
+        //     .expect("DB commit failed");
+        // // state.sync_cache();
+        // self.db.write_buffered(batch);
 
-        self.prune_ancient(state).expect("mark_canonical failed");
+        // // self.prune_ancient(state).expect("mark_canonical failed");
 
-        // Saving in db
-        let now = Instant::now();
-        self.db.flush().expect("DB write failed.");
-        let new_now = Instant::now();
-        debug!("db write use {:?}", new_now.duration_since(now));
+        // // Saving in db
+        // let now = Instant::now();
+        // self.db.flush().expect("DB write failed.");
+        // let new_now = Instant::now();
+        // debug!("db write use {:?}", new_now.duration_since(now));
     }
 
     /// Get block hash by number
-    fn block_hash(&self, index: BlockNumber) -> Option<H256> {
-        self.db.read(db::COL_EXTRA, &index)
+    fn block_hash(&self, _index: BlockNumber) -> Option<H256> {
+        unimplemented!()
+        // self.db.read(db::COL_EXTRA, &index)
     }
 
     fn current_state_root(&self) -> H256 {
@@ -285,14 +263,15 @@ impl Executor {
     }
 
     /// Get block header by hash
-    pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
-        {
-            let header = self.current_header.read();
-            if header.hash().unwrap() == hash {
-                return Some(header.clone());
-            }
-        }
-        self.db.read(db::COL_HEADERS, &hash)
+    pub fn block_header_by_hash(&self, _hash: H256) -> Option<Header> {
+        unimplemented!()
+        // {
+        //     let header = self.current_header.read();
+        //     if header.hash().unwrap() == hash {
+        //         return Some(header.clone());
+        //     }
+        // }
+        // self.db.read(db::COL_HEADERS, &hash)
     }
 
     #[inline]
@@ -367,33 +346,35 @@ impl Executor {
         executed_result
     }
 
-    fn prune_ancient(&self, mut state_db: StateDB) -> Result<(), UtilError> {
-        let number = match state_db.journal_db().latest_era() {
-            Some(n) => n,
-            None => return Ok(()),
-        };
-        let history = 2;
-        // prune all ancient eras until we're below the memory target,
-        // but have at least the minimum number of states.
-        loop {
-            match state_db.journal_db().earliest_era() {
-                Some(era) if era + history <= number => {
-                    trace!(target: "client", "Pruning state for ancient era {}", era);
-                    match self.block_hash(era) {
-                        Some(ancient_hash) => {
-                            let mut batch = DBTransaction::new();
-                            state_db.mark_canonical(&mut batch, era, &ancient_hash)?;
-                            self.db.write_buffered(batch);
-                            state_db.journal_db().flush();
-                        }
-                        None => debug!(target: "client", "Missing expected hash for block {}", era),
-                    }
-                }
-                _ => break, // means that every era is kept, no pruning necessary.
-            }
-        }
-        Ok(())
-    }
+    // FIXME
+    // fn prune_ancient(&self, mut state_db: StateDB) -> Result<(), UtilError> {
+    //     let number = match state_db.journal_db().latest_era() {
+    //         Some(n) => n,
+    //         None => return Ok(()),
+    //     };
+    //     let history = 2;
+    //     // prune all ancient eras until we're below the memory target,
+    //     // but have at least the minimum number of states.
+    //     loop {
+    //         match state_db.journal_db().earliest_era() {
+    //             Some(era) if era + history <= number => {
+    //                 trace!(target: "client", "Pruning state for ancient era {}", era);
+    //                 match self.block_hash(era) {
+    //                     Some(ancient_hash) => {
+    //                         let mut batch = DBTransaction::new();
+    //                         state_db.mark_canonical(&mut batch, era, &ancient_hash)?;
+    //                         // FIXME
+    //                         // self.db.write_buffered(batch);
+    //                         state_db.journal_db().flush();
+    //                     }
+    //                     None => debug!(target: "client", "Missing expected hash for block {}", era),
+    //                 }
+    //             }
+    //             _ => break, // means that every era is kept, no pruning necessary.
+    //         }
+    //     }
+    //     Ok(())
+    // }
 
     #[inline]
     pub fn node_manager(&self) -> NodeManager {
@@ -403,14 +384,12 @@ impl Executor {
     pub fn to_executed_block(&self, open_block: OpenBlock) -> ExecutedBlock {
         let current_state_root = self.current_state_root();
         let last_hashes = self.build_last_hashes(None, open_block.number() - 1);
-        let parent_hash = *open_block.parent_hash();
+        // let parent_hash = *open_block.parent_hash();
 
         ExecutedBlock::create(
-            self.factories.clone(),
             &self.sys_config.block_sys_config,
             open_block,
             self.trie_db.clone(),
-            self.state_db.read().boxed_clone_canon(&parent_hash),
             current_state_root,
             last_hashes.into(),
             self.eth_compatibility,
@@ -420,25 +399,22 @@ impl Executor {
 }
 
 impl<'a> BloomGroupDatabase for Executor {
-    fn blooms_at(&self, position: &GroupPosition) -> Option<BloomGroup> {
-        let position = LogGroupPosition::from(position.clone());
-        self.db.read(db::COL_EXTRA, &position).map(Into::into)
+    fn blooms_at(&self, _position: &GroupPosition) -> Option<BloomGroup> {
+        unimplemented!()
+        // let position = LogGroupPosition::from(position.clone());
+        // self.db.read(db::COL_EXTRA, &position).map(Into::into)
     }
 }
 
-pub fn get_current_header(db: &KeyValueDB) -> Option<Header> {
-    let h: Option<H256> = db.read(db::COL_EXTRA, &CurrentHash);
-    if let Some(hash) = h {
-        db.read(db::COL_HEADERS, &hash)
-    } else {
-        None
-    }
-}
-
-fn open_state_db(data_path: String) -> Database {
-    let database_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-    let nosql_path = data_path + "/statedb";
-    Database::open(&database_config, &nosql_path).unwrap()
+// pub fn get_current_header(db: &KeyValueDB) -> Option<Header> {
+pub fn get_current_header() -> Option<Header> {
+    unimplemented!()
+    // let h: Option<H256> = db.read(db::COL_EXTRA, &CurrentHash);
+    // if let Some(hash) = h {
+    //     db.read(db::COL_HEADERS, &hash)
+    // } else {
+    //     None
+    // }
 }
 
 pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {

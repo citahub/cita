@@ -19,15 +19,11 @@ use crate::authentication::AuthenticationError;
 use crate::basic_types::LogBloom;
 use crate::cita_executive::{CitaExecutive, EnvInfo, ExecutionError};
 use crate::contracts::native::factory::Factory as NativeFactory;
-use crate::engines::Engine;
 use crate::error::Error;
-use crate::factory::Factories;
-use crate::libexecutor::auto_exec::auto_exec;
+// use crate::libexecutor::auto_exec::auto_exec;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::receipt::{Receipt, ReceiptError};
-use crate::state::State;
-use crate::state_db::StateDB;
 use crate::trie_db::TrieDB;
 use crate::tx_gas_schedule::TxGasSchedule;
 pub use crate::types::block::{Block, BlockBody, OpenBlock};
@@ -55,16 +51,15 @@ lazy_static! {
 /// Trait for a object that has a state database.
 pub trait Drain {
     /// Drop this object and return the underlieing database.
-    fn drain(self) -> StateDB;
+    fn drain(self) -> TrieDB<RocksDB>;
 }
 
 pub struct ExecutedBlock {
     pub block: OpenBlock,
     pub receipts: Vec<Receipt>,
     pub trie_db: Arc<TrieDB<RocksDB>>,
-    pub state: State<StateDB>,
     pub current_quota_used: U256,
-    state_root: H256,
+    pub state_root: H256,
     last_hashes: Arc<LastHashes>,
     account_gas_limit: U256,
     account_gas: HashMap<Address, U256>,
@@ -88,21 +83,16 @@ impl DerefMut for ExecutedBlock {
 impl ExecutedBlock {
     #[allow(clippy::too_many_arguments)]
     pub fn create(
-        factories: Factories,
         conf: &BlockSysConfig,
         block: OpenBlock,
         trie_db: Arc<TrieDB<RocksDB>>,
-        db: StateDB,
         state_root: H256,
         last_hashes: Arc<LastHashes>,
         eth_compatibility: bool,
     ) -> Result<Self, Error> {
-        let state = State::from_existing(db, state_root, factories)?;
-
         let r = ExecutedBlock {
             block,
             trie_db,
-            state,
             state_root,
             last_hashes,
             account_gas_limit: conf.account_quota_limit.common_quota_limit.into(),
@@ -144,12 +134,7 @@ impl ExecutedBlock {
     }
 
     #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
-    pub fn apply_transaction(
-        &mut self,
-        _engine: &Engine,
-        t: &SignedTransaction,
-        conf: &BlockSysConfig,
-    ) {
+    pub fn apply_transaction(&mut self, t: &SignedTransaction, conf: &BlockSysConfig) {
         let mut env_info = self.env_info();
         self.account_gas
             .entry(*t.sender())
@@ -307,7 +292,7 @@ impl ExecutedBlock {
     }
 
     /// Turn this into a `ClosedBlock`.
-    pub fn close(mut self, conf: &BlockSysConfig) -> ClosedBlock {
+    pub fn close(self, conf: &BlockSysConfig) -> ClosedBlock {
         let mut env_info = self.env_info();
         // In protocol version 0, 1:
         // Auto Execution's env info author is default address
@@ -317,19 +302,20 @@ impl ExecutedBlock {
             env_info.coin_base = Address::default();
         }
 
-        if conf.auto_exec {
-            auto_exec(
-                &mut self.state,
-                conf.auto_exec_quota_limit,
-                conf.economical_model,
-                env_info,
-                conf.chain_version,
-            );
-            self.state.commit().expect("commit trie error");
-        }
+        // FIXME
+        // if conf.auto_exec {
+        //     auto_exec(
+        //         &mut self.state,
+        //         conf.auto_exec_quota_limit,
+        //         conf.economical_model,
+        //         env_info,
+        //         conf.chain_version,
+        //     );
+        //     self.state.commit().expect("commit trie error");
+        // }
         // Rebuild block
         let mut block = Block::new(self.block);
-        let state_root = *self.state.root();
+        let state_root = self.state_root;
         block.set_state_root(state_root);
         let receipts_root = cita_merklehash::Tree::from_hashes(
             self.receipts
@@ -361,24 +347,25 @@ impl ExecutedBlock {
         ClosedBlock {
             block,
             receipts: self.receipts,
-            state: self.state,
+            state: self.trie_db,
         }
     }
 }
 
 // Block that prepared to commit to db.
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct ClosedBlock {
     /// Protobuf Block
     pub block: Block,
     pub receipts: Vec<Receipt>,
-    pub state: State<StateDB>,
+    pub state: Arc<TrieDB<RocksDB>>,
 }
 
 impl Drain for ClosedBlock {
     /// Drop this object and return the underlieing database.
-    fn drain(self) -> StateDB {
-        self.state.drop().1
+    fn drain(self) -> TrieDB<RocksDB> {
+        unimplemented!()
+        // self.state.drop().1
     }
 }
 
