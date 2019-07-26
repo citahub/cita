@@ -447,7 +447,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                     .is_err()
                 {
                     // Discard the checkpoint
-                    self.state_provider.borrow_mut().discard_checkpoint();
+                    self.state_provider.borrow_mut().revert_checkpoint();
                     return Err(ExecutionError::Internal(
                         "Transfer balance failed while calling native contract.".to_string(),
                     ));

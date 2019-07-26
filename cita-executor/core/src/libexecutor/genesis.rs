@@ -15,18 +15,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::factory::Factories;
 use crate::libexecutor::block::Block;
+use crate::libexecutor::executor::{CitaDB, CitaTrieDB};
+use cita_database::{DataCategory, Database};
 use cita_types::traits::ConvertType;
-use cita_types::{H256, U256};
+use cita_types::{clean_0x, Address, H256, U256};
+use cita_vm::state::{State as CitaState, StateObjectInfo};
 use crypto::digest::Digest;
 use crypto::md5::Md5;
+use rustc_hex::FromHex;
 use serde_json;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
+use std::sync::Arc;
+
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
 
@@ -99,83 +104,92 @@ impl Genesis {
 
     pub fn lazy_execute(
         &mut self,
-        // state_db: &StateDB,
-        _factories: &Factories,
+        state_db: Arc<CitaTrieDB>,
     ) -> Result<(), String> {
-        unimplemented!()
-        // let mut state = State::from_existing(
-        //     state_db.boxed_clone_canon(&self.spec.prevhash),
-        //     *self.block.state_root(),
-        //     factories.clone(),
-        // )
-        // .expect("state db error");
-        // self.block.set_version(0);
-        // self.block.set_parent_hash(self.spec.prevhash);
-        // self.block.set_timestamp(self.spec.timestamp);
-        // self.block.set_number(0);
+        let mut state = CitaState::from_existing(
+            Arc::<CitaTrieDB>::clone(&state_db),
+            *self.block.state_root(),
+        )
+        .expect("Can not get state from db!");
 
-        // info!("This is the first time to init executor, and it will init contracts on height 0");
-        // trace!("**** begin **** \n");
-        // for (address, contract) in self.spec.alloc.clone() {
-        //     let address = Address::from_unaligned(address.as_str()).unwrap();
-        //     state.new_contract(&address, U256::from(0), U256::from(0));
-        //     {
-        //         state
-        //             .init_code(&address, clean_0x(&contract.code).from_hex().unwrap())
-        //             .expect("init code fail");
-        //         if let Some(value) = contract.value {
-        //             state
-        //                 .add_balance(&address, &value)
-        //                 .expect("init balance fail");
-        //         }
-        //     }
-        //     for (key, values) in contract.storage.clone() {
-        //         state
-        //             .set_storage(
-        //                 &address,
-        //                 H256::from_unaligned(key.as_ref()).unwrap(),
-        //                 H256::from_unaligned(values.as_ref()).unwrap(),
-        //             )
-        //             .expect("init code set_storage fail");
-        //     }
-        // }
-        // state.commit().expect("state commit error");
-        // //query is store in chain
-        // for (address, contract) in &self.spec.alloc {
-        //     let address = Address::from_unaligned(address.as_str()).unwrap();
-        //     for (key, values) in &contract.storage {
-        //         let result =
-        //             state.storage_at(&address, &H256::from_unaligned(key.as_ref()).unwrap());
-        //         assert_eq!(
-        //             H256::from_unaligned(values.as_ref()).unwrap(),
-        //             result.expect("storage error")
-        //         );
-        //     }
-        // }
+        self.block.set_version(0);
+        self.block.set_parent_hash(self.spec.prevhash);
+        self.block.set_timestamp(self.spec.timestamp);
+        self.block.set_number(0);
 
-        // trace!("**** end **** \n");
-        // let root = *state.root();
-        // trace!("root {:?}", root);
-        // self.block.set_state_root(root);
-        // self.block.rehash();
+        info!("This is the first time to init executor, and it will init contracts on height 0");
+        trace!("**** begin **** \n");
+        for (address, contract) in self.spec.alloc.clone() {
+            let address = Address::from_unaligned(address.as_str()).unwrap();
+            state.new_contract(&address, U256::from(0), U256::from(0), vec![]);
+            {
+                state
+                    .set_code(&address, clean_0x(&contract.code).from_hex().unwrap())
+                    .expect("init code fail");
+                if let Some(value) = contract.value {
+                    state
+                        .add_balance(&address, value)
+                        .expect("init balance fail");
+                }
+            }
+            for (key, values) in contract.storage.clone() {
+                state
+                    .set_storage(
+                        &address,
+                        H256::from_unaligned(key.as_ref()).unwrap(),
+                        H256::from_unaligned(values.as_ref()).unwrap(),
+                    )
+                    .expect("init code set_storage fail");
+            }
+        }
+        state.commit().expect("state commit error");
+        //query is store in chain
+        for (address, contract) in &self.spec.alloc {
+            let address = Address::from_unaligned(address.as_str()).unwrap();
+            for (key, values) in &contract.storage {
+                let result =
+                    state.get_storage(&address, &H256::from_unaligned(key.as_ref()).unwrap());
+                assert_eq!(
+                    H256::from_unaligned(values.as_ref()).unwrap(),
+                    result.expect("storage error")
+                );
+            }
+        }
 
-        // self.save(state, state_db.journal_db().backing())
+        trace!("**** end **** \n");
+        let root = state.root;
+        trace!("root {:?}", root);
+        self.block.set_state_root(root);
+        self.block.rehash();
+
+        self.save(state_db.database())
     }
 
-    // fn save(&mut self, state: State<StateDB>, db: &Arc<KeyValueDB>) -> Result<(), String> {
-    //     let mut batch = db.transaction();
-    //     let hash = self.block.hash().unwrap();
-    //     let height = self.block.number();
-    //     //初始化的时候需要获取头部信息
-    //     batch.write(db::COL_HEADERS, &hash, self.block.header());
-    //     batch.write(db::COL_EXTRA, &CurrentHash, &hash);
-    //     batch.write(db::COL_EXTRA, &height, &hash);
-    //     let mut state_db = state.drop().1;
-    //     state_db
-    //         .journal_under(&mut batch, height, &hash)
-    //         .expect("DB commit failed");
-    //     db.write(batch)
-    // }
+    fn save(&mut self, db: Arc<CitaDB>) -> Result<(), String> {
+        // FIXME: The decode for the value may not equal to origin one.
+        let hash = self.block.hash().unwrap().to_vec();
+        let height = self.block.number().to_be_bytes().to_vec();
+
+        let current_hash =
+            H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f66");
+        // Need to get header in init function.
+        db.insert(
+            Some(DataCategory::Headers),
+            hash.clone(),
+            self.block.header().rlp(),
+        )
+        .expect("Insert block header error.");
+        db.insert(
+            Some(DataCategory::Extra),
+            current_hash.to_vec(),
+            hash.clone(),
+        )
+        .expect("Insert block hash error.");
+        db.insert(Some(DataCategory::Extra), height, hash.clone())
+            .expect("Insert block hash error.");
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]

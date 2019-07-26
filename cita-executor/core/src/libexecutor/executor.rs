@@ -19,16 +19,15 @@ use super::command::{Command, CommandResp, Commander};
 use super::fsm::FSM;
 use super::sys_config::GlobalSysConfig;
 use crate::bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
-use crate::contracts::{native::factory::Factory as NativeFactory, solc::NodeManager};
+use crate::contracts::{solc::NodeManager};
 use crate::core::env_info::LastHashes;
-use crate::factory::*;
 use crate::header::*;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::genesis::Genesis;
 use crate::trie_db::TrieDB;
 use crate::types::ids::BlockId;
 pub use byteorder::{BigEndian, ByteOrder};
-use cita_database::{Config, RocksDB, NUM_COLUMNS};
+use cita_database::{Config, Database, RocksDB, NUM_COLUMNS};
 use cita_types::H256;
 use crossbeam_channel::{Receiver, Sender};
 use libproto::{ConsensusConfig, ExecutedResult};
@@ -36,10 +35,13 @@ use std::convert::Into;
 use std::sync::Arc;
 use util::RwLock;
 
+pub type CitaTrieDB = TrieDB<RocksDB>;
+pub type CitaDB = RocksDB;
+
 pub struct Executor {
     pub current_header: RwLock<Header>,
-    pub trie_db: Arc<TrieDB<RocksDB>>,
-
+    pub state_db: Arc<TrieDB<RocksDB>>,
+    pub db: Arc<Database>,
     pub sys_config: GlobalSysConfig,
 
     pub fsm_req_receiver: Receiver<OpenBlock>,
@@ -66,28 +68,24 @@ impl Executor {
         // TODO: Can remove NUM_COLUMNS(useless)
         let config = Config::with_category_num(NUM_COLUMNS);
         let rocks_db = RocksDB::open(&data_path, &config).unwrap();
-        let trie_db = Arc::new(TrieDB::new(Arc::new(rocks_db)));
+        let db = Arc::new(rocks_db);
+        let state_db = Arc::new(TrieDB::new(db.clone()));
 
-        // let trie_factory = TrieFactory::new(TrieSpec::Generic);
-        let factories = Factories {
-            native: NativeFactory::default(),
-            // trie: trie_factory,
-            // accountdb: Default::default(),
-        };
         let current_header = match get_current_header() {
             Some(header) => header,
             None => {
                 warn!("Not found exist block within database. Loading genesis block...");
                 genesis
                     // FIXME
-                    .lazy_execute(&factories)
+                    .lazy_execute(state_db.clone())
                     .expect("failed to load genesis");
                 genesis.block.header().clone()
             }
         };
         let mut executor = Executor {
             current_header: RwLock::new(current_header),
-            trie_db,
+            state_db,
+            db,
             sys_config: GlobalSysConfig::default(),
             fsm_req_receiver,
             fsm_resp_sender,
@@ -387,7 +385,7 @@ impl Executor {
         ExecutedBlock::create(
             &self.sys_config.block_sys_config,
             open_block,
-            self.trie_db.clone(),
+            self.state_db.clone(),
             current_state_root,
             last_hashes.into(),
             self.eth_compatibility,
