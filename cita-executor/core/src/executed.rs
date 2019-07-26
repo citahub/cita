@@ -16,7 +16,6 @@
 
 //! Transaction execution format module.
 
-use crate::cita_db::trie;
 use crate::receipt::ReceiptError;
 use crate::types::log_entry::LogEntry;
 use crate::types::state_diff::StateDiff;
@@ -121,11 +120,6 @@ pub enum ExecutionError {
     TransactionMalformed(String),
 }
 
-impl From<Box<trie::TrieError>> for ExecutionError {
-    fn from(err: Box<trie::TrieError>) -> Self {
-        ExecutionError::ExecutionInternal(format!("{}", err))
-    }
-}
 
 impl fmt::Display for ExecutionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

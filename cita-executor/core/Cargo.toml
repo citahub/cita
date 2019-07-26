@@ -48,7 +48,6 @@ ethabi = "4.2.0"
 zktx = { git = "https://github.com/cryptape/zktx.git", optional = true }
 enum_primitive = "0.1.1"
 largest-remainder-method = "0.1"
-db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "parity-rocksdb" }
 parking_lot = "0.8"
 

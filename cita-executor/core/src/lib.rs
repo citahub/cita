@@ -28,7 +28,7 @@ extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
 extern crate cita_merklehash;
-pub extern crate db as cita_db;
+pub extern crate cita_database as cita_db;
 extern crate hashable;
 #[cfg_attr(test, macro_use)]
 extern crate serde_json;
@@ -37,8 +37,8 @@ extern crate util;
 #[macro_use]
 extern crate crossbeam_channel;
 
-#[macro_use]
-extern crate rlp_derive;
+// #[macro_use]
+// extern crate rlp_derive;
 extern crate rustc_hex;
 
 extern crate bit_set;
@@ -79,16 +79,12 @@ pub mod tx_gas_schedule;
 // FIXME: Rename this after this work finished
 pub mod core_types;
 pub mod executed;
-pub mod executive;
-pub mod externalities;
 pub mod factory;
-pub mod state;
 #[cfg(test)]
 pub mod tests;
 #[macro_use]
 pub mod engines;
 pub mod error;
-pub mod substate;
 
 pub mod authentication;
 pub mod contracts;

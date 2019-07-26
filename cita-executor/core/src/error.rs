@@ -20,7 +20,6 @@ use crate::basic_types::LogBloom;
 use cita_ed25519::Error as EthkeyError;
 use cita_types::{H256, U256};
 
-use crate::cita_db::TrieError;
 pub use crate::executed::{CallError, ExecutionError};
 use crate::header::BlockNumber;
 use snappy;
@@ -238,8 +237,6 @@ pub enum Error {
     PowHashInvalid,
     /// The value of the nonce or mishash is invalid.
     PowInvalid,
-    /// Error concerning TrieDBs
-    Trie(TrieError),
     /// Standard io error.
     StdIo(::std::io::Error),
     /// Snappy error.
@@ -261,7 +258,6 @@ impl fmt::Display for Error {
             }
             Error::PowHashInvalid => f.write_str("Invalid or out of date PoW hash."),
             Error::PowInvalid => f.write_str("Invalid nonce or mishash"),
-            Error::Trie(ref err) => err.fmt(f),
             Error::StdIo(ref err) => err.fmt(f),
             Error::Snappy(ref err) => err.fmt(f),
             Error::Ethkey(ref err) => err.fmt(f),
@@ -305,12 +301,6 @@ impl From<::rlp::DecoderError> for Error {
 impl From<UtilError> for Error {
     fn from(err: UtilError) -> Error {
         Error::Util(err)
-    }
-}
-
-impl From<TrieError> for Error {
-    fn from(err: TrieError) -> Error {
-        Error::Trie(err)
     }
 }
 
