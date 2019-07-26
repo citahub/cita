@@ -18,6 +18,7 @@
 use super::block::{ClosedBlock, ExecutedBlock, OpenBlock};
 use super::economical_model::EconomicalModel;
 use super::executor::Executor;
+// use cita_database::Database;
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]
 pub enum StatusOfFSM {
@@ -42,7 +43,7 @@ impl std::fmt::Display for StatusOfFSM {
                 "StatusOfFSM::Pause(height: {}, parent_hash: {:?}, state_root: {:?}, timestamp: {}, index: {})",
                 executed_block.number(),
                 executed_block.parent_hash(),
-                executed_block.state.root(),
+                executed_block.state_root,
                 executed_block.timestamp(),
                 index,
             ),
@@ -51,7 +52,7 @@ impl std::fmt::Display for StatusOfFSM {
                 "StatusOfFSM::Execute(height: {}, parent_hash: {:?}, state_root: {:?}, timestamp: {}, index: {})",
                 executed_block.number(),
                 executed_block.parent_hash(),
-                executed_block.state.root(),
+                executed_block.state_root,
                 executed_block.timestamp(),
                 index,
             ),
@@ -60,7 +61,7 @@ impl std::fmt::Display for StatusOfFSM {
                 "StatusOfFSM::Finalize(height: {}, parent_hash: {:?}, state_root: {:?}, timestamp: {})",
                 executed_block.number(),
                 executed_block.parent_hash(),
-                executed_block.state.root(),
+                executed_block.state_root,
                 executed_block.timestamp(),
             ),
         }
@@ -124,17 +125,17 @@ impl FSM for Executor {
             transaction.gas_price = quota_price;
         }
 
-        executed_block.apply_transaction(&*self.engine, &transaction, &conf);
+        executed_block.apply_transaction(&transaction, &conf);
 
         StatusOfFSM::Pause(executed_block, index)
     }
 
-    fn fsm_finalize(&self, mut executed_block: ExecutedBlock) -> ClosedBlock {
+    fn fsm_finalize(&self, executed_block: ExecutedBlock) -> ClosedBlock {
         // commit changed-accounts into trie structure
-        executed_block
-            .state
-            .commit()
-            .expect("failed to commit state trie");
+        // executed_block
+        //     .trie_db
+        //     .flush()
+        //     .expect("failed to commit state trie");
         executed_block.close(&(self.sys_config.block_sys_config))
     }
 }

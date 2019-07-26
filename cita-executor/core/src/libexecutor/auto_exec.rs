@@ -39,6 +39,7 @@ lazy_static! {
     static ref AUTO_EXEC_HASH: Vec<u8> = method_tools::encode_to_vec(AUTO_EXEC);
 }
 
+// FIXME
 pub fn auto_exec(
     state: &mut State<StateDB>,
     auto_exec_quota_limit: u64,

@@ -207,8 +207,6 @@ fn main() {
         let data_path = DataPath::root_node_path();
         let mut executor = Executor::init(
             &options.genesis_path,
-            &options.journaldb_type,
-            options.statedb_cache_size,
             data_path,
             fsm_req_receiver.clone(),
             fsm_resp_sender.clone(),
