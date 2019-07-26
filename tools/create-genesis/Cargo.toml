@@ -17,5 +17,6 @@ libsecp256k1 = "0.2.2"
 clap = "2.33.0"
 
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
 
 core-executor = { path="../../cita-executor/core", default-features = false}

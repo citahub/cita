@@ -20,16 +20,15 @@ use crate::receipt::ReceiptError;
 use crate::types::log_entry::LogEntry;
 use crate::types::state_diff::StateDiff;
 use cita_types::{Address, U256, U512};
-use evm;
 use std::fmt;
 use util::Bytes;
 
 /// Transaction execution receipt.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug)]
 #[cfg_attr(feature = "ipc", binary)]
 pub struct Executed {
     /// True if the outer call/create resulted in an exceptional exit.
-    pub exception: Option<evm::Error>,
+    pub exception: Option<cita_vm::Error>,
 
     /// Gas paid up front for execution of transaction.
     pub gas: U256,

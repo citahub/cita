@@ -20,6 +20,7 @@ use super::fsm::FSM;
 use super::sys_config::GlobalSysConfig;
 use crate::bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 use crate::contracts::{native::factory::Factory as NativeFactory, solc::NodeManager};
+use crate::core::env_info::LastHashes;
 use crate::factory::*;
 use crate::header::*;
 pub use crate::libexecutor::block::*;
@@ -30,8 +31,6 @@ pub use byteorder::{BigEndian, ByteOrder};
 use cita_database::{Config, RocksDB, NUM_COLUMNS};
 use cita_types::H256;
 use crossbeam_channel::{Receiver, Sender};
-use evm::env_info::LastHashes;
-use evm::Factory as EvmFactory;
 use libproto::{ConsensusConfig, ExecutedResult};
 use std::convert::Into;
 use std::sync::Arc;
@@ -71,7 +70,6 @@ impl Executor {
 
         // let trie_factory = TrieFactory::new(TrieSpec::Generic);
         let factories = Factories {
-            vm: EvmFactory::default(),
             native: NativeFactory::default(),
             // trie: trie_factory,
             // accountdb: Default::default(),

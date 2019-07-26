@@ -15,12 +15,9 @@
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::contracts::native::factory::Factory as NativeFactory;
-use evm::Factory as EvmFactory;
 
 /// Collection of factories.
 #[derive(Default, Clone)]
 pub struct Factories {
-    /// factory for evm.
-    pub vm: EvmFactory,
     pub native: NativeFactory,
 }
