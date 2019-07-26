@@ -24,7 +24,7 @@ extern crate serde_derive;
 extern crate lazy_static;
 #[macro_use]
 extern crate cita_logger as logger;
-extern crate db as cita_db;
+extern crate cita_database as cita_db;
 
 pub extern crate bloomchain;
 

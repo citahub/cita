@@ -16,8 +16,7 @@
 
 //! Database utilities and definitions.
 
-use crate::cita_db::{DBTransaction, KeyValueDB};
-use rlp::{decode, encode, Decodable, Encodable};
+use rlp::{Decodable, Encodable};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::ops::Deref;
@@ -236,62 +235,5 @@ pub trait Readable {
         }
 
         self.exists::<T, R>(col, key)
-    }
-}
-
-impl Writable for DBTransaction {
-    fn write<T, R>(&mut self, col: Option<u32>, key: &DBIndex<T, Item = R>, value: &T)
-    where
-        T: Encodable,
-        R: Deref<Target = [u8]>,
-    {
-        self.put(col, &key.get_index(), &encode(value));
-    }
-
-    fn delete<T, R>(&mut self, col: Option<u32>, key: &DBIndex<T, Item = R>)
-    where
-        T: Encodable,
-        R: Deref<Target = [u8]>,
-    {
-        self.delete(col, &key.get_index());
-    }
-}
-
-impl<KVDB: KeyValueDB + ?Sized> Readable for KVDB {
-    fn read<T, R>(&self, col: Option<u32>, key: &DBIndex<T, Item = R>) -> Option<T>
-    where
-        T: Decodable,
-        R: Deref<Target = [u8]>,
-    {
-        let result = self.get(col, &key.get_index());
-
-        match result {
-            Ok(option) => option.map(|v| decode(&v)),
-            Err(err) => {
-                panic!(
-                    "db get failed, key: {:?}, err: {:?}",
-                    &key.get_index() as &[u8],
-                    err
-                );
-            }
-        }
-    }
-
-    fn exists<T, R>(&self, col: Option<u32>, key: &DBIndex<T, Item = R>) -> bool
-    where
-        R: Deref<Target = [u8]>,
-    {
-        let result = self.get(col, &key.get_index());
-
-        match result {
-            Ok(v) => v.is_some(),
-            Err(err) => {
-                panic!(
-                    "db get failed, key: {:?}, err: {:?}",
-                    &key.get_index() as &[u8],
-                    err
-                );
-            }
-        }
     }
 }

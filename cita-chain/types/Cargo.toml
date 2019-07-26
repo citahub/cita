@@ -21,13 +21,13 @@ lazy_static = "0.2"
 time = "0.1"
 cita-logger = "0.1.0"
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "parity-rocksdb" }
 
 [features]
 default = ["secp256k1", "sha3hash"]
 secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1"]
 ed25519 = ["cita-crypto/ed25519", "libproto/ed25519"]
 sm2 = ["cita-crypto/sm2", "libproto/sm2"]
-sha3hash = ["hashable/sha3hash", "db/sha3hash", "libproto/sha3hash"]
-blake2bhash = ["hashable/blake2bhash", "db/blake2bhash", "libproto/blake2bhash"]
-sm3hash = ["hashable/sm3hash", "db/sm3hash", "libproto/sm3hash"]
+sha3hash = ["hashable/sha3hash", "libproto/sha3hash"]
+blake2bhash = ["hashable/blake2bhash", "libproto/blake2bhash"]
+sm3hash = ["hashable/sm3hash", "libproto/sm3hash"]
