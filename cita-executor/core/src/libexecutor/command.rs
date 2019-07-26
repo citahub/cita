@@ -25,8 +25,6 @@ use crate::error::CallError;
 use crate::libexecutor::block::EVMBlockDataProvider;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::call_request::CallRequest;
-use crate::state::State;
-use crate::state_db::StateDB;
 use crate::trie_db::TrieDB;
 use crate::types::ids::BlockId;
 use crate::types::transaction::{Action, SignedTransaction, Transaction};
@@ -48,8 +46,8 @@ use util::RwLock;
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]
 pub enum Command {
-    StateAt(BlockId),
-    GenState(H256, H256),
+    // StateAt(BlockId),
+    // GenState(H256, H256),
     CodeAt(Address, BlockId),
     ABIAt(Address, BlockId),
     BalanceAt(Address, BlockId),
@@ -68,8 +66,8 @@ pub enum Command {
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]
 pub enum CommandResp {
-    StateAt(Option<State<StateDB>>),
-    GenState(Option<State<StateDB>>),
+    // StateAt(Option<TrieDB<StateDB>>),
+    // GenState(Option<State<StateDB>>),
     CodeAt(Option<Bytes>),
     ABIAt(Option<Bytes>),
     BalanceAt(Option<Bytes>),
@@ -89,8 +87,8 @@ pub enum CommandResp {
 impl fmt::Display for Command {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Command::StateAt(_) => write!(f, "Command::StateAt"),
-            Command::GenState(_, _) => write!(f, "Command::GenState"),
+            // Command::StateAt(_) => write!(f, "Command::StateAt"),
+            // Command::GenState(_, _) => write!(f, "Command::GenState"),
             Command::CodeAt(_, _) => write!(f, "Command::CodeAt"),
             Command::ABIAt(_, _) => write!(f, "Command::ABIAt"),
             Command::BalanceAt(_, _) => write!(f, "Command::BalanceAt"),
@@ -112,8 +110,8 @@ impl fmt::Display for Command {
 impl fmt::Display for CommandResp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            CommandResp::StateAt(_) => write!(f, "CommandResp::StateAt"),
-            CommandResp::GenState(_) => write!(f, "CommandResp::GenState"),
+            // CommandResp::StateAt(_) => write!(f, "CommandResp::StateAt"),
+            // CommandResp::GenState(_) => write!(f, "CommandResp::GenState"),
             CommandResp::CodeAt(_) => write!(f, "CommandResp::CodeAt"),
             CommandResp::ABIAt(_) => write!(f, "CommandResp::ABIAt"),
             CommandResp::BalanceAt(_) => write!(f, "CommandResp::BalanceAt"),
@@ -518,30 +516,30 @@ impl Commander for Executor {
 
 // TODO hope someone refactor these public function via macro
 
-pub fn state_at(
-    command_req_sender: &Sender<Command>,
-    command_resp_receiver: &Receiver<CommandResp>,
-    block_id: BlockId,
-) -> Option<State<StateDB>> {
-    command_req_sender.send(Command::StateAt(block_id));
-    match command_resp_receiver.recv().unwrap() {
-        CommandResp::StateAt(r) => r,
-        _ => unimplemented!(),
-    }
-}
-
-pub fn gen_state(
-    command_req_sender: &Sender<Command>,
-    command_resp_receiver: &Receiver<CommandResp>,
-    root: H256,
-    parent_hash: H256,
-) -> Option<State<StateDB>> {
-    command_req_sender.send(Command::GenState(root, parent_hash));
-    match command_resp_receiver.recv().unwrap() {
-        CommandResp::GenState(r) => r,
-        _ => unimplemented!(),
-    }
-}
+// pub fn state_at(
+//     command_req_sender: &Sender<Command>,
+//     command_resp_receiver: &Receiver<CommandResp>,
+//     block_id: BlockId,
+// ) -> Option<State<StateDB>> {
+//     command_req_sender.send(Command::StateAt(block_id));
+//     match command_resp_receiver.recv().unwrap() {
+//         CommandResp::StateAt(r) => r,
+//         _ => unimplemented!(),
+//     }
+// }
+//
+// pub fn gen_state(
+//     command_req_sender: &Sender<Command>,
+//     command_resp_receiver: &Receiver<CommandResp>,
+//     root: H256,
+//     parent_hash: H256,
+// ) -> Option<State<StateDB>> {
+//     command_req_sender.send(Command::GenState(root, parent_hash));
+//     match command_resp_receiver.recv().unwrap() {
+//         CommandResp::GenState(r) => r,
+//         _ => unimplemented!(),
+//     }
+// }
 
 pub fn code_at(
     command_req_sender: &Sender<Command>,

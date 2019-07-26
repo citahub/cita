@@ -20,10 +20,6 @@ extern crate tempdir;
 
 use self::rustc_serialize::hex::FromHex;
 use self::tempdir::TempDir;
-use crate::cita_db::kvdb::{self, Database, DatabaseConfig};
-use crate::cita_db::KeyValueDB;
-use crate::db;
-use crate::journaldb;
 use crate::libexecutor::block::{BlockBody, ClosedBlock, OpenBlock};
 use crate::libexecutor::command;
 use crate::libexecutor::executor::Executor;
@@ -50,20 +46,20 @@ use util::AsMillis;
 const CHAIN_CONFIG: &str = "chain.toml";
 const SCRIPTS_DIR: &str = "../../scripts";
 
-pub fn get_temp_state() -> State<StateDB> {
-    let state_db = get_temp_state_db();
-    State::new(state_db, 0.into(), Default::default())
-}
+// pub fn get_temp_state() -> State<StateDB> {
+//     let state_db = get_temp_state_db();
+//     State::new(state_db, 0.into(), Default::default())
+// }
 
-fn new_db() -> Arc<KeyValueDB> {
-    Arc::new(kvdb::in_memory(8))
-}
+// fn new_db() -> Arc<KeyValueDB> {
+//     Arc::new(kvdb::in_memory(8))
+// }
 
-pub fn get_temp_state_db() -> StateDB {
-    let db = new_db();
-    let journal_db = journaldb::new(db, journaldb::Algorithm::Archive, crate::db::COL_STATE);
-    StateDB::new(journal_db, 5 * 1024 * 1024)
-}
+// pub fn get_temp_state_db() -> StateDB {
+//     let db = new_db();
+//     let journal_db = journaldb::new(db, journaldb::Algorithm::Archive, crate::db::COL_STATE);
+//     StateDB::new(journal_db, 5 * 1024 * 1024)
+// }
 
 pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
     // input and output of solc command
@@ -146,11 +142,12 @@ pub fn init_executor2(
 }
 
 pub fn init_chain() -> Arc<chain::Chain> {
-    let tempdir = TempDir::new("solc_output").unwrap().into_path();
-    let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-    let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
-    let chain_config = chain::Config::new(CHAIN_CONFIG);
-    Arc::new(chain::Chain::init_chain(Arc::new(db), &chain_config))
+    unimplemented!()
+    // let tempdir = TempDir::new("solc_output").unwrap().into_path();
+    // let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
+    // let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
+    // let chain_config = chain::Config::new(CHAIN_CONFIG);
+    // Arc::new(chain::Chain::init_chain(Arc::new(db), &chain_config))
 }
 
 pub fn create_block(

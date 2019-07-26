@@ -593,64 +593,64 @@ impl Postman {
 
             Request::state_proof(state_info) => {
                 trace!("state_proof info is {:?}", state_info);
-                let _ = serde_json::from_str::<BlockNumber>(&state_info.height)
-                    .map(|block_id| {
-                        match command::state_at(
-                            &self.command_req_sender,
-                            &self.command_resp_receiver,
-                            block_id.into(),
-                        )
-                        .and_then(|state| {
-                            state.get_state_proof(
-                                &Address::from(state_info.get_address()),
-                                &H256::from(state_info.get_position()),
-                            )
-                        }) {
-                            Some(state_proof_bs) => {
-                                response.set_state_proof(state_proof_bs);
-                            }
-                            None => {
-                                response.set_code(ErrorCode::query_error());
-                                response.set_error_msg("get state proof failed".to_string());
-                            }
-                        }
-                    })
-                    .map_err(|err| {
-                        response.set_code(ErrorCode::query_error());
-                        response.set_error_msg(format!("{:?}", err));
-                    });
+                // let _ = serde_json::from_str::<BlockNumber>(&state_info.height)
+                //     .map(|block_id| {
+                //         match command::state_at(
+                //             &self.command_req_sender,
+                //             &self.command_resp_receiver,
+                //             block_id.into(),
+                //         )
+                //         .and_then(|state| {
+                //             state.get_state_proof(
+                //                 &Address::from(state_info.get_address()),
+                //                 &H256::from(state_info.get_position()),
+                //             )
+                //         }) {
+                //             Some(state_proof_bs) => {
+                //                 response.set_state_proof(state_proof_bs);
+                //             }
+                //             None => {
+                //                 response.set_code(ErrorCode::query_error());
+                //                 response.set_error_msg("get state proof failed".to_string());
+                //             }
+                //         }
+                //     })
+                //     .map_err(|err| {
+                //         response.set_code(ErrorCode::query_error());
+                //         response.set_error_msg(format!("{:?}", err));
+                //     });
             }
             Request::storage_key(skey) => {
                 trace!("storage key info is {:?}", skey);
-                let _ = serde_json::from_str::<BlockNumber>(&skey.height)
-                    .map(|block_id| {
-                        match command::state_at(
-                            &self.command_req_sender,
-                            &self.command_resp_receiver,
-                            block_id.into(),
-                        )
-                        .and_then(|state| {
-                            state
-                                .storage_at(
-                                    &Address::from(skey.get_address()),
-                                    &H256::from(skey.get_position()),
-                                )
-                                .ok()
-                        }) {
-                            Some(storage_val) => {
-                                response.set_storage_value(storage_val.to_vec());
-                            }
-                            None => {
-                                response.set_code(ErrorCode::query_error());
-                                response
-                                    .set_error_msg("get storage at something failed".to_string());
-                            }
-                        }
-                    })
-                    .map_err(|err| {
-                        response.set_code(ErrorCode::query_error());
-                        response.set_error_msg(format!("{:?}", err));
-                    });
+                // let _ = serde_json::from_str::<BlockNumber>(&skey.height)
+                //     .map(|block_id| {
+                //         match command::state_at(
+                //             &self.command_req_sender,
+                //             &self.command_resp_receiver,
+                //             block_id.into(),
+                //         )
+                //         .and_then(|state| {
+                //             state
+                //                 .storage_at(
+                //                     &Address::from(skey.get_address()),
+                //                     &H256::from(skey.get_position()),
+                //                 )
+                //                 .ok()
+                //         }) {
+                //             Some(storage_val) => {
+                //                 response.set_storage_value(storage_val.to_vec());
+                //             }
+                //             None => {
+                //                 response.set_code(ErrorCode::query_error());
+                //                 response
+                //                     .set_error_msg("get storage at something failed".to_string());
+                //             }
+                //         }
+                //     })
+                //     .map_err(|err| {
+                //         response.set_code(ErrorCode::query_error());
+                //         response.set_error_msg(format!("{:?}", err));
+                //     });
             }
 
             _ => {

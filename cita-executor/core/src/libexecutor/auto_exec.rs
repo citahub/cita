@@ -19,15 +19,10 @@ use crate::cita_executive::EnvInfo;
 use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::tools::method as method_tools;
 use crate::engines::NullEngine;
-use crate::externalities::{OriginInfo, OutputPolicy};
+use crate::externalities::OutputPolicy;
 use crate::libexecutor::economical_model::EconomicalModel;
-use crate::state::State;
-use crate::state::Substate;
-use crate::state_db::StateDB;
 use crate::types::reserved_addresses;
-use cita_types::{Address, H160, U256};
-use evm::action_params::{ActionParams, ActionValue};
-use evm::call_type::CallType;
+use cita_types::H160;
 use evm::{Factory, VMType};
 use std::str::FromStr;
 use util::BytesRef;
@@ -41,35 +36,34 @@ lazy_static! {
 
 // FIXME
 pub fn auto_exec(
-    state: &mut State<StateDB>,
-    auto_exec_quota_limit: u64,
+    // state: &mut State<StateDB>,
+    _auto_exec_quota_limit: u64,
     _economical_model: EconomicalModel,
     _env_info: EnvInfo,
     _chain_version: u32,
 ) {
-    let hash = &*AUTO_EXEC_HASH;
-    let params = ActionParams {
-        code_address: *AUTO_EXEC_ADDR,
-        address: *AUTO_EXEC_ADDR,
-        sender: Address::from(0x0),
-        origin: Address::from(0x0),
-        gas: U256::from(auto_exec_quota_limit),
-        gas_price: U256::from(1),
-        value: ActionValue::Transfer(U256::from(0)),
-        code: state.code(&*AUTO_EXEC_ADDR).unwrap(),
-        code_hash: state.code_hash(&*AUTO_EXEC_ADDR).unwrap(),
-        data: Some(hash.to_vec()),
-        call_type: CallType::Call,
-    };
+    let _hash = &*AUTO_EXEC_HASH;
+    // let params = ActionParams {
+    //     code_address: *AUTO_EXEC_ADDR,
+    //     address: *AUTO_EXEC_ADDR,
+    //     sender: Address::from(0x0),
+    //     origin: Address::from(0x0),
+    //     gas: U256::from(auto_exec_quota_limit),
+    //     gas_price: U256::from(1),
+    //     value: ActionValue::Transfer(U256::from(0)),
+    //     code: state.code(&*AUTO_EXEC_ADDR).unwrap(),
+    //     code_hash: state.code_hash(&*AUTO_EXEC_ADDR).unwrap(),
+    //     data: Some(hash.to_vec()),
+    //     call_type: CallType::Call,
+    // };
 
-    let mut _substate = Substate::new();
     let mut out = vec![];
     let _output = OutputPolicy::Return(BytesRef::Flexible(&mut out), None);
     let _factory = Factory::new(VMType::Interpreter, 1024 * 32);
 
     let _engine = NullEngine::default();
     let _native_factory = NativeFactory::default();
-    let _origin_info = OriginInfo::from(&params);
+    // let _origin_info = OriginInfo::from(&params);
     //    let mut ext = Externalities::new(
     //        state,
     //        &env_info,
