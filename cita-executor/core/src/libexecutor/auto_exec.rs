@@ -15,10 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::cita_executive::EnvInfo;
 use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::tools::method as method_tools;
 use crate::engines::NullEngine;
-use crate::externalities::{Externalities, OriginInfo, OutputPolicy};
+use crate::externalities::{OriginInfo, OutputPolicy};
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::state::State;
 use crate::state::Substate;
@@ -27,8 +28,7 @@ use crate::types::reserved_addresses;
 use cita_types::{Address, H160, U256};
 use evm::action_params::{ActionParams, ActionValue};
 use evm::call_type::CallType;
-use evm::env_info::EnvInfo;
-use evm::{Factory, Finalize, VMType};
+use evm::{Factory, VMType};
 use std::str::FromStr;
 use util::BytesRef;
 
@@ -42,9 +42,9 @@ lazy_static! {
 pub fn auto_exec(
     state: &mut State<StateDB>,
     auto_exec_quota_limit: u64,
-    economical_model: EconomicalModel,
-    env_info: EnvInfo,
-    chain_version: u32,
+    _economical_model: EconomicalModel,
+    _env_info: EnvInfo,
+    _chain_version: u32,
 ) {
     let hash = &*AUTO_EXEC_HASH;
     let params = ActionParams {
@@ -61,37 +61,37 @@ pub fn auto_exec(
         call_type: CallType::Call,
     };
 
-    let mut substate = Substate::new();
+    let mut _substate = Substate::new();
     let mut out = vec![];
-    let output = OutputPolicy::Return(BytesRef::Flexible(&mut out), None);
-    let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+    let _output = OutputPolicy::Return(BytesRef::Flexible(&mut out), None);
+    let _factory = Factory::new(VMType::Interpreter, 1024 * 32);
 
-    let engine = NullEngine::default();
-    let native_factory = NativeFactory::default();
-    let origin_info = OriginInfo::from(&params);
-    let mut ext = Externalities::new(
-        state,
-        &env_info,
-        &engine,
-        &factory,
-        &native_factory,
-        0,
-        origin_info,
-        &mut substate,
-        output,
-        false,
-        economical_model,
-        chain_version,
-    );
-    let res = {
-        factory
-            .create(params.gas)
-            .exec(&params, &mut ext)
-            .finalize(ext)
-    };
-
-    match res {
-        Ok(res) => trace!("Auto exec succeed: {:?}", res),
-        Err(e) => info!("Auto exec failed: {}", e),
-    }
+    let _engine = NullEngine::default();
+    let _native_factory = NativeFactory::default();
+    let _origin_info = OriginInfo::from(&params);
+    //    let mut ext = Externalities::new(
+    //        state,
+    //        &env_info,
+    //        &engine,
+    //        &factory,
+    //        &native_factory,
+    //        0,
+    //        origin_info,
+    //        &mut substate,
+    //        output,
+    //        false,
+    //        economical_model,
+    //        chain_version,
+    //    );
+    //    let res = {
+    //        factory
+    //            .create(params.gas)
+    //            .exec(&params, &mut ext)
+    //            .finalize(ext)
+    //    };
+    //
+    //    match res {
+    //        Ok(res) => trace!("Auto exec succeed: {:?}", res),
+    //        Err(e) => info!("Auto exec failed: {}", e),
+    //    }
 }

@@ -481,7 +481,6 @@ mod tests {
         let exec_block = ExecutedBlock::create(
             Default::default(),
             &BlockSysConfig::default(),
-            false,
             open_block.clone(),
             state_db,
             HASH_NULL_RLP,

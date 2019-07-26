@@ -42,10 +42,10 @@ impl Contract for SimpleStorage {
                 0x180a4bbf => self.array_get(params, data_provider),
                 0xaaf27175 => self.map_set(params, data_provider),
                 0xc567dff6 => self.map_get(params, data_provider),
-                _ => Err(NativeError::OutOfGas),
+                _ => Err(NativeError::Internal("out of gas".to_string())),
             })
         } else {
-            Err(NativeError::OutOfGas)
+            Err(NativeError::Internal("out of gas".to_string()))
         }
     }
     fn create(&self) -> Box<Contract> {

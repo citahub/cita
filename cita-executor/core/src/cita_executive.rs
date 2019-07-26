@@ -3,8 +3,10 @@ use cita_types::{Address, H160, H256, U256, U512};
 use cita_vm::{
     evm::{Context as EVMContext, InterpreterResult, Log as EVMLog},
     state::{Error as StateError, State, StateObjectInfo},
-    BlockDataProvider, Config as VMConfig, Error as VMError, Transaction as EVMTransaction,
+    BlockDataProvider, Config as VMConfig, DataProvider, Error as VMError, Store as VmSubState,
+    Transaction as EVMTransaction,
 };
+use hashable::Hashable;
 use std::cell::RefCell;
 use std::error::Error;
 use std::fmt;
@@ -13,10 +15,12 @@ use util::Bytes;
 
 use crate::authentication::{check_permission, AuthenticationError};
 use crate::contracts::native::factory::{Factory as NativeFactory, NativeError};
-use crate::core_types::{Bloom, BloomInput, Hash, LogEntry, Receipt, TypesError};
+use crate::core_types::{Bloom, BloomInput, Hash, TypesError};
+use crate::error::CallError;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::tx_gas_schedule::TxGasSchedule;
+use crate::types::log_entry::LogEntry;
 use crate::types::transaction::{Action, SignedTransaction};
 use crate::types::BlockNumber;
 
@@ -38,21 +42,21 @@ pub struct CitaExecutive<'a, B> {
     block_provider: Arc<BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
     native_factory: &'a NativeFactory,
-    env_info: EnvInfo,
+    env_info: &'a EnvInfo,
     economical_model: EconomicalModel,
 }
 
 impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
     pub fn new(
         block_provider: Arc<BlockDataProvider>,
-        state_provider: State<B>,
+        state_db: State<B>,
         native_factory: &'a NativeFactory,
-        env_info: EnvInfo,
+        env_info: &'a EnvInfo,
         economical_model: EconomicalModel,
     ) -> Self {
         Self {
             block_provider,
-            state_provider: Arc::new(RefCell::new(state_provider)),
+            state_provider: Arc::new(RefCell::new(state_db)),
             native_factory,
             env_info,
             economical_model,
@@ -63,7 +67,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         &mut self,
         t: &SignedTransaction,
         conf: &BlockSysConfig,
-    ) -> Result<Receipt, ExecutionError> {
+    ) -> Result<ExecutedResult, ExecutionError> {
         let sender = *t.sender();
         let nonce = self.state_provider.borrow_mut().nonce(&sender)?;
         self.state_provider.borrow_mut().inc_nonce(&sender)?;
@@ -85,6 +89,9 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         let base_gas_required = match t.action {
             Action::Create => tx_gas_schedule.tx_create_gas,
             _ => tx_gas_schedule.tx_gas,
+        } + match t.version {
+            0...2 => 0,
+            _ => t.data.len() * tx_gas_schedule.tx_data_non_zero_gas,
         };
 
         if sender != Address::zero() && t.gas < U256::from(base_gas_required) {
@@ -97,61 +104,50 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             return Err(ExecutionError::VM(VMError::NotEnoughBaseGas));
         }
 
-        if t.action == Action::AmendData {
-            if let Some(admin) = conf.super_admin_account {
-                if *t.sender() != admin {
-                    return Err(ExecutionError::Authentication(
-                        AuthenticationError::NoTransactionPermission,
-                    ));
-                }
-            } else {
-                return Err(ExecutionError::Authentication(
-                    AuthenticationError::NoTransactionPermission,
-                ));
-            }
-        }
-
         if t.action == Action::AbiStore && !self.transact_set_abi(&t.data) {
             return Err(ExecutionError::TransactionMalformed(
                 "Account doesn't exist".to_owned(),
             ));
         }
 
-        let balance = self.state_provider.borrow_mut().balance(&sender)?;
-        let gas_cost = t.gas.full_mul(t.gas_price());
-        let total_cost = U512::from(t.value) + gas_cost;
-
-        // Avoid unaffordable transactions
-        if self.payment_required() {
-            let balance512 = U512::from(balance);
-            if balance512 < total_cost {
-                return Err(ExecutionError::VM(VMError::NotEnoughBalance));
-            }
-            self.state_provider
-                .borrow_mut()
-                .sub_balance(&sender, U256::from(gas_cost))?;
-        }
-
         let init_gas = t.gas - U256::from(base_gas_required);
+
         let result = match t.action {
             Action::Store | Action::AbiStore => {
+                // Prepaid t.gas for the transaction.
+                self.prepaid(t.sender(), t.gas, t.gas_price, t.value)?;
+
                 // Maybe use tx_gas_schedule.tx_data_non_zero_gas for each byte store, it is more reasonable.
                 // But for the data compatible, just let it as tx_gas_schedule.create_data_gas for now.
                 let store_gas_used = U256::from(t.data.len() * tx_gas_schedule.create_data_gas);
-                if init_gas.checked_sub(store_gas_used).is_some() {
-                    let mut receipt = Receipt::default();
-                    receipt.quota_used = store_gas_used.as_u64();
-                    Ok(receipt)
+                if let Some(gas_left) = init_gas.checked_sub(store_gas_used) {
+                    let refund_value = gas_left * t.gas_price;
+                    // Note: should not be error at refund.
+                    self.refund(t.sender(), refund_value)
+                        .expect("refund balance to sender must success");
+
+                    let gas_used = t.gas - gas_left;
+                    let fee_value = gas_used * t.gas_price;
+                    self.handle_tx_fee(&self.env_info.coin_base, fee_value)
+                        .expect("Add balance to coin_base must success");
+
+                    let mut result = ExecutedResult::default();
+                    result.quota_used = gas_used.as_u64();
+
+                    Ok(result)
                 } else {
+                    // FIXME: Should not return an error after self.prepaid().
+                    // But for compatibility, should keep this. Need to be upgrade in new version.
                     Err(ExecutionError::VM(VMError::NotEnoughBaseGas))
                 }
             }
             Action::Create => {
+                // Note: Fees has been handle in cita_vm.
                 let params = VmExecParams {
                     code_address: None,
                     sender,
                     to_address: None,
-                    gas: init_gas,
+                    gas: t.gas,
                     gas_price: t.gas_price(),
                     value: t.value,
                     nonce,
@@ -162,10 +158,48 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             }
 
             Action::AmendData => {
+                if let Some(admin) = conf.super_admin_account {
+                    if *t.sender() != admin {
+                        return Err(ExecutionError::Authentication(
+                            AuthenticationError::NoTransactionPermission,
+                        ));
+                    }
+                } else {
+                    return Err(ExecutionError::Authentication(
+                        AuthenticationError::NoTransactionPermission,
+                    ));
+                }
+
+                // Prepaid for the transaction
+                self.prepaid(t.sender(), t.gas, t.gas_price, t.value)?;
+
+                // Backup used in case of running error
+                self.state_provider.borrow_mut().checkpoint();
+
                 // Note: Do not need a checkpoint for amend data.
                 match self.call_amend_data(t.value, Some(t.data.clone())) {
-                    Ok(_) => Ok(Receipt::default()),
-                    Err(e) => Err(e),
+                    Ok(_) => {
+                        // Refund gas, AmendData do not use any additional gas.
+                        let refund_value = init_gas * t.gas_price;
+                        self.refund(t.sender(), refund_value)
+                            .expect("refund balance to sender must success");
+
+                        let fee_value = U256::from(base_gas_required) * t.gas_price;
+                        self.handle_tx_fee(&self.env_info.coin_base, fee_value)
+                            .expect("Add balance to coin_base must success");
+
+                        // Discard the checkpoint because of amend data ok.
+                        self.state_provider.borrow_mut().discard_checkpoint();
+                        Ok(ExecutedResult::default())
+                    }
+                    Err(e) => {
+                        let mut result = ExecutedResult::default();
+
+                        // Need to revert the state.
+                        self.state_provider.borrow_mut().revert_checkpoint();
+                        result.exception = Some(e);
+                        Ok(result)
+                    }
                 }
             }
             Action::Call(ref address) => {
@@ -173,7 +207,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                     code_address: Some(*address),
                     sender,
                     to_address: Some(*address),
-                    gas: init_gas,
+                    gas: t.gas,
                     gas_price: t.gas_price(),
                     value: t.value,
                     nonce,
@@ -188,6 +222,72 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
     fn payment_required(&self) -> bool {
         self.economical_model == EconomicalModel::Charge
+    }
+
+    fn prepaid(
+        &mut self,
+        sender: &H160,
+        gas: U256,
+        gas_price: U256,
+        value: U256,
+    ) -> Result<(), ExecutionError> {
+        if self.payment_required() {
+            let balance = self.state_provider.borrow_mut().balance(&sender)?;
+            let gas_cost = gas.full_mul(gas_price);
+            let total_cost = U512::from(value) + gas_cost;
+
+            // Avoid unaffordable transactions
+            let balance512 = U512::from(balance);
+            if balance512 < total_cost {
+                return Err(ExecutionError::VM(VMError::NotEnoughBalance));
+            }
+            self.state_provider
+                .borrow_mut()
+                .sub_balance(&sender, U256::from(gas_cost))?;
+        }
+        Ok(())
+    }
+
+    fn refund(&mut self, address: &Address, value: U256) -> Result<(), ExecutionError> {
+        if self.payment_required() {
+            self.state_provider
+                .borrow_mut()
+                .add_balance(address, value)
+                .map_err(|e| ExecutionError::State(e))
+        } else {
+            Ok(())
+        }
+    }
+
+    fn handle_tx_fee(
+        &mut self,
+        coin_base: &Address,
+        fee_value: U256,
+    ) -> Result<(), ExecutionError> {
+        if self.payment_required() {
+            self.state_provider
+                .borrow_mut()
+                .add_balance(coin_base, fee_value)
+                .map_err(|e| ExecutionError::State(e))
+        } else {
+            Ok(())
+        }
+    }
+
+    fn transfer_balance(
+        &mut self,
+        from: &Address,
+        to: &Address,
+        value: U256,
+    ) -> Result<(), ExecutionError> {
+        if self.payment_required() {
+            self.state_provider
+                .borrow_mut()
+                .transfer_balance(from, to, value)
+                .map_err(|e| ExecutionError::State(e))
+        } else {
+            Ok(())
+        }
     }
 
     fn transact_set_abi(&mut self, data: &[u8]) -> bool {
@@ -312,43 +412,82 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         }
     }
 
-    fn call_evm(&mut self, params: &VmExecParams) -> Result<Receipt, ExecutionError> {
+    fn call_evm(&mut self, params: &VmExecParams) -> Result<ExecutedResult, ExecutionError> {
         let evm_transaction = build_evm_transaction(params);
         let evm_config = build_evm_config(self.env_info.gas_limit.clone().as_u64());
         let evm_context = build_evm_context(&self.env_info);
-        let receipt = match cita_vm::exec(
+        let result = match cita_vm::exec(
             self.block_provider.clone(),
             self.state_provider.clone(),
             evm_context,
             evm_config,
             evm_transaction,
         ) {
-            Ok(evm_result) => build_receipt_with_ok(params.gas, evm_result),
-            Err(e) => build_receipt_with_err(e),
+            Ok(evm_result) => build_result_with_ok(params.gas, evm_result),
+            Err(e) => build_result_with_err(e),
         };
-        Ok(receipt)
+        Ok(result)
     }
 
-    fn call(&mut self, params: &VmExecParams) -> Result<Receipt, ExecutionError> {
-        // Backup used in case of running out of gas
-        self.state_provider.borrow_mut().checkpoint();
-
-        // At first, transfer value to destination.
-        // TODO: Keep it for compatibility. Remove it later.
-        if self.payment_required() {
-            self.state_provider.borrow_mut().transfer_balance(
-                &params.sender,
-                &params.to_address.unwrap(),
-                params.value,
-            )?
-        }
-
+    fn call(&mut self, params: &VmExecParams) -> Result<ExecutedResult, ExecutionError> {
         // Check and call Native Contract.
-        if let Some(_native_contract) = self
+        if let Some(mut native_contract) = self
             .native_factory
             .new_contract(params.code_address.unwrap())
         {
-            unimplemented!()
+            self.prepaid(&params.sender, params.gas, params.gas_price, params.value)?;
+
+            // Backup used in case of running out of gas
+            self.state_provider.borrow_mut().checkpoint();
+
+            // At first, transfer value to destination.
+            if self.payment_required() {
+                if self
+                    .transfer_balance(&params.sender, &params.to_address.unwrap(), params.value)
+                    .is_err()
+                {
+                    // Discard the checkpoint
+                    self.state_provider.borrow_mut().discard_checkpoint();
+                    return Err(ExecutionError::Internal(
+                        "Transfer balance failed while calling native contract.".to_string(),
+                    ));
+                }
+            }
+
+            let store = VmSubState::default();
+
+            let store = Arc::new(RefCell::new(store));
+
+            let mut vm_data_provider = DataProvider::new(
+                self.block_provider.clone(),
+                self.state_provider.clone(),
+                store,
+            );
+            let result = match native_contract.exec(params, &self.env_info, &mut vm_data_provider) {
+                Ok(ret) => {
+                    // Discard the checkpoint
+                    self.state_provider.borrow_mut().discard_checkpoint();
+
+                    // FIXME: Fix refund later.
+                    //                    let refund_value = get_quota_left(ret) * params.gas_price;
+                    //                    self.refund(&params.sender, refund_value).expect("refund balance to sender must success");
+
+                    let result = build_result_with_ok(params.gas, ret);
+                    let fee_value = U256::from(result.quota_used) * params.gas_price;
+                    self.handle_tx_fee(&self.env_info.coin_base, fee_value)
+                        .expect("Add balance to coin_base must success");
+                    result
+                }
+                Err(e) => {
+                    // If error, revert the checkpoint
+                    self.state_provider.borrow_mut().revert_checkpoint();
+
+                    let mut result = ExecutedResult::default();
+                    result.exception = Some(ExecutionError::NativeContract(e));
+                    result
+                }
+            };
+            Ok(result)
         } else {
             // Call EVM contract
             self.call_evm(params)
@@ -371,7 +510,7 @@ fn build_evm_transaction(params: &VmExecParams) -> EVMTransaction {
 fn build_evm_context(env_info: &EnvInfo) -> EVMContext {
     EVMContext {
         gas_limit: env_info.gas_limit.as_u64(),
-        coinbase: env_info.author,
+        coinbase: env_info.coin_base,
         number: U256::from(env_info.number),
         timestamp: env_info.timestamp,
         difficulty: env_info.difficulty,
@@ -386,34 +525,35 @@ fn build_evm_config(block_gas_limit: u64) -> VMConfig {
     }
 }
 
-fn build_receipt_with_ok(init_gas: U256, result: InterpreterResult) -> Receipt {
-    let mut receipt = Receipt::default();
+fn build_result_with_ok(init_gas: U256, ret: InterpreterResult) -> ExecutedResult {
+    let mut result = ExecutedResult::default();
 
-    match result {
-        InterpreterResult::Normal(_data, quota_left, logs) => {
-            receipt.quota_used = init_gas.as_u64() - quota_left;
-            receipt.logs = transform_logs(logs);
-            receipt.logs_bloom = logs_to_bloom(&receipt.logs);
+    match ret {
+        InterpreterResult::Normal(data, quota_left, logs) => {
+            result.quota_used = init_gas.as_u64() - quota_left;
+            result.logs = transform_logs(logs);
+            result.logs_bloom = logs_to_bloom(&result.logs);
+            result.output = data;
         }
         InterpreterResult::Revert(_data, quota_left) => {
-            receipt.quota_used = init_gas.as_u64() - quota_left;
+            result.quota_used = init_gas.as_u64() - quota_left;
         }
         InterpreterResult::Create(_data, quota_left, logs, contract_address) => {
-            receipt.quota_used = init_gas.as_u64() - quota_left;
-            receipt.logs = transform_logs(logs);
-            receipt.logs_bloom = logs_to_bloom(&receipt.logs);
+            result.quota_used = init_gas.as_u64() - quota_left;
+            result.logs = transform_logs(logs);
+            result.logs_bloom = logs_to_bloom(&result.logs);
 
             let address_slice: &[u8] = contract_address.as_ref();
-            receipt.contract_address = Some(H160::from(address_slice));
+            result.contract_address = Some(H160::from(address_slice));
         }
     };
-    receipt
+    result
 }
 
-fn build_receipt_with_err(err: VMError) -> Receipt {
-    let mut receipt = Receipt::default();
-    receipt.receipt_error = err.to_string();
-    receipt
+fn build_result_with_err(err: VMError) -> ExecutedResult {
+    let mut result = ExecutedResult::default();
+    result.exception = Some(ExecutionError::VM(err));
+    result
 }
 
 fn transform_logs(logs: Vec<EVMLog>) -> Vec<LogEntry> {
@@ -423,10 +563,7 @@ fn transform_logs(logs: Vec<EVMLog>) -> Vec<LogEntry> {
 
             LogEntry {
                 address,
-                topics: topics
-                    .into_iter()
-                    .map(|topic| Hash::from_bytes(topic.as_ref()).expect("never returns an error"))
-                    .collect(),
+                topics,
                 data,
             }
         })
@@ -443,9 +580,19 @@ fn logs_to_bloom(logs: &[LogEntry]) -> Bloom {
 fn accrue_log(bloom: &mut Bloom, log: &LogEntry) {
     bloom.accrue(BloomInput::Raw(&log.address.0));
     for topic in &log.topics {
-        let input = BloomInput::Hash(topic.as_fixed_bytes());
+        let input = BloomInput::Hash(&topic.0);
         bloom.accrue(input);
     }
+}
+
+/// Returns new address created from address and given nonce.
+pub fn contract_address(address: &Address, nonce: &U256) -> Address {
+    use rlp::RlpStream;
+
+    let mut stream = RlpStream::new_list(2);
+    stream.append(address);
+    stream.append(nonce);
+    From::from(stream.out().crypt_hash())
 }
 
 #[derive(Debug)]
@@ -512,6 +659,11 @@ impl From<AuthenticationError> for ExecutionError {
     }
 }
 
+impl Into<CallError> for ExecutionError {
+    fn into(self) -> CallError {
+        CallError::Exceptional
+    }
+}
 /// Transaction execute result.
 #[derive(Debug)]
 pub struct TxExecResult {
@@ -556,12 +708,12 @@ impl Default for VmExecParams {
 }
 
 /// Information concerning the execution environment for vm.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnvInfo {
     /// The block number.
     pub number: BlockNumber,
-    /// The block author.
-    pub author: Address,
+    /// The fee refund address.
+    pub coin_base: Address,
     /// The block timestamp.
     pub timestamp: u64,
     /// The block difficulty.
@@ -579,7 +731,7 @@ impl Default for EnvInfo {
     fn default() -> Self {
         EnvInfo {
             number: 0,
-            author: Address::default(),
+            coin_base: Address::default(),
             timestamp: 0,
             difficulty: 0.into(),
             gas_limit: U256::from(u64::max_value()),
@@ -588,4 +740,19 @@ impl Default for EnvInfo {
             account_gas_limit: 0.into(),
         }
     }
+}
+
+#[derive(Default, Debug)]
+pub struct ExecutedResult {
+    pub state_root: Hash,
+    pub transaction_hash: Hash,
+    pub quota_used: u64,
+    pub logs_bloom: Bloom,
+    pub logs: Vec<LogEntry>,
+    pub exception: Option<ExecutionError>,
+    pub contract_address: Option<Address>,
+    pub account_nonce: U256,
+
+    /// Transaction output.
+    pub output: Bytes,
 }

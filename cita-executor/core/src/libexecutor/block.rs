@@ -15,23 +15,33 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::authentication::AuthenticationError;
 use crate::basic_types::LogBloom;
+use crate::cita_executive::{CitaExecutive, EnvInfo, ExecutionError};
+use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::engines::Engine;
 use crate::error::Error;
 use crate::factory::Factories;
 use crate::libexecutor::auto_exec::auto_exec;
+use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
-use crate::receipt::Receipt;
+use crate::receipt::{Receipt, ReceiptError};
 use crate::state::State;
 use crate::state_db::StateDB;
+use crate::trie_db::TrieDB;
+use crate::tx_gas_schedule::TxGasSchedule;
 pub use crate::types::block::{Block, BlockBody, OpenBlock};
 use crate::types::transaction::SignedTransaction;
+use cita_database::RocksDB;
 use cita_merklehash;
 use cita_types::{Address, H256, U256};
-use evm::env_info::{EnvInfo, LastHashes};
+use cita_vm::BlockDataProvider;
+use cita_vm::{evm::Error as EVMError, state::State as CitaState, Error as VMError};
+use evm::env_info::LastHashes;
 use hashable::Hashable;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use rlp::*;
+use std::cmp;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
@@ -48,12 +58,13 @@ pub trait Drain {
     fn drain(self) -> StateDB;
 }
 
-#[derive(Debug)]
 pub struct ExecutedBlock {
     pub block: OpenBlock,
     pub receipts: Vec<Receipt>,
+    pub trie_db: Arc<TrieDB<RocksDB>>,
     pub state: State<StateDB>,
     pub current_quota_used: U256,
+    state_root: H256,
     last_hashes: Arc<LastHashes>,
     account_gas_limit: U256,
     account_gas: HashMap<Address, U256>,
@@ -80,6 +91,7 @@ impl ExecutedBlock {
         factories: Factories,
         conf: &BlockSysConfig,
         block: OpenBlock,
+        trie_db: Arc<TrieDB<RocksDB>>,
         db: StateDB,
         state_root: H256,
         last_hashes: Arc<LastHashes>,
@@ -89,7 +101,9 @@ impl ExecutedBlock {
 
         let r = ExecutedBlock {
             block,
+            trie_db,
             state,
+            state_root,
             last_hashes,
             account_gas_limit: conf.account_quota_limit.common_quota_limit.into(),
             account_gas: conf.account_quota_limit.specific_quota_limit.iter().fold(
@@ -115,7 +129,7 @@ impl ExecutedBlock {
     pub fn env_info(&self) -> EnvInfo {
         EnvInfo {
             number: self.number(),
-            author: *self.proposer(),
+            coin_base: *self.proposer(),
             timestamp: if self.eth_compatibility {
                 self.timestamp() / 1000
             } else {
@@ -132,7 +146,7 @@ impl ExecutedBlock {
     #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
     pub fn apply_transaction(
         &mut self,
-        engine: &Engine,
+        _engine: &Engine,
         t: &SignedTransaction,
         conf: &BlockSysConfig,
     ) {
@@ -140,24 +154,155 @@ impl ExecutedBlock {
         self.account_gas
             .entry(*t.sender())
             .or_insert(self.account_gas_limit);
+
+        //FIXME: set coin_base according to conf.
         env_info.account_gas_limit = *self
             .account_gas
             .get(t.sender())
             .expect("account should exist in account_gas_limit");
 
-        match self.state.apply(&env_info, engine, t, conf) {
-            Ok(outcome) => {
-                trace!("apply signed transaction {} success", t.hash());
-                let transaction_quota_used = outcome.receipt.quota_used - self.current_quota_used;
-                self.current_quota_used = outcome.receipt.quota_used;
+        // Reset coin_base
+        if (*conf).check_options.fee_back_platform {
+            // Set coin_base to chain_owner if check_fee_back_platform is true, and chain_owner is set.
+            if (*conf).chain_owner != Address::from(0) {
+                env_info.coin_base = (*conf).chain_owner.clone();
+            }
+        }
+        let block_data_provider = EVMBlockDataProvider::new(env_info.clone());
+        let native_factory = NativeFactory::default();
+
+        let state_db = match CitaState::from_existing(
+            Arc::<TrieDB<RocksDB>>::clone(&self.trie_db),
+            self.state_root,
+        ) {
+            Ok(state_db) => state_db,
+            Err(e) => {
+                error!("Can not get state from trie db! error: {:?}", e);
+                return;
+            }
+        };
+
+        match CitaExecutive::new(
+            Arc::new(block_data_provider),
+            state_db,
+            &native_factory,
+            &env_info,
+            conf.economical_model,
+        )
+        .exec(t, conf)
+        {
+            Ok(ret) => {
+                // FIXME: logic from old cita, but there is some confuse about this logic.
+                let quota_used = U256::from(ret.quota_used);
+                let transaction_quota_used = quota_used - self.current_quota_used;
+                self.current_quota_used = U256::from(quota_used);
                 if conf.check_options.quota {
                     if let Some(value) = self.account_gas.get_mut(t.sender()) {
                         *value = *value - transaction_quota_used;
                     }
                 }
-                self.receipts.push(outcome.receipt);
+
+                // FIXME: hasn't handle some errors
+                let receipt_error = ret.exception.and_then(|error| match error {
+                    ExecutionError::VM(VMError::Evm(EVMError::OutOfGas)) => {
+                        Some(ReceiptError::OutOfQuota)
+                    }
+                    ExecutionError::VM(VMError::Evm(EVMError::InvalidJumpDestination)) => {
+                        Some(ReceiptError::BadJumpDestination)
+                    }
+                    ExecutionError::VM(VMError::Evm(EVMError::InvalidOpcode)) => {
+                        Some(ReceiptError::BadInstruction)
+                    }
+                    // ExecutionError::VM(VMError::Evm(EVMError::OutOfStack)) => Some(ReceiptError::StackUnderflow),
+                    ExecutionError::VM(VMError::Evm(EVMError::OutOfStack)) => {
+                        Some(ReceiptError::OutOfStack)
+                    }
+                    ExecutionError::VM(VMError::Evm(EVMError::MutableCallInStaticContext)) => {
+                        Some(ReceiptError::MutableCallInStaticContext)
+                    }
+                    ExecutionError::VM(VMError::Evm(EVMError::Internal(_))) => {
+                        Some(ReceiptError::Internal)
+                    }
+                    ExecutionError::VM(VMError::Evm(EVMError::OutOfBounds)) => {
+                        Some(ReceiptError::OutOfBounds)
+                    }
+                    _ => Some(ReceiptError::Internal),
+                    //EvmError::Reverted => Some(ReceiptError::Reverted),
+                });
+
+                // FIXME: change the quota_used to cumulative_gas_used.
+                let receipt = Receipt::new(
+                    None,
+                    quota_used,
+                    ret.logs,
+                    receipt_error,
+                    ret.account_nonce,
+                    t.get_transaction_hash(),
+                );
+
+                self.receipts.push(receipt);
             }
-            _ => panic!("apply_transaction: There must be something wrong!"),
+            Err(err) => {
+                // FIXME: hasn't handle some errors.
+                let receipt_error = match err {
+                    ExecutionError::VM(VMError::NotEnoughBaseGas) => {
+                        Some(ReceiptError::NotEnoughBaseQuota)
+                    }
+                    // FIXME: need to handle this two situation.
+                    ExecutionError::VM(VMError::ExccedMaxBlockGasLimit) => {
+                        Some(ReceiptError::BlockQuotaLimitReached)
+                    }
+                    //                    ExecutionError::AccountGasLimitReached { .. } => {
+                    //                        Some(ReceiptError::AccountQuotaLimitReached)
+                    //                    }
+                    ExecutionError::VM(VMError::InvalidNonce) => Some(ReceiptError::InvalidNonce),
+                    ExecutionError::VM(VMError::NotEnoughBalance) => {
+                        Some(ReceiptError::NotEnoughCash)
+                    }
+                    ExecutionError::Authentication(
+                        AuthenticationError::NoTransactionPermission,
+                    ) => Some(ReceiptError::NoTransactionPermission),
+                    ExecutionError::Authentication(AuthenticationError::NoContractPermission) => {
+                        Some(ReceiptError::NoContractPermission)
+                    }
+                    ExecutionError::Authentication(AuthenticationError::NoCallPermission) => {
+                        Some(ReceiptError::NoCallPermission)
+                    }
+                    ExecutionError::Internal { .. } => Some(ReceiptError::ExecutionInternal),
+                    ExecutionError::TransactionMalformed { .. } => {
+                        Some(ReceiptError::TransactionMalformed)
+                    }
+                    _ => Some(ReceiptError::Internal),
+                };
+
+                let schedule = TxGasSchedule::default();
+                //                let sender = *t.sender();
+                let tx_gas_used = schedule.tx_gas;
+                //match err {
+                //                    ExecutionError::Internal(_) => t.gas,
+                //                    _ => cmp::min(
+                //                        state_db.balance(&sender).unwrap_or_else(|_| U256::from(0)),
+                //                        U256::from(schedule.tx_gas),
+                //                    ),
+                //                };
+
+                // FIXME: Handle the economical_model. Check for the detail of the fee.
+                if (*conf).economical_model == EconomicalModel::Charge {
+                    unimplemented!()
+                }
+
+                let cumulative_gas_used = env_info.gas_used + tx_gas_used;
+                let receipt = Receipt::new(
+                    None,
+                    cumulative_gas_used,
+                    Vec::new(),
+                    receipt_error,
+                    0.into(),
+                    t.get_transaction_hash(),
+                );
+
+                self.receipts.push(receipt);
+            }
         }
     }
 
@@ -169,7 +314,7 @@ impl ExecutedBlock {
         // In protocol version > 1:
         // Auto Execution's env info author is block author
         if conf.chain_version < 2 {
-            env_info.author = Address::default();
+            env_info.coin_base = Address::default();
         }
 
         if conf.auto_exec {
@@ -293,6 +438,49 @@ impl Deref for ClosedBlock {
 impl DerefMut for ClosedBlock {
     fn deref_mut(&mut self) -> &mut Block {
         &mut self.block
+    }
+}
+
+pub struct EVMBlockDataProvider {
+    env_info: EnvInfo,
+}
+
+impl EVMBlockDataProvider {
+    pub fn new(env_info: EnvInfo) -> Self {
+        EVMBlockDataProvider { env_info }
+    }
+}
+
+impl BlockDataProvider for EVMBlockDataProvider {
+    fn get_block_hash(&self, number: &U256) -> H256 {
+        // TODO: comment out what this function expects from env_info, since it will produce panics if the latter is inconsistent
+        if *number < U256::from(self.env_info.number)
+            && number.low_u64() >= cmp::max(256, self.env_info.number) - 256
+        {
+            let index = self.env_info.number - number.low_u64() - 1;
+            assert!(
+                index < self.env_info.last_hashes.len() as u64,
+                format!(
+                    "Inconsistent env_info, should contain at least {:?} last hashes",
+                    index + 1
+                )
+            );
+            let r = self.env_info.last_hashes[index as usize];
+            trace!(
+                "ext: blockhash({}) -> {} self.env_info.number={}\n",
+                number,
+                r,
+                self.env_info.number
+            );
+            r
+        } else {
+            trace!(
+                "ext: blockhash({}) -> null self.env_info.number={}\n",
+                number,
+                self.env_info.number
+            );
+            H256::zero()
+        }
     }
 }
 
