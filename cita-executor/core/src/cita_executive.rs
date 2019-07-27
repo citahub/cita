@@ -495,7 +495,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
     }
 }
 
-fn build_evm_transaction(params: &VmExecParams) -> EVMTransaction {
+pub fn build_evm_transaction(params: &VmExecParams) -> EVMTransaction {
     EVMTransaction {
         from: params.sender,
         value: params.value,
@@ -507,7 +507,7 @@ fn build_evm_transaction(params: &VmExecParams) -> EVMTransaction {
     }
 }
 
-fn build_evm_context(env_info: &EnvInfo) -> EVMContext {
+pub fn build_evm_context(env_info: &EnvInfo) -> EVMContext {
     EVMContext {
         gas_limit: env_info.gas_limit.as_u64(),
         coinbase: env_info.coin_base,
@@ -517,7 +517,7 @@ fn build_evm_context(env_info: &EnvInfo) -> EVMContext {
     }
 }
 
-fn build_evm_config(block_gas_limit: u64) -> VMConfig {
+pub fn build_evm_config(block_gas_limit: u64) -> VMConfig {
     VMConfig {
         // block_gas_limit is meaningless in cita_vm, so let it as default_block_quota_limit.
         block_gas_limit,
