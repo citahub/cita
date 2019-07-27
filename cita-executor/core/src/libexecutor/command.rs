@@ -313,7 +313,7 @@ impl Commander for Executor {
         };
 
         let state_db = match CitaState::from_existing(
-            Arc::<TrieDB<RocksDB>>::clone(&self.trie_db),
+            Arc::<TrieDB<RocksDB>>::clone(&self.state_db),
             state_root,
         ) {
             Ok(state_db) => state_db,
@@ -493,7 +493,8 @@ impl Commander for Executor {
 
     fn clone_executor_reader(&mut self) -> Self {
         let current_header = self.current_header.read().clone();
-        let trie_db = self.trie_db.clone();
+        let state_db = self.state_db.clone();
+        let db = self.db.clone();
         // let fake_parent_hash: H256 = Default::default();
         let sys_config = self.sys_config.clone();
         let fsm_req_receiver = self.fsm_req_receiver.clone();
@@ -503,7 +504,8 @@ impl Commander for Executor {
         let eth_compatibility = self.eth_compatibility;
         Executor {
             current_header: RwLock::new(current_header),
-            trie_db,
+            state_db,
+            db,
             sys_config,
             fsm_req_receiver,
             fsm_resp_sender,

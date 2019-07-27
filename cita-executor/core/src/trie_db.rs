@@ -24,6 +24,10 @@ where
             cache: Arc::new(RwLock::new(HashMap::new())),
         }
     }
+
+    pub fn database(&self) -> Arc<DB> {
+        self.db.clone()
+    }
 }
 
 /// "TrieDB" provides state read/write capabilities for executor.
