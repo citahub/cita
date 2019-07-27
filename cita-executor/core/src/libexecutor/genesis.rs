@@ -102,10 +102,7 @@ impl Genesis {
         }
     }
 
-    pub fn lazy_execute(
-        &mut self,
-        state_db: Arc<CitaTrieDB>,
-    ) -> Result<(), String> {
+    pub fn lazy_execute(&mut self, state_db: Arc<CitaTrieDB>) -> Result<(), String> {
         let mut state = CitaState::from_existing(
             Arc::<CitaTrieDB>::clone(&state_db),
             *self.block.state_root(),

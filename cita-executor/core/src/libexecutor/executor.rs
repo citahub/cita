@@ -19,7 +19,7 @@ use super::command::{Command, CommandResp, Commander};
 use super::fsm::FSM;
 use super::sys_config::GlobalSysConfig;
 use crate::bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
-use crate::contracts::{solc::NodeManager};
+use crate::contracts::solc::NodeManager;
 use crate::core::env_info::LastHashes;
 use crate::header::*;
 pub use crate::libexecutor::block::*;
