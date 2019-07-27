@@ -18,6 +18,7 @@
 use super::command::{Command, CommandResp, Commander};
 use super::fsm::FSM;
 use super::sys_config::GlobalSysConfig;
+use crate::basic_types::LogBloomGroup;
 use crate::bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 use crate::contracts::solc::NodeManager;
 use crate::core::env_info::LastHashes;
@@ -25,12 +26,15 @@ use crate::header::*;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::genesis::Genesis;
 use crate::trie_db::TrieDB;
+use crate::types::db::DBIndex;
+use crate::types::extras::*;
 use crate::types::ids::BlockId;
 pub use byteorder::{BigEndian, ByteOrder};
-use cita_database::{Config, Database, RocksDB, NUM_COLUMNS};
+use cita_database::{Config, DataCategory, Database, RocksDB, NUM_COLUMNS};
 use cita_types::H256;
 use crossbeam_channel::{Receiver, Sender};
 use libproto::{ConsensusConfig, ExecutedResult};
+use rlp::decode;
 use std::convert::Into;
 use std::sync::Arc;
 use util::RwLock;
@@ -71,7 +75,7 @@ impl Executor {
         let db = Arc::new(rocks_db);
         let state_db = Arc::new(TrieDB::new(db.clone()));
 
-        let current_header = match get_current_header() {
+        let current_header = match get_current_header(db.clone()) {
             Some(header) => header,
             None => {
                 warn!("Not found exist block within database. Loading genesis block...");
@@ -105,16 +109,16 @@ impl Executor {
     }
 
     pub fn close(&mut self) {
-        unimplemented!();
+        // FIXME: Need a close interface for db.
         // IMPORTANT: close and release database handler so that it will not
         //            compact data/logs in background, which may effect snapshot
         //            changing database when restore snapshot.
         // self.db.close();
 
-        // info!(
-        //     "executor closed, current_height: {}",
-        //     self.get_current_height()
-        // );
+        info!(
+            "executor closed, current_height: {}",
+            self.get_current_height()
+        );
     }
 
     pub fn do_loop(&mut self) {
@@ -157,73 +161,80 @@ impl Executor {
         }
     }
 
-    pub fn rollback_current_height(&mut self, _rollback_id: BlockId) {
-        unimplemented!()
-        // let rollback_height: BlockNumber = match rollback_id {
-        //     BlockId::Number(height) => height,
-        //     BlockId::Earliest => 0,
-        //     _ => unimplemented!(),
-        // };
-        // if self.get_current_height() != rollback_height {
-        //     warn!(
-        //         "executor roll back from {} to {}",
-        //         self.get_current_height(),
-        //         rollback_height
-        //     );
-        //     let rollback_hash = self
-        //         .block_hash(rollback_height)
-        //         .expect("the target block to roll back should exist");
-        //     let mut batch = self.db.transaction();
-        //     batch.write(db::COL_EXTRA, &CurrentHash, &rollback_hash);
-        //     self.db.write(batch).unwrap();
-        // }
+    pub fn rollback_current_height(&mut self, rollback_id: BlockId) {
+        let rollback_height: BlockNumber = match rollback_id {
+            BlockId::Number(height) => height,
+            BlockId::Earliest => 0,
+            _ => unimplemented!(),
+        };
+        if self.get_current_height() != rollback_height {
+            warn!(
+                "executor roll back from {} to {}",
+                self.get_current_height(),
+                rollback_height
+            );
+            let rollback_hash = self
+                .block_hash(rollback_height)
+                .expect("the target block to roll back should exist");
 
-        // let rollback_header = self.block_header_by_height(rollback_height).unwrap();
-        // self.current_header = RwLock::new(rollback_header);
+            self.db
+                .insert(
+                    Some(DataCategory::Extra),
+                    CURRENT_HASH.to_vec(),
+                    rollback_hash.to_vec(),
+                )
+                .expect("Insert rollback hash error.");
+        }
+
+        let rollback_header = self.block_header_by_height(rollback_height).unwrap();
+        self.current_header = RwLock::new(rollback_header);
     }
 
     /// Write data to db
     /// 1. Header
     /// 2. CurrentHash
     /// 3. State
-    pub fn write_batch(&self, _block: ClosedBlock) {
-        unimplemented!();
-        // let mut batch = self.db.transaction();
-        // let height = block.number();
-        // let hash = block.hash().unwrap();
-        // let version = block.version();
-        // trace!(
-        //     "commit block in db hash {:?}, height {:?}, version {}",
-        //     hash,
-        //     height,
-        //     version
-        // );
+    pub fn write_batch(&self, block: ClosedBlock) {
+        let height = block.number().to_be_bytes().to_vec();
+        let hash = block.hash().unwrap();
+        let version = block.version();
+        trace!(
+            "commit block in db hash {:?}, height {:?}, version {}",
+            hash,
+            height,
+            version
+        );
 
-        // batch.write(db::COL_HEADERS, &hash, block.header());
-        // batch.write(db::COL_EXTRA, &CurrentHash, &hash);
-        // batch.write(db::COL_EXTRA, &height, &hash);
+        // Insert [hash : block_header].
+        self.db
+            .insert(
+                Some(DataCategory::Headers),
+                hash.to_vec(),
+                block.header().rlp(),
+            )
+            .expect("Insert block header error.");
 
-        // let mut state = block.drain();
-        // // Store triedb changes in journal db
-        // state
-        //     .journal_under(&mut batch, height, &hash)
-        //     .expect("DB commit failed");
-        // // state.sync_cache();
-        // self.db.write_buffered(batch);
+        // Insert [CurrentHash : hash].
+        self.db
+            .insert(
+                Some(DataCategory::Extra),
+                CURRENT_HASH.to_vec(),
+                hash.to_vec(),
+            )
+            .expect("Insert block hash error.");
 
-        // // self.prune_ancient(state).expect("mark_canonical failed");
-
-        // // Saving in db
-        // let now = Instant::now();
-        // self.db.flush().expect("DB write failed.");
-        // let new_now = Instant::now();
-        // debug!("db write use {:?}", new_now.duration_since(now));
+        // Insert [height : hash]
+        self.db
+            .insert(Some(DataCategory::Extra), height, hash.to_vec())
+            .expect("Insert block hash error.");
     }
 
     /// Get block hash by number
-    fn block_hash(&self, _index: BlockNumber) -> Option<H256> {
-        unimplemented!()
-        // self.db.read(db::COL_EXTRA, &index)
+    fn block_hash(&self, index: BlockNumber) -> Option<H256> {
+        self.db
+            .get(Some(DataCategory::Extra), &index.to_be_bytes().to_vec())
+            .map(|h| h.map(|hash| decode::<H256>(hash.as_slice())))
+            .expect("Get block header error.")
     }
 
     fn current_state_root(&self) -> H256 {
@@ -259,15 +270,18 @@ impl Executor {
     }
 
     /// Get block header by hash
-    pub fn block_header_by_hash(&self, _hash: H256) -> Option<Header> {
-        unimplemented!()
-        // {
-        //     let header = self.current_header.read();
-        //     if header.hash().unwrap() == hash {
-        //         return Some(header.clone());
-        //     }
-        // }
-        // self.db.read(db::COL_HEADERS, &hash)
+    pub fn block_header_by_hash(&self, hash: H256) -> Option<Header> {
+        {
+            let header = self.current_header.read();
+            if header.hash().unwrap() == hash {
+                return Some(header.clone());
+            }
+        }
+
+        self.db
+            .get(Some(DataCategory::Headers), &hash.to_vec())
+            .map(|header| header.map(|bytes| decode::<Header>(bytes.as_slice())))
+            .expect("Get block header error.")
     }
 
     #[inline]
@@ -342,36 +356,6 @@ impl Executor {
         executed_result
     }
 
-    // FIXME
-    // fn prune_ancient(&self, mut state_db: StateDB) -> Result<(), UtilError> {
-    //     let number = match state_db.journal_db().latest_era() {
-    //         Some(n) => n,
-    //         None => return Ok(()),
-    //     };
-    //     let history = 2;
-    //     // prune all ancient eras until we're below the memory target,
-    //     // but have at least the minimum number of states.
-    //     loop {
-    //         match state_db.journal_db().earliest_era() {
-    //             Some(era) if era + history <= number => {
-    //                 trace!(target: "client", "Pruning state for ancient era {}", era);
-    //                 match self.block_hash(era) {
-    //                     Some(ancient_hash) => {
-    //                         let mut batch = DBTransaction::new();
-    //                         state_db.mark_canonical(&mut batch, era, &ancient_hash)?;
-    //                         // FIXME
-    //                         // self.db.write_buffered(batch);
-    //                         state_db.journal_db().flush();
-    //                     }
-    //                     None => debug!(target: "client", "Missing expected hash for block {}", era),
-    //                 }
-    //             }
-    //             _ => break, // means that every era is kept, no pruning necessary.
-    //         }
-    //     }
-    //     Ok(())
-    // }
-
     #[inline]
     pub fn node_manager(&self) -> NodeManager {
         NodeManager::new(self, self.genesis_header().timestamp())
@@ -395,22 +379,31 @@ impl Executor {
 }
 
 impl<'a> BloomGroupDatabase for Executor {
-    fn blooms_at(&self, _position: &GroupPosition) -> Option<BloomGroup> {
-        unimplemented!()
-        // let position = LogGroupPosition::from(position.clone());
-        // self.db.read(db::COL_EXTRA, &position).map(Into::into)
+    fn blooms_at(&self, position: &GroupPosition) -> Option<BloomGroup> {
+        let position = LogGroupPosition::from(position.clone());
+
+        let log_bloom_group = self
+            .db
+            .get(Some(DataCategory::Extra), &*position.get_index())
+            .map(|bytes| decode::<LogBloomGroup>(bytes.unwrap().as_slice()))
+            .expect("Get bloom group from db error.");
+
+        let bloom_group = log_bloom_group.into();
+
+        Some(bloom_group)
     }
 }
 
-// pub fn get_current_header(db: &KeyValueDB) -> Option<Header> {
-pub fn get_current_header() -> Option<Header> {
-    unimplemented!()
-    // let h: Option<H256> = db.read(db::COL_EXTRA, &CurrentHash);
-    // if let Some(hash) = h {
-    //     db.read(db::COL_HEADERS, &hash)
-    // } else {
-    //     None
-    // }
+pub fn get_current_header(db: Arc<CitaDB>) -> Option<Header> {
+    if let Ok(hash) = db.get(Some(DataCategory::Extra), &CURRENT_HASH.to_vec()) {
+        if let Ok(header) = db.get(Some(DataCategory::Headers), hash.unwrap().as_slice()) {
+            Some(decode::<Header>(header.unwrap().as_slice()))
+        } else {
+            None
+        }
+    } else {
+        None
+    }
 }
 
 pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {

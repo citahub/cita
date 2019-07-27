@@ -45,6 +45,11 @@ pub enum ExtrasIndex {
     BlockBodyHash = 5,
 }
 
+lazy_static! {
+    pub static ref CURRENT_HASH: H256 =
+        H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f66");
+}
+
 pub struct CurrentHash;
 
 impl DBIndex<H256> for CurrentHash {
