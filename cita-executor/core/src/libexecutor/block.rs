@@ -23,13 +23,12 @@ use crate::error::Error;
 // use crate::libexecutor::auto_exec::auto_exec;
 use crate::core::env_info::LastHashes;
 use crate::libexecutor::economical_model::EconomicalModel;
+use crate::libexecutor::executor::CitaTrieDB;
 use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::receipt::{Receipt, ReceiptError};
-use crate::trie_db::TrieDB;
 use crate::tx_gas_schedule::TxGasSchedule;
 pub use crate::types::block::{Block, BlockBody, OpenBlock};
 use crate::types::transaction::SignedTransaction;
-use cita_database::RocksDB;
 use cita_merklehash;
 use cita_types::{Address, H256, U256};
 use cita_vm::BlockDataProvider;
@@ -37,6 +36,7 @@ use cita_vm::{evm::Error as EVMError, state::State as CitaState, Error as VMErro
 use hashable::Hashable;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use rlp::*;
+use std::cell::RefCell;
 use std::cmp;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
@@ -50,14 +50,14 @@ lazy_static! {
 
 /// Trait for a object that has a state database.
 pub trait Drain {
-    /// Drop this object and return the underlieing database.
-    fn drain(self) -> TrieDB<RocksDB>;
+    /// Drop this object.
+    fn drain(self);
 }
 
 pub struct ExecutedBlock {
     pub block: OpenBlock,
     pub receipts: Vec<Receipt>,
-    pub trie_db: Arc<TrieDB<RocksDB>>,
+    pub state: Arc<RefCell<CitaState<CitaTrieDB>>>,
     pub current_quota_used: U256,
     pub state_root: H256,
     last_hashes: Arc<LastHashes>,
@@ -85,14 +85,20 @@ impl ExecutedBlock {
     pub fn create(
         conf: &BlockSysConfig,
         block: OpenBlock,
-        trie_db: Arc<TrieDB<RocksDB>>,
+        trie_db: Arc<CitaTrieDB>,
         state_root: H256,
         last_hashes: Arc<LastHashes>,
         eth_compatibility: bool,
     ) -> Result<Self, Error> {
+        let state = CitaState::from_existing(Arc::<CitaTrieDB>::clone(&trie_db), state_root)
+            .expect("Get state from trie db");
+
+        // Need only one state reference for the whole block transaction.
+        let state = Arc::new(RefCell::new(state));
+
         let r = ExecutedBlock {
             block,
-            trie_db,
+            state,
             state_root,
             last_hashes,
             account_gas_limit: conf.account_quota_limit.common_quota_limit.into(),
@@ -156,20 +162,9 @@ impl ExecutedBlock {
         let block_data_provider = EVMBlockDataProvider::new(env_info.clone());
         let native_factory = NativeFactory::default();
 
-        let state_db = match CitaState::from_existing(
-            Arc::<TrieDB<RocksDB>>::clone(&self.trie_db),
-            self.state_root,
-        ) {
-            Ok(state_db) => state_db,
-            Err(e) => {
-                error!("Can not get state from trie db! error: {:?}", e);
-                return;
-            }
-        };
-
         match CitaExecutive::new(
             Arc::new(block_data_provider),
-            state_db,
+            self.state.clone(),
             &native_factory,
             &env_info,
             conf.economical_model,
@@ -344,28 +339,38 @@ impl ExecutedBlock {
         block.set_log_bloom(log_bloom);
         block.rehash();
 
+        // Clear state cache.
+        self.state.borrow_mut().clear();
+
+        // Note: It is ok to new a state, because no cache and checkpoint used.
+        let state = CitaState::from_existing(
+            Arc::<CitaTrieDB>::clone(&self.state.borrow().db),
+            self.state.borrow().root,
+        )
+        .expect("Get state from trie db");
+
         ClosedBlock {
             block,
             receipts: self.receipts,
-            state: self.trie_db,
+            state,
         }
     }
 }
 
 // Block that prepared to commit to db.
+// The CloseBlock will be share in two thread.
 // #[derive(Debug)]
 pub struct ClosedBlock {
     /// Protobuf Block
     pub block: Block,
     pub receipts: Vec<Receipt>,
-    pub state: Arc<TrieDB<RocksDB>>,
+    pub state: CitaState<CitaTrieDB>,
 }
 
 impl Drain for ClosedBlock {
-    /// Drop this object and return the underlieing database.
-    fn drain(self) -> TrieDB<RocksDB> {
-        unimplemented!()
-        // self.state.drop().1
+    /// Drop this object
+    fn drain(mut self) {
+        self.state.clear();
     }
 }
 

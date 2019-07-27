@@ -131,11 +131,11 @@ impl FSM for Executor {
     }
 
     fn fsm_finalize(&self, executed_block: ExecutedBlock) -> ClosedBlock {
-        // commit changed-accounts into trie structure
-        // executed_block
-        //     .trie_db
-        //     .flush()
-        //     .expect("failed to commit state trie");
+        executed_block
+            .state
+            .borrow_mut()
+            .commit()
+            .expect("Commit state error.");
         executed_block.close(&(self.sys_config.block_sys_config))
     }
 }

@@ -49,14 +49,14 @@ pub struct CitaExecutive<'a, B> {
 impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
     pub fn new(
         block_provider: Arc<BlockDataProvider>,
-        state_db: State<B>,
+        state: Arc<RefCell<State<B>>>,
         native_factory: &'a NativeFactory,
         env_info: &'a EnvInfo,
         economical_model: EconomicalModel,
     ) -> Self {
         Self {
             block_provider,
-            state_provider: Arc::new(RefCell::new(state_db)),
+            state_provider: state,
             native_factory,
             env_info,
             economical_model,

@@ -38,6 +38,7 @@ use jsonrpc_types::rpc_types::{
 };
 use libproto::ExecutedResult;
 use serde_json;
+use std::cell::RefCell;
 use std::convert::{From, Into};
 use std::fmt;
 use std::sync::Arc;
@@ -312,7 +313,7 @@ impl Commander for Executor {
             return Err(CallError::StatePruned);
         };
 
-        let state_db = match CitaState::from_existing(
+        let state = match CitaState::from_existing(
             Arc::<TrieDB<RocksDB>>::clone(&self.state_db),
             state_root,
         ) {
@@ -323,9 +324,10 @@ impl Commander for Executor {
             }
         };
 
+        let state = Arc::new(RefCell::new(state));
         CitaExecutive::new(
             Arc::new(block_data_provider),
-            state_db,
+            state,
             &native_factory,
             &env_info,
             conf.economical_model,
