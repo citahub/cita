@@ -24,10 +24,6 @@ where
             cache: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-
-    pub fn database(&self) -> Arc<DB> {
-        self.db.clone()
-    }
 }
 
 /// "TrieDB" provides state read/write capabilities for executor.
@@ -57,8 +53,9 @@ where
         }
     }
 
-    fn remove(&self, _key: &[u8]) -> Result<(), Self::Error> {
-        unimplemented!()
+    fn remove(&self, key: &[u8]) -> Result<(), Self::Error> {
+        self.cache.write().remove(key);
+        self.db.remove(Some(DataCategory::State), key)
     }
 
     fn insert_batch(&self, keys: Vec<Vec<u8>>, values: Vec<Vec<u8>>) -> Result<(), Self::Error> {
@@ -71,8 +68,14 @@ where
         Ok(())
     }
 
-    fn remove_batch(&self, _keys: &[Vec<u8>]) -> Result<(), Self::Error> {
-        unimplemented!()
+    fn remove_batch(&self, keys: &[Vec<u8>]) -> Result<(), Self::Error> {
+        {
+            let mut cache = self.cache.write();
+            for key in keys {
+                cache.remove(key);
+            }
+        }
+        self.db.remove_batch(Some(DataCategory::State), keys)
     }
 
     fn flush(&self) -> Result<(), Self::Error> {
