@@ -19,9 +19,9 @@ use crate::authentication::AuthenticationError;
 use crate::basic_types::LogBloom;
 use crate::cita_executive::{CitaExecutive, EnvInfo, ExecutionError};
 use crate::contracts::native::factory::Factory as NativeFactory;
-use crate::error::Error;
-// use crate::libexecutor::auto_exec::auto_exec;
 use crate::core::env_info::LastHashes;
+use crate::error::Error;
+use crate::libexecutor::auto_exec::auto_exec;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::CitaTrieDB;
 use crate::libexecutor::sys_config::BlockSysConfig;
@@ -297,17 +297,14 @@ impl ExecutedBlock {
             env_info.coin_base = Address::default();
         }
 
-        // FIXME
-        // if conf.auto_exec {
-        //     auto_exec(
-        //         &mut self.state,
-        //         conf.auto_exec_quota_limit,
-        //         conf.economical_model,
-        //         env_info,
-        //         conf.chain_version,
-        //     );
-        //     self.state.commit().expect("commit trie error");
-        // }
+        if conf.auto_exec {
+            auto_exec(
+                Arc::clone(&self.state),
+                conf.auto_exec_quota_limit,
+                env_info,
+            );
+            self.state.borrow_mut().commit().expect("commit trie error");
+        }
         // Rebuild block
         let mut block = Block::new(self.block);
         let state_root = self.state_root;

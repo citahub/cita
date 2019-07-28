@@ -19,12 +19,18 @@ use crate::cita_executive::EnvInfo;
 // use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::tools::method as method_tools;
 // use crate::engines::NullEngine;
-use crate::libexecutor::economical_model::EconomicalModel;
+use crate::libexecutor::block::EVMBlockDataProvider;
 use crate::types::reserved_addresses;
-use cita_types::H160;
+use cita_types::{Address, H160, U256};
 // use evm::{Factory, VMType};
 use std::str::FromStr;
 // use util::BytesRef;
+use crate::cita_executive::{build_evm_config, build_evm_context};
+use crate::libexecutor::executor::CitaTrieDB;
+use cita_vm::state::State as CitaState;
+use cita_vm::Transaction as EVMTransaction;
+use std::cell::RefCell;
+use std::sync::Arc;
 
 const AUTO_EXEC: &[u8] = &*b"autoExec()";
 
@@ -33,60 +39,34 @@ lazy_static! {
     static ref AUTO_EXEC_HASH: Vec<u8> = method_tools::encode_to_vec(AUTO_EXEC);
 }
 
-// FIXME
 pub fn auto_exec(
-    // state: &mut State<StateDB>,
-    _auto_exec_quota_limit: u64,
-    _economical_model: EconomicalModel,
-    _env_info: EnvInfo,
-    _chain_version: u32,
+    state: Arc<RefCell<CitaState<CitaTrieDB>>>,
+    auto_exec_quota_limit: u64,
+    env_info: EnvInfo,
 ) {
-    unimplemented!();
-    // let _hash = &*AUTO_EXEC_HASH;
-    // let params = ActionParams {
-    //     code_address: *AUTO_EXEC_ADDR,
-    //     address: *AUTO_EXEC_ADDR,
-    //     sender: Address::from(0x0),
-    //     origin: Address::from(0x0),
-    //     gas: U256::from(auto_exec_quota_limit),
-    //     gas_price: U256::from(1),
-    //     value: ActionValue::Transfer(U256::from(0)),
-    //     code: state.code(&*AUTO_EXEC_ADDR).unwrap(),
-    //     code_hash: state.code_hash(&*AUTO_EXEC_ADDR).unwrap(),
-    //     data: Some(hash.to_vec()),
-    //     call_type: CallType::Call,
-    // };
+    let hash = &*AUTO_EXEC_HASH;
+    let evm_transaction = EVMTransaction {
+        from: Address::from(0x0),
+        value: U256::from(0),
+        gas_limit: auto_exec_quota_limit,
+        gas_price: U256::from(1),
+        input: hash.to_vec(),
+        to: Some(*AUTO_EXEC_ADDR),
+        nonce: U256::from(0),
+    };
 
-    // let mut out = vec![];
-    // let _output = OutputPolicy::Return(BytesRef::Flexible(&mut out), None);
-    // let _factory = Factory::new(VMType::Interpreter, 1024 * 32);
+    let evm_config = build_evm_config(auto_exec_quota_limit);
+    let evm_context = build_evm_context(&env_info);
 
-    // let _engine = NullEngine::default();
-    // let _native_factory = NativeFactory::default();
-    // let _origin_info = OriginInfo::from(&params);
-    //    let mut ext = Externalities::new(
-    //        state,
-    //        &env_info,
-    //        &engine,
-    //        &factory,
-    //        &native_factory,
-    //        0,
-    //        origin_info,
-    //        &mut substate,
-    //        output,
-    //        false,
-    //        economical_model,
-    //        chain_version,
-    //    );
-    //    let res = {
-    //        factory
-    //            .create(params.gas)
-    //            .exec(&params, &mut ext)
-    //            .finalize(ext)
-    //    };
-    //
-    //    match res {
-    //        Ok(res) => trace!("Auto exec succeed: {:?}", res),
-    //        Err(e) => info!("Auto exec failed: {}", e),
-    //    }
+    let block_provider = EVMBlockDataProvider::new(env_info.clone());
+    match cita_vm::exec(
+        Arc::new(block_provider),
+        state,
+        evm_context,
+        evm_config,
+        evm_transaction,
+    ) {
+        Ok(res) => trace!("Auto exec succeed: {:?}", res),
+        Err(e) => info!("Auto exec failed: {}", e),
+    }
 }
