@@ -16,11 +16,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::economical_model::EconomicalModel;
-use super::executor::Executor;
+use super::executor::CitaTrieDB;
+use super::executor::{make_consensus_config, Executor};
+use super::sys_config::GlobalSysConfig;
 use crate::call_analytics::CallAnalytics;
 use crate::cita_executive::{CitaExecutive, EnvInfo, ExecutedResult as CitaExecuted};
 use crate::contracts::native::factory::Factory as NativeFactory;
-use crate::contracts::solc::{sys_config::ChainId, SysConfig, VersionManager};
+use crate::contracts::solc::{
+    sys_config::ChainId, PermissionManagement, SysConfig, VersionManager,
+};
 use crate::error::CallError;
 use crate::libexecutor::block::EVMBlockDataProvider;
 pub use crate::libexecutor::block::*;
@@ -30,8 +34,9 @@ use crate::types::ids::BlockId;
 use crate::types::transaction::{Action, SignedTransaction, Transaction};
 pub use byteorder::{BigEndian, ByteOrder};
 use cita_database::RocksDB;
+use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
-use cita_vm::state::State as CitaState;
+use cita_vm::state::{State as CitaState, StateObjectInfo};
 use crossbeam_channel::{Receiver, Sender};
 use jsonrpc_types::rpc_types::{
     BlockNumber, BlockTag, EconomicalModel as RpcEconomicalModel, MetaData,
@@ -47,8 +52,8 @@ use util::RwLock;
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]
 pub enum Command {
-    // StateAt(BlockId),
-    // GenState(H256, H256),
+    StateAt(BlockId),
+    GenState(H256, H256),
     CodeAt(Address, BlockId),
     ABIAt(Address, BlockId),
     BalanceAt(Address, BlockId),
@@ -67,8 +72,8 @@ pub enum Command {
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]
 pub enum CommandResp {
-    // StateAt(Option<TrieDB<StateDB>>),
-    // GenState(Option<State<StateDB>>),
+    StateAt(Option<CitaState<CitaTrieDB>>),
+    GenState(Option<CitaState<CitaTrieDB>>),
     CodeAt(Option<Bytes>),
     ABIAt(Option<Bytes>),
     BalanceAt(Option<Bytes>),
@@ -88,8 +93,8 @@ pub enum CommandResp {
 impl fmt::Display for Command {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            // Command::StateAt(_) => write!(f, "Command::StateAt"),
-            // Command::GenState(_, _) => write!(f, "Command::GenState"),
+            Command::StateAt(_) => write!(f, "Command::StateAt"),
+            Command::GenState(_, _) => write!(f, "Command::GenState"),
             Command::CodeAt(_, _) => write!(f, "Command::CodeAt"),
             Command::ABIAt(_, _) => write!(f, "Command::ABIAt"),
             Command::BalanceAt(_, _) => write!(f, "Command::BalanceAt"),
@@ -111,8 +116,8 @@ impl fmt::Display for Command {
 impl fmt::Display for CommandResp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            // CommandResp::StateAt(_) => write!(f, "CommandResp::StateAt"),
-            // CommandResp::GenState(_) => write!(f, "CommandResp::GenState"),
+            CommandResp::StateAt(_) => write!(f, "CommandResp::StateAt"),
+            CommandResp::GenState(_) => write!(f, "CommandResp::GenState"),
             CommandResp::CodeAt(_) => write!(f, "CommandResp::CodeAt"),
             CommandResp::ABIAt(_) => write!(f, "CommandResp::ABIAt"),
             CommandResp::BalanceAt(_) => write!(f, "CommandResp::BalanceAt"),
@@ -133,8 +138,8 @@ impl fmt::Display for CommandResp {
 
 pub trait Commander {
     fn operate(&mut self, command: Command) -> CommandResp;
-    fn state_at(&self, block_id: BlockId) -> Option<CitaState<TrieDB<RocksDB>>>;
-    fn gen_state(&self, root: H256, parent_hash: H256) -> Option<CitaState<TrieDB<RocksDB>>>;
+    fn state_at(&self, block_id: BlockId) -> Option<CitaState<CitaTrieDB>>;
+    fn gen_state(&self, root: H256, parent_hash: H256) -> Option<CitaState<CitaTrieDB>>;
     fn code_at(&self, address: &Address, block_id: BlockId) -> Option<Bytes>;
     fn abi_at(&self, address: &Address, block_id: BlockId) -> Option<Bytes>;
     fn balance_at(&self, address: &Address, block_id: BlockId) -> Option<Bytes>;
@@ -157,94 +162,83 @@ pub trait Commander {
 }
 
 impl Commander for Executor {
-    fn operate(&mut self, _command: Command) -> CommandResp {
-        unimplemented!()
-        // match command {
-        //     Command::StateAt(block_id) => CommandResp::StateAt(self.state_at(block_id)),
-        //     Command::GenState(root, parent_hash) => {
-        //         CommandResp::GenState(self.gen_state(root, parent_hash))
-        //     }
-        //     Command::CodeAt(address, block_id) => {
-        //         CommandResp::CodeAt(self.code_at(&address, block_id))
-        //     }
-        //     Command::ABIAt(address, block_id) => {
-        //         CommandResp::ABIAt(self.abi_at(&address, block_id))
-        //     }
-        //     Command::BalanceAt(address, block_id) => {
-        //         CommandResp::BalanceAt(self.balance_at(&address, block_id))
-        //     }
-        //     Command::NonceAt(address, block_id) => {
-        //         CommandResp::NonceAt(self.nonce_at(&address, block_id))
-        //     }
-        //     Command::ETHCall(call_request, block_id) => {
-        //         CommandResp::ETHCall(self.eth_call(call_request, block_id))
-        //     }
-        //     Command::SignCall(call_request) => CommandResp::SignCall(self.sign_call(call_request)),
-        //     Command::Call(signed_transaction, block_id, call_analytics) => {
-        //         CommandResp::Call(self.call(&signed_transaction, block_id, call_analytics))
-        //     }
-        //     Command::ChainID => CommandResp::ChainID(self.chain_id()),
-        //     Command::Metadata(data) => CommandResp::Metadata(self.metadata(data)),
-        //     Command::EconomicalModel => CommandResp::EconomicalModel(self.economical_model()),
-        //     Command::LoadExecutedResult(height) => {
-        //         CommandResp::LoadExecutedResult(self.load_executed_result(height))
-        //     }
-        //     Command::Grow(closed_block) => CommandResp::Grow(self.grow(closed_block)),
-        //     Command::Exit(rollback_id) => {
-        //         self.exit(rollback_id);
-        //         CommandResp::Exit
-        //     }
-        //     Command::CloneExecutorReader => {
-        //         CommandResp::CloneExecutorReader(self.clone_executor_reader())
-        //     }
-        // }
+    fn operate(&mut self, command: Command) -> CommandResp {
+        match command {
+            Command::StateAt(block_id) => CommandResp::StateAt(self.state_at(block_id)),
+            Command::GenState(root, parent_hash) => {
+                CommandResp::GenState(self.gen_state(root, parent_hash))
+            }
+            Command::CodeAt(address, block_id) => {
+                CommandResp::CodeAt(self.code_at(&address, block_id))
+            }
+            Command::ABIAt(address, block_id) => {
+                CommandResp::ABIAt(self.abi_at(&address, block_id))
+            }
+            Command::BalanceAt(address, block_id) => {
+                CommandResp::BalanceAt(self.balance_at(&address, block_id))
+            }
+            Command::NonceAt(address, block_id) => {
+                CommandResp::NonceAt(self.nonce_at(&address, block_id))
+            }
+            Command::ETHCall(call_request, block_id) => {
+                CommandResp::ETHCall(self.eth_call(call_request, block_id))
+            }
+            Command::SignCall(call_request) => CommandResp::SignCall(self.sign_call(call_request)),
+            Command::Call(signed_transaction, block_id, call_analytics) => {
+                CommandResp::Call(self.call(&signed_transaction, block_id, call_analytics))
+            }
+            Command::ChainID => CommandResp::ChainID(self.chain_id()),
+            Command::Metadata(data) => CommandResp::Metadata(self.metadata(data)),
+            Command::EconomicalModel => CommandResp::EconomicalModel(self.economical_model()),
+            Command::LoadExecutedResult(height) => {
+                CommandResp::LoadExecutedResult(self.load_executed_result(height))
+            }
+            Command::Grow(closed_block) => CommandResp::Grow(self.grow(closed_block)),
+            Command::Exit(rollback_id) => {
+                self.exit(rollback_id);
+                CommandResp::Exit
+            }
+            Command::CloneExecutorReader => {
+                CommandResp::CloneExecutorReader(self.clone_executor_reader())
+            }
+        }
     }
 
     /// Attempt to get a copy of a specific block's final state.
-    fn state_at(&self, _id: BlockId) -> Option<CitaState<TrieDB<RocksDB>>> {
-        unimplemented!()
-        // self.block_header(id)
-        //     .and_then(|h| self.gen_state(*h.state_root(), *h.parent_hash()))
+    fn state_at(&self, id: BlockId) -> Option<CitaState<CitaTrieDB>> {
+        self.block_header(id)
+            .and_then(|h| self.gen_state(*h.state_root(), *h.parent_hash()))
     }
 
     /// Generate block's final state.
-    fn gen_state(&self, _root: H256, _parent_hash: H256) -> Option<CitaState<TrieDB<RocksDB>>> {
-        unimplemented!()
-        // let db = self.state_db.read().boxed_clone_canon(&parent_hash);
-        // State::from_existing(db, root, self.factories.clone()).ok()
+    fn gen_state(&self, root: H256, _parent_hash: H256) -> Option<CitaState<CitaTrieDB>> {
+        // FIXME: There is a RWLock for clone a db, is it ok for using Arc::clone?
+        CitaState::from_existing(Arc::<CitaTrieDB>::clone(&self.state_db), root).ok()
     }
 
     /// Get code by address
-    fn code_at(&self, _address: &Address, _id: BlockId) -> Option<Bytes> {
-        unimplemented!()
-        // self.state_at(id)
-        //     .and_then(|s| s.code(address).ok())
-        //     .and_then(|c| c.map(|c| (&*c).clone()))
+    fn code_at(&self, address: &Address, id: BlockId) -> Option<Bytes> {
+        self.state_at(id).and_then(|mut s| s.code(address).ok())
     }
 
     /// Get abi by address
-    fn abi_at(&self, _address: &Address, _id: BlockId) -> Option<Bytes> {
-        unimplemented!()
-        // self.state_at(id)
-        //     .and_then(|s| s.abi(address).ok())
-        //     .and_then(|c| c.map(|c| (&*c).clone()))
+    fn abi_at(&self, address: &Address, id: BlockId) -> Option<Bytes> {
+        self.state_at(id).and_then(|mut s| s.abi(address).ok())
     }
 
     /// Get balance by address
-    fn balance_at(&self, _address: &Address, _id: BlockId) -> Option<Bytes> {
-        unimplemented!()
-        // self.state_at(id)
-        //     .and_then(|s| s.balance(address).ok())
-        //     .map(|c| {
-        //         let mut bytes = [0u8; 32];
-        //         c.to_big_endian(&mut bytes);
-        //         bytes.to_vec()
-        //     })
+    fn balance_at(&self, address: &Address, id: BlockId) -> Option<Bytes> {
+        self.state_at(id)
+            .and_then(|mut s| s.balance(address).ok())
+            .map(|c| {
+                let balance: &mut [u8] = &mut [0u8];
+                c.to_big_endian(balance);
+                balance.to_vec()
+            })
     }
 
-    fn nonce_at(&self, _address: &Address, _id: BlockId) -> Option<U256> {
-        unimplemented!()
-        // self.state_at(id).and_then(|s| s.nonce(address).ok())
+    fn nonce_at(&self, address: &Address, id: BlockId) -> Option<U256> {
+        self.state_at(id).and_then(|mut s| s.nonce(address).ok())
     }
 
     fn eth_call(&self, request: CallRequest, id: BlockId) -> Result<Bytes, String> {
@@ -446,46 +440,45 @@ impl Commander for Executor {
         self.executed_result_by_height(height)
     }
 
-    fn grow(&mut self, _closed_block: ClosedBlock) -> ExecutedResult {
-        unimplemented!()
-        // info!(
-        //     "executor grow according to ClosedBlock(height: {}, hash: {:?}, parent_hash: {:?}, \
-        //      timestamp: {}, state_root: {:?}, transaction_root: {:?}, proposer: {:?})",
-        //     closed_block.number(),
-        //     closed_block.hash().unwrap(),
-        //     closed_block.parent_hash(),
-        //     closed_block.timestamp(),
-        //     closed_block.state_root(),
-        //     closed_block.transactions_root(),
-        //     closed_block.proposer(),
-        // );
-        // let are_permissions_changed = {
-        //     let cache = closed_block.state.cache();
-        //     let permission_management = PermissionManagement::new(self);
-        //     let permissions = permission_management.permission_addresses(BlockId::Pending);
-        //     cache.iter().any(|(address, ref _a)| {
-        //         &address.lower_hex()[..34] == "ffffffffffffffffffffffffffffffffff"
-        //             || permissions.contains(&address)
-        //     })
-        // };
+    fn grow(&mut self, closed_block: ClosedBlock) -> ExecutedResult {
+        info!(
+            "executor grow according to ClosedBlock(height: {}, hash: {:?}, parent_hash: {:?}, \
+             timestamp: {}, state_root: {:?}, transaction_root: {:?}, proposer: {:?})",
+            closed_block.number(),
+            closed_block.hash().unwrap(),
+            closed_block.parent_hash(),
+            closed_block.timestamp(),
+            closed_block.state_root(),
+            closed_block.transactions_root(),
+            closed_block.proposer(),
+        );
+        let are_permissions_changed = {
+            let cache = closed_block.state.cache.clone();
+            let permission_management = PermissionManagement::new(self);
+            let permissions = permission_management.permission_addresses(BlockId::Pending);
+            cache.into_inner().iter().any(|(address, ref _a)| {
+                &address.lower_hex()[..34] == "ffffffffffffffffffffffffffffffffff"
+                    || permissions.contains(&address)
+            })
+        };
 
-        // {
-        //     *self.current_header.write() = closed_block.header().clone();
-        // }
+        {
+            *self.current_header.write() = closed_block.header().clone();
+        }
 
-        // let executed_info = closed_block.protobuf();
+        let executed_info = closed_block.protobuf();
 
-        // // Must make sure write into database before load_sys_config
-        // self.write_batch(closed_block);
+        // Must make sure write into database before load_sys_config
+        self.write_batch(closed_block);
 
-        // if are_permissions_changed {
-        //     self.sys_config = GlobalSysConfig::load(&self, BlockId::Pending);
-        // }
-        // let mut executed_result = ExecutedResult::new();
-        // let consensus_config = make_consensus_config(self.sys_config.clone());
-        // executed_result.set_config(consensus_config);
-        // executed_result.set_executed_info(executed_info);
-        // executed_result
+        if are_permissions_changed {
+            self.sys_config = GlobalSysConfig::load(&self, BlockId::Pending);
+        }
+        let mut executed_result = ExecutedResult::new();
+        let consensus_config = make_consensus_config(self.sys_config.clone());
+        executed_result.set_config(consensus_config);
+        executed_result.set_executed_info(executed_info);
+        executed_result
     }
 
     fn exit(&mut self, rollback_id: BlockId) {
@@ -520,30 +513,30 @@ impl Commander for Executor {
 
 // TODO hope someone refactor these public function via macro
 
-// pub fn state_at(
-//     command_req_sender: &Sender<Command>,
-//     command_resp_receiver: &Receiver<CommandResp>,
-//     block_id: BlockId,
-// ) -> Option<State<StateDB>> {
-//     command_req_sender.send(Command::StateAt(block_id));
-//     match command_resp_receiver.recv().unwrap() {
-//         CommandResp::StateAt(r) => r,
-//         _ => unimplemented!(),
-//     }
-// }
-//
-// pub fn gen_state(
-//     command_req_sender: &Sender<Command>,
-//     command_resp_receiver: &Receiver<CommandResp>,
-//     root: H256,
-//     parent_hash: H256,
-// ) -> Option<State<StateDB>> {
-//     command_req_sender.send(Command::GenState(root, parent_hash));
-//     match command_resp_receiver.recv().unwrap() {
-//         CommandResp::GenState(r) => r,
-//         _ => unimplemented!(),
-//     }
-// }
+pub fn state_at(
+    command_req_sender: &Sender<Command>,
+    command_resp_receiver: &Receiver<CommandResp>,
+    block_id: BlockId,
+) -> Option<CitaState<CitaTrieDB>> {
+    command_req_sender.send(Command::StateAt(block_id));
+    match command_resp_receiver.recv().unwrap() {
+        CommandResp::StateAt(r) => r,
+        _ => unimplemented!(),
+    }
+}
+
+pub fn gen_state(
+    command_req_sender: &Sender<Command>,
+    command_resp_receiver: &Receiver<CommandResp>,
+    root: H256,
+    parent_hash: H256,
+) -> Option<CitaState<CitaTrieDB>> {
+    command_req_sender.send(Command::GenState(root, parent_hash));
+    match command_resp_receiver.recv().unwrap() {
+        CommandResp::GenState(r) => r,
+        _ => unimplemented!(),
+    }
+}
 
 pub fn code_at(
     command_req_sender: &Sender<Command>,
