@@ -44,7 +44,7 @@ pub type CitaDB = RocksDB;
 
 pub struct Executor {
     pub current_header: RwLock<Header>,
-    pub state_db: Arc<TrieDB<RocksDB>>,
+    pub state_db: Arc<CitaTrieDB>,
     pub db: Arc<Database>,
     pub sys_config: GlobalSysConfig,
 
