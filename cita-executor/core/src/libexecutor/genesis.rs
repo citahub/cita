@@ -17,12 +17,16 @@
 
 use crate::libexecutor::block::Block;
 use crate::libexecutor::executor::{CitaDB, CitaTrieDB};
+use crate::types::db::DBIndex;
+use crate::types::extras::*;
+use crate::types::header::Header;
 use cita_database::{DataCategory, Database};
 use cita_types::traits::ConvertType;
 use cita_types::{clean_0x, Address, H256, U256};
 use cita_vm::state::{State as CitaState, StateObjectInfo};
 use crypto::digest::Digest;
 use crypto::md5::Md5;
+use rlp::encode;
 use rustc_hex::FromHex;
 use serde_json;
 use std::collections::HashMap;
@@ -163,26 +167,34 @@ impl Genesis {
     }
 
     fn save(&mut self, db: Arc<CitaDB>) -> Result<(), String> {
-        // FIXME: The decode for the value may not equal to origin one.
-        let hash = self.block.hash().unwrap().to_vec();
-        let height = self.block.number().to_be_bytes().to_vec();
+        // Note: All the key should be the index from extras.rs, and
+        // all the value should be a rlp value.
+        let hash = self.block.hash().unwrap();
 
-        let current_hash =
-            H256::from("7cabfb7709b29c16d9e876e876c9988d03f9c3414e1d3ff77ec1de2d0ee59f66");
+        // Insert [hash, block_header]
+        let hash_key = (&hash as &DBIndex<Header, Item = H256>).get_index();
         // Need to get header in init function.
         db.insert(
             Some(DataCategory::Headers),
-            hash.clone(),
+            hash_key.to_vec(),
             self.block.header().rlp(),
         )
         .expect("Insert block header error.");
+
+        // Insert [current_hash, hash]
+        let current_hash_key = (&CurrentHash as &DBIndex<H256, Item = H256>).get_index();
+        let hash_value = encode(&hash).to_vec();
         db.insert(
             Some(DataCategory::Extra),
-            current_hash.to_vec(),
-            hash.clone(),
+            current_hash_key.to_vec(),
+            hash_value.clone(),
         )
         .expect("Insert block hash error.");
-        db.insert(Some(DataCategory::Extra), height, hash.clone())
+
+        // Insert [block_number, hash]
+        let height_key =
+            (&self.block.number() as &DBIndex<H256, Item = BlockNumberKey>).get_index();
+        db.insert(Some(DataCategory::Extra), height_key.to_vec(), hash_value)
             .expect("Insert block hash error.");
 
         Ok(())
