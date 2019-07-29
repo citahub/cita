@@ -100,7 +100,7 @@ impl Scalar {
             for chunk in encoded.chunks(32) {
                 let value = H256::from(chunk);
                 data_provider.set_storage(addr, H256::from(key), value);
-                key = key + U256::one();
+                key += U256::one();
             }
         }
         Ok(())
@@ -129,7 +129,7 @@ impl Scalar {
                 let v = data_provider.get_storage(addr, &H256::from(key));
                 if len > 32 {
                     bytes.extend_from_slice(v.as_ref());
-                    key = key + U256::one();
+                    key += U256::one();
                     len -= 32;
                 } else {
                     bytes.extend_from_slice(&v[0..len]);
@@ -153,7 +153,7 @@ impl Array {
     #[inline]
     fn key(&self, index: u64) -> H256 {
         let mut key = U256::from(H256::from_slice(&sha3::keccak256(&self.position)));
-        key = key + U256::from(index);
+        key += U256::from(index);
         H256::from(key)
     }
 

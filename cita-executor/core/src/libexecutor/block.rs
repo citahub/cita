@@ -156,7 +156,7 @@ impl ExecutedBlock {
         if (*conf).check_options.fee_back_platform {
             // Set coin_base to chain_owner if check_fee_back_platform is true, and chain_owner is set.
             if (*conf).chain_owner != Address::from(0) {
-                env_info.coin_base = (*conf).chain_owner.clone();
+                env_info.coin_base = (*conf).chain_owner;
             }
         }
         let block_data_provider = EVMBlockDataProvider::new(env_info.clone());
@@ -175,10 +175,10 @@ impl ExecutedBlock {
                 // FIXME: logic from old cita, but there is some confuse about this logic.
                 let quota_used = U256::from(ret.quota_used);
                 let transaction_quota_used = quota_used - self.current_quota_used;
-                self.current_quota_used = U256::from(quota_used);
+                self.current_quota_used = quota_used;
                 if conf.check_options.quota {
                     if let Some(value) = self.account_gas.get_mut(t.sender()) {
-                        *value = *value - transaction_quota_used;
+                        *value -= transaction_quota_used;
                     }
                 }
 
