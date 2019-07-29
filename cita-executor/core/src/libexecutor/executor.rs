@@ -71,7 +71,8 @@ impl Executor {
 
         // TODO: Can remove NUM_COLUMNS(useless)
         let config = Config::with_category_num(NUM_COLUMNS);
-        let rocks_db = RocksDB::open(&data_path, &config).unwrap();
+        let nosql_path = data_path + "/statedb";
+        let rocks_db = RocksDB::open(&nosql_path, &config).unwrap();
         let db = Arc::new(rocks_db);
         let state_db = Arc::new(TrieDB::new(db.clone()));
 
@@ -405,7 +406,7 @@ impl<'a> BloomGroupDatabase for Executor {
 pub fn get_current_header(db: Arc<CitaDB>) -> Option<Header> {
     let current_hash_key = (&CurrentHash as &DBIndex<H256, Item = H256>).get_index();
     if let Ok(hash) = db.get(Some(DataCategory::Extra), &current_hash_key.to_vec()) {
-        let hash : H256 = decode(hash.unwrap().as_slice());
+        let hash: H256 = decode(hash.unwrap().as_slice());
         let hash_key = (&hash as &DBIndex<Header, Item = H256>).get_index();
         if let Ok(header) = db.get(Some(DataCategory::Headers), &hash_key.to_vec()) {
             Some(decode::<Header>(header.unwrap().as_slice()))
