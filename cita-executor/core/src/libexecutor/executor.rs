@@ -34,7 +34,7 @@ use cita_database::{Config, DataCategory, Database, RocksDB, NUM_COLUMNS};
 use cita_types::H256;
 use crossbeam_channel::{Receiver, Sender};
 use libproto::{ConsensusConfig, ExecutedResult};
-use rlp::decode;
+use rlp::{decode, encode};
 use std::convert::Into;
 use std::sync::Arc;
 use util::RwLock;
@@ -177,11 +177,13 @@ impl Executor {
                 .block_hash(rollback_height)
                 .expect("the target block to roll back should exist");
 
+            let current_hash_key = (&CurrentHash as &DBIndex<H256, Item = H256>).get_index();
+            let hash_value = encode(&rollback_hash).to_vec();
             self.db
                 .insert(
                     Some(DataCategory::Extra),
-                    CURRENT_HASH.to_vec(),
-                    rollback_hash.to_vec(),
+                    current_hash_key.to_vec(),
+                    hash_value,
                 )
                 .expect("Insert rollback hash error.");
         }
@@ -195,7 +197,7 @@ impl Executor {
     /// 2. CurrentHash
     /// 3. State
     pub fn write_batch(&self, block: ClosedBlock) {
-        let height = block.number().to_be_bytes().to_vec();
+        let height = block.number();
         let hash = block.hash().unwrap();
         let version = block.version();
         trace!(
@@ -206,33 +208,38 @@ impl Executor {
         );
 
         // Insert [hash : block_header].
+        let hash_key = (&hash as &DBIndex<Header, Item = H256>).get_index();
         self.db
             .insert(
                 Some(DataCategory::Headers),
-                hash.to_vec(),
+                hash_key.to_vec(),
                 block.header().rlp(),
             )
             .expect("Insert block header error.");
 
         // Insert [CurrentHash : hash].
+        let current_hash_key = (&CurrentHash as &DBIndex<H256, Item = H256>).get_index();
+        let hash_value = encode(&hash).to_vec();
         self.db
             .insert(
                 Some(DataCategory::Extra),
-                CURRENT_HASH.to_vec(),
-                hash.to_vec(),
+                current_hash_key.to_vec(),
+                hash_value.clone(),
             )
             .expect("Insert block hash error.");
 
         // Insert [height : hash]
+        let height_key = (&height as &DBIndex<H256, Item = BlockNumberKey>).get_index();
         self.db
-            .insert(Some(DataCategory::Extra), height, hash.to_vec())
+            .insert(Some(DataCategory::Extra), height_key.to_vec(), hash_value)
             .expect("Insert block hash error.");
     }
 
     /// Get block hash by number
     fn block_hash(&self, index: BlockNumber) -> Option<H256> {
+        let height_key = (&index as &DBIndex<H256, Item = BlockNumberKey>).get_index();
         self.db
-            .get(Some(DataCategory::Extra), &index.to_be_bytes().to_vec())
+            .get(Some(DataCategory::Extra), &height_key.to_vec())
             .map(|h| h.map(|hash| decode::<H256>(hash.as_slice())))
             .expect("Get block header error.")
     }
@@ -278,8 +285,9 @@ impl Executor {
             }
         }
 
+        let hash_key = (&hash as &DBIndex<Header, Item = H256>).get_index();
         self.db
-            .get(Some(DataCategory::Headers), &hash.to_vec())
+            .get(Some(DataCategory::Headers), &hash_key.to_vec())
             .map(|header| header.map(|bytes| decode::<Header>(bytes.as_slice())))
             .expect("Get block header error.")
     }
@@ -395,8 +403,11 @@ impl<'a> BloomGroupDatabase for Executor {
 }
 
 pub fn get_current_header(db: Arc<CitaDB>) -> Option<Header> {
-    if let Ok(hash) = db.get(Some(DataCategory::Extra), &CURRENT_HASH.to_vec()) {
-        if let Ok(header) = db.get(Some(DataCategory::Headers), hash.unwrap().as_slice()) {
+    let current_hash_key = (&CurrentHash as &DBIndex<H256, Item = H256>).get_index();
+    if let Ok(hash) = db.get(Some(DataCategory::Extra), &current_hash_key.to_vec()) {
+        let hash : H256 = decode(hash.unwrap().as_slice());
+        let hash_key = (&hash as &DBIndex<Header, Item = H256>).get_index();
+        if let Ok(header) = db.get(Some(DataCategory::Headers), &hash_key.to_vec()) {
             Some(decode::<Header>(header.unwrap().as_slice()))
         } else {
             None
