@@ -301,7 +301,7 @@ impl Commander for Executor {
         let native_factory = NativeFactory::default();
 
         let state_root = if let Some(h) = self.block_header(block_id) {
-            (*h.state_root()).clone()
+            (*h.state_root())
         } else {
             error!("Can not get state rott from trie db!");
             return Err(CallError::StatePruned);

@@ -112,7 +112,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
         let init_gas = t.gas - U256::from(base_gas_required);
 
-        let result = match t.action {
+        match t.action {
             Action::Store | Action::AbiStore => {
                 // Prepaid t.gas for the transaction.
                 self.prepaid(t.sender(), t.gas, t.gas_price, t.value)?;
@@ -215,9 +215,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 };
                 self.call(&params)
             }
-        };
-
-        result
+        }
     }
 
     fn payment_required(&self) -> bool {
@@ -253,7 +251,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             self.state_provider
                 .borrow_mut()
                 .add_balance(address, value)
-                .map_err(|e| ExecutionError::State(e))
+                .map_err(ExecutionError::State)
         } else {
             Ok(())
         }
@@ -268,7 +266,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             self.state_provider
                 .borrow_mut()
                 .add_balance(coin_base, fee_value)
-                .map_err(|e| ExecutionError::State(e))
+                .map_err(ExecutionError::State)
         } else {
             Ok(())
         }
@@ -284,7 +282,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             self.state_provider
                 .borrow_mut()
                 .transfer_balance(from, to, value)
-                .map_err(|e| ExecutionError::State(e))
+                .map_err(ExecutionError::State)
         } else {
             Ok(())
         }
@@ -414,7 +412,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
     fn call_evm(&mut self, params: &VmExecParams) -> Result<ExecutedResult, ExecutionError> {
         let evm_transaction = build_evm_transaction(params);
-        let evm_config = build_evm_config(self.env_info.gas_limit.clone().as_u64());
+        let evm_config = build_evm_config(self.env_info.gas_limit.as_u64());
         let evm_context = build_evm_context(&self.env_info);
         let result = match cita_vm::exec(
             self.block_provider.clone(),
@@ -441,23 +439,20 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             self.state_provider.borrow_mut().checkpoint();
 
             // At first, transfer value to destination.
-            if self.payment_required() {
-                if self
+            if self.payment_required()
+                && self
                     .transfer_balance(&params.sender, &params.to_address.unwrap(), params.value)
                     .is_err()
-                {
-                    // Discard the checkpoint
-                    self.state_provider.borrow_mut().revert_checkpoint();
-                    return Err(ExecutionError::Internal(
-                        "Transfer balance failed while calling native contract.".to_string(),
-                    ));
-                }
+            {
+                // Discard the checkpoint
+                self.state_provider.borrow_mut().revert_checkpoint();
+                return Err(ExecutionError::Internal(
+                    "Transfer balance failed while calling native contract.".to_string(),
+                ));
             }
 
             let store = VmSubState::default();
-
             let store = Arc::new(RefCell::new(store));
-
             let mut vm_data_provider = DataProvider::new(
                 self.block_provider.clone(),
                 self.state_provider.clone(),
