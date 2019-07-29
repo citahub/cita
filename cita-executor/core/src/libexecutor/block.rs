@@ -32,7 +32,9 @@ use crate::types::transaction::SignedTransaction;
 use cita_merklehash;
 use cita_types::{Address, H256, U256};
 use cita_vm::BlockDataProvider;
-use cita_vm::{evm::Error as EVMError, state::State as CitaState, Error as VMError};
+use cita_vm::{
+    evm::Error as EVMError, state::State as CitaState, state::StateObjectInfo, Error as VMError,
+};
 use hashable::Hashable;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use rlp::*;
@@ -162,7 +164,7 @@ impl ExecutedBlock {
         let block_data_provider = EVMBlockDataProvider::new(env_info.clone());
         let native_factory = NativeFactory::default();
 
-        match CitaExecutive::new(
+        let tx_quota_used = match CitaExecutive::new(
             Arc::new(block_data_provider),
             self.state.clone(),
             &native_factory,
@@ -172,16 +174,7 @@ impl ExecutedBlock {
         .exec(t, conf)
         {
             Ok(ret) => {
-                // FIXME: logic from old cita, but there is some confuse about this logic.
-                let quota_used = U256::from(ret.quota_used);
-                let transaction_quota_used = quota_used - self.current_quota_used;
-                self.current_quota_used = quota_used;
-                if conf.check_options.quota {
-                    if let Some(value) = self.account_gas.get_mut(t.sender()) {
-                        *value -= transaction_quota_used;
-                    }
-                }
-
+                // Note: ret.quota_used was a current transaction quota used.
                 // FIXME: hasn't handle some errors
                 let receipt_error = ret.exception.and_then(|error| match error {
                     ExecutionError::VM(VMError::Evm(EVMError::OutOfGas)) => {
@@ -210,10 +203,12 @@ impl ExecutedBlock {
                     //EvmError::Reverted => Some(ReceiptError::Reverted),
                 });
 
-                // FIXME: change the quota_used to cumulative_gas_used.
+                // Note: quota_used in Receipt is self.current_quota_used, this will be
+                // handled by localized_receipt() while getting a single transaction receipt.
+                let cumulative_gas_used = env_info.gas_used + ret.quota_used;
                 let receipt = Receipt::new(
                     None,
-                    quota_used,
+                    cumulative_gas_used,
                     ret.logs,
                     receipt_error,
                     ret.account_nonce,
@@ -221,6 +216,7 @@ impl ExecutedBlock {
                 );
 
                 self.receipts.push(receipt);
+                ret.quota_used
             }
             Err(err) => {
                 // FIXME: hasn't handle some errors.
@@ -256,19 +252,41 @@ impl ExecutedBlock {
                 };
 
                 let schedule = TxGasSchedule::default();
-                //                let sender = *t.sender();
-                let tx_gas_used = schedule.tx_gas;
-                //match err {
-                //                    ExecutionError::Internal(_) => t.gas,
-                //                    _ => cmp::min(
-                //                        state_db.balance(&sender).unwrap_or_else(|_| U256::from(0)),
-                //                        U256::from(schedule.tx_gas),
-                //                    ),
-                //                };
+                let sender = *t.sender();
+                let tx_gas_used = match err {
+                    ExecutionError::Internal(_) => t.gas,
+                    _ => cmp::min(
+                        self.state
+                            .borrow_mut()
+                            .balance(&sender)
+                            .unwrap_or_else(|_| U256::from(0)),
+                        U256::from(schedule.tx_gas),
+                    ),
+                };
 
-                // FIXME: Handle the economical_model. Check for the detail of the fee.
                 if (*conf).economical_model == EconomicalModel::Charge {
-                    unimplemented!()
+                    let fee_value = tx_gas_used * t.gas_price();
+                    let sender_balance = self.state.borrow_mut().balance(&sender).unwrap();
+
+                    let tx_fee_value = if fee_value > sender_balance {
+                        sender_balance
+                    } else {
+                        fee_value
+                    };
+                    if let Err(err) = self.state.borrow_mut().sub_balance(&sender, tx_fee_value) {
+                        error!("Sub balance from error transaction sender failed, tx_fee_value={}, error={:?}", tx_fee_value, err);
+                    }
+
+                    if let Err(err) = self
+                        .state
+                        .borrow_mut()
+                        .add_balance(&env_info.coin_base, tx_fee_value)
+                    {
+                        error!(
+                            "Add fee to coinbase failed, tx_fee_value={}, error={:?}",
+                            tx_fee_value, err
+                        );
+                    }
                 }
 
                 let cumulative_gas_used = env_info.gas_used + tx_gas_used;
@@ -282,6 +300,15 @@ impl ExecutedBlock {
                 );
 
                 self.receipts.push(receipt);
+                tx_gas_used
+            }
+        };
+
+        // Note: current_quota_used: Whole quota used for the ExecutedBlock.
+        self.current_quota_used += tx_quota_used;
+        if conf.check_options.quota {
+            if let Some(value) = self.account_gas.get_mut(t.sender()) {
+                *value -= tx_quota_used;
             }
         }
     }
