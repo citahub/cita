@@ -961,7 +961,6 @@ dependencies = [
  "enum_primitive 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethabi 4.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethbloom 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "ethcore-bloom-journal 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
  "hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)",
@@ -1426,14 +1425,6 @@ dependencies = [
  "impl-rlp 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "impl-serde 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tiny-keccak 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "ethcore-bloom-journal"
-version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-db#51fb6489f4dea17819ebaad28fbaa27a6eb909d4"
-dependencies = [
- "siphasher 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3387,11 +3378,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "siphasher"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
 name = "slab"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4454,7 +4440,6 @@ dependencies = [
 "checksum ethbloom 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)" = "3d1d93b56bf23b8d38c71e4a5360607fc8e91d402ec20a7e90f4e896cfd21d2b"
 "checksum ethbloom 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1a93a43ce2e9f09071449da36bfa7a1b20b950ee344b6904ff23de493b03b386"
 "checksum ethbloom 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)" = "3932e82d64d347a045208924002930dc105a138995ccdc1479d0f05f0359f17c"
-"checksum ethcore-bloom-journal 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)" = "<none>"
 "checksum ethereum-types 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6e742184dc63a01c8ea0637369f8faa27c40f537949908a237f95c05e68d2c96"
 "checksum ethereum-types 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b054df51e53f253837ea422681215b42823c02824bde982699d0dceecf6165a1"
 "checksum ethereum-types-serialize 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1873d77b32bc1891a79dad925f2acbc318ee942b38b9110f9dbc5fbeffcea350"
@@ -4667,7 +4652,6 @@ dependencies = [
 "checksum sha3 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)" = "dd26bc0e7a2e3a7c959bc494caf58b72ee0c71d67704e9520f736ca7e4853ecf"
 "checksum shlex 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
 "checksum signal-hook 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "f7ca1f1c0ed6c8beaab713ad902c041e4f09d06e1b4bb74c5fc553c078ed0110"
-"checksum siphasher 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "833011ca526bd88f16778d32c699d325a9ad302fa06381cd66f7be63351d3f6d"
 "checksum slab 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5f9776d6b986f77b35c6cf846c11ad986ff128fe0b2b63a3628e3755e8d3102d"
 "checksum smallvec 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)" = "ab606a9c5e214920bb66c458cd7be8ef094f813f20fe77a54cc7dbfff220d4b7"
 "checksum snappy 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-db)" = "<none>"
