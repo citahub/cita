@@ -30,7 +30,8 @@ use util::{HeapSizeOf, Mutex, RwLock};
 
 use crate::types::block::{Block, BlockBody, OpenBlock};
 pub use crate::types::extras::{
-    BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupPosition, TransactionIndex,
+    BlockNumberKeyLong, BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupKey,
+    LogGroupPosition, TransactionIndex,
 };
 use crate::types::{
     cache_manager::CacheManager, filter::Filter, ids::BlockId, ids::TransactionId,
@@ -38,7 +39,7 @@ use crate::types::{
     transaction::SignedTransaction,
 };
 use cita_types::traits::LowerHex;
-use cita_types::{Address, H256, U256};
+use cita_types::{Address, H256, H264, U256};
 
 use crate::cita_db::RocksDB;
 use crate::db::DBIndex;
@@ -510,7 +511,9 @@ impl Chain {
         for (k, v) in blocks_blooms.iter() {
             let _ = self.db.insert(
                 Some(cita_db::DataCategory::Extra),
-                k.get_index().to_vec(),
+                (k as &DBIndex<LogBloomGroup, Item = LogGroupKey>)
+                    .get_index()
+                    .to_vec(),
                 rlp::encode(v).into_vec(),
             );
         }
@@ -519,7 +522,9 @@ impl Chain {
         for (k, v) in block_transaction_indexes.iter() {
             let _ = self.db.insert(
                 Some(cita_db::DataCategory::Extra),
-                k.to_vec(),
+                (k as &DBIndex<TransactionIndex, Item = H264>)
+                    .get_index()
+                    .to_vec(),
                 rlp::encode(v).into_vec(),
             );
         }
@@ -534,7 +539,9 @@ impl Chain {
             let block_receipts = BlockReceipts::new(receipts);
             let _ = self.db.insert(
                 Some(cita_db::DataCategory::Extra),
-                header_hash.to_vec(),
+                (&header_hash as &DBIndex<BlockReceipts, Item = H264>)
+                    .get_index()
+                    .to_vec(),
                 rlp::encode(&block_receipts).into_vec(),
             );
         }
@@ -542,7 +549,9 @@ impl Chain {
         // Save Header
         let _ = self.db.insert(
             Some(cita_db::DataCategory::Headers),
-            number.to_be_bytes().to_vec(),
+            (&number as &DBIndex<Header, Item = BlockNumberKeyLong>)
+                .get_index()
+                .to_vec(),
             rlp::encode(&header).into_vec(),
         );
 
@@ -551,7 +560,9 @@ impl Chain {
         if mheight < number || (number == 0 && mheight == 0) {
             let _ = self.db.insert(
                 Some(cita_db::DataCategory::Bodies),
-                number.to_be_bytes().to_vec(),
+                (&number as &DBIndex<BlockBody, Item = BlockNumberKeyLong>)
+                    .get_index()
+                    .to_vec(),
                 rlp::encode(block.body()).into_vec(),
             );
         }
@@ -559,8 +570,10 @@ impl Chain {
         // Save current hash
         let _ = self.db.insert(
             Some(cita_db::DataCategory::Extra),
-            CurrentHash.get_index().to_vec(),
-            header_hash.to_vec(),
+            (&CurrentHash as &DBIndex<H256, Item = H256>)
+                .get_index()
+                .to_vec(),
+            rlp::encode(&header_hash).into_vec(),
         );
 
         *self.current_header.write() = header;
@@ -1044,7 +1057,9 @@ impl Chain {
     pub fn save_current_block_poof(&self, proof: &ProtoProof) {
         let _ = self.db.insert(
             Some(cita_db::DataCategory::Extra),
-            CurrentProof.get_index().to_vec(),
+            (&CurrentProof as &DBIndex<ProtoProof, Item = H256>)
+                .get_index()
+                .to_vec(),
             rlp::encode(proof).into_vec(),
         );
     }
@@ -1360,8 +1375,18 @@ impl Chain {
     pub fn set_block_body(&self, height: BlockNumber, block: &OpenBlock) {
         let _ = self.db.insert(
             Some(cita_db::DataCategory::Bodies),
-            height.to_be_bytes().to_vec(),
+            (&height as &DBIndex<BlockBody, Item = BlockNumberKeyLong>)
+                .get_index()
+                .to_vec(),
             rlp::encode(block.body()).into_vec(),
+        );
+
+        let _ = self.db.insert(
+            Some(cita_db::DataCategory::Extra),
+            (&CurrentHeight as &DBIndex<BlockNumber, Item = H256>)
+                .get_index()
+                .to_vec(),
+            rlp::encode(&height).into_vec(),
         );
     }
 
