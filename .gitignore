@@ -60,3 +60,6 @@ docs/site
 
 # localtime for macos users
 localtime
+
+# test data
+**/test-rocksdb
