@@ -112,7 +112,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
         let init_gas = t.gas - U256::from(base_gas_required);
 
-        match t.action {
+        let result = match t.action {
             Action::Store | Action::AbiStore => {
                 // Prepaid t.gas for the transaction.
                 self.prepaid(t.sender(), t.gas, t.gas_price, t.value)?;
@@ -121,24 +121,15 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 // But for the data compatible, just let it as tx_gas_schedule.create_data_gas for now.
                 let store_gas_used = U256::from(t.data.len() * tx_gas_schedule.create_data_gas);
                 if let Some(gas_left) = init_gas.checked_sub(store_gas_used) {
-                    let refund_value = gas_left * t.gas_price;
-                    // Note: should not be error at refund.
-                    self.refund(t.sender(), refund_value)
-                        .expect("refund balance to sender must success");
-
-                    let gas_used = t.gas - gas_left;
-                    let fee_value = gas_used * t.gas_price;
-                    self.handle_tx_fee(&self.env_info.coin_base, fee_value)
-                        .expect("Add balance to coin_base must success");
-
                     let mut result = ExecutedResult::default();
-                    result.quota_used = gas_used.as_u64();
+                    result.quota_left = gas_left;
+                    result.is_evm_call = false;
 
                     Ok(result)
                 } else {
                     // FIXME: Should not return an error after self.prepaid().
                     // But for compatibility, should keep this. Need to be upgrade in new version.
-                    Err(ExecutionError::VM(VMError::NotEnoughBaseGas))
+                    return Err(ExecutionError::VM(VMError::NotEnoughBaseGas));
                 }
             }
             Action::Create => {
@@ -176,21 +167,17 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 // Backup used in case of running error
                 self.state_provider.borrow_mut().checkpoint();
 
-                // Note: Do not need a checkpoint for amend data.
                 match self.call_amend_data(t.value, Some(t.data.clone())) {
                     Ok(_) => {
-                        // Refund gas, AmendData do not use any additional gas.
-                        let refund_value = init_gas * t.gas_price;
-                        self.refund(t.sender(), refund_value)
-                            .expect("refund balance to sender must success");
-
-                        let fee_value = U256::from(base_gas_required) * t.gas_price;
-                        self.handle_tx_fee(&self.env_info.coin_base, fee_value)
-                            .expect("Add balance to coin_base must success");
-
                         // Discard the checkpoint because of amend data ok.
                         self.state_provider.borrow_mut().discard_checkpoint();
-                        Ok(ExecutedResult::default())
+
+                        let mut result = ExecutedResult::default();
+
+                        // Refund gas, AmendData do not use any additional gas.
+                        result.quota_left = init_gas;
+                        result.is_evm_call = false;
+                        Ok(result)
                     }
                     Err(e) => {
                         let mut result = ExecutedResult::default();
@@ -198,6 +185,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                         // Need to revert the state.
                         self.state_provider.borrow_mut().revert_checkpoint();
                         result.exception = Some(e);
+                        result.is_evm_call = false;
                         Ok(result)
                     }
                 }
@@ -215,7 +203,50 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 };
                 self.call(&params)
             }
+        };
+
+        let mut finalize_result = if let Ok(res) = result {
+            if let Some(ref e) = res.exception {
+                match e {
+                    // Note: cita-vm has not deduct cost for this four error.
+                    ExecutionError::VM(VMError::ExccedMaxBlockGasLimit) => {
+                        return Err(ExecutionError::VM(VMError::ExccedMaxBlockGasLimit))
+                    }
+                    ExecutionError::VM(VMError::InvalidNonce) => {
+                        return Err(ExecutionError::VM(VMError::InvalidNonce))
+                    }
+                    ExecutionError::VM(VMError::NotEnoughBaseGas) => {
+                        return Err(ExecutionError::VM(VMError::NotEnoughBaseGas))
+                    }
+                    ExecutionError::VM(VMError::NotEnoughBalance) => {
+                        return Err(ExecutionError::VM(VMError::NotEnoughBalance))
+                    }
+                    _ => {}
+                }
+            }
+            res
+        } else {
+            let mut r = ExecutedResult::default();
+            r.quota_left = U256::from(0);
+            r.is_evm_call = false;
+            r
+        };
+
+        if !finalize_result.is_evm_call {
+            let refund_value = finalize_result.quota_left * t.gas_price;
+            // Note: should not be error at refund.
+            self.refund(t.sender(), refund_value)
+                .expect("refund balance to sender must success");
+
+            let quota_used = t.gas - finalize_result.quota_left;
+            let fee_value = quota_used * t.gas_price;
+            self.handle_tx_fee(&self.env_info.coin_base, fee_value)
+                .expect("Add balance to coin_base must success");
+            finalize_result.quota_used = quota_used;
         }
+
+        finalize_result.account_nonce = nonce;
+        Ok(finalize_result)
     }
 
     fn payment_required(&self) -> bool {
@@ -414,7 +445,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         let evm_transaction = build_evm_transaction(params);
         let evm_config = build_evm_config(self.env_info.gas_limit.as_u64());
         let evm_context = build_evm_context(&self.env_info);
-        let result = match cita_vm::exec(
+        let mut result = match cita_vm::exec(
             self.block_provider.clone(),
             self.state_provider.clone(),
             evm_context,
@@ -424,6 +455,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             Ok(evm_result) => build_result_with_ok(params.gas, evm_result),
             Err(e) => build_result_with_err(e),
         };
+        result.is_evm_call = true;
         Ok(result)
     }
 
@@ -462,15 +494,8 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 Ok(ret) => {
                     // Discard the checkpoint
                     self.state_provider.borrow_mut().discard_checkpoint();
-
-                    // FIXME: Fix refund later.
-                    //                    let refund_value = get_quota_left(ret) * params.gas_price;
-                    //                    self.refund(&params.sender, refund_value).expect("refund balance to sender must success");
-
-                    let result = build_result_with_ok(params.gas, ret);
-                    let fee_value = U256::from(result.quota_used) * params.gas_price;
-                    self.handle_tx_fee(&self.env_info.coin_base, fee_value)
-                        .expect("Add balance to coin_base must success");
+                    let mut result = build_result_with_ok(params.gas, ret);
+                    result.is_evm_call = false;
                     result
                 }
                 Err(e) => {
@@ -479,6 +504,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
                     let mut result = ExecutedResult::default();
                     result.exception = Some(ExecutionError::NativeContract(e));
+                    result.is_evm_call = false;
                     result
                 }
             };
@@ -525,16 +551,19 @@ fn build_result_with_ok(init_gas: U256, ret: InterpreterResult) -> ExecutedResul
 
     match ret {
         InterpreterResult::Normal(data, quota_left, logs) => {
-            result.quota_used = init_gas.as_u64() - quota_left;
+            result.quota_used = init_gas - U256::from(quota_left);
+            result.quota_left = U256::from(quota_left);
             result.logs = transform_logs(logs);
             result.logs_bloom = logs_to_bloom(&result.logs);
             result.output = data;
         }
         InterpreterResult::Revert(_data, quota_left) => {
-            result.quota_used = init_gas.as_u64() - quota_left;
+            result.quota_used = init_gas - U256::from(quota_left);
+            result.quota_left = U256::from(quota_left);
         }
         InterpreterResult::Create(_data, quota_left, logs, contract_address) => {
-            result.quota_used = init_gas.as_u64() - quota_left;
+            result.quota_used = init_gas - U256::from(quota_left);
+            result.quota_left = U256::from(quota_left);
             result.logs = transform_logs(logs);
             result.logs_bloom = logs_to_bloom(&result.logs);
 
@@ -741,12 +770,17 @@ impl Default for EnvInfo {
 pub struct ExecutedResult {
     pub state_root: Hash,
     pub transaction_hash: Hash,
-    pub quota_used: u64,
+    pub quota_used: U256,
+    pub quota_left: U256,
     pub logs_bloom: Bloom,
     pub logs: Vec<LogEntry>,
     pub exception: Option<ExecutionError>,
     pub contract_address: Option<Address>,
     pub account_nonce: U256,
+
+    // Note: if the transaction is a cita-evm call, needn't to handle the refund.
+    // FIXME: Maybe it is better to handle refund out of evm.
+    pub is_evm_call: bool,
 
     /// Transaction output.
     pub output: Bytes,
