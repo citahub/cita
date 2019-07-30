@@ -445,6 +445,8 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         let evm_transaction = build_evm_transaction(params);
         let evm_config = build_evm_config(self.env_info.gas_limit.as_u64());
         let evm_context = build_evm_context(&self.env_info);
+
+        trace!("Call evm with params: {:?}", params);
         let mut result = match cita_vm::exec(
             self.block_provider.clone(),
             self.state_provider.clone(),
@@ -542,7 +544,7 @@ pub fn build_evm_config(block_gas_limit: u64) -> VMConfig {
     VMConfig {
         // block_gas_limit is meaningless in cita_vm, so let it as default_block_quota_limit.
         block_gas_limit,
-        ..Default::default()
+        check_nonce: false,
     }
 }
 
@@ -555,6 +557,8 @@ fn build_result_with_ok(init_gas: U256, ret: InterpreterResult) -> ExecutedResul
             result.quota_left = U256::from(quota_left);
             result.logs = transform_logs(logs);
             result.logs_bloom = logs_to_bloom(&result.logs);
+
+            trace!("Get data after executed the transaction: {:?}", data);
             result.output = data;
         }
         InterpreterResult::Revert(_data, quota_left) => {
