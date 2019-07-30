@@ -60,7 +60,7 @@ impl TxWal {
             keys.push(tx.get_tx_hash().to_vec());
         }
         self.db
-            .insert_batch(None, values, keys)
+            .insert_batch(None, keys, values)
             .expect("insert batch txs");
     }
 
@@ -94,7 +94,6 @@ impl TxWal {
     }
 }
 
-// FIXME
 #[cfg(test)]
 mod tests {
     extern crate tempdir;
@@ -105,8 +104,8 @@ mod tests {
 
     fn tx_wal() -> TxWal {
         let tempdir = TempDir::new("").unwrap().into_path();
-        let config = DatabaseConfig::with_columns(None);
-        let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
+        let config = Config::with_category_num(None);
+        let db = RocksDB::open(&tempdir.to_str().unwrap(), &config).unwrap();
         TxWal { db: Arc::new(db) }
     }
 
