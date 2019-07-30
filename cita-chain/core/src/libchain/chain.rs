@@ -44,6 +44,7 @@ use cita_types::{Address, H256, H264, U256};
 use crate::cita_db::RocksDB;
 use crate::db::DBIndex;
 use cita_db::Database;
+use rlp::decode;
 
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
@@ -306,14 +307,19 @@ pub fn get_chain(db: &RocksDB) -> Option<Header> {
             &CurrentHash.get_index().to_vec(),
         )
         .unwrap_or(None)
-        .map(|h| H256::from_slice(&h));
+        .map(|h| decode::<H256>(&h));
 
     if let Some(hash) = res {
+        trace!("Get block height from hash : {:?}", hash);
+        let hash_key = (&hash as &DBIndex<BlockNumber, Item = H256>).get_index();
         let header = db
-            .get(Some(cita_db::DataCategory::Extra), &hash)
+            .get(Some(cita_db::DataCategory::Extra), &hash_key.to_vec())
             .unwrap_or(None)
             .map(|n| {
-                db.get(Some(cita_db::DataCategory::Headers), &n)
+                let height = decode::<BlockNumber>(&n);
+                trace!("Get chain from height : {:?}", height);
+                let key = (&height as &DBIndex<Header, Item = BlockNumberKeyLong>).get_index();
+                db.get(Some(cita_db::DataCategory::Headers), &key.to_vec())
                     .unwrap_or(None)
                     .map(|res| {
                         let header: Header = rlp::decode(&res);
@@ -547,6 +553,7 @@ impl Chain {
         }
 
         // Save Header
+        trace!("Save ExecutedResult's header: {:?}", header);
         let _ = self.db.insert(
             Some(cita_db::DataCategory::Headers),
             (&number as &DBIndex<Header, Item = BlockNumberKeyLong>)
