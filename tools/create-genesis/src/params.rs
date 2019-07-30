@@ -1,10 +1,10 @@
-use crate::common::clean_0x;
-use ethabi::Token;
-use ethereum_types::{Address, U256};
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::str::FromStr;
+
+use cita_types::{clean_0x, Address, U256};
+use ethabi::Token;
+use serde::{Deserialize, Serialize};
 
 pub trait GetParams {
     fn as_params(&self) -> Vec<Token>;

@@ -1,17 +1,19 @@
-use crate::common::{clean_0x, string_2_bytes};
-use crate::contracts::ContractsData;
-use crate::miner::Miner;
-use crate::params::InitData;
-use crate::solc::Solc;
-use cita_types::U256;
-use ethabi::Contract;
-use json;
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use std::str::FromStr;
+
+use crate::common::string_2_bytes;
+use crate::contracts::ContractsData;
+use crate::miner::Miner;
+use crate::params::InitData;
+use crate::solc::Solc;
+
+use cita_types::{clean_0x, U256};
+use ethabi::Contract;
+use json;
+use serde::{Deserialize, Serialize};
 
 pub struct GenesisCreator<'a> {
     pub contract_dir: &'a str,
@@ -110,13 +112,13 @@ impl<'a> GenesisCreator<'a> {
                     .get(*contract_name)
                     .map_or(Vec::new(), |p| (*p).clone());
                 let bytes = constructor.encode_input(input_data, &params).unwrap();
-                let account = Miner::mine(bytes);
+                if let Some(account) = Miner::mine(bytes) {
+                    self.accounts.insert((*address).clone(), account);
+                }
+            } else if let Some(account) = Miner::mine(input_data) {
                 self.accounts.insert((*address).clone(), account);
-            } else {
-                let account = Miner::mine(input_data);
-                self.accounts.insert((*address).clone(), account);
+                println!("Normal contracts: {:?} {:?} is ok!", contract_name, address);
             }
-            println!("Normal contracts: {:?} {:?} is ok!", contract_name, address);
         }
     }
 
@@ -140,9 +142,10 @@ impl<'a> GenesisCreator<'a> {
                 let bytes = constructor
                     .encode_input(input_data.clone(), &params)
                     .unwrap();
-                let account = Miner::mine(bytes);
-                self.accounts.insert(address.clone(), account);
-                println!("Permission contracts: {:?} {:?} is ok!", name, address);
+                if let Some(account) = Miner::mine(bytes) {
+                    self.accounts.insert(address.clone(), account);
+                    println!("Permission contracts: {:?} {:?} is ok!", name, address);
+                }
             }
 
             for (name, info) in perm_contracts.contracts.list().iter() {
@@ -156,9 +159,10 @@ impl<'a> GenesisCreator<'a> {
                 let bytes = constructor
                     .encode_input(input_data.clone(), &params)
                     .unwrap();
-                let account = Miner::mine(bytes);
-                self.accounts.insert((*perm_address).clone(), account);
-                println!("Permission contracts: {:?} {:?} is ok!", name, perm_address);
+                if let Some(account) = Miner::mine(bytes) {
+                    self.accounts.insert((*perm_address).clone(), account);
+                    println!("Permission contracts: {:?} {:?} is ok!", name, perm_address);
+                }
             }
         }
     }

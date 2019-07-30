@@ -1,10 +1,10 @@
-use crate::common::clean_0x;
-use ethabi::Token;
-use ethereum_types::Address;
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::str::FromStr;
+
+use cita_types::{clean_0x, Address};
+use ethabi::Token;
+use serde::{Deserialize, Serialize};
 use tiny_keccak::keccak256;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
