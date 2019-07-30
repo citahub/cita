@@ -243,7 +243,13 @@ impl BloomGroupDatabase for Chain {
     fn blooms_at(&self, position: &BloomGroupPosition) -> Option<BloomGroup> {
         let p = LogGroupPosition::from(position.clone());
         self.db
-            .get(Some(cita_db::DataCategory::Extra), &p.get_index())
+            .get(
+                Some(cita_db::DataCategory::Extra),
+                (&p as &DBIndex<LogBloomGroup, Item = LogGroupKey>)
+                    .get_index()
+                    .to_vec()
+                    .as_ref(),
+            )
             .unwrap_or(None)
             .map(|blooms| {
                 let g: LogBloomGroup = rlp::decode(&blooms);
@@ -524,7 +530,7 @@ impl Chain {
             );
         }
 
-        // Save block transaction indexed
+        // Save block transaction indexes
         for (k, v) in block_transaction_indexes.iter() {
             let _ = self.db.insert(
                 Some(cita_db::DataCategory::Extra),
@@ -535,7 +541,7 @@ impl Chain {
             );
         }
 
-        // Save receipts
+        // Save hash -> receipts
         if !info.get_receipts().is_empty() {
             let receipts: Vec<Receipt> = info
                 .get_receipts()
@@ -552,7 +558,7 @@ impl Chain {
             );
         }
 
-        // Save Header
+        // Save number -> header
         trace!("Save ExecutedResult's header: {:?}", header);
         let _ = self.db.insert(
             Some(cita_db::DataCategory::Headers),
@@ -561,6 +567,8 @@ impl Chain {
                 .to_vec(),
             rlp::encode(&header).into_vec(),
         );
+
+        // Save hash -> blockNumber
         let _ = self.db.insert(
             Some(cita_db::DataCategory::Extra),
             (&header_hash as &DBIndex<BlockNumber, Item = H256>)
@@ -746,11 +754,14 @@ impl Chain {
             .and_then(|h| self.block_header_by_height(h))
     }
 
-    fn block_header_by_height(&self, idx: BlockNumber) -> Option<Header> {
+    fn block_header_by_height(&self, number: BlockNumber) -> Option<Header> {
         self.db
             .get(
                 Some(cita_db::DataCategory::Headers),
-                &idx.to_be_bytes().to_vec(),
+                (&number as &DBIndex<Header, Item = BlockNumberKeyLong>)
+                    .get_index()
+                    .to_vec()
+                    .as_ref(),
             )
             .unwrap_or(None)
             .map(|res| {
@@ -815,7 +826,13 @@ impl Chain {
     /// Get address of transaction by hash.
     fn transaction_index(&self, hash: TransactionId) -> Option<TransactionIndex> {
         self.db
-            .get(Some(cita_db::DataCategory::Extra), &hash.to_vec())
+            .get(
+                Some(cita_db::DataCategory::Extra),
+                (&hash as &DBIndex<TransactionIndex, Item = H264>)
+                    .get_index()
+                    .to_vec()
+                    .as_ref(),
+            )
             .unwrap_or(None)
             .map(|res| {
                 let tx_index: TransactionIndex = rlp::decode(&res);
@@ -1061,7 +1078,10 @@ impl Chain {
         self.db
             .get(
                 Some(cita_db::DataCategory::Extra),
-                &CurrentProof.get_index(),
+                (&CurrentProof as &DBIndex<ProtoProof, Item = H256>)
+                    .get_index()
+                    .to_vec()
+                    .as_ref(),
             )
             .unwrap_or(None)
             .map(|res| {
@@ -1296,7 +1316,13 @@ impl Chain {
     /// Get receipts of block with given hash.
     pub fn block_receipts(&self, hash: H256) -> Option<BlockReceipts> {
         self.db
-            .get(Some(cita_db::DataCategory::Extra), &hash.to_vec())
+            .get(
+                Some(cita_db::DataCategory::Extra),
+                (&hash as &DBIndex<BlockReceipts, Item = H264>)
+                    .get_index()
+                    .to_vec()
+                    .as_ref(),
+            )
             .unwrap_or(None)
             .map(|res| {
                 let block_receipts: BlockReceipts = rlp::decode(&res);
@@ -1389,6 +1415,7 @@ impl Chain {
     }
 
     pub fn set_block_body(&self, height: BlockNumber, block: &OpenBlock) {
+        // Save number -> body
         let _ = self.db.insert(
             Some(cita_db::DataCategory::Bodies),
             (&height as &DBIndex<BlockBody, Item = BlockNumberKeyLong>)
@@ -1397,6 +1424,7 @@ impl Chain {
             rlp::encode(block.body()).into_vec(),
         );
 
+        // Save current height
         let _ = self.db.insert(
             Some(cita_db::DataCategory::Extra),
             (&CurrentHeight as &DBIndex<BlockNumber, Item = H256>)
