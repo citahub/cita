@@ -18,7 +18,7 @@
 
 use crate::receipt::ReceiptError;
 use crate::types::log_entry::LogEntry;
-use crate::types::state_diff::StateDiff;
+//use crate::types::state_diff::StateDiff;
 use cita_types::{Address, U256, U512};
 use std::fmt;
 use util::Bytes;
@@ -60,7 +60,7 @@ pub struct Executed {
     /// Transaction output.
     pub output: Bytes,
     /// The state diff, if we traced it.
-    pub state_diff: Option<StateDiff>,
+    //pub state_diff: Option<StateDiff>,
     /// Transaction sender account nonce
     pub account_nonce: U256,
 }
