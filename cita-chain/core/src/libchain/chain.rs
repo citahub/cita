@@ -561,6 +561,13 @@ impl Chain {
                 .to_vec(),
             rlp::encode(&header).into_vec(),
         );
+        let _ = self.db.insert(
+            Some(cita_db::DataCategory::Extra),
+            (&header_hash as &DBIndex<BlockNumber, Item = H256>)
+                .get_index()
+                .to_vec(),
+            rlp::encode(&number).into_vec(),
+        );
 
         // Save Body
         let mheight = self.get_max_store_height();
@@ -779,7 +786,9 @@ impl Chain {
         self.db
             .get(
                 Some(cita_db::DataCategory::Bodies),
-                &number.to_be_bytes().to_vec(),
+                &(&number as &DBIndex<BlockBody, Item = BlockNumberKeyLong>)
+                    .get_index()
+                    .to_vec(),
             )
             .unwrap_or(None)
             .map(|res| {
