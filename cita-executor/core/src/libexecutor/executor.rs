@@ -406,7 +406,11 @@ impl<'a> BloomGroupDatabase for Executor {
 pub fn get_current_header(db: Arc<CitaDB>) -> Option<Header> {
     let current_hash_key = (&CurrentHash as &DBIndex<H256, Item = H256>).get_index();
     if let Ok(hash) = db.get(Some(DataCategory::Extra), &current_hash_key.to_vec()) {
-        let hash: H256 = decode(hash.unwrap().as_slice());
+        let hash: H256 = if let Some(h) = hash {
+            decode(h.as_slice())
+        } else {
+            return None;
+        };
         let hash_key = (&hash as &DBIndex<Header, Item = H256>).get_index();
         if let Ok(header) = db.get(Some(DataCategory::Headers), &hash_key.to_vec()) {
             Some(decode::<Header>(header.unwrap().as_slice()))
