@@ -557,7 +557,7 @@ dependencies = [
 [[package]]
 name = "cita-database"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-database.git?branch=develop#22ad03b62a819bf1463148a8c950e8772e1824a1"
+source = "git+https://github.com/cryptape/cita-database.git?branch=develop#f63e3076b0eecc7c96178ff16ccdf0df475804d2"
 dependencies = [
  "cita-logger 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rocksdb 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
