@@ -519,28 +519,6 @@ impl Chain {
                 .collect()
         };
 
-        // Save blocks blooms
-        for (k, v) in blocks_blooms.iter() {
-            let _ = self.db.insert(
-                Some(cita_db::DataCategory::Extra),
-                (k as &DBIndex<LogBloomGroup, Item = LogGroupKey>)
-                    .get_index()
-                    .to_vec(),
-                rlp::encode(v).into_vec(),
-            );
-        }
-
-        // Save block transaction indexes
-        for (k, v) in block_transaction_indexes.iter() {
-            let _ = self.db.insert(
-                Some(cita_db::DataCategory::Extra),
-                (k as &DBIndex<TransactionIndex, Item = H264>)
-                    .get_index()
-                    .to_vec(),
-                rlp::encode(v).into_vec(),
-            );
-        }
-
         // Save hash -> receipts
         if !info.get_receipts().is_empty() {
             let receipts: Vec<Receipt> = info
@@ -558,6 +536,19 @@ impl Chain {
             );
         }
 
+        // Save block transaction indexes
+        if !block_transaction_indexes.is_empty() {
+            for (k, v) in block_transaction_indexes.iter() {
+                let _ = self.db.insert(
+                    Some(cita_db::DataCategory::Extra),
+                    (k as &DBIndex<TransactionIndex, Item = H264>)
+                        .get_index()
+                        .to_vec(),
+                    rlp::encode(v).into_vec(),
+                );
+            }
+        }
+
         // Save number -> header
         trace!("Save ExecutedResult's header: {:?}", header);
         let _ = self.db.insert(
@@ -566,15 +557,6 @@ impl Chain {
                 .get_index()
                 .to_vec(),
             rlp::encode(&header).into_vec(),
-        );
-
-        // Save hash -> blockNumber
-        let _ = self.db.insert(
-            Some(cita_db::DataCategory::Extra),
-            (&header_hash as &DBIndex<BlockNumber, Item = H256>)
-                .get_index()
-                .to_vec(),
-            rlp::encode(&number).into_vec(),
         );
 
         // Save Body
@@ -586,6 +568,26 @@ impl Chain {
                     .get_index()
                     .to_vec(),
                 rlp::encode(block.body()).into_vec(),
+            );
+        }
+
+        // Save hash -> blockNumber
+        let _ = self.db.insert(
+            Some(cita_db::DataCategory::Extra),
+            (&header_hash as &DBIndex<BlockNumber, Item = H256>)
+                .get_index()
+                .to_vec(),
+            rlp::encode(&number).into_vec(),
+        );
+
+        // Save blocks blooms
+        for (k, v) in blocks_blooms.iter() {
+            let _ = self.db.insert(
+                Some(cita_db::DataCategory::Extra),
+                (k as &DBIndex<LogBloomGroup, Item = LogGroupKey>)
+                    .get_index()
+                    .to_vec(),
+                rlp::encode(v).into_vec(),
             );
         }
 
