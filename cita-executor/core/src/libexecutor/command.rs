@@ -19,7 +19,6 @@ use super::economical_model::EconomicalModel;
 use super::executor::CitaTrieDB;
 use super::executor::{make_consensus_config, Executor};
 use super::sys_config::GlobalSysConfig;
-use crate::call_analytics::CallAnalytics;
 use crate::cita_executive::{CitaExecutive, EnvInfo, ExecutedResult as CitaExecuted};
 use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::solc::{
@@ -60,7 +59,7 @@ pub enum Command {
     NonceAt(Address, BlockId),
     ETHCall(CallRequest, BlockId),
     SignCall(CallRequest),
-    Call(SignedTransaction, BlockId, CallAnalytics),
+    Call(SignedTransaction, BlockId),
     ChainID,
     Metadata(String),
     EconomicalModel,
@@ -101,7 +100,7 @@ impl fmt::Display for Command {
             Command::NonceAt(_, _) => write!(f, "Command::NonceAt"),
             Command::ETHCall(_, _) => write!(f, "Command::ETHCall"),
             Command::SignCall(_) => write!(f, "Command::SignCall"),
-            Command::Call(_, _, _) => write!(f, "Command::Call"),
+            Command::Call(_, _) => write!(f, "Command::Call"),
             Command::ChainID => write!(f, "Command::ChainID "),
             Command::Metadata(_) => write!(f, "Command::Metadata"),
             Command::EconomicalModel => write!(f, "Command::EconomicalModel"),
@@ -146,12 +145,7 @@ pub trait Commander {
     fn nonce_at(&self, address: &Address, block_id: BlockId) -> Option<U256>;
     fn eth_call(&self, request: CallRequest, block_id: BlockId) -> Result<Bytes, String>;
     fn sign_call(&self, request: CallRequest) -> SignedTransaction;
-    fn call(
-        &self,
-        t: &SignedTransaction,
-        block_id: BlockId,
-        analytics: CallAnalytics,
-    ) -> Result<CitaExecuted, CallError>;
+    fn call(&self, t: &SignedTransaction, block_id: BlockId) -> Result<CitaExecuted, CallError>;
     fn chain_id(&self) -> Option<ChainId>;
     fn metadata(&self, data: String) -> Result<MetaData, String>;
     fn economical_model(&self) -> EconomicalModel;
@@ -184,8 +178,8 @@ impl Commander for Executor {
                 CommandResp::ETHCall(self.eth_call(call_request, block_id))
             }
             Command::SignCall(call_request) => CommandResp::SignCall(self.sign_call(call_request)),
-            Command::Call(signed_transaction, block_id, call_analytics) => {
-                CommandResp::Call(self.call(&signed_transaction, block_id, call_analytics))
+            Command::Call(signed_transaction, block_id) => {
+                CommandResp::Call(self.call(&signed_transaction, block_id))
             }
             Command::ChainID => CommandResp::ChainID(self.chain_id()),
             Command::Metadata(data) => CommandResp::Metadata(self.metadata(data)),
@@ -243,7 +237,7 @@ impl Commander for Executor {
 
     fn eth_call(&self, request: CallRequest, id: BlockId) -> Result<Bytes, String> {
         let signed = self.sign_call(request);
-        let result = self.call(&signed, id, Default::default());
+        let result = self.call(&signed, id);
         result
             .map(|b| b.output)
             .or_else(|e| Err(format!("Call Error {}", e)))
@@ -266,12 +260,7 @@ impl Commander for Executor {
         .fake_sign(from)
     }
 
-    fn call(
-        &self,
-        t: &SignedTransaction,
-        block_id: BlockId,
-        _analytics: CallAnalytics,
-    ) -> Result<CitaExecuted, CallError> {
+    fn call(&self, t: &SignedTransaction, block_id: BlockId) -> Result<CitaExecuted, CallError> {
         let header = self.block_header(block_id).ok_or(CallError::StatePruned)?;
         let last_hashes = self.build_last_hashes(Some(header.hash().unwrap()), header.number());
         let env_info = EnvInfo {
@@ -622,9 +611,8 @@ pub fn call(
     command_resp_receiver: &Receiver<CommandResp>,
     signed_transaction: SignedTransaction,
     block_id: BlockId,
-    call_analytics: CallAnalytics,
 ) -> Result<CitaExecuted, CallError> {
-    command_req_sender.send(Command::Call(signed_transaction, block_id, call_analytics));
+    command_req_sender.send(Command::Call(signed_transaction, block_id));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::Call(r) => r,
         _ => unimplemented!(),
