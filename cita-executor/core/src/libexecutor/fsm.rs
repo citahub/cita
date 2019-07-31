@@ -18,7 +18,6 @@
 use super::block::{ClosedBlock, ExecutedBlock, OpenBlock};
 use super::economical_model::EconomicalModel;
 use super::executor::Executor;
-// use cita_database::Database;
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]
 pub enum StatusOfFSM {
