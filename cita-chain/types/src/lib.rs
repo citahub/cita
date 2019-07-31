@@ -28,12 +28,9 @@ extern crate cita_database as cita_db;
 
 pub extern crate bloomchain;
 
-//pub mod account_diff;
-//pub mod basic_account;
 pub mod basic_types;
 pub mod block;
 pub mod cache_manager;
-pub mod call_analytics;
 pub mod db;
 pub mod extras;
 pub mod filter;
@@ -43,7 +40,6 @@ pub mod log_blooms;
 pub mod log_entry;
 pub mod receipt;
 pub mod reserved_addresses;
-//pub mod state_diff;
 pub mod transaction;
 
 /// Type for block number.
