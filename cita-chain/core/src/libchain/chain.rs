@@ -457,9 +457,14 @@ impl Chain {
 
     pub fn block_height_by_hash(&self, hash: H256) -> Option<BlockNumber> {
         self.db
-            .get(Some(cita_db::DataCategory::Extra), &hash.to_vec())
+            .get(
+                Some(cita_db::DataCategory::Extra),
+                &(&hash as &DBIndex<BlockNumber, Item = H256>)
+                    .get_index()
+                    .to_vec(),
+            )
             .unwrap_or(None)
-            .map(|res| H256::from_slice(&res).low_u64())
+            .map(|res| decode::<BlockNumber>(&res))
     }
 
     fn set_config(&self, ret: &ExecutedResult) {
