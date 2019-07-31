@@ -44,9 +44,11 @@ use std::sync::Arc;
 use util::*;
 
 pub mod account;
+pub mod account_entry;
 pub mod backend;
 
 pub use self::account::Account;
+use self::account_entry::{AccountEntry, AccountState};
 use self::backend::*;
 pub use crate::substate::Substate;
 
@@ -60,106 +62,6 @@ pub struct ApplyOutcome {
 
 /// Result type for the execution ("application") of a transaction.
 pub type ApplyResult = Result<ApplyOutcome, Error>;
-
-#[derive(Eq, PartialEq, Clone, Copy, Debug)]
-/// Account modification state. Used to check if the account was
-/// Modified in between commits and overall.
-enum AccountState {
-    /// Account was loaded from disk and never modified in this state object.
-    CleanFresh,
-    /// Account was loaded from the global cache and never modified.
-    CleanCached,
-    /// Account has been modified and is not committed to the trie yet.
-    /// This is set if any of the account data is changed, including
-    /// storage, code and ABI.
-    Dirty,
-    /// Account was modified and committed to the trie.
-    Committed,
-}
-
-#[derive(Debug)]
-/// In-memory copy of the account data. Holds the optional account
-/// and the modification status.
-/// Account entry can contain existing (`Some`) or non-existing
-/// account (`None`)
-pub struct AccountEntry {
-    /// Account entry. `None` if account known to be non-existant.
-    account: Option<Account>,
-    /// Unmodified account balance.
-    old_balance: Option<U256>,
-    /// Entry state.
-    state: AccountState,
-}
-
-// Account cache item. Contains account data and
-// modification state
-impl AccountEntry {
-    pub fn is_dirty(&self) -> bool {
-        self.state == AccountState::Dirty
-    }
-
-    pub fn is_commited(&self) -> bool {
-        self.state == AccountState::Committed
-    }
-
-    fn exists_and_is_null(&self) -> bool {
-        self.account.as_ref().map_or(false, Account::is_null)
-    }
-
-    /// Clone dirty data into new `AccountEntry`. This includes
-    /// basic account data and modified storage keys.
-    fn clone_dirty(&self) -> AccountEntry {
-        AccountEntry {
-            old_balance: self.old_balance,
-            account: self.account.as_ref().map(Account::clone_dirty),
-            state: self.state,
-        }
-    }
-
-    // Create a new account entry and mark it as dirty.
-    fn new_dirty(account: Option<Account>) -> AccountEntry {
-        AccountEntry {
-            old_balance: account.as_ref().map(|a| *a.balance()),
-            account,
-            state: AccountState::Dirty,
-        }
-    }
-
-    // Create a new account entry and mark it as clean.
-    fn new_clean(account: Option<Account>) -> AccountEntry {
-        AccountEntry {
-            old_balance: account.as_ref().map(|a| *a.balance()),
-            account,
-            state: AccountState::CleanFresh,
-        }
-    }
-
-    // Create a new account entry and mark it as clean and cached.
-    fn new_clean_cached(account: Option<Account>) -> AccountEntry {
-        AccountEntry {
-            old_balance: account.as_ref().map(|a| *a.balance()),
-            account,
-            state: AccountState::CleanCached,
-        }
-    }
-
-    // Replace data with another entry but preserve storage cache.
-    fn overwrite_with(&mut self, other: AccountEntry) {
-        self.state = other.state;
-        match other.account {
-            Some(acc) => {
-                if let Some(ref mut ours) = self.account {
-                    ours.overwrite_with(acc);
-                }
-            }
-            None => self.account = None,
-        }
-    }
-
-    pub fn account(&self) -> Option<&Account> {
-        self.account.as_ref()
-    }
-}
 
 #[derive(Debug, Clone, RlpEncodable, RlpDecodable)]
 pub struct StateProof {
@@ -253,7 +155,6 @@ pub struct State<B: Backend> {
     checkpoints: RefCell<Vec<HashMap<Address, Option<AccountEntry>>>>,
     account_start_nonce: U256,
     factories: Factories,
-    pub super_admin_account: Option<Address>,
 }
 
 #[derive(Copy, Clone)]
@@ -286,7 +187,6 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce,
             factories,
-            super_admin_account: None,
         }
     }
 
@@ -312,7 +212,6 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce,
             factories,
-            super_admin_account: None,
         };
 
         Ok(state)

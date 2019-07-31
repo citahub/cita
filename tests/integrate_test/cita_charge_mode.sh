@@ -30,13 +30,6 @@ test_charge_mode() {
     cd ../../..
 }
 
-test_fee_back() {
-    local version=$1
-    cd ./scripts/txtool/txtool
-    python3 "${SOURCE_DIR}"/tests/integrate_test/test_fee_back.py --version="$version"
-    cd ../../..
-}
-
 update_version() {
     local version=$1
     cd ./scripts/txtool/txtool
@@ -56,7 +49,6 @@ main() {
         --contract_arguments "SysConfig.checkFeeBackPlatform=true" \
         --contract_arguments "SysConfig.economicalModel=1" \
         --contract_arguments "VersionManager.version=0" \
-        --contract_arguments "PriceManager.quotaPrice=1000000" \
         --contract_arguments "SysConfig.chainOwner=0x36a60d575b0dee0423abb6a57dbc6ca60bf47545"
     echo "DONE"
 
@@ -70,29 +62,21 @@ main() {
                                                    exit 1)
     echo "${timeout}s DONE"
 
-    echo -n "4) Run fee back tests ... "
-    test_fee_back 0
-    echo "DONE"
-
-    echo -n "5) Run charge mode tests in v0 ...  "
+    echo -n "4) Run charge mode tests in v0 ...  "
     test_charge_mode 0
     echo "DONE"
 
-    echo -n "6) Update to chainIDV1 ... "
+    echo -n "5) Update to chainIDV1 ... "
     update_version 0
     echo "DONE"
 
-    echo -n "7) check alive  ...  "
+    echo -n "6) check alive  ...  "
     timeout=$(check_height_growth_normal 0 60) || (echo "FAILED"
                                                    echo "failed to check_height_growth 0: ${timeout}"
                                                    exit 1)
     echo "${timeout}s DONE"
 
-    echo -n "8) Run fee back tests in v1 ... "
-    test_fee_back 1
-    echo "DONE"
-
-    echo -n "9) Run charge mode tests in v1 ...  "
+    echo -n "7) Run charge mode tests in v1 ...  "
     test_charge_mode 1
     echo "DONE"
 }

@@ -17,8 +17,6 @@
 
 //! Contracts.
 
-pub mod grpc;
 pub mod native;
 pub mod solc;
-
 pub mod tools;

@@ -182,14 +182,6 @@ class ChainInfo():
         need_directory(self.contracts_docs_dir)
 
         shutil.copytree(configs_dir_src, self.configs_dir, False)
-
-        executor_config = os.path.join(self.configs_dir, 'executor.toml')
-        with open(executor_config, 'rt') as stream:
-            executor_data = toml.load(stream)
-            executor_data['grpc_port'] = args.grpc_port
-        with open(executor_config, 'wt') as stream:
-            toml.dump(executor_data, stream)
-
         if args.stdout:
             forever_config = os.path.join(self.configs_dir, 'forever.toml')
             with open(forever_config, 'rt') as stream:
@@ -264,14 +256,6 @@ class ChainInfo():
         node_dir = os.path.join(self.output_root, '{}'.format(node_id))
 
         shutil.copytree(self.configs_dir, node_dir, False)
-
-        executor_config = os.path.join(node_dir, 'executor.toml')
-        with open(executor_config, 'rt') as stream:
-            executor_data = toml.load(stream)
-            executor_data['grpc_port'] += node_id
-        with open(executor_config, 'wt') as stream:
-            toml.dump(executor_data, stream)
-
         jsonrpc_config = os.path.join(node_dir, 'jsonrpc.toml')
         with open(jsonrpc_config, 'rt') as stream:
             jsonrpc_data = toml.load(stream)
@@ -404,8 +388,6 @@ def parse_arguments():
     pcreate.add_argument('--resource_dir', help='Chain resource directory.')
 
     # Modify ports
-    pcreate.add_argument(
-        '--grpc_port', type=int, default=5000, help='grpc port for this chain')
     pcreate.add_argument(
         '--jsonrpc_port',
         type=int,

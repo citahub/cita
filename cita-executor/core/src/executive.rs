@@ -18,17 +18,7 @@
 
 use crate::authentication::check_permission;
 use crate::builtin::Builtin;
-use crate::contracts::{
-    grpc::{
-        self,
-        contract::{
-            create_grpc_contract, invoke_grpc_contract, is_create_grpc_address, is_grpc_contract,
-        },
-        grpc_vm::extract_logs_from_response,
-        service_registry,
-    },
-    native::factory::{Contract as NativeContract, Factory as NativeFactory},
-};
+use crate::contracts::native::factory::{Contract as NativeContract, Factory as NativeFactory};
 use crate::engines::Engine;
 use crate::error::ExecutionError;
 pub use crate::executed::{Executed, ExecutionResult};
@@ -51,8 +41,6 @@ use evm::env_info::EnvInfo;
 use evm::{self, Factory, FinalizationResult, Finalize, ReturnData, Schedule};
 use hashable::{Hashable, HASH_EMPTY};
 use std::cmp;
-use std::error::Error;
-use std::str::FromStr;
 use std::sync::Arc;
 use util::*;
 
@@ -232,6 +220,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     fn transact_set_abi(&mut self, data: &[u8]) -> bool {
+        if data.len() <= 20 {
+            return false;
+        }
         let account = H160::from(&data[0..20]);
         let abi = &data[20..];
         info!("set abi of contract address: {:?}", account);
@@ -242,6 +233,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
     }
 
     fn transact_set_code(&mut self, data: &[u8]) -> bool {
+        if data.len() <= 20 {
+            return false;
+        }
         let account = H160::from(&data[0..20]);
         let code = &data[20..];
         self.state.reset_code(&account, code.to_vec()).is_ok()
@@ -322,8 +316,10 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
         let base_gas_required = match t.action {
             Action::Create => schedule.tx_create_gas,
-            Action::GoCreate => schedule.tx_create_gas,
             _ => schedule.tx_gas,
+        } + match t.version {
+            0...2 => 0,
+            _ => t.data.len() * schedule.tx_data_non_zero_gas,
         };
 
         if sender != Address::zero() && t.gas < U256::from(base_gas_required) {
@@ -388,28 +384,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                         got: t.gas,
                     });
                 }
-            }
-            Action::GoCreate => {
-                let address = Address::default();
-                let params = ActionParams {
-                    code_address: address,
-                    address,
-                    sender,
-                    origin: sender,
-                    gas: init_gas,
-                    gas_price: t.gas_price(),
-                    value: ActionValue::Transfer(t.value),
-                    code: self.state.code(&address)?,
-                    code_hash: self.state.code_hash(&address)?,
-                    data: Some(t.data.clone()),
-                    call_type: CallType::Call,
-                };
-                trace!(target: "executive", "call: {:?}", params);
-                let mut out = vec![];
-                (
-                    self.call_grpc_contract(&params, &mut substate, &BytesRef::Flexible(&mut out)),
-                    out,
-                )
             }
             Action::Create => {
                 let new_address = contract_address(&sender, &nonce);
@@ -611,12 +585,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             let res = self.call_amend_data(params, substate, &output);
             self.enact_self_defined_res(&res);
             res
-        } else if is_create_grpc_address(params.code_address)
-            || is_grpc_contract(params.code_address)
-        {
-            let res = self.call_grpc_contract(params, substate, &output);
-            self.enact_self_defined_res(&res);
-            res
         } else if let Some(builtin) = self.engine.builtin(&params.code_address, self.info.number) {
             // check and call Builtin contract
             self.call_builtin_contract(params, output, tracer, builtin)
@@ -658,10 +626,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         _substate: &mut Substate,
         _output: &BytesRef,
     ) -> evm::Result<FinalizationResult> {
-        // Must send from admin address
-        if Some(params.origin) != self.state.super_admin_account {
-            return Err(evm::error::Error::Internal("no permission".to_owned()));
-        }
         let atype = params.value.value().low_u32();
         let mut result = FinalizationResult {
             gas_left: params.gas,
@@ -720,68 +684,6 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             }
 
             _ => Ok(result),
-        }
-    }
-
-    fn call_grpc_contract(
-        &mut self,
-        params: &ActionParams,
-        substate: &mut Substate,
-        _output: &BytesRef,
-    ) -> evm::Result<FinalizationResult> {
-        let is_create = is_create_grpc_address(params.code_address);
-        let address = if is_create {
-            match params.data.clone() {
-                Some(data) => Address::from_slice(&data),
-                _ => {
-                    return Err(evm::error::Error::Internal(
-                        "GRPC contract creation without data field".to_string(),
-                    ));
-                }
-            }
-        } else {
-            params.code_address
-        };
-
-        let connect_info = match service_registry::find_contract(address, !is_create) {
-            Some(contract_state) => contract_state.conn_info,
-            None => {
-                return Err(evm::error::Error::Internal(format!(
-                    "can't find grpc contract from address: {:?}",
-                    address
-                )));
-            }
-        };
-
-        let response = if is_create {
-            service_registry::enable_contract(address);
-            create_grpc_contract(self.info, &params, self.state, true, &connect_info)
-        } else {
-            invoke_grpc_contract(self.info, &params, self.state, true, &connect_info)
-        };
-        match response {
-            Ok(invoke_response) => {
-                // store grpc return storages to stateDB
-                for storage in &invoke_response.get_storages()[..] {
-                    let key = storage.get_key();
-                    let value = storage.get_value();
-                    trace!("recv resp: {:?}", storage);
-                    trace!("key: {:?}, value: {:?}", key, value);
-                    grpc::storage::set_storage(self.state, params.address, key, value).unwrap();
-                }
-
-                // update contract_state.height
-                service_registry::set_enable_contract_height(params.address, self.info.number);
-                substate.logs = extract_logs_from_response(params.address, &invoke_response);
-                let message = invoke_response.get_message();
-
-                Ok(FinalizationResult {
-                    gas_left: U256::from_str(invoke_response.get_gas_left()).unwrap(),
-                    apply_state: true,
-                    return_data: ReturnData::new(message.as_bytes().to_vec(), 0, message.len()),
-                })
-            }
-            Err(e) => Err(evm::error::Error::Internal(e.description().to_string())),
         }
     }
 
