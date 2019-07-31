@@ -545,6 +545,7 @@ pub fn build_evm_config(block_gas_limit: u64) -> VMConfig {
         // block_gas_limit is meaningless in cita_vm, so let it as default_block_quota_limit.
         block_gas_limit,
         check_nonce: false,
+        check_balance: true,
     }
 }
 
