@@ -60,18 +60,18 @@ impl<'a> PriceManagement<'a> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::PriceManagement;
-    use crate::tests::helpers::init_executor;
-    use crate::types::ids::BlockId;
-    use cita_types::U256;
-
-    #[test]
-    fn test_quota_price() {
-        let executor = init_executor();
-        let price_management = PriceManagement::new(&executor);
-        let price = price_management.quota_price(BlockId::Pending).unwrap();
-        assert_eq!(price, U256::from(100_0000));
-    }
-}
+//#[cfg(test)]
+//mod tests {
+//    use super::PriceManagement;
+//    use crate::tests::helpers::init_executor;
+//    use crate::types::ids::BlockId;
+//    use cita_types::U256;
+//
+//    #[test]
+//    fn test_quota_price() {
+//        let executor = init_executor();
+//        let price_management = PriceManagement::new(&executor);
+//        let price = price_management.quota_price(BlockId::Pending).unwrap();
+//        assert_eq!(price, U256::from(100_0000));
+//    }
+//}

@@ -805,3 +805,12 @@ pub struct ExecutedResult {
     /// Transaction output.
     pub output: Bytes,
 }
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn test_transfer_for_store() {
+        assert_eq!(0, 1);
+    }
+}
