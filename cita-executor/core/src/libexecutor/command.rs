@@ -225,7 +225,7 @@ impl Commander for Executor {
         self.state_at(id)
             .and_then(|mut s| s.balance(address).ok())
             .map(|c| {
-                let balance: &mut [u8] = &mut [0u8];
+                let balance = &mut [0u8; 32];
                 c.to_big_endian(balance);
                 balance.to_vec()
             })
