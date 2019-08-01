@@ -34,6 +34,8 @@ const AMEND_ABI: u32 = 1;
 const AMEND_CODE: u32 = 2;
 ///amend the kv of db
 const AMEND_KV_H256: u32 = 3;
+///amend get the value of db
+const AMEND_GET_KV_H256: u32 = 4;
 ///amend account's balance
 const AMEND_ACCOUNT_BALANCE: u32 = 5;
 
@@ -85,7 +87,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         )?;
 
         let tx_gas_schedule = TxGasSchedule::default();
-
         let base_gas_required = match t.action {
             Action::Create => tx_gas_schedule.tx_create_gas,
             _ => tx_gas_schedule.tx_gas,
@@ -149,6 +150,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             }
 
             Action::AmendData => {
+                trace!("amend action, conf admin {:?}", conf.super_admin_account);
                 if let Some(admin) = conf.super_admin_account {
                     if *t.sender() != admin {
                         return Err(ExecutionError::Authentication(
@@ -168,12 +170,22 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 self.state_provider.borrow_mut().checkpoint();
 
                 match self.call_amend_data(t.value, Some(t.data.clone())) {
-                    Ok(_) => {
+                    Ok(Some(val)) => {
                         // Discard the checkpoint because of amend data ok.
                         self.state_provider.borrow_mut().discard_checkpoint();
 
                         let mut result = ExecutedResult::default();
+                        // Refund gas, AmendData do not use any additional gas.
+                        result.quota_left = init_gas;
+                        result.is_evm_call = false;
+                        result.output = val.to_vec();
+                        Ok(result)
+                    }
+                    Ok(None) => {
+                        // Discard the checkpoint because of amend data ok.
+                        self.state_provider.borrow_mut().discard_checkpoint();
 
+                        let mut result = ExecutedResult::default();
                         // Refund gas, AmendData do not use any additional gas.
                         result.quota_left = init_gas;
                         result.is_evm_call = false;
@@ -402,46 +414,66 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         true
     }
 
-    fn call_amend_data(&mut self, value: U256, data: Option<Bytes>) -> Result<(), ExecutionError> {
+    fn transact_get_kv_h256(&mut self, data: &[u8]) -> Option<H256> {
+        let account = H160::from(&data[0..20]);
+        let key = H256::from_slice(&data[20..52]);
+        self.state_provider
+            .borrow_mut()
+            .get_storage(&account, &key)
+            .ok()
+    }
+
+    fn call_amend_data(
+        &mut self,
+        value: U256,
+        data: Option<Bytes>,
+    ) -> Result<Option<H256>, ExecutionError> {
         let amend_type = value.low_u32();
         match amend_type {
             AMEND_ABI => {
                 if self.transact_set_abi(&(data.to_owned().unwrap())) {
-                    Ok(())
+                    Ok(None)
                 } else {
                     Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
                 }
             }
             AMEND_CODE => {
                 if self.transact_set_code(&(data.to_owned().unwrap())) {
-                    Ok(())
+                    Ok(None)
                 } else {
                     Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
                 }
             }
             AMEND_KV_H256 => {
                 if self.transact_set_kv_h256(&(data.to_owned().unwrap())) {
-                    Ok(())
+                    Ok(None)
                 } else {
                     Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
                 }
             }
-
+            AMEND_GET_KV_H256 => {
+                if let Some(v) = self.transact_get_kv_h256(&(data.to_owned().unwrap())) {
+                    Ok(Some(v))
+                } else {
+                    Err(ExecutionError::Internal(
+                        "May be incomplete trie error".to_owned(),
+                    ))
+                }
+            }
             AMEND_ACCOUNT_BALANCE => {
                 if self.transact_set_balance(&(data.to_owned().unwrap())) {
-                    Ok(())
+                    Ok(None)
                 } else {
                     Err(ExecutionError::Internal(
                         "Account doesn't exist or incomplete trie error".to_owned(),
                     ))
                 }
             }
-
-            _ => Ok(()),
+            _ => Ok(None),
         }
     }
 
-    fn call_evm(&mut self, params: &VmExecParams) -> Result<ExecutedResult, ExecutionError> {
+    pub fn call_evm(&mut self, params: &VmExecParams) -> Result<ExecutedResult, ExecutionError> {
         let mut evm_transaction = build_evm_transaction(params);
         let mut evm_config = build_evm_config(self.env_info.gas_limit.as_u64());
         let evm_context = build_evm_context(&self.env_info);

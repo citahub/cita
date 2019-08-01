@@ -411,261 +411,261 @@ pub fn wrap_height(height: usize) -> u64 {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{wrap_height, Backlog, Backlogs, Priority};
-    use crate::cita_db::journaldb;
-    use crate::cita_db::kvdb::{in_memory, KeyValueDB};
-    use crate::core::header::OpenHeader;
-    use crate::core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
-    use crate::core::libexecutor::sys_config::BlockSysConfig;
-    use crate::core::state_db::StateDB;
-    use hashable::HASH_NULL_RLP;
-    use std::sync::Arc;
+// #[cfg(test)]
+// mod tests {
+//     use super::{wrap_height, Backlog, Backlogs, Priority};
+//     use crate::cita_db::journaldb;
+//     use crate::cita_db::kvdb::{in_memory, KeyValueDB};
+//     use crate::core::header::OpenHeader;
+//     use crate::core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
+//     use crate::core::libexecutor::sys_config::BlockSysConfig;
+//     use crate::core::state_db::StateDB;
+//     use hashable::HASH_NULL_RLP;
+//     use std::sync::Arc;
 
-    fn generate_block_body() -> BlockBody {
-        let mut stx = SignedTransaction::default();
-        use crate::types::transaction::SignedTransaction;
-        stx.data = vec![1; 200];
-        let transactions = vec![stx; 200];
-        BlockBody { transactions }
-    }
+//     fn generate_block_body() -> BlockBody {
+//         let mut stx = SignedTransaction::default();
+//         use crate::types::transaction::SignedTransaction;
+//         stx.data = vec![1; 200];
+//         let transactions = vec![stx; 200];
+//         BlockBody { transactions }
+//     }
 
-    fn generate_block_header() -> OpenHeader {
-        OpenHeader::default()
-    }
+//     fn generate_block_header() -> OpenHeader {
+//         OpenHeader::default()
+//     }
 
-    fn generate_block(height: u64) -> OpenBlock {
-        let block_body = generate_block_body();
-        let mut block_header = generate_block_header();
-        block_header.set_number(height);
-        OpenBlock {
-            body: block_body,
-            header: block_header,
-        }
-    }
+//     fn generate_block(height: u64) -> OpenBlock {
+//         let block_body = generate_block_body();
+//         let mut block_header = generate_block_header();
+//         block_header.set_number(height);
+//         OpenBlock {
+//             body: block_body,
+//             header: block_header,
+//         }
+//     }
 
-    fn generate_proof(height: u64) -> libproto::Proof {
-        let mut commits = ::std::collections::HashMap::new();
-        commits.insert(Default::default(), Default::default());
-        let bft_proof = proof::BftProof::new(height as usize, 1, Default::default(), commits);
-        bft_proof.into()
-    }
+//     fn generate_proof(height: u64) -> libproto::Proof {
+//         let mut commits = ::std::collections::HashMap::new();
+//         commits.insert(Default::default(), Default::default());
+//         let bft_proof = proof::BftProof::new(height as usize, 1, Default::default(), commits);
+//         bft_proof.into()
+//     }
 
-    fn generate_executed_result() -> libproto::ExecutedResult {
-        libproto::ExecutedResult::new()
-    }
+//     fn generate_executed_result() -> libproto::ExecutedResult {
+//         libproto::ExecutedResult::new()
+//     }
 
-    fn generate_state_db() -> StateDB {
-        let database = in_memory(7);
-        let database: Arc<KeyValueDB> = Arc::new(database);
-        let journaldb_type = journaldb::Algorithm::Archive;
-        let journal_db = journaldb::new(Arc::clone(&database), journaldb_type, None);
-        StateDB::new(journal_db, 5 * 1024 * 1024)
-    }
+//     fn generate_state_db() -> StateDB {
+//         let database = in_memory(7);
+//         let database: Arc<KeyValueDB> = Arc::new(database);
+//         let journaldb_type = journaldb::Algorithm::Archive;
+//         let journal_db = journaldb::new(Arc::clone(&database), journaldb_type, None);
+//         StateDB::new(journal_db, 5 * 1024 * 1024)
+//     }
 
-    fn get_open_block(backlogs: &Backlogs, height: u64) -> Option<&OpenBlock> {
-        backlogs
-            .backlogs
-            .get(&height)
-            .and_then(|backlog| backlog.get_open_block())
-    }
+//     fn get_open_block(backlogs: &Backlogs, height: u64) -> Option<&OpenBlock> {
+//         backlogs
+//             .backlogs
+//             .get(&height)
+//             .and_then(|backlog| backlog.get_open_block())
+//     }
 
-    #[test]
-    fn test_backlog_is_completed_with_default() {
-        assert_eq!(false, Backlog::default().is_completed());
-    }
+//     #[test]
+//     fn test_backlog_is_completed_with_default() {
+//         assert_eq!(false, Backlog::default().is_completed());
+//     }
 
-    fn generate_closed_block(open_block: OpenBlock) -> ClosedBlock {
-        let state_db = generate_state_db();
-        let exec_block = ExecutedBlock::create(
-            Default::default(),
-            &BlockSysConfig::default(),
-            open_block.clone(),
-            state_db,
-            HASH_NULL_RLP,
-            Arc::new(Vec::new()),
-            false,
-        )
-        .unwrap();
-        exec_block.close(&BlockSysConfig::default())
-    }
+//     fn generate_closed_block(open_block: OpenBlock) -> ClosedBlock {
+//         let state_db = generate_state_db();
+//         let exec_block = ExecutedBlock::create(
+//             Default::default(),
+//             &BlockSysConfig::default(),
+//             open_block.clone(),
+//             state_db,
+//             HASH_NULL_RLP,
+//             Arc::new(Vec::new()),
+//             false,
+//         )
+//         .unwrap();
+//         exec_block.close(&BlockSysConfig::default())
+//     }
 
-    #[test]
-    fn test_backlog_is_completed_with_none() {
-        let height = 9;
-        {
-            let backlog = Backlog {
-                priority: Some(Priority::BlockWithProof),
-                open_block: None,
-                proof: Some(generate_proof(height - 1)),
-                closed_block: Some(generate_closed_block(generate_block(height))),
-            };
-            assert_eq!(false, backlog.is_completed(), "block is none");
-        }
+//     #[test]
+//     fn test_backlog_is_completed_with_none() {
+//         let height = 9;
+//         {
+//             let backlog = Backlog {
+//                 priority: Some(Priority::BlockWithProof),
+//                 open_block: None,
+//                 proof: Some(generate_proof(height - 1)),
+//                 closed_block: Some(generate_closed_block(generate_block(height))),
+//             };
+//             assert_eq!(false, backlog.is_completed(), "block is none");
+//         }
 
-        {
-            let block = generate_block(height);
-            let closed_block = generate_closed_block(block.clone());
-            let backlog = Backlog {
-                priority: Some(Priority::BlockWithProof),
-                open_block: Some(block),
-                proof: None,
-                closed_block: Some(closed_block),
-            };
-            assert_eq!(false, backlog.is_completed(), "proof is none");
-        }
+//         {
+//             let block = generate_block(height);
+//             let closed_block = generate_closed_block(block.clone());
+//             let backlog = Backlog {
+//                 priority: Some(Priority::BlockWithProof),
+//                 open_block: Some(block),
+//                 proof: None,
+//                 closed_block: Some(closed_block),
+//             };
+//             assert_eq!(false, backlog.is_completed(), "proof is none");
+//         }
 
-        {
-            let open_block = generate_block(height);
-            let backlog = Backlog {
-                priority: Some(Priority::BlockWithProof),
-                open_block: Some(open_block),
-                proof: Some(generate_proof(height - 1)),
-                closed_block: None,
-            };
-            assert_eq!(false, backlog.is_completed(), "closed_block is none");
-        }
-    }
+//         {
+//             let open_block = generate_block(height);
+//             let backlog = Backlog {
+//                 priority: Some(Priority::BlockWithProof),
+//                 open_block: Some(open_block),
+//                 proof: Some(generate_proof(height - 1)),
+//                 closed_block: None,
+//             };
+//             assert_eq!(false, backlog.is_completed(), "closed_block is none");
+//         }
+//     }
 
-    #[test]
-    fn test_is_completed_with_unequal_block() {
-        let height = 9;
-        {
-            let mut block = generate_block(height);
-            let closed_block = generate_closed_block(block.clone());
-            block.header.set_timestamp(1);
-            let backlog = Backlog {
-                priority: Some(Priority::BlockWithProof),
-                open_block: Some(block),
-                proof: Some(generate_proof(height - 1)),
-                closed_block: Some(closed_block),
-            };
-            assert_eq!(
-                false,
-                backlog.is_completed(),
-                "false cause block.timestamp is not equal"
-            );
-        }
+//     #[test]
+//     fn test_is_completed_with_unequal_block() {
+//         let height = 9;
+//         {
+//             let mut block = generate_block(height);
+//             let closed_block = generate_closed_block(block.clone());
+//             block.header.set_timestamp(1);
+//             let backlog = Backlog {
+//                 priority: Some(Priority::BlockWithProof),
+//                 open_block: Some(block),
+//                 proof: Some(generate_proof(height - 1)),
+//                 closed_block: Some(closed_block),
+//             };
+//             assert_eq!(
+//                 false,
+//                 backlog.is_completed(),
+//                 "false cause block.timestamp is not equal"
+//             );
+//         }
 
-        {
-            let block = generate_block(height);
-            let closed_block = generate_closed_block(block.clone());
-            let backlog = Backlog {
-                priority: Some(Priority::BlockWithProof),
-                open_block: Some(block),
-                proof: Some(generate_proof(height - 1)),
-                closed_block: Some(closed_block),
-            };
-            assert!(backlog.is_completed());
-        }
-    }
+//         {
+//             let block = generate_block(height);
+//             let closed_block = generate_closed_block(block.clone());
+//             let backlog = Backlog {
+//                 priority: Some(Priority::BlockWithProof),
+//                 open_block: Some(block),
+//                 proof: Some(generate_proof(height - 1)),
+//                 closed_block: Some(closed_block),
+//             };
+//             assert!(backlog.is_completed());
+//         }
+//     }
 
-    #[test]
-    #[should_panic]
-    fn test_complete_but_is_completed_false() {
-        let height = 9;
-        let open_block = generate_block(height);
-        let closed_block = generate_closed_block(open_block.clone());
+//     #[test]
+//     #[should_panic]
+//     fn test_complete_but_is_completed_false() {
+//         let height = 9;
+//         let open_block = generate_block(height);
+//         let closed_block = generate_closed_block(open_block.clone());
 
-        let backlog = Backlog {
-            priority: Some(Priority::BlockWithProof),
-            open_block: Some(open_block),
-            proof: None,
-            closed_block: Some(closed_block),
-        };
-        assert_eq!(false, backlog.is_completed(), "false cause proof is none");
+//         let backlog = Backlog {
+//             priority: Some(Priority::BlockWithProof),
+//             open_block: Some(open_block),
+//             proof: None,
+//             closed_block: Some(closed_block),
+//         };
+//         assert_eq!(false, backlog.is_completed(), "false cause proof is none");
 
-        // panic cause is_completed return false
-        backlog.complete();
-    }
+//         // panic cause is_completed return false
+//         backlog.complete();
+//     }
 
-    #[test]
-    fn test_complete_normal() {
-        let height = 9;
-        let open_block = generate_block(height);
-        let closed_block = generate_closed_block(open_block.clone());
+//     #[test]
+//     fn test_complete_normal() {
+//         let height = 9;
+//         let open_block = generate_block(height);
+//         let closed_block = generate_closed_block(open_block.clone());
 
-        let backlog = Backlog {
-            priority: Some(Priority::BlockWithProof),
-            open_block: Some(open_block),
-            proof: Some(generate_proof(height - 1)),
-            closed_block: Some(closed_block),
-        };
-        assert!(backlog.is_completed());
-        backlog.complete();
-    }
+//         let backlog = Backlog {
+//             priority: Some(Priority::BlockWithProof),
+//             open_block: Some(open_block),
+//             proof: Some(generate_proof(height - 1)),
+//             closed_block: Some(closed_block),
+//         };
+//         assert!(backlog.is_completed());
+//         backlog.complete();
+//     }
 
-    #[test]
-    fn test_backlogs_whole_flow() {
-        let open_block = generate_block(2);
-        let closed_block = generate_closed_block(open_block.clone());
+//     #[test]
+//     fn test_backlogs_whole_flow() {
+//         let open_block = generate_block(2);
+//         let closed_block = generate_closed_block(open_block.clone());
 
-        // insert height 2 should be always failed
-        let mut backlogs = Backlogs::new(2, Default::default());
-        backlogs.insert_completed_result(1, generate_executed_result());
-        backlogs.insert_completed_result(2, generate_executed_result());
-        assert_eq!(
-            false,
-            backlogs.insert_open(
-                2,
-                Priority::Proposal,
-                open_block.clone(),
-                Some(generate_proof(1)),
-            ),
-            "insert staled block should return false"
-        );
-        assert_eq!(
-            false,
-            backlogs.insert_closed(2, closed_block),
-            "insert staled result should return false",
-        );
-        assert!(get_open_block(&backlogs, 2).is_none());
+//         // insert height 2 should be always failed
+//         let mut backlogs = Backlogs::new(2, Default::default());
+//         backlogs.insert_completed_result(1, generate_executed_result());
+//         backlogs.insert_completed_result(2, generate_executed_result());
+//         assert_eq!(
+//             false,
+//             backlogs.insert_open(
+//                 2,
+//                 Priority::Proposal,
+//                 open_block.clone(),
+//                 Some(generate_proof(1)),
+//             ),
+//             "insert staled block should return false"
+//         );
+//         assert_eq!(
+//             false,
+//             backlogs.insert_closed(2, closed_block),
+//             "insert staled result should return false",
+//         );
+//         assert!(get_open_block(&backlogs, 2).is_none());
 
-        // insert height 3 should be ok
-        let open_block = generate_block(3);
-        let closed_block = generate_closed_block(open_block.clone());
-        assert_eq!(
-            true,
-            backlogs.insert_open(
-                3,
-                Priority::BlockWithProof,
-                open_block.clone(),
-                Some(generate_proof(2)),
-            ),
-        );
-        assert_eq!(
-            true,
-            backlogs.insert_closed(3, closed_block),
-            "insert current result should return true",
-        );
-        assert!(get_open_block(&backlogs, 3).is_some());
+//         // insert height 3 should be ok
+//         let open_block = generate_block(3);
+//         let closed_block = generate_closed_block(open_block.clone());
+//         assert_eq!(
+//             true,
+//             backlogs.insert_open(
+//                 3,
+//                 Priority::BlockWithProof,
+//                 open_block.clone(),
+//                 Some(generate_proof(2)),
+//             ),
+//         );
+//         assert_eq!(
+//             true,
+//             backlogs.insert_closed(3, closed_block),
+//             "insert current result should return true",
+//         );
+//         assert!(get_open_block(&backlogs, 3).is_some());
 
-        // complete height 3
-        assert!(backlogs.check_completed(3).is_ok());
-        let _backlog = backlogs.complete(3);
-        assert!(backlogs.get_completed_result(2).is_some());
+//         // complete height 3
+//         assert!(backlogs.check_completed(3).is_ok());
+//         let _backlog = backlogs.complete(3);
+//         assert!(backlogs.get_completed_result(2).is_some());
 
-        assert!(get_open_block(&backlogs, 3).is_none());
-        assert_eq!(
-            false,
-            backlogs.insert_open(
-                3,
-                Priority::Proposal,
-                open_block.clone(),
-                Some(generate_proof(2)),
-            ),
-            "insert staled open_block should return false",
-        );
-    }
+//         assert!(get_open_block(&backlogs, 3).is_none());
+//         assert_eq!(
+//             false,
+//             backlogs.insert_open(
+//                 3,
+//                 Priority::Proposal,
+//                 open_block.clone(),
+//                 Some(generate_proof(2)),
+//             ),
+//             "insert staled open_block should return false",
+//         );
+//     }
 
-    #[test]
-    fn test_wrap_height() {
-        assert_eq!(0, wrap_height(::std::usize::MAX));
-        assert_eq!(
-            ::std::usize::MAX as u64 - 1,
-            wrap_height(::std::usize::MAX - 1)
-        );
-        assert_eq!(2, wrap_height(2));
-    }
-}
+//     #[test]
+//     fn test_wrap_height() {
+//         assert_eq!(0, wrap_height(::std::usize::MAX));
+//         assert_eq!(
+//             ::std::usize::MAX as u64 - 1,
+//             wrap_height(::std::usize::MAX - 1)
+//         );
+//         assert_eq!(2, wrap_height(2));
+//     }
+// }
