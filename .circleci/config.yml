@@ -476,9 +476,9 @@ workflows:
       # - "Robustness Test":
       #     requires:
       #       - "Release"
-      # - "Genesis Test":
-      #     requires:
-      #       - "Release"
+      - "Genesis Test":
+          requires:
+            - "Release"
 
       # - "Unit Test (blake2b & ed25519)":
       #     requires:
@@ -506,6 +506,6 @@ workflows:
             # - "Byzantine Test in Charge Mode"
             # - "Crosschain Test"
             # - "Robustness Test"
-            # - "Genesis Test"
+              - "Genesis Test"
             # - "Unit Test (blake2b & ed25519)"
             # - "Unit Test (sm3 & sm2)"
