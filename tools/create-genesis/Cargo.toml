@@ -9,14 +9,15 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
 json = "0.11.13"
 serde_json = "1.0.39"
-ethabi = "7.0.0"
-ethereum-types = "0.5.2"
+ethabi = "6.1.0"
+ethereum-types = "0.4"
 hex = "0.3"
 tiny-keccak = "1.4.2"
 libsecp256k1 = "0.2.2"
 clap = "2.33.0"
+cita_trie = "2.0"
 
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+cita-vm = { git = "https://github.com/cryptape/cita-vm.git", branch = "cita" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
 
-core-executor = { path="../../cita-executor/core", default-features = false}
