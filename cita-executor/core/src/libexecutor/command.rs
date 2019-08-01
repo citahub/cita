@@ -32,7 +32,7 @@ use crate::trie_db::TrieDB;
 use crate::types::ids::BlockId;
 use crate::types::transaction::{Action, SignedTransaction, Transaction};
 pub use byteorder::{BigEndian, ByteOrder};
-use cita_database::RocksDB;
+use cita_database::Database;
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 use cita_vm::state::{State as CitaState, StateObjectInfo};
@@ -297,7 +297,7 @@ impl Commander for Executor {
         };
 
         let state = match CitaState::from_existing(
-            Arc::<TrieDB<RocksDB>>::clone(&self.state_db),
+            Arc::<TrieDB<Database>>::clone(&self.state_db),
             state_root,
         ) {
             Ok(state_db) => state_db,

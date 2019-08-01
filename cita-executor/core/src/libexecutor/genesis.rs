@@ -20,7 +20,7 @@ use crate::libexecutor::executor::{CitaDB, CitaTrieDB};
 use crate::types::db::DBIndex;
 use crate::types::extras::*;
 use crate::types::header::Header;
-use cita_database::{DataCategory, Database};
+use cita_database::DataCategory;
 use cita_types::traits::ConvertType;
 use cita_types::{clean_0x, Address, H256, U256};
 use cita_vm::state::{State as CitaState, StateObjectInfo};

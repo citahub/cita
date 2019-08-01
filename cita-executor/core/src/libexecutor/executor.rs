@@ -39,8 +39,8 @@ use std::convert::Into;
 use std::sync::Arc;
 use util::RwLock;
 
-pub type CitaTrieDB = TrieDB<RocksDB>;
-pub type CitaDB = RocksDB;
+pub type CitaTrieDB = TrieDB<Database>;
+pub type CitaDB = Database;
 
 pub struct Executor {
     pub current_header: RwLock<Header>,
