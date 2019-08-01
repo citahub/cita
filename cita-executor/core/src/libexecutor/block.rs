@@ -97,7 +97,6 @@ impl ExecutedBlock {
 
         // Need only one state reference for the whole block transaction.
         let state = Arc::new(RefCell::new(state));
-
         let r = ExecutedBlock {
             block,
             state,
@@ -334,7 +333,7 @@ impl ExecutedBlock {
         }
         // Rebuild block
         let mut block = Block::new(self.block);
-        let state_root = self.state_root;
+        let state_root = self.state.borrow().root;
         block.set_state_root(state_root);
         let receipts_root = cita_merklehash::Tree::from_hashes(
             self.receipts

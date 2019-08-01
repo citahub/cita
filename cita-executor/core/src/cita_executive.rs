@@ -442,9 +442,14 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
     }
 
     fn call_evm(&mut self, params: &VmExecParams) -> Result<ExecutedResult, ExecutionError> {
-        let evm_transaction = build_evm_transaction(params);
-        let evm_config = build_evm_config(self.env_info.gas_limit.as_u64());
+        let mut evm_transaction = build_evm_transaction(params);
+        let mut evm_config = build_evm_config(self.env_info.gas_limit.as_u64());
         let evm_context = build_evm_context(&self.env_info);
+
+        if !self.payment_required() {
+            evm_transaction.value = U256::from(0);
+            evm_config.check_balance = false;
+        }
 
         trace!("Call evm with params: {:?}", params);
         let mut result = match cita_vm::exec(
@@ -544,8 +549,8 @@ pub fn build_evm_config(block_gas_limit: u64) -> VMConfig {
     VMConfig {
         // block_gas_limit is meaningless in cita_vm, so let it as default_block_quota_limit.
         block_gas_limit,
-        check_nonce: false,
-        check_balance: true,
+        check_nonce: true,
+        ..Default::default()
     }
 }
 
@@ -559,21 +564,31 @@ fn build_result_with_ok(init_gas: U256, ret: InterpreterResult) -> ExecutedResul
             result.logs = transform_logs(logs);
             result.logs_bloom = logs_to_bloom(&result.logs);
 
-            trace!("Get data after executed the transaction: {:?}", data);
+            trace!(
+                "Get data after executed the transaction [Normal]: {:?}",
+                data
+            );
             result.output = data;
         }
-        InterpreterResult::Revert(_data, quota_left) => {
+        InterpreterResult::Revert(data, quota_left) => {
             result.quota_used = init_gas - U256::from(quota_left);
             result.quota_left = U256::from(quota_left);
+            trace!(
+                "Get data after executed the transaction [Revert]: {:?}",
+                data
+            );
         }
-        InterpreterResult::Create(_data, quota_left, logs, contract_address) => {
+        InterpreterResult::Create(data, quota_left, logs, contract_address) => {
             result.quota_used = init_gas - U256::from(quota_left);
             result.quota_left = U256::from(quota_left);
             result.logs = transform_logs(logs);
             result.logs_bloom = logs_to_bloom(&result.logs);
 
-            let address_slice: &[u8] = contract_address.as_ref();
-            result.contract_address = Some(H160::from(address_slice));
+            result.contract_address = Some(contract_address);
+            trace!(
+                "Get data after executed the transaction [Create], contract address: {:?}, contract data : {:?}",
+                result.contract_address, data
+            );
         }
     };
     result

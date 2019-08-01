@@ -296,8 +296,6 @@ impl Commander for Executor {
             return Err(CallError::StatePruned);
         };
 
-        trace!("Get state from state root {:?}", state_root);
-
         let state = match CitaState::from_existing(
             Arc::<TrieDB<RocksDB>>::clone(&self.state_db),
             state_root,
