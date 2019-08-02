@@ -94,27 +94,27 @@ impl<'a> UserManagement<'a> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    extern crate cita_logger as logger;
-
-    use super::UserManagement;
-    use crate::tests::helpers::init_executor;
-    use crate::types::ids::BlockId;
-    use crate::types::reserved_addresses;
-    use cita_types::{Address, H160};
-    use std::str::FromStr;
-
-    #[test]
-    fn test_all_groups() {
-        let executor = init_executor();
-
-        let user_management = UserManagement::new(&executor);
-        let all_groups: Vec<Address> = user_management.all_groups(BlockId::Pending).unwrap();
-
-        assert_eq!(
-            all_groups,
-            vec![H160::from_str(reserved_addresses::GROUP).unwrap()]
-        );
-    }
-}
+//#[cfg(test)]
+//mod tests {
+//    extern crate cita_logger as logger;
+//
+//    use super::UserManagement;
+//    use crate::tests::helpers::init_executor;
+//    use crate::types::ids::BlockId;
+//    use crate::types::reserved_addresses;
+//    use cita_types::{Address, H160};
+//    use std::str::FromStr;
+//
+//    #[test]
+//    fn test_all_groups() {
+//        let executor = init_executor();
+//
+//        let user_management = UserManagement::new(&executor);
+//        let all_groups: Vec<Address> = user_management.all_groups(BlockId::Pending).unwrap();
+//
+//        assert_eq!(
+//            all_groups,
+//            vec![H160::from_str(reserved_addresses::GROUP).unwrap()]
+//        );
+//    }
+//}

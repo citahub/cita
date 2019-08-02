@@ -183,16 +183,28 @@ mod tests {
         };
         match new_status {
             StatusOfFSM::Initialize(open_block) => StatusOfFSM::Initialize(open_block),
-            StatusOfFSM::Pause(mut executed_block, iter) => {
-                executed_block.state.commit().expect("commit state");
+            StatusOfFSM::Pause(executed_block, iter) => {
+                executed_block
+                    .state
+                    .borrow_mut()
+                    .commit()
+                    .expect("commit state");
                 StatusOfFSM::Pause(executed_block, iter)
             }
-            StatusOfFSM::Execute(mut executed_block, iter) => {
-                executed_block.state.commit().expect("commit state");
+            StatusOfFSM::Execute(executed_block, iter) => {
+                executed_block
+                    .state
+                    .borrow_mut()
+                    .commit()
+                    .expect("commit state");
                 StatusOfFSM::Execute(executed_block, iter)
             }
-            StatusOfFSM::Finalize(mut executed_block) => {
-                executed_block.state.commit().expect("commit state");
+            StatusOfFSM::Finalize(executed_block) => {
+                executed_block
+                    .state
+                    .borrow_mut()
+                    .commit()
+                    .expect("commit state");
                 StatusOfFSM::Finalize(executed_block)
             }
         }
@@ -342,13 +354,11 @@ mod tests {
 
         // 2. execute 1th transaction
         let transaction = executed_block.body().transactions[0].clone();
-        executed_block.apply_transaction(
-            &*executor.engine,
-            &transaction,
-            &executor.sys_config.block_sys_config.clone(),
-        );
+        executed_block
+            .apply_transaction(&transaction, &executor.sys_config.block_sys_config.clone());
         executed_block
             .state
+            .borrow_mut()
             .commit()
             .expect("commit state to re-calculate state root");
         let (status_of_pause_1th, mut executed_block) = transit_and_assert(
@@ -363,13 +373,11 @@ mod tests {
 
         // 4. continue until finalize
         let transaction = executed_block.body().transactions[1].clone();
-        executed_block.apply_transaction(
-            &*executor.engine,
-            &transaction,
-            &executor.sys_config.block_sys_config.clone(),
-        );
+        executed_block
+            .apply_transaction(&transaction, &executor.sys_config.block_sys_config.clone());
         executed_block
             .state
+            .borrow_mut()
             .commit()
             .expect("commit state to re-calculate state root");
         let mut status = status_of_pause_1th;
@@ -416,14 +424,12 @@ mod tests {
         let mut transactions = { executed_block.body.transactions.clone() };
         for transaction in transactions.iter_mut() {
             // let mut t = transaction.clone();
-            executed_block.apply_transaction(
-                &*executor.engine,
-                &transaction,
-                &executor.sys_config.block_sys_config.clone(),
-            );
+            executed_block
+                .apply_transaction(&transaction, &executor.sys_config.block_sys_config.clone());
         }
         executed_block
             .state
+            .borrow_mut()
             .commit()
             .expect("commit state to re-calculate state root");
         let mut status = status_of_pause;

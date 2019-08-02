@@ -120,7 +120,7 @@ pub fn init_executor2(
     env::set_var("DATA_PATH", data_path);
     let executor = Executor::init(
         genesis_path.to_str().unwrap(),
-        "archive".to_string(),
+        tempdir.to_str().unwrap().to_string(),
         fsm_req_receiver,
         fsm_resp_sender,
         command_req_receiver,

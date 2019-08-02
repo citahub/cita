@@ -227,52 +227,52 @@ impl SimpleStorage {
     }
 }
 
-#[test]
-
-fn test_native_contract() {
-    use super::factory::Factory;
-    use crate::types::reserved_addresses;
-    use cita_types::Address;
-    use evm::fake_tests::FakeExt;
-    use std::str::FromStr;
-
-    let factory = Factory::default();
-    let mut data_provider = FakeExt::new();
-    let native_addr = Address::from_str(reserved_addresses::NATIVE_SIMPLE_STORAGE).unwrap();
-    let value = U256::from(0x1234);
-    {
-        let mut params = VmExecParams::default();
-        let mut input = Vec::new();
-        let index = 0xaa91543eu32;
-        serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite)
-            .expect("failed to serialize u32");
-        for i in value.0.iter().rev() {
-            serialize_into::<_, _, _, BigEndian>(&mut input, &i, Infinite)
-                .expect("failed to serialize u64");
-        }
-        params.data = Some(input);
-        let mut contract = factory.new_contract(native_addr).unwrap();
-        let output = contract.exec(&params, &mut data_provider).unwrap();
-    }
-    {
-        let mut input = Vec::new();
-        let mut params = VmExecParams::default();
-        let index = 0x832b4580u32;
-        serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite)
-            .expect("failed to serialize u32");
-        params.data = Some(input);
-
-        let mut contract = factory.new_contract(native_addr).unwrap();
-        match contract.exec(&params, &mut data_provider) {
-            Ok(GasLeft::NeedsReturn {
-                gas_left: _,
-                data: return_data,
-                apply_state: true,
-            }) => {
-                let real = U256::from(&*return_data);
-                assert!(real == value);
-            }
-            _ => assert!(false, "no output data"),
-        };
-    }
-}
+//#[test]
+//
+//fn test_native_contract() {
+//    use super::factory::Factory;
+//    use crate::types::reserved_addresses;
+//    use cita_types::Address;
+//    use evm::fake_tests::FakeExt;
+//    use std::str::FromStr;
+//
+//    let factory = Factory::default();
+//    let mut data_provider = FakeExt::new();
+//    let native_addr = Address::from_str(reserved_addresses::NATIVE_SIMPLE_STORAGE).unwrap();
+//    let value = U256::from(0x1234);
+//    {
+//        let mut params = VmExecParams::default();
+//        let mut input = Vec::new();
+//        let index = 0xaa91543eu32;
+//        serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite)
+//            .expect("failed to serialize u32");
+//        for i in value.0.iter().rev() {
+//            serialize_into::<_, _, _, BigEndian>(&mut input, &i, Infinite)
+//                .expect("failed to serialize u64");
+//        }
+//        params.data = Some(input);
+//        let mut contract = factory.new_contract(native_addr).unwrap();
+//        let output = contract.exec(&params, &mut data_provider).unwrap();
+//    }
+//    {
+//        let mut input = Vec::new();
+//        let mut params = VmExecParams::default();
+//        let index = 0x832b4580u32;
+//        serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite)
+//            .expect("failed to serialize u32");
+//        params.data = Some(input);
+//
+//        let mut contract = factory.new_contract(native_addr).unwrap();
+//        match contract.exec(&params, &mut data_provider) {
+//            Ok(GasLeft::NeedsReturn {
+//                gas_left: _,
+//                data: return_data,
+//                apply_state: true,
+//            }) => {
+//                let real = U256::from(&*return_data);
+//                assert!(real == value);
+//            }
+//            _ => assert!(false, "no output data"),
+//        };
+//    }
+//}

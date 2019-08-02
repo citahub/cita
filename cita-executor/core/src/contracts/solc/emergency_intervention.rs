@@ -60,17 +60,17 @@ impl<'a> EmergencyIntervention<'a> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::EmergencyIntervention;
-    use crate::tests::helpers::init_executor;
-    use crate::types::ids::BlockId;
-
-    #[test]
-    fn test_state() {
-        let executor = init_executor();
-        let emergency_intervention = EmergencyIntervention::new(&executor);
-        let state = emergency_intervention.state(BlockId::Pending).unwrap();
-        assert_eq!(state, false);
-    }
-}
+//#[cfg(test)]
+//mod tests {
+//    use super::EmergencyIntervention;
+//    use crate::tests::helpers::init_executor;
+//    use crate::types::ids::BlockId;
+//
+//    #[test]
+//    fn test_state() {
+//        let executor = init_executor();
+//        let emergency_intervention = EmergencyIntervention::new(&executor);
+//        let state = emergency_intervention.state(BlockId::Pending).unwrap();
+//        assert_eq!(state, false);
+//    }
+//}
