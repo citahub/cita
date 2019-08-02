@@ -44,7 +44,7 @@ use std::sync::Arc;
 
 use cita_vm::{state::MemoryDB, state::State};
 
-// const CHAIN_CONFIG: &str = "chain.toml";
+const CHAIN_CONFIG: &str = "chain.toml";
 const SCRIPTS_DIR: &str = "../../scripts";
 
 pub fn get_temp_state() -> State<MemoryDB> {

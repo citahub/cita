@@ -17,6 +17,7 @@ use crate::authentication::{check_permission, AuthenticationError};
 use crate::contracts::native::factory::{Factory as NativeFactory, NativeError};
 use crate::core_types::{Bloom, BloomInput, Hash, TypesError};
 use crate::error::CallError;
+use crate::libexecutor::amend::{Amend, AmendError, AmendResult};
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::tx_gas_schedule::TxGasSchedule;
@@ -27,17 +28,6 @@ use crate::types::BlockNumber;
 /// Simple vector of hashes, should be at most 256 items large, can be smaller if being used
 /// for a block whose number is less than 257.
 pub type LastHashes = Vec<H256>;
-
-///amend the abi data
-const AMEND_ABI: u32 = 1;
-///amend the account code
-const AMEND_CODE: u32 = 2;
-///amend the kv of db
-const AMEND_KV_H256: u32 = 3;
-///amend get the value of db
-const AMEND_GET_KV_H256: u32 = 4;
-///amend account's balance
-const AMEND_ACCOUNT_BALANCE: u32 = 5;
 
 // FIXME: CITAExecutive need rename to Executive after all works ready.
 pub struct CitaExecutive<'a, B> {
@@ -75,7 +65,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         self.state_provider.borrow_mut().inc_nonce(&sender)?;
 
         trace!(
-            "call contract permission should be check: {}",
+            "call contract permission check: {}",
             (*conf).check_options.call_permission
         );
 
@@ -105,14 +95,19 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             return Err(ExecutionError::VM(VMError::NotEnoughBaseGas));
         }
 
-        if t.action == Action::AbiStore && !self.transact_set_abi(&t.data) {
-            return Err(ExecutionError::TransactionMalformed(
-                "Account doesn't exist".to_owned(),
-            ));
+        let mut amend = Amend::new(self.state_provider.clone());
+        if t.action == Action::AbiStore {
+            match amend.transact_set_abi(&t.data) {
+                Ok(AmendResult::Set(false)) | Err(_) => {
+                    return Err(ExecutionError::TransactionMalformed(
+                        "Account doesn't exist".to_owned(),
+                    ));
+                }
+                _ => unimplemented!(),
+            }
         }
 
         let init_gas = t.gas - U256::from(base_gas_required);
-
         let result = match t.action {
             Action::Store | Action::AbiStore => {
                 // Prepaid t.gas for the transaction.
@@ -165,38 +160,43 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
                 // Prepaid for the transaction
                 self.prepaid(t.sender(), t.gas, t.gas_price, t.value)?;
-
                 // Backup used in case of running error
                 self.state_provider.borrow_mut().checkpoint();
 
-                match self.call_amend_data(t.value, Some(t.data.clone())) {
-                    Ok(Some(val)) => {
+                match amend.call_amend_data(t.value, Some(t.data.clone())) {
+                    Ok(AmendResult::Set(true)) => {
                         // Discard the checkpoint because of amend data ok.
                         self.state_provider.borrow_mut().discard_checkpoint();
-
                         let mut result = ExecutedResult::default();
                         // Refund gas, AmendData do not use any additional gas.
                         result.quota_left = init_gas;
                         result.is_evm_call = false;
-                        result.output = val.to_vec();
                         Ok(result)
                     }
-                    Ok(None) => {
+                    Ok(AmendResult::Get(val)) => {
                         // Discard the checkpoint because of amend data ok.
                         self.state_provider.borrow_mut().discard_checkpoint();
-
                         let mut result = ExecutedResult::default();
                         // Refund gas, AmendData do not use any additional gas.
                         result.quota_left = init_gas;
+                        result.is_evm_call = false;
+                        if let Some(v) = val {
+                            result.output = v.to_vec();
+                        }
+                        Ok(result)
+                    }
+                    Ok(AmendResult::Set(false)) => {
+                        // Need to revert the state.
+                        self.state_provider.borrow_mut().revert_checkpoint();
+                        let mut result = ExecutedResult::default();
                         result.is_evm_call = false;
                         Ok(result)
                     }
                     Err(e) => {
-                        let mut result = ExecutedResult::default();
-
                         // Need to revert the state.
                         self.state_provider.borrow_mut().revert_checkpoint();
-                        result.exception = Some(e);
+                        let mut result = ExecutedResult::default();
+                        result.exception = Some(e.into());
                         result.is_evm_call = false;
                         Ok(result)
                     }
@@ -328,148 +328,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 .map_err(ExecutionError::State)
         } else {
             Ok(())
-        }
-    }
-
-    fn transact_set_abi(&mut self, data: &[u8]) -> bool {
-        if data.len() <= 20 {
-            return false;
-        }
-
-        let account = H160::from(&data[0..20]);
-        let abi = &data[20..];
-
-        info!("Set abi for contract address: {:?}", account);
-
-        self.state_provider
-            .borrow_mut()
-            .exist(&account)
-            .map(|exists| {
-                exists
-                    && self
-                        .state_provider
-                        .borrow_mut()
-                        .set_abi(&account, abi.to_vec())
-                        .is_ok()
-            })
-            .unwrap_or(false)
-    }
-
-    fn transact_set_code(&mut self, data: &[u8]) -> bool {
-        if data.len() <= 20 {
-            return false;
-        }
-        let account = H160::from(&data[0..20]);
-        let code = &data[20..];
-        self.state_provider
-            .borrow_mut()
-            .set_code(&account, code.to_vec())
-            .is_ok()
-    }
-
-    fn transact_set_balance(&mut self, data: &[u8]) -> bool {
-        if data.len() < 52 {
-            return false;
-        }
-        let account = H160::from(&data[0..20]);
-        let balance = U256::from(&data[20..52]);
-        self.state_provider
-            .borrow_mut()
-            .balance(&account)
-            .and_then(|now_val| {
-                if now_val >= balance {
-                    self.state_provider
-                        .borrow_mut()
-                        .sub_balance(&account, now_val - balance)
-                } else {
-                    self.state_provider
-                        .borrow_mut()
-                        .add_balance(&account, balance - now_val)
-                }
-            })
-            .is_ok()
-    }
-
-    fn transact_set_kv_h256(&mut self, data: &[u8]) -> bool {
-        let len = data.len();
-        if len < 84 {
-            return false;
-        }
-        let loop_num: usize = (len - 20) / (32 * 2);
-        let account = H160::from(&data[0..20]);
-
-        for i in 0..loop_num {
-            let base = 20 + 32 * 2 * i;
-            let key = H256::from_slice(&data[base..base + 32]);
-            let val = H256::from_slice(&data[base + 32..base + 32 * 2]);
-            if self
-                .state_provider
-                .borrow_mut()
-                .set_storage(&account, key, val)
-                .is_err()
-            {
-                return false;
-            }
-        }
-        true
-    }
-
-    fn transact_get_kv_h256(&mut self, data: &[u8]) -> Option<H256> {
-        let account = H160::from(&data[0..20]);
-        let key = H256::from_slice(&data[20..52]);
-        self.state_provider
-            .borrow_mut()
-            .get_storage(&account, &key)
-            .ok()
-    }
-
-    fn call_amend_data(
-        &mut self,
-        value: U256,
-        data: Option<Bytes>,
-    ) -> Result<Option<H256>, ExecutionError> {
-        let amend_type = value.low_u32();
-        match amend_type {
-            AMEND_ABI => {
-                if self.transact_set_abi(&(data.to_owned().unwrap())) {
-                    Ok(None)
-                } else {
-                    Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
-                }
-            }
-            AMEND_CODE => {
-                if self.transact_set_code(&(data.to_owned().unwrap())) {
-                    Ok(None)
-                } else {
-                    Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
-                }
-            }
-            AMEND_KV_H256 => {
-                if self.transact_set_kv_h256(&(data.to_owned().unwrap())) {
-                    Ok(None)
-                } else {
-                    Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
-                }
-            }
-            AMEND_GET_KV_H256 => {
-                if let Some(v) = self.transact_get_kv_h256(&(data.to_owned().unwrap())) {
-                    Ok(Some(v))
-                } else {
-                    Err(ExecutionError::Internal(
-                        "May be incomplete trie error".to_owned(),
-                    ))
-                }
-            }
-            AMEND_ACCOUNT_BALANCE => {
-                if self.transact_set_balance(&(data.to_owned().unwrap())) {
-                    Ok(None)
-                } else {
-                    Err(ExecutionError::Internal(
-                        "Account doesn't exist or incomplete trie error".to_owned(),
-                    ))
-                }
-            }
-            _ => Ok(None),
         }
     }
 
@@ -681,6 +539,7 @@ pub enum ExecutionError {
     TransactionMalformed(String),
     Authentication(AuthenticationError),
     NativeContract(NativeError),
+    Amend(AmendError),
 }
 
 impl Error for ExecutionError {}
@@ -689,12 +548,13 @@ impl fmt::Display for ExecutionError {
         let printable = match *self {
             ExecutionError::VM(ref err) => format!("vm error: {:?}", err),
             ExecutionError::State(ref err) => format!("state error: {:?}", err),
-            ExecutionError::NotFound => "not found".to_owned(),
+            ExecutionError::NotFound => "not found".to_string(),
             ExecutionError::Types(ref err) => format!("types error: {:?}", err),
             ExecutionError::Internal(ref err) => format!("internal error: {:?}", err),
             ExecutionError::TransactionMalformed(ref err) => format!("internal error: {:?}", err),
             ExecutionError::Authentication(ref err) => format!("internal error: {:?}", err),
             ExecutionError::NativeContract(ref err) => format!("internal error: {:?}", err),
+            ExecutionError::Amend(ref err) => format!("amend error: {:?}", err),
         };
         write!(f, "{}", printable)
     }
@@ -721,6 +581,12 @@ impl From<TypesError> for ExecutionError {
 impl From<NativeError> for ExecutionError {
     fn from(err: NativeError) -> Self {
         ExecutionError::NativeContract(err)
+    }
+}
+
+impl From<AmendError> for ExecutionError {
+    fn from(err: AmendError) -> Self {
+        ExecutionError::Amend(err)
     }
 }
 
