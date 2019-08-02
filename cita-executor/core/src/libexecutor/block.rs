@@ -17,7 +17,7 @@
 
 use crate::authentication::AuthenticationError;
 use crate::basic_types::LogBloom;
-use crate::cita_executive::{CitaExecutive, EnvInfo, ExecutionError};
+use crate::cita_executive::{CitaExecutive, EnvInfo, ExecutedException, ExecutionError};
 use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::core::env_info::LastHashes;
 use crate::error::Error;
@@ -176,30 +176,27 @@ impl ExecutedBlock {
                 // Note: ret.quota_used was a current transaction quota used.
                 // FIXME: hasn't handle some errors
                 let receipt_error = ret.exception.and_then(|error| match error {
-                    ExecutionError::VM(VMError::Evm(EVMError::OutOfGas)) => {
+                    ExecutedException::VM(VMError::Evm(EVMError::OutOfGas)) => {
                         Some(ReceiptError::OutOfQuota)
                     }
-                    ExecutionError::VM(VMError::Evm(EVMError::InvalidJumpDestination)) => {
+                    ExecutedException::VM(VMError::Evm(EVMError::InvalidJumpDestination)) => {
                         Some(ReceiptError::BadJumpDestination)
                     }
-                    ExecutionError::VM(VMError::Evm(EVMError::InvalidOpcode)) => {
+                    ExecutedException::VM(VMError::Evm(EVMError::InvalidOpcode)) => {
                         Some(ReceiptError::BadInstruction)
                     }
                     // ExecutionError::VM(VMError::Evm(EVMError::OutOfStack)) => Some(ReceiptError::StackUnderflow),
-                    ExecutionError::VM(VMError::Evm(EVMError::OutOfStack)) => {
+                    ExecutedException::VM(VMError::Evm(EVMError::OutOfStack)) => {
                         Some(ReceiptError::OutOfStack)
                     }
-                    ExecutionError::VM(VMError::Evm(EVMError::MutableCallInStaticContext)) => {
+                    ExecutedException::VM(VMError::Evm(EVMError::MutableCallInStaticContext)) => {
                         Some(ReceiptError::MutableCallInStaticContext)
                     }
-                    ExecutionError::VM(VMError::Evm(EVMError::Internal(_))) => {
-                        Some(ReceiptError::Internal)
-                    }
-                    ExecutionError::VM(VMError::Evm(EVMError::OutOfBounds)) => {
+                    ExecutedException::VM(VMError::Evm(EVMError::OutOfBounds)) => {
                         Some(ReceiptError::OutOfBounds)
                     }
+                    ExecutedException::Reverted => Some(ReceiptError::Reverted),
                     _ => Some(ReceiptError::Internal),
-                    //EvmError::Reverted => Some(ReceiptError::Reverted),
                 });
 
                 // Note: quota_used in Receipt is self.current_quota_used, this will be
@@ -220,20 +217,16 @@ impl ExecutedBlock {
             Err(err) => {
                 // FIXME: hasn't handle some errors.
                 let receipt_error = match err {
-                    ExecutionError::VM(VMError::NotEnoughBaseGas) => {
-                        Some(ReceiptError::NotEnoughBaseQuota)
-                    }
+                    ExecutionError::NotEnoughBaseGas => Some(ReceiptError::NotEnoughBaseQuota),
                     // FIXME: need to handle this two situation.
-                    ExecutionError::VM(VMError::ExccedMaxBlockGasLimit) => {
+                    ExecutionError::BlockQuotaLimitReached => {
                         Some(ReceiptError::BlockQuotaLimitReached)
                     }
-                    //                    ExecutionError::AccountGasLimitReached { .. } => {
-                    //                        Some(ReceiptError::AccountQuotaLimitReached)
-                    //                    }
-                    ExecutionError::VM(VMError::InvalidNonce) => Some(ReceiptError::InvalidNonce),
-                    ExecutionError::VM(VMError::NotEnoughBalance) => {
-                        Some(ReceiptError::NotEnoughCash)
+                    ExecutionError::AccountQuotaLimitReached => {
+                        Some(ReceiptError::AccountQuotaLimitReached)
                     }
+                    ExecutionError::InvalidNonce => Some(ReceiptError::InvalidNonce),
+                    ExecutionError::NotEnoughBalance => Some(ReceiptError::NotEnoughCash),
                     ExecutionError::Authentication(
                         AuthenticationError::NoTransactionPermission,
                     ) => Some(ReceiptError::NoTransactionPermission),

@@ -221,7 +221,7 @@ fn get_groups(group_accounts: &HashMap<Address, Vec<Address>>, account: &Address
     groups
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum AuthenticationError {
     NoTransactionPermission,
     NoContractPermission,

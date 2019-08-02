@@ -1,7 +1,7 @@
 use cita_trie::DB;
 use cita_types::{Address, H160, H256, U256, U512};
 use cita_vm::{
-    evm::{Context as EVMContext, InterpreterResult, Log as EVMLog},
+    evm::{Context as EVMContext, Error as EVMError, InterpreterResult, Log as EVMLog},
     state::{Error as StateError, State, StateObjectInfo},
     BlockDataProvider, Config as VMConfig, DataProvider, Error as VMError, Store as VmSubState,
     Transaction as EVMTransaction,
@@ -15,7 +15,7 @@ use util::Bytes;
 
 use crate::authentication::{check_permission, AuthenticationError};
 use crate::contracts::native::factory::{Factory as NativeFactory, NativeError};
-use crate::core_types::{Bloom, BloomInput, Hash, TypesError};
+use crate::core_types::{Bloom, BloomInput, Hash};
 use crate::error::CallError;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
@@ -101,7 +101,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             //        got: U256,
             //    }
             // Need to change VMError defined in cita-vm.
-            return Err(ExecutionError::VM(VMError::NotEnoughBaseGas));
+            return Err(ExecutionError::NotEnoughBaseGas);
         }
 
         if t.action == Action::AbiStore && !self.transact_set_abi(&t.data) {
@@ -129,7 +129,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 } else {
                     // FIXME: Should not return an error after self.prepaid().
                     // But for compatibility, should keep this. Need to be upgrade in new version.
-                    return Err(ExecutionError::VM(VMError::NotEnoughBaseGas));
+                    return Err(ExecutionError::NotEnoughBaseGas);
                 }
             }
             Action::Create => {
@@ -184,7 +184,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
                         // Need to revert the state.
                         self.state_provider.borrow_mut().revert_checkpoint();
-                        result.exception = Some(e);
+                        result.exception = Some(ExecutedException::VM(e));
                         result.is_evm_call = false;
                         Ok(result)
                     }
@@ -205,31 +205,37 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             }
         };
 
-        let mut finalize_result = if let Ok(res) = result {
-            if let Some(ref e) = res.exception {
-                match e {
-                    // Note: cita-vm has not deduct cost for this four error.
-                    ExecutionError::VM(VMError::ExccedMaxBlockGasLimit) => {
-                        return Err(ExecutionError::VM(VMError::ExccedMaxBlockGasLimit))
+        let mut finalize_result = match result {
+            Ok(res) => {
+                if let Some(ref e) = res.exception {
+                    match e {
+                        // Note: cita-vm has not deduct cost for this four error.
+                        ExecutedException::VM(VMError::ExccedMaxBlockGasLimit) => {
+                            return Err(ExecutionError::BlockQuotaLimitReached)
+                        }
+                        ExecutedException::VM(VMError::InvalidNonce) => {
+                            return Err(ExecutionError::InvalidNonce)
+                        }
+                        ExecutedException::VM(VMError::NotEnoughBaseGas) => {
+                            return Err(ExecutionError::NotEnoughBaseGas)
+                        }
+                        ExecutedException::VM(VMError::NotEnoughBalance) => {
+                            return Err(ExecutionError::NotEnoughBalance)
+                        }
+                        _ => {}
                     }
-                    ExecutionError::VM(VMError::InvalidNonce) => {
-                        return Err(ExecutionError::VM(VMError::InvalidNonce))
-                    }
-                    ExecutionError::VM(VMError::NotEnoughBaseGas) => {
-                        return Err(ExecutionError::VM(VMError::NotEnoughBaseGas))
-                    }
-                    ExecutionError::VM(VMError::NotEnoughBalance) => {
-                        return Err(ExecutionError::VM(VMError::NotEnoughBalance))
-                    }
-                    _ => {}
                 }
+                res
             }
-            res
-        } else {
-            let mut r = ExecutedResult::default();
-            r.quota_left = U256::from(0);
-            r.is_evm_call = false;
-            r
+            Err(_) => {
+                // Don't care about what is the error info in this situation, just let it as
+                // ReceiptError::Internal in Receipt.
+                let mut r = ExecutedResult::default();
+                r.quota_left = U256::from(0);
+                r.quota_used = t.gas;
+                r.is_evm_call = false;
+                r
+            }
         };
 
         if !finalize_result.is_evm_call {
@@ -268,7 +274,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             // Avoid unaffordable transactions
             let balance512 = U512::from(balance);
             if balance512 < total_cost {
-                return Err(ExecutionError::VM(VMError::NotEnoughBalance));
+                return Err(ExecutionError::NotEnoughBalance);
             }
             self.state_provider
                 .borrow_mut()
@@ -282,7 +288,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             self.state_provider
                 .borrow_mut()
                 .add_balance(address, value)
-                .map_err(ExecutionError::State)
+                .map_err(ExecutionError::from)
         } else {
             Ok(())
         }
@@ -297,7 +303,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             self.state_provider
                 .borrow_mut()
                 .add_balance(coin_base, fee_value)
-                .map_err(ExecutionError::State)
+                .map_err(ExecutionError::from)
         } else {
             Ok(())
         }
@@ -313,7 +319,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             self.state_provider
                 .borrow_mut()
                 .transfer_balance(from, to, value)
-                .map_err(ExecutionError::State)
+                .map_err(ExecutionError::from)
         } else {
             Ok(())
         }
@@ -402,28 +408,34 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         true
     }
 
-    fn call_amend_data(&mut self, value: U256, data: Option<Bytes>) -> Result<(), ExecutionError> {
+    fn call_amend_data(&mut self, value: U256, data: Option<Bytes>) -> Result<(), VMError> {
         let amend_type = value.low_u32();
         match amend_type {
             AMEND_ABI => {
                 if self.transact_set_abi(&(data.to_owned().unwrap())) {
                     Ok(())
                 } else {
-                    Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
+                    Err(VMError::Evm(EVMError::Internal(
+                        "Account doesn't exist".to_owned(),
+                    )))
                 }
             }
             AMEND_CODE => {
                 if self.transact_set_code(&(data.to_owned().unwrap())) {
                     Ok(())
                 } else {
-                    Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
+                    Err(VMError::Evm(EVMError::Internal(
+                        "Account doesn't exist".to_owned(),
+                    )))
                 }
             }
             AMEND_KV_H256 => {
                 if self.transact_set_kv_h256(&(data.to_owned().unwrap())) {
                     Ok(())
                 } else {
-                    Err(ExecutionError::Internal("Account doesn't exist".to_owned()))
+                    Err(VMError::Evm(EVMError::Internal(
+                        "Account doesn't exist".to_owned(),
+                    )))
                 }
             }
 
@@ -431,9 +443,9 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 if self.transact_set_balance(&(data.to_owned().unwrap())) {
                     Ok(())
                 } else {
-                    Err(ExecutionError::Internal(
+                    Err(VMError::Evm(EVMError::Internal(
                         "Account doesn't exist or incomplete trie error".to_owned(),
-                    ))
+                    )))
                 }
             }
 
@@ -510,7 +522,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                     self.state_provider.borrow_mut().revert_checkpoint();
 
                     let mut result = ExecutedResult::default();
-                    result.exception = Some(ExecutionError::NativeContract(e));
+                    result.exception = Some(ExecutedException::NativeContract(e));
                     result.is_evm_call = false;
                     result
                 }
@@ -596,7 +608,7 @@ fn build_result_with_ok(init_gas: U256, ret: InterpreterResult) -> ExecutedResul
 
 fn build_result_with_err(err: VMError) -> ExecutedResult {
     let mut result = ExecutedResult::default();
-    result.exception = Some(ExecutionError::VM(err));
+    result.exception = Some(ExecutedException::VM(err));
     result
 }
 
@@ -639,56 +651,51 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
     From::from(stream.out().crypt_hash())
 }
 
-#[derive(Debug)]
+// All the EVMError will be set into ExecutedResult's exception.
+// And some of them which need return Err in CitaExecutive.exec will be set to ExecutionError too.
+/// Error Result for execute a transaction
+#[derive(Debug, PartialEq)]
 pub enum ExecutionError {
-    VM(VMError),
-    State(StateError),
-    NotFound,
-    Types(TypesError),
+    /// Return when internal vm error occurs.
     Internal(String),
+    /// Return when generic transaction occurs.
     TransactionMalformed(String),
+    /// Return when authentication error occurs.
     Authentication(AuthenticationError),
-    NativeContract(NativeError),
+    /// Return when the quota_limit in transaction lower then base quota required.
+    NotEnoughBaseGas,
+    /// Return when transaction nonce does not match state nonce.
+    InvalidNonce,
+    /// Return when the cost of transaction (value + quota_price * quota) exceeds.
+    NotEnoughBalance,
+    /// Return when the block quota exceeds block quota limit.
+    BlockQuotaLimitReached,
+    /// Return when sum quota for account in the block exceeds account quota limit.
+    AccountQuotaLimitReached,
 }
 
 impl Error for ExecutionError {}
 impl fmt::Display for ExecutionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let printable = match *self {
-            ExecutionError::VM(ref err) => format!("vm error: {:?}", err),
-            ExecutionError::State(ref err) => format!("state error: {:?}", err),
-            ExecutionError::NotFound => "not found".to_owned(),
-            ExecutionError::Types(ref err) => format!("types error: {:?}", err),
             ExecutionError::Internal(ref err) => format!("internal error: {:?}", err),
             ExecutionError::TransactionMalformed(ref err) => format!("internal error: {:?}", err),
             ExecutionError::Authentication(ref err) => format!("internal error: {:?}", err),
-            ExecutionError::NativeContract(ref err) => format!("internal error: {:?}", err),
+            ExecutionError::NotEnoughBaseGas => "not enough base gas".to_owned(),
+            ExecutionError::InvalidNonce => "invalid nonce".to_owned(),
+            ExecutionError::NotEnoughBalance => "not enough balance".to_owned(),
+            ExecutionError::BlockQuotaLimitReached => "block quota limit reached".to_owned(),
+            ExecutionError::AccountQuotaLimitReached => "account quota limit reached".to_owned(),
         };
         write!(f, "{}", printable)
     }
 }
 
-impl From<VMError> for ExecutionError {
-    fn from(err: VMError) -> Self {
-        ExecutionError::VM(err)
-    }
-}
-
-impl From<StateError> for ExecutionError {
-    fn from(err: StateError) -> Self {
-        ExecutionError::State(err)
-    }
-}
-
-impl From<TypesError> for ExecutionError {
-    fn from(err: TypesError) -> Self {
-        ExecutionError::Types(err)
-    }
-}
-
 impl From<NativeError> for ExecutionError {
     fn from(err: NativeError) -> Self {
-        ExecutionError::NativeContract(err)
+        match err {
+            NativeError::Internal(err_str) => ExecutionError::Internal(err_str),
+        }
     }
 }
 
@@ -703,16 +710,16 @@ impl From<AuthenticationError> for ExecutionError {
     }
 }
 
+impl From<StateError> for ExecutionError {
+    fn from(err: StateError) -> Self {
+        ExecutionError::Internal(format!("{}", err))
+    }
+}
+
 impl Into<CallError> for ExecutionError {
     fn into(self) -> CallError {
         CallError::Exceptional
     }
-}
-/// Transaction execute result.
-#[derive(Debug)]
-pub struct TxExecResult {
-    /// Final amount of gas left.
-    pub gas_left: U256,
 }
 
 #[derive(Clone, Debug)]
@@ -786,6 +793,41 @@ impl Default for EnvInfo {
     }
 }
 
+// There is not reverted expcetion in VMError, so handle this in ExecutedException.
+#[derive(Debug)]
+pub enum ExecutedException {
+    VM(VMError),
+    NativeContract(NativeError),
+    Reverted,
+}
+
+impl Error for ExecutedException {}
+
+impl fmt::Display for ExecutedException {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let printable = match *self {
+            ExecutedException::VM(ref err) => format!("exception in vm: {:?}", err),
+            ExecutedException::NativeContract(ref err) => {
+                format!("exception in native contract: {:?}", err)
+            }
+            ExecutedException::Reverted => "execution reverted".to_owned(),
+        };
+        write!(f, "{}", printable)
+    }
+}
+
+impl From<VMError> for ExecutedException {
+    fn from(err: VMError) -> Self {
+        ExecutedException::VM(err)
+    }
+}
+
+impl From<NativeError> for ExecutedException {
+    fn from(err: NativeError) -> Self {
+        ExecutedException::NativeContract(err)
+    }
+}
+
 #[derive(Default, Debug)]
 pub struct ExecutedResult {
     pub state_root: Hash,
@@ -794,7 +836,7 @@ pub struct ExecutedResult {
     pub quota_left: U256,
     pub logs_bloom: Bloom,
     pub logs: Vec<LogEntry>,
-    pub exception: Option<ExecutionError>,
+    pub exception: Option<ExecutedException>,
     pub contract_address: Option<Address>,
     pub account_nonce: U256,
 
