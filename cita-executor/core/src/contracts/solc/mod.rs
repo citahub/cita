@@ -41,7 +41,7 @@ pub use self::version_management::VersionManager;
 use crate::libexecutor::call_request::CallRequest;
 use crate::libexecutor::command::Commander;
 use crate::libexecutor::executor::Executor;
-use crate::types::ids::BlockId;
+use crate::types::block_tag::BlockTag;
 use cita_types::Address;
 use util::Bytes;
 
@@ -53,7 +53,7 @@ trait ContractCallExt {
         address: &Address,
         encoded_method: &[u8],
         from: Option<Address>,
-        block_id: BlockId,
+        block_id: BlockTag,
     ) -> Result<Bytes, String>;
 }
 
@@ -63,7 +63,7 @@ impl<'a> ContractCallExt for Executor {
         address: &Address,
         encoded_method: &[u8],
         from: Option<Address>,
-        block_id: BlockId,
+        block_id: BlockTag,
     ) -> Result<Bytes, String> {
         let call_request = CallRequest {
             from,

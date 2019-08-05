@@ -18,6 +18,7 @@
 use super::command::{Command, CommandResp, Commander};
 use super::fsm::FSM;
 use super::sys_config::GlobalSysConfig;
+
 use crate::bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 use crate::contracts::solc::NodeManager;
 use crate::core::context::LastHashes;
@@ -26,9 +27,9 @@ pub use crate::libexecutor::block::*;
 use crate::libexecutor::genesis::Genesis;
 use crate::log_blooms::LogBloomGroup;
 use crate::trie_db::TrieDB;
+use crate::types::block_tag::{BlockTag, Tag};
 use crate::types::extras::DBIndex;
 use crate::types::extras::*;
-use crate::types::ids::BlockId;
 pub use byteorder::{BigEndian, ByteOrder};
 use cita_database::{Config, DataCategory, Database, RocksDB, NUM_COLUMNS};
 use cita_types::H256;
@@ -99,7 +100,7 @@ impl Executor {
             eth_compatibility,
         };
 
-        executor.sys_config = GlobalSysConfig::load(&executor, BlockId::Pending);
+        executor.sys_config = GlobalSysConfig::load(&executor, BlockTag::Tag(Tag::Pending));
 
         info!(
             "executor init, current_height: {}, current_hash: {:?}",
@@ -162,10 +163,10 @@ impl Executor {
         }
     }
 
-    pub fn rollback_current_height(&mut self, rollback_id: BlockId) {
+    pub fn rollback_current_height(&mut self, rollback_id: BlockTag) {
         let rollback_height: BlockNumber = match rollback_id {
-            BlockId::Number(height) => height,
-            BlockId::Earliest => 0,
+            BlockTag::Height(height) => height,
+            BlockTag::Tag(Tag::Earliest) => 0,
             _ => unimplemented!(),
         };
         if self.get_current_height() != rollback_height {
@@ -250,18 +251,18 @@ impl Executor {
     }
 
     pub fn genesis_header(&self) -> Header {
-        self.block_header(BlockId::Earliest)
+        self.block_header(BlockTag::Tag(Tag::Earliest))
             .expect("failed to fetch genesis header")
     }
 
-    /// Get block header by BlockId
-    pub fn block_header(&self, id: BlockId) -> Option<Header> {
-        match id {
-            BlockId::Latest => self.block_header_by_height(self.get_latest_height()),
-            BlockId::Hash(hash) => self.block_header_by_hash(hash),
-            BlockId::Number(number) => self.block_header_by_height(number),
-            BlockId::Earliest => self.block_header_by_height(0),
-            BlockId::Pending => self.block_header_by_height(self.get_pending_height()),
+    /// Get block header by BlockTag
+    pub fn block_header(&self, tag: BlockTag) -> Option<Header> {
+        match tag {
+            BlockTag::Tag(Tag::Latest) => self.block_header_by_height(self.get_latest_height()),
+            BlockTag::Hash(hash) => self.block_header_by_hash(hash),
+            BlockTag::Height(number) => self.block_header_by_height(number),
+            BlockTag::Tag(Tag::Earliest) => self.block_header_by_height(0),
+            BlockTag::Tag(Tag::Pending) => self.block_header_by_height(self.get_pending_height()),
         }
     }
 
@@ -350,11 +351,11 @@ impl Executor {
     //    Postman do it to acquire recent 2 blocks' ExecutedResult and save them into backlogs,
     //    which be used to validate arrived Proof (ExecutedResult has "validators" config)
     pub fn executed_result_by_height(&self, height: u64) -> ExecutedResult {
-        let block_id = BlockId::Number(height);
-        let sys_config = GlobalSysConfig::load(&self, block_id);
+        let block_tag = BlockTag::Height(height);
+        let sys_config = GlobalSysConfig::load(&self, block_tag);
         let consensus_config = make_consensus_config(sys_config);
         let executed_header = self
-            .block_header(block_id)
+            .block_header(block_tag)
             .unwrap()
             .generate_executed_header();
         let mut executed_result = ExecutedResult::new();
@@ -462,7 +463,7 @@ pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
 //    use crate::libexecutor::command::{Command, CommandResp};
 //    use crate::libexecutor::fsm::FSM;
 //    use crate::tests::helpers;
-//    use crate::types::ids::BlockId;
+//    use crate::types::ids::BlockTag;
 //    use cita_crypto::{CreateKey, KeyPair};
 //    use cita_types::Address;
 //    use std::thread;
@@ -493,11 +494,11 @@ pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
 //        let _executed_result = executor.grow(closed_block);
 //
 //        let chain_name_latest = SysConfig::new(&executor)
-//            .chain_name(BlockId::Latest)
+//            .chain_name(BlockTag::Latest)
 //            .unwrap();
 //
 //        let chain_name_pending = SysConfig::new(&executor)
-//            .chain_name(BlockId::Pending)
+//            .chain_name(BlockTag::Tag(Tag::Pending))
 //            .unwrap();
 //
 //        assert_eq!(chain_name_pending, "12345");
@@ -521,16 +522,16 @@ pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
 //        assert_eq!(current_height, 5);
 //
 //        // rollback_height = current_height
-//        executor.rollback_current_height(BlockId::Number(current_height));
+//        executor.rollback_current_height(BlockTag::Number(current_height));
 //        assert_eq!(executor.get_current_height(), current_height);
 //
 //        // rollback height = current_height - 3
 //        let rollback_to_2 = current_height - 3;
-//        executor.rollback_current_height(BlockId::Number(rollback_to_2));
+//        executor.rollback_current_height(BlockTag::Number(rollback_to_2));
 //        assert_eq!(executor.get_current_height(), 2);
 //
 //        // rollback_height = 0
-//        executor.rollback_current_height(BlockId::Earliest);
+//        executor.rollback_current_height(BlockTag::Earliest);
 //        assert_eq!(executor.get_current_height(), 0);
 //    }
 //
@@ -570,7 +571,7 @@ pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
 //            executor.do_loop();
 //        });
 //        // send Command, this cause executor exit
-//        command_req_sender.send(Command::Exit(BlockId::Number(0)));
+//        command_req_sender.send(Command::Exit(BlockTag::Number(0)));
 //
 //        ::std::thread::sleep(Duration::new(2, 0));
 //        let resp: CommandResp = command_resp_receiver.recv().unwrap();

@@ -18,12 +18,14 @@
 //! Quota Price Management
 
 use super::ContractCallExt;
+use std::str::FromStr;
+
 use crate::contracts::tools::{decode as decode_tools, method as method_tools};
 use crate::libexecutor::executor::Executor;
-use crate::types::ids::BlockId;
+use crate::types::block_tag::BlockTag;
 use crate::types::reserved_addresses;
+
 use cita_types::{Address, U256};
-use std::str::FromStr;
 
 lazy_static! {
     static ref GET_QUOTA_PRICE: Vec<u8> = method_tools::encode_to_vec(b"getQuotaPrice()");
@@ -42,13 +44,13 @@ impl<'a> PriceManagement<'a> {
     }
 
     /// Set quota price
-    pub fn quota_price(&self, block_id: BlockId) -> Option<U256> {
+    pub fn quota_price(&self, block_tag: BlockTag) -> Option<U256> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*GET_QUOTA_PRICE.as_slice(),
                 None,
-                block_id,
+                block_tag,
             )
             .ok()
             .and_then(|output| decode_tools::to_u256(&output))
@@ -64,14 +66,14 @@ impl<'a> PriceManagement<'a> {
 //mod tests {
 //    use super::PriceManagement;
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::ids::BlockId;
+//    use crate::types::block_tag::BlockTag;
 //    use cita_types::U256;
 //
 //    #[test]
 //    fn test_quota_price() {
 //        let executor = init_executor();
 //        let price_management = PriceManagement::new(&executor);
-//        let price = price_management.quota_price(BlockId::Pending).unwrap();
+//        let price = price_management.quota_price(BlockTag::Pending).unwrap();
 //        assert_eq!(price, U256::from(100_0000));
 //    }
 //}

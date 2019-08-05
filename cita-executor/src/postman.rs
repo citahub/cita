@@ -20,7 +20,7 @@ use crate::core::libexecutor::block::{ClosedBlock, OpenBlock};
 use crate::core::libexecutor::call_request::CallRequest;
 use crate::core::receipt::ReceiptError;
 use crate::core::tx_gas_schedule::TxGasSchedule;
-use crate::types::ids::BlockId;
+use crate::types::block_tag::BlockTag;
 use cita_types::U256;
 use cita_types::{Address, H256};
 use crossbeam_channel::{Receiver, Sender};
@@ -127,8 +127,8 @@ impl Postman {
     }
 
     // make sure executor exit also
-    fn close(&self, rollback_id: BlockId) {
-        if rollback_id != BlockId::Number(::std::usize::MAX as u64) {
+    fn close(&self, rollback_id: BlockTag) {
+        if rollback_id != BlockTag::Height(::std::usize::MAX as u64) {
             command::exit(
                 &self.command_req_sender,
                 &self.command_resp_receiver,
@@ -165,7 +165,7 @@ impl Postman {
         self.backlogs.insert_closed(height, closed_block);
     }
 
-    fn handle_mq_message(&mut self, key: &str, msg_vec: Vec<u8>) -> Result<(), BlockId> {
+    fn handle_mq_message(&mut self, key: &str, msg_vec: Vec<u8>) -> Result<(), BlockTag> {
         let mut msg = Message::try_from(msg_vec).unwrap();
         trace!("receive {} from RabbitMQ", key);
         match RoutingKey::from(key) {
@@ -208,7 +208,7 @@ impl Postman {
 
     // cita-chain broadcast StateSignal to indicate its state. So we could figure out
     // which blocks cita-chain lack of, then re-send the lacking blocks to cita-chain.
-    fn reply_chain_state_signal(&self, state_signal: &StateSignal) -> Result<(), BlockId> {
+    fn reply_chain_state_signal(&self, state_signal: &StateSignal) -> Result<(), BlockTag> {
         let specified_height = state_signal.get_height();
         if specified_height < self.get_current_height() {
             self.send_executed_info_to_chain(specified_height + 1)?;
@@ -223,7 +223,7 @@ impl Postman {
         Ok(())
     }
 
-    fn send_executed_info_to_chain(&self, height: u64) -> Result<(), BlockId> {
+    fn send_executed_info_to_chain(&self, height: u64) -> Result<(), BlockTag> {
         if height > self.get_current_height() {
             error!("This must be because the Executor database was manually deleted.");
             return Ok(());
@@ -253,9 +253,9 @@ impl Postman {
         // `ExecutedResult<height=51..60>` based on its persisted data. It has to rollback
         // to 50 to keep equal to cita-chain, and then re-synchronize.
         //
-        // Here the returned value `BlockId::Number(height - 1)` would be passed out to main()
+        // Here the returned value `BlockTag::Number(height - 1)` would be passed out to main()
         // thread. Then main() would restart executor thread and let executor starts with
-        // `BlockId::Number(height - 1)`.
+        // `BlockTag::Number(height - 1)`.
         if executed_result.is_none() {
             warn!(
                 "chain(height={}) is lagging behind executor(height={}). \
@@ -264,7 +264,7 @@ impl Postman {
                 self.get_current_height(),
                 height - 1
             );
-            return Err(BlockId::Number(height - 1));
+            return Err(BlockTag::Height(height - 1));
         }
 
         trace!("send {}-th ExecutedResult", height);
@@ -393,7 +393,7 @@ impl Postman {
                     &self.command_req_sender,
                     &self.command_resp_receiver,
                     **address,
-                    BlockId::Number(close_block.block.header.number()),
+                    BlockTag::Height(close_block.block.header.number()),
                 )
                 .and_then(|x| Some(U256::from(x.as_slice()) >= U256::from(bm_value)))
                 .unwrap_or(false)
@@ -1035,7 +1035,7 @@ mod tests {
 
         assert_eq!(
             res.err(),
-            Some(BlockId::Number(2)),
+            Some(BlockTag::Number(2)),
             "no executed result, executed should roll back"
         );
     }

@@ -30,7 +30,7 @@ pub use crate::libexecutor::block::*;
 use crate::libexecutor::call_request::CallRequest;
 use crate::trie_db::TrieDB;
 use crate::types::context::Context;
-use crate::types::ids::BlockId;
+use crate::types::block_tag::{BlockTag, Tag};
 use crate::types::transaction::{Action, SignedTransaction, Transaction};
 pub use byteorder::{BigEndian, ByteOrder};
 use cita_database::RocksDB;
@@ -39,7 +39,8 @@ use cita_types::{Address, H256, U256};
 use cita_vm::state::{State as CitaState, StateObjectInfo};
 use crossbeam_channel::{Receiver, Sender};
 use jsonrpc_types::rpc_types::{
-    BlockNumber, BlockTag, EconomicalModel as RpcEconomicalModel, MetaData,
+    BlockNumber as RpcBlockNumber, BlockTag as RpcBlockTag, EconomicalModel as RpcEconomicalModel,
+    MetaData,
 };
 use libproto::ExecutedResult;
 use serde_json;
@@ -52,21 +53,21 @@ use util::RwLock;
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]
 pub enum Command {
-    StateAt(BlockId),
+    StateAt(BlockTag),
     GenState(H256, H256),
-    CodeAt(Address, BlockId),
-    ABIAt(Address, BlockId),
-    BalanceAt(Address, BlockId),
-    NonceAt(Address, BlockId),
-    ETHCall(CallRequest, BlockId),
+    CodeAt(Address, BlockTag),
+    ABIAt(Address, BlockTag),
+    BalanceAt(Address, BlockTag),
+    NonceAt(Address, BlockTag),
+    ETHCall(CallRequest, BlockTag),
     SignCall(CallRequest),
-    Call(SignedTransaction, BlockId),
+    Call(SignedTransaction, BlockTag),
     ChainID,
     Metadata(String),
     EconomicalModel,
     LoadExecutedResult(u64),
     Grow(ClosedBlock),
-    Exit(BlockId),
+    Exit(BlockTag),
     CloneExecutorReader,
 }
 
@@ -138,49 +139,49 @@ impl fmt::Display for CommandResp {
 
 pub trait Commander {
     fn operate(&mut self, command: Command) -> CommandResp;
-    fn state_at(&self, block_id: BlockId) -> Option<CitaState<CitaTrieDB>>;
+    fn state_at(&self, block_tag: BlockTag) -> Option<CitaState<CitaTrieDB>>;
     fn gen_state(&self, root: H256, parent_hash: H256) -> Option<CitaState<CitaTrieDB>>;
-    fn code_at(&self, address: &Address, block_id: BlockId) -> Option<Bytes>;
-    fn abi_at(&self, address: &Address, block_id: BlockId) -> Option<Bytes>;
-    fn balance_at(&self, address: &Address, block_id: BlockId) -> Option<Bytes>;
-    fn nonce_at(&self, address: &Address, block_id: BlockId) -> Option<U256>;
-    fn eth_call(&self, request: CallRequest, block_id: BlockId) -> Result<Bytes, String>;
+    fn code_at(&self, address: &Address, block_tag: BlockTag) -> Option<Bytes>;
+    fn abi_at(&self, address: &Address, block_tag: BlockTag) -> Option<Bytes>;
+    fn balance_at(&self, address: &Address, block_tag: BlockTag) -> Option<Bytes>;
+    fn nonce_at(&self, address: &Address, block_tag: BlockTag) -> Option<U256>;
+    fn eth_call(&self, request: CallRequest, block_tag: BlockTag) -> Result<Bytes, String>;
     fn sign_call(&self, request: CallRequest) -> SignedTransaction;
-    fn call(&self, t: &SignedTransaction, block_id: BlockId) -> Result<CitaExecuted, CallError>;
+    fn call(&self, t: &SignedTransaction, block_tag: BlockTag) -> Result<CitaExecuted, CallError>;
     fn chain_id(&self) -> Option<ChainId>;
     fn metadata(&self, data: String) -> Result<MetaData, String>;
     fn economical_model(&self) -> EconomicalModel;
     fn load_executed_result(&self, height: u64) -> ExecutedResult;
     fn grow(&mut self, closed_block: ClosedBlock) -> ExecutedResult;
-    fn exit(&mut self, rollback_id: BlockId);
+    fn exit(&mut self, rollback_id: BlockTag);
     fn clone_executor_reader(&mut self) -> Self;
 }
 
 impl Commander for Executor {
     fn operate(&mut self, command: Command) -> CommandResp {
         match command {
-            Command::StateAt(block_id) => CommandResp::StateAt(self.state_at(block_id)),
+            Command::StateAt(block_tag) => CommandResp::StateAt(self.state_at(block_tag)),
             Command::GenState(root, parent_hash) => {
                 CommandResp::GenState(self.gen_state(root, parent_hash))
             }
-            Command::CodeAt(address, block_id) => {
-                CommandResp::CodeAt(self.code_at(&address, block_id))
+            Command::CodeAt(address, block_tag) => {
+                CommandResp::CodeAt(self.code_at(&address, block_tag))
             }
-            Command::ABIAt(address, block_id) => {
-                CommandResp::ABIAt(self.abi_at(&address, block_id))
+            Command::ABIAt(address, block_tag) => {
+                CommandResp::ABIAt(self.abi_at(&address, block_tag))
             }
-            Command::BalanceAt(address, block_id) => {
-                CommandResp::BalanceAt(self.balance_at(&address, block_id))
+            Command::BalanceAt(address, block_tag) => {
+                CommandResp::BalanceAt(self.balance_at(&address, block_tag))
             }
-            Command::NonceAt(address, block_id) => {
-                CommandResp::NonceAt(self.nonce_at(&address, block_id))
+            Command::NonceAt(address, block_tag) => {
+                CommandResp::NonceAt(self.nonce_at(&address, block_tag))
             }
-            Command::ETHCall(call_request, block_id) => {
-                CommandResp::ETHCall(self.eth_call(call_request, block_id))
+            Command::ETHCall(call_request, block_tag) => {
+                CommandResp::ETHCall(self.eth_call(call_request, block_tag))
             }
             Command::SignCall(call_request) => CommandResp::SignCall(self.sign_call(call_request)),
-            Command::Call(signed_transaction, block_id) => {
-                CommandResp::Call(self.call(&signed_transaction, block_id))
+            Command::Call(signed_transaction, block_tag) => {
+                CommandResp::Call(self.call(&signed_transaction, block_tag))
             }
             Command::ChainID => CommandResp::ChainID(self.chain_id()),
             Command::Metadata(data) => CommandResp::Metadata(self.metadata(data)),
@@ -200,7 +201,7 @@ impl Commander for Executor {
     }
 
     /// Attempt to get a copy of a specific block's final state.
-    fn state_at(&self, id: BlockId) -> Option<CitaState<CitaTrieDB>> {
+    fn state_at(&self, id: BlockTag) -> Option<CitaState<CitaTrieDB>> {
         self.block_header(id)
             .and_then(|h| self.gen_state(*h.state_root(), *h.parent_hash()))
     }
@@ -212,17 +213,17 @@ impl Commander for Executor {
     }
 
     /// Get code by address
-    fn code_at(&self, address: &Address, id: BlockId) -> Option<Bytes> {
+    fn code_at(&self, address: &Address, id: BlockTag) -> Option<Bytes> {
         self.state_at(id).and_then(|mut s| s.code(address).ok())
     }
 
     /// Get abi by address
-    fn abi_at(&self, address: &Address, id: BlockId) -> Option<Bytes> {
+    fn abi_at(&self, address: &Address, id: BlockTag) -> Option<Bytes> {
         self.state_at(id).and_then(|mut s| s.abi(address).ok())
     }
 
     /// Get balance by address
-    fn balance_at(&self, address: &Address, id: BlockId) -> Option<Bytes> {
+    fn balance_at(&self, address: &Address, id: BlockTag) -> Option<Bytes> {
         self.state_at(id)
             .and_then(|mut s| s.balance(address).ok())
             .map(|c| {
@@ -232,11 +233,11 @@ impl Commander for Executor {
             })
     }
 
-    fn nonce_at(&self, address: &Address, id: BlockId) -> Option<U256> {
+    fn nonce_at(&self, address: &Address, id: BlockTag) -> Option<U256> {
         self.state_at(id).and_then(|mut s| s.nonce(address).ok())
     }
 
-    fn eth_call(&self, request: CallRequest, id: BlockId) -> Result<Bytes, String> {
+    fn eth_call(&self, request: CallRequest, id: BlockTag) -> Result<Bytes, String> {
         let signed = self.sign_call(request);
         let result = self.call(&signed, id);
         result
@@ -261,8 +262,8 @@ impl Commander for Executor {
         .fake_sign(from)
     }
 
-    fn call(&self, t: &SignedTransaction, block_id: BlockId) -> Result<CitaExecuted, CallError> {
-        let header = self.block_header(block_id).ok_or(CallError::StatePruned)?;
+    fn call(&self, t: &SignedTransaction, block_tag: BlockTag) -> Result<CitaExecuted, CallError> {
+        let header = self.block_header(block_tag).ok_or(CallError::StatePruned)?;
         let last_hashes = self.build_last_hashes(Some(header.hash().unwrap()), header.number());
         let context = Context {
             block_number: header.number(),
@@ -281,7 +282,7 @@ impl Commander for Executor {
 
         // FIXME: Need to implement state_at
         // that's just a copy of the state.
-        //        let mut state = self.state_at(block_id).ok_or(CallError::StatePruned)?;
+        //        let mut state = self.state_at(block_tag).ok_or(CallError::StatePruned)?;
 
         // Never check permission and quota
         let mut conf = self.sys_config.block_sys_config.clone();
@@ -290,7 +291,7 @@ impl Commander for Executor {
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let native_factory = NativeFactory::default();
 
-        let state_root = if let Some(h) = self.block_header(block_id) {
+        let state_root = if let Some(h) = self.block_header(block_tag) {
             (*h.state_root())
         } else {
             error!("Can not get state rott from trie db!");
@@ -345,15 +346,15 @@ impl Commander for Executor {
             version: 0,
             economical_model,
         };
-        let result = serde_json::from_str::<BlockNumber>(&data)
+        let result = serde_json::from_str::<RpcBlockNumber>(&data)
             .map_err(|err| format!("{:?}", err))
-            .and_then(|number: BlockNumber| {
+            .and_then(|number: RpcBlockNumber| {
                 let current_height = self.get_current_height();
                 let number = match number {
-                    BlockNumber::Tag(BlockTag::Earliest) => 0,
-                    BlockNumber::Height(n) => n.into(),
-                    BlockNumber::Tag(BlockTag::Latest) => current_height.saturating_sub(1),
-                    BlockNumber::Tag(BlockTag::Pending) => current_height,
+                    RpcBlockNumber::Tag(RpcBlockTag::Earliest) => 0,
+                    RpcBlockNumber::Height(n) => n.into(),
+                    RpcBlockNumber::Tag(RpcBlockTag::Latest) => current_height.saturating_sub(1),
+                    RpcBlockNumber::Tag(RpcBlockTag::Pending) => current_height,
                 };
                 if number > current_height {
                     Err(format!(
@@ -366,35 +367,35 @@ impl Commander for Executor {
             })
             .and_then(|number| {
                 let sys_config = SysConfig::new(&self);
-                let block_id = BlockId::Number(number);
+                let block_tag = BlockTag::Height(number);
                 sys_config
-                    .chain_name(block_id)
+                    .chain_name(block_tag)
                     .map(|chain_name| metadata.chain_name = chain_name)
                     .ok_or_else(|| "Query chain name failed".to_owned())?;
                 sys_config
-                    .operator(block_id)
+                    .operator(block_tag)
                     .map(|operator| metadata.operator = operator)
                     .ok_or_else(|| "Query operator failed".to_owned())?;
                 sys_config
-                    .website(block_id)
+                    .website(block_tag)
                     .map(|website| metadata.website = website)
                     .ok_or_else(|| "Query website failed".to_owned())?;
-                self.block_header(BlockId::Earliest)
+                self.block_header(BlockTag::Tag(Tag::Earliest))
                     .map(|header| metadata.genesis_timestamp = header.timestamp())
                     .ok_or_else(|| "Query genesis_timestamp failed".to_owned())?;
                 self.node_manager()
-                    .shuffled_stake_nodes(block_id)
+                    .shuffled_stake_nodes(block_tag)
                     .map(|validators| {
                         metadata.validators =
                             validators.into_iter().map(Into::into).collect::<Vec<_>>()
                     })
                     .ok_or_else(|| "Query validators failed".to_owned())?;
                 sys_config
-                    .block_interval(block_id)
+                    .block_interval(block_tag)
                     .map(|block_interval| metadata.block_interval = block_interval)
                     .ok_or_else(|| "Query block_interval failed".to_owned())?;
                 sys_config
-                    .token_info(block_id)
+                    .token_info(block_tag)
                     .map(|token_info| {
                         metadata.token_name = token_info.name;
                         metadata.token_avatar = token_info.avatar;
@@ -404,7 +405,7 @@ impl Commander for Executor {
 
                 let version_manager = VersionManager::new(&self);
                 metadata.version = version_manager
-                    .get_version(block_id)
+                    .get_version(block_tag)
                     .unwrap_or_else(VersionManager::default_version);
 
                 sys_config
@@ -445,7 +446,8 @@ impl Commander for Executor {
         let are_permissions_changed = {
             let cache = closed_block.state.cache.clone();
             let permission_management = PermissionManagement::new(self);
-            let permissions = permission_management.permission_addresses(BlockId::Pending);
+            let permissions =
+                permission_management.permission_addresses(BlockTag::Tag(Tag::Pending));
             cache.into_inner().iter().any(|(address, ref _a)| {
                 &address.lower_hex()[..34] == "ffffffffffffffffffffffffffffffffff"
                     || permissions.contains(&address)
@@ -462,7 +464,7 @@ impl Commander for Executor {
         self.write_batch(closed_block);
 
         if are_permissions_changed {
-            self.sys_config = GlobalSysConfig::load(&self, BlockId::Pending);
+            self.sys_config = GlobalSysConfig::load(&self, BlockTag::Tag(Tag::Pending));
         }
         let mut executed_result = ExecutedResult::new();
         let consensus_config = make_consensus_config(self.sys_config.clone());
@@ -471,7 +473,7 @@ impl Commander for Executor {
         executed_result
     }
 
-    fn exit(&mut self, rollback_id: BlockId) {
+    fn exit(&mut self, rollback_id: BlockTag) {
         self.rollback_current_height(rollback_id);
         self.close();
     }
@@ -506,9 +508,9 @@ impl Commander for Executor {
 pub fn state_at(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
-    block_id: BlockId,
+    block_tag: BlockTag,
 ) -> Option<CitaState<CitaTrieDB>> {
-    command_req_sender.send(Command::StateAt(block_id));
+    command_req_sender.send(Command::StateAt(block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::StateAt(r) => r,
         _ => unimplemented!(),
@@ -532,9 +534,9 @@ pub fn code_at(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
     address: Address,
-    block_id: BlockId,
+    block_tag: BlockTag,
 ) -> Option<Bytes> {
-    command_req_sender.send(Command::CodeAt(address, block_id));
+    command_req_sender.send(Command::CodeAt(address, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::CodeAt(r) => r,
         _ => unimplemented!(),
@@ -545,9 +547,9 @@ pub fn abi_at(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
     address: Address,
-    block_id: BlockId,
+    block_tag: BlockTag,
 ) -> Option<Bytes> {
-    command_req_sender.send(Command::ABIAt(address, block_id));
+    command_req_sender.send(Command::ABIAt(address, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::ABIAt(r) => r,
         _ => unimplemented!(),
@@ -558,9 +560,9 @@ pub fn balance_at(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
     address: Address,
-    block_id: BlockId,
+    block_tag: BlockTag,
 ) -> Option<Bytes> {
-    command_req_sender.send(Command::BalanceAt(address, block_id));
+    command_req_sender.send(Command::BalanceAt(address, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::BalanceAt(r) => r,
         _ => unimplemented!(),
@@ -571,9 +573,9 @@ pub fn nonce_at(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
     address: Address,
-    block_id: BlockId,
+    block_tag: BlockTag,
 ) -> Option<U256> {
-    command_req_sender.send(Command::NonceAt(address, block_id));
+    command_req_sender.send(Command::NonceAt(address, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::NonceAt(r) => r,
         _ => unimplemented!(),
@@ -584,9 +586,9 @@ pub fn eth_call(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
     call_request: CallRequest,
-    block_id: BlockId,
+    block_tag: BlockTag,
 ) -> Result<Bytes, String> {
-    command_req_sender.send(Command::ETHCall(call_request, block_id));
+    command_req_sender.send(Command::ETHCall(call_request, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::ETHCall(r) => r,
         _ => unimplemented!(),
@@ -609,9 +611,10 @@ pub fn call(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
     signed_transaction: SignedTransaction,
-    block_id: BlockId,
+
+    block_tag: BlockTag,
 ) -> Result<CitaExecuted, CallError> {
-    command_req_sender.send(Command::Call(signed_transaction, block_id));
+    command_req_sender.send(Command::Call(signed_transaction, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::Call(r) => r,
         _ => unimplemented!(),
@@ -679,7 +682,7 @@ pub fn grow(
 pub fn exit(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
-    rollback_id: BlockId,
+    rollback_id: BlockTag,
 ) {
     command_req_sender.send(Command::Exit(rollback_id));
     match command_resp_receiver.recv().unwrap() {

@@ -18,7 +18,6 @@
 
 use crate::block::BlockBody;
 use crate::block_tag::BlockNumber;
-use crate::db::DBIndex;
 use crate::header::Header;
 use crate::log_blooms::LogBloomGroup;
 use crate::receipt::Receipt;

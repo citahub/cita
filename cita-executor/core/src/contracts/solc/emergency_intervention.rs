@@ -22,9 +22,9 @@ use std::str::FromStr;
 use super::ContractCallExt;
 use crate::contracts::tools::method as method_tools;
 use crate::libexecutor::executor::Executor;
-
-use crate::types::ids::BlockId;
+use crate::types::block_tag::BlockTag;
 use crate::types::reserved_addresses;
+
 use cita_types::Address;
 use ethabi::{decode, ParamType};
 
@@ -44,9 +44,9 @@ impl<'a> EmergencyIntervention<'a> {
         EmergencyIntervention { executor }
     }
 
-    pub fn state(&self, block_id: BlockId) -> Option<bool> {
+    pub fn state(&self, block_tag: BlockTag) -> Option<bool> {
         self.executor
-            .call_method(&*CONTRACT_ADDRESS, &*STATE_HASH.as_slice(), None, block_id)
+            .call_method(&*CONTRACT_ADDRESS, &*STATE_HASH.as_slice(), None, block_tag)
             .and_then(|output| {
                 decode(&[ParamType::Bool], &output).map_err(|_| "decode value error".to_string())
             })
@@ -64,13 +64,13 @@ impl<'a> EmergencyIntervention<'a> {
 //mod tests {
 //    use super::EmergencyIntervention;
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::ids::BlockId;
+//    use crate::types::block_tag::BlockTag;
 //
 //    #[test]
 //    fn test_state() {
 //        let executor = init_executor();
 //        let emergency_intervention = EmergencyIntervention::new(&executor);
-//        let state = emergency_intervention.state(BlockId::Pending).unwrap();
+//        let state = emergency_intervention.state(BlockTag::Pending).unwrap();
 //        assert_eq!(state, false);
 //    }
 //}
