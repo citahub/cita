@@ -30,7 +30,6 @@ pub extern crate bloomchain;
 
 pub mod basic_types;
 pub mod block;
-pub mod cache_manager;
 pub mod db;
 pub mod extras;
 pub mod filter;
