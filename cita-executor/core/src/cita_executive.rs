@@ -850,9 +850,713 @@ pub struct ExecutedResult {
 
 #[cfg(test)]
 mod tests {
+    use super::{CitaExecutive, EnvInfo, ExecutionError, TxGasSchedule};
+    use crate::contracts::native::factory::Factory as NativeFactory;
+    use crate::libexecutor::economical_model::EconomicalModel;
+    use crate::libexecutor::{block::EVMBlockDataProvider, sys_config::BlockSysConfig};
+    use crate::tests::helpers::*;
+    use crate::types::transaction::Action;
+    use crate::types::transaction::Transaction;
+    use cita_crypto::{CreateKey, KeyPair};
+    use cita_types::{Address, H256, U256};
+    use cita_vm::state::StateObjectInfo;
+    use hashable::Hashable;
+    use rustc_hex::FromHex;
+    use std::cell::RefCell;
+    use std::str::FromStr;
+    use std::sync::Arc;
+
+    pub fn contract_address(address: &Address, nonce: &U256) -> Address {
+        use rlp::RlpStream;
+
+        let mut stream = RlpStream::new_list(2);
+        stream.append(address);
+        stream.append(nonce);
+        From::from(stream.out().crypt_hash())
+    }
 
     #[test]
     fn test_transfer_for_store() {
-        assert_eq!(0, 1);
+        let keypair = KeyPair::gen_keypair();
+        let data_len = 4096;
+        let provided_gas = U256::from(100_000);
+        let t = Transaction {
+            action: Action::Store,
+            value: U256::from(0),
+            data: vec![0; data_len],
+            gas: provided_gas,
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1.into(),
+            version: 2,
+        }
+        .fake_sign(keypair.address().clone());
+
+        let sender = t.sender();
+        let mut state = get_temp_state();
+        state
+            .add_balance(&sender, U256::from(18 + 100_000))
+            .unwrap();
+
+        let mut info = EnvInfo::default();
+        info.gas_limit = U256::from(100_000);
+
+        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let native_factory = NativeFactory::default();
+
+        let state = Arc::new(RefCell::new(state));
+
+        let result = {
+            CitaExecutive::new(
+                Arc::new(block_data_provider),
+                state,
+                &native_factory,
+                &info,
+                EconomicalModel::Charge,
+            )
+            .exec(&t, &BlockSysConfig::default())
+        };
+
+        let expected = ExecutionError::NotEnoughBaseGas;
+
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), expected);
+    }
+
+    #[test]
+    fn test_transfer_for_charge() {
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Create,
+            value: U256::from(17),
+            data: vec![],
+            gas: U256::from(100_000),
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1.into(),
+            version: 2,
+        }
+        .fake_sign(keypair.address().clone());
+        let sender = t.sender();
+        let contract = contract_address(t.sender(), &U256::zero());
+
+        let native_factory = NativeFactory::default();
+
+        let mut state = get_temp_state();
+
+        state
+            .add_balance(&sender, U256::from(18 + 100_000))
+            .unwrap();
+
+        let mut info = EnvInfo::default();
+        info.gas_limit = U256::from(100_000);
+
+        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+
+        let conf = BlockSysConfig::default();
+
+        let state = Arc::new(RefCell::new(state));
+
+        let executed = {
+            CitaExecutive::new(
+                Arc::new(block_data_provider),
+                state.clone(),
+                &native_factory,
+                &info,
+                EconomicalModel::Charge,
+            )
+            .exec(&t, &conf)
+            .unwrap()
+        };
+
+        let schedule = TxGasSchedule::default();
+
+        // Actually, this is an Action::Create transaction
+        assert_eq!(executed.quota_used, U256::from(schedule.tx_create_gas));
+        assert_eq!(executed.logs.len(), 0);
+        assert_eq!(
+            state.borrow_mut().balance(&sender).unwrap(),
+            U256::from(18 + 100_000 - 17 - schedule.tx_create_gas)
+        );
+        assert_eq!(
+            state.borrow_mut().balance(&contract).unwrap(),
+            U256::from(17)
+        );
+        assert_eq!(state.borrow_mut().nonce(&sender).unwrap(), U256::from(1));
+    }
+
+    #[test]
+    fn test_not_enough_cash_for_charge() {
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Create,
+            value: U256::from(43),
+            data: vec![],
+            gas: U256::from(100_000),
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1.into(),
+            version: 2,
+        }
+        .fake_sign(keypair.address().clone());
+
+        let native_factory = NativeFactory::default();
+
+        let mut state = get_temp_state();
+        state.add_balance(t.sender(), U256::from(100_042)).unwrap();
+        let mut info = EnvInfo::default();
+        info.gas_limit = U256::from(100_000);
+        let conf = BlockSysConfig::default();
+
+        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let state = Arc::new(RefCell::new(state));
+
+        let result = {
+            CitaExecutive::new(
+                Arc::new(block_data_provider),
+                state.clone(),
+                &native_factory,
+                &info,
+                EconomicalModel::Charge,
+            )
+            .exec(&t, &conf)
+        };
+
+        match result {
+            Err(ExecutionError::NotEnoughBalance) => {}
+            _ => assert!(false, "Expected not enough cash error. {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_not_enough_base_gas() {
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Create,
+            value: U256::from(43),
+            data: vec![],
+            gas: U256::from(100),
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1.into(),
+            version: 2,
+        }
+        .fake_sign(keypair.address().clone());
+
+        let native_factory = NativeFactory::default();
+
+        let mut state = get_temp_state();
+        state.add_balance(t.sender(), U256::from(100_042)).unwrap();
+        let mut info = EnvInfo::default();
+        info.gas_limit = U256::from(100);
+        let conf = BlockSysConfig::default();
+
+        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let state = Arc::new(RefCell::new(state));
+
+        let result = {
+            CitaExecutive::new(
+                Arc::new(block_data_provider),
+                state.clone(),
+                &native_factory,
+                &info,
+                EconomicalModel::Charge,
+            )
+            .exec(&t, &conf)
+        };
+
+        match result {
+            Err(ExecutionError::NotEnoughBaseGas) => {}
+            _ => assert!(false, "Expected not enough base gas error. {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_not_enough_cash_for_quota() {
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Create,
+            value: U256::from(43),
+            data: vec![],
+            gas: U256::from(100_000),
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1.into(),
+            version: 2,
+        }
+        .fake_sign(keypair.address().clone());
+
+        let native_factory = NativeFactory::default();
+        let state = get_temp_state();
+        let mut info = EnvInfo::default();
+        info.gas_limit = U256::from(100_000);
+        let conf = BlockSysConfig::default();
+
+        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let state = Arc::new(RefCell::new(state));
+
+        let result = {
+            CitaExecutive::new(
+                Arc::new(block_data_provider),
+                state.clone(),
+                &native_factory,
+                &info,
+                EconomicalModel::Quota,
+            )
+            .exec(&t, &conf)
+        };
+
+        // It's ok for not enough cash for quota.
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_create_contract_out_of_gas() {
+        logger::silent();
+        let source = r#"
+pragma solidity ^0.4.19;
+
+contract HelloWorld {
+  uint balance;
+
+  function update(uint amount) public returns (address, uint) {
+    balance += amount;
+    return (msg.sender, balance);
+  }
+}
+"#;
+        let schedule = TxGasSchedule::default();
+
+        let gas_required = U256::from(schedule.tx_gas + 1000);
+
+        let (deploy_code, _runtime_code) = solc("HelloWorld", source);
+        let native_factory = NativeFactory::default();
+
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Create,
+            value: U256::from(0),
+            data: deploy_code,
+            gas: gas_required,
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1.into(),
+            version: 2,
+        }
+        .fake_sign(keypair.address().clone());
+
+        let state = get_temp_state();
+
+        let info = EnvInfo::default();
+
+        let conf = BlockSysConfig::default();
+
+        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let state = Arc::new(RefCell::new(state));
+
+        let res = {
+            CitaExecutive::new(
+                Arc::new(block_data_provider),
+                state.clone(),
+                &native_factory,
+                &info,
+                EconomicalModel::Quota,
+            )
+            .exec(&t, &conf)
+        };
+
+        assert!(res.is_err());
+        let expected = ExecutionError::NotEnoughBaseGas;
+        assert_eq!(res.err().unwrap(), expected);
+    }
+
+    #[test]
+    fn test_create_contract() {
+        logger::silent();
+        let source = r#"
+pragma solidity ^0.4.8;
+contract AbiTest {
+  uint balance;
+  function AbiTest() {}
+  function setValue(uint value) {
+    balance = value;
+  }
+}
+"#;
+        let schedule = TxGasSchedule::default();
+
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
+
+        let (deploy_code, runtime_code) = solc("AbiTest", source);
+        let native_factory = NativeFactory::default();
+
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Create,
+            value: U256::from(0),
+            data: deploy_code,
+            gas: gas_required,
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1.into(),
+            version: 2,
+        }
+        .fake_sign(keypair.address().clone());
+
+        let sender = keypair.address().clone();
+        let nonce = U256::zero();
+        let contract_address = contract_address(&sender, &nonce);
+
+        let state = get_temp_state();
+
+        let info = EnvInfo::default();
+
+        let conf = BlockSysConfig::default();
+
+        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let state = Arc::new(RefCell::new(state));
+
+        {
+            let _ = CitaExecutive::new(
+                Arc::new(block_data_provider),
+                state.clone(),
+                &native_factory,
+                &info,
+                EconomicalModel::Quota,
+            )
+            .exec(&t, &conf);
+        }
+
+        assert_eq!(
+            &state.borrow_mut().code(&contract_address).unwrap(),
+            &runtime_code
+        );
+    }
+
+    #[test]
+    fn test_call_contract() {
+        logger::silent();
+        let source = r#"
+pragma solidity ^0.4.8;
+contract AbiTest {
+  uint balance;
+  function AbiTest() {}
+  function setValue(uint value) {
+    balance = value;
+  }
+}
+"#;
+        let schedule = TxGasSchedule::default();
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
+        let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
+        let (_, runtime_code) = solc("AbiTest", source);
+
+        // big endian: value=0x12345678
+        let data = "552410770000000000000000000000000000000000000000000000000000000012345678"
+            .from_hex()
+            .unwrap();
+        let native_factory = NativeFactory::default();
+        let mut state = get_temp_state();
+        state
+            .set_code(&contract_addr, runtime_code.clone())
+            .unwrap();
+
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Call(contract_addr),
+            value: U256::from(0),
+            data,
+            gas: gas_required,
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1.into(),
+            version: 2,
+        }
+        .fake_sign(keypair.address().clone());
+
+        let info = EnvInfo::default();
+
+        let conf = BlockSysConfig::default();
+
+        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let state = Arc::new(RefCell::new(state));
+
+        {
+            let _ = CitaExecutive::new(
+                Arc::new(block_data_provider),
+                state.clone(),
+                &native_factory,
+                &info,
+                EconomicalModel::Quota,
+            )
+            .exec(&t, &conf);
+        }
+
+        // it was supposed that value's address is balance.
+        assert_eq!(
+            state
+                .borrow_mut()
+                .get_storage(&contract_addr, &H256::from(&U256::from(0)))
+                .unwrap(),
+            H256::from(&U256::from(0x12345678))
+        );
+    }
+
+    #[test]
+    fn test_revert_instruction() {
+        logger::silent();
+        let source = r#"
+pragma solidity ^0.4.8;
+contract AbiTest {
+  uint balance;
+
+  modifier Never {
+    require(false);
+      _;
+  }
+
+  function AbiTest() {}
+  function setValue(uint value) Never {
+    balance = value;
+  }
+}
+"#;
+        let schedule = TxGasSchedule::default();
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
+        let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
+        let (_, runtime_code) = solc("AbiTest", source);
+        // big endian: value=0x12345678
+        let data = "552410770000000000000000000000000000000000000000000000000000000012345678"
+            .from_hex()
+            .unwrap();
+        let native_factory = NativeFactory::default();
+
+        let mut state = get_temp_state();
+        state
+            .set_code(&contract_addr, runtime_code.clone())
+            .unwrap();
+
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Call(contract_addr),
+            value: U256::from(0),
+            data,
+            gas: gas_required,
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1.into(),
+            version: 2,
+        }
+        .fake_sign(keypair.address().clone());
+
+        let info = EnvInfo::default();
+
+        let conf = BlockSysConfig::default();
+
+        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let state = Arc::new(RefCell::new(state));
+
+        {
+            let res = CitaExecutive::new(
+                Arc::new(block_data_provider),
+                state.clone(),
+                &native_factory,
+                &info,
+                EconomicalModel::Quota,
+            )
+            .exec(&t, &conf);
+            assert!(res.is_ok());
+            match res {
+                Ok(result) => println!("quota used: {:?}", result.quota_used),
+                Err(e) => println!("e: {:?}", e),
+            }
+        };
+
+        // it was supposed that value's address is balance.
+        assert_eq!(
+            state
+                .borrow_mut()
+                .get_storage(&contract_addr, &H256::from(&U256::from(0)))
+                .unwrap(),
+            H256::from(&U256::from(0x0))
+        );
+    }
+
+    #[test]
+    fn test_require_instruction() {
+        logger::silent();
+        let source = r#"
+pragma solidity ^0.4.8;
+contract AbiTest {
+  uint balance;
+
+  modifier Never {
+    require(true);
+      _;
+  }
+
+  function AbiTest() {}
+  function setValue(uint value) Never {
+    balance = value;
+  }
+}
+"#;
+        let schedule = TxGasSchedule::default();
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
+        let contract_addr = Address::from_str("62f4b16d67b112409ab4ac87274926382daacfac").unwrap();
+        let (_, runtime_code) = solc("AbiTest", source);
+        // big endian: value=0x12345678
+        let data = "552410770000000000000000000000000000000000000000000000000000000012345678"
+            .from_hex()
+            .unwrap();
+        let native_factory = NativeFactory::default();
+
+        let mut state = get_temp_state();
+        state
+            .set_code(&contract_addr, runtime_code.clone())
+            .unwrap();
+
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Call(contract_addr),
+            value: U256::from(0),
+            data,
+            gas: gas_required,
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1.into(),
+            version: 2,
+        }
+        .fake_sign(keypair.address().clone());
+
+        let info = EnvInfo::default();
+
+        let conf = BlockSysConfig::default();
+
+        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let state = Arc::new(RefCell::new(state));
+
+        {
+            let res = CitaExecutive::new(
+                Arc::new(block_data_provider),
+                state.clone(),
+                &native_factory,
+                &info,
+                EconomicalModel::Quota,
+            )
+            .exec(&t, &conf);
+            assert!(res.is_ok());
+            match res {
+                Ok(result) => println!("quota used: {:?}", result.quota_used),
+                Err(e) => println!("e: {:?}", e),
+            }
+        };
+
+        // it was supposed that value's address is balance.
+        assert_eq!(
+            state
+                .borrow_mut()
+                .get_storage(&contract_addr, &H256::from(&U256::from(0)))
+                .unwrap(),
+            H256::from(&U256::from(0x12345678))
+        );
+    }
+
+    #[test]
+    fn test_call_instruction() {
+        logger::silent();
+        let fake_auth = r#"
+pragma solidity ^0.4.18;
+
+contract FakeAuth {
+    function setAuth() public pure returns(bool) {
+        return true;
+    }
+}
+"#;
+
+        let fake_permission_manager = r#"
+pragma solidity ^0.4.18;
+
+contract FakeAuth {
+    function setAuth() public returns(bool);
+}
+
+contract FakePermissionManagement {
+    function setAuth(address _auth) public returns(bool) {
+        FakeAuth auth = FakeAuth(_auth);
+        require(auth.setAuth());
+        return true;
+    }
+}
+"#;
+        let schedule = TxGasSchedule::default();
+        let gas_required = U256::from(schedule.tx_gas + 100_000);
+        let auth_addr = Address::from_str("27ec3678e4d61534ab8a87cf8feb8ac110ddeda5").unwrap();
+        let permission_addr =
+            Address::from_str("33f4b16d67b112409ab4ac87274926382daacfac").unwrap();
+
+        let native_factory = NativeFactory::default();
+
+        let mut state = get_temp_state();
+        let (_, runtime_code) = solc("FakeAuth", fake_auth);
+        state.set_code(&auth_addr, runtime_code.clone()).unwrap();
+
+        let (_, runtime_code) = solc("FakePermissionManagement", fake_permission_manager);
+        state
+            .set_code(&permission_addr, runtime_code.clone())
+            .unwrap();
+
+        // 2b2e05c1: setAuth(address)
+        let data = "2b2e05c100000000000000000000000027ec3678e4d61534ab8a87cf8feb8ac110ddeda5"
+            .from_hex()
+            .unwrap();
+
+        let keypair = KeyPair::gen_keypair();
+        let t = Transaction {
+            action: Action::Call(permission_addr),
+            value: U256::from(0),
+            data,
+            gas: gas_required,
+            gas_price: U256::one(),
+            nonce: U256::zero().to_string(),
+            block_limit: 100u64,
+            chain_id: 1.into(),
+            version: 2,
+        }
+        .fake_sign(keypair.address().clone());
+
+        let info = EnvInfo::default();
+
+        let conf = BlockSysConfig::default();
+
+        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let state = Arc::new(RefCell::new(state));
+
+        {
+            let res = CitaExecutive::new(
+                Arc::new(block_data_provider),
+                state.clone(),
+                &native_factory,
+                &info,
+                EconomicalModel::Quota,
+            )
+            .exec(&t, &conf);
+            assert!(res.is_ok());
+            match res {
+                Ok(result) => println!("quota used: {:?}", result.quota_used),
+                Err(e) => println!("e: {:?}", e),
+            }
+        };
     }
 }
