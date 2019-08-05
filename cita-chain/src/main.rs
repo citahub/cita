@@ -87,7 +87,6 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::{channel, start_pubsub};
 use std::sync::Arc;
 use std::thread;
-use std::time;
 use std::time::Duration;
 use util::set_panic_handler;
 
@@ -138,7 +137,7 @@ fn main() {
     let chain_config = libchain::chain::Config::new(config_path);
     let chain = Arc::new(libchain::chain::Chain::init_chain(
         Arc::new(db),
-        &chain_config,
+        chain_config,
     ));
 
     let (write_sender, write_receiver) = channel::unbounded();
@@ -183,13 +182,4 @@ fn main() {
             }
         }
     });
-
-    //garbage collect
-    loop {
-        thread::sleep(time::Duration::from_millis(1000));
-        if chain.cache_size().total() > chain_config.cache_size.unwrap() / 2 {
-            trace!("cache_manager begin collect garbage...");
-            chain.collect_garbage();
-        }
-    }
 }
