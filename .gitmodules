@@ -1,11 +1,11 @@
 [submodule "cita-forever"]
 	path = cita-forever
 	url = https://github.com/cryptape/cita-forever.git
-	branch = remove-db
+	branch = remove-gpl
 [submodule "cita-bft"]
 	path = cita-bft
 	url = https://github.com/cryptape/cita-bft.git
-	branch = remove-db
+	branch = remove-gpl
 [submodule "scripts/txtool/txtool/proto"]
 	path = scripts/txtool/txtool/proto
 	url = https://github.com/cryptape/cita-proto.git

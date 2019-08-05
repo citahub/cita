@@ -12,27 +12,27 @@ crossbeam-channel = "0.2"
 serde_json = "1.0"
 serde_derive = "1.0"
 cita-logger = "0.1.0"
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-error =  { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+error =  { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 core-executor = { path = "./core" }
 common-types = { path = "../cita-chain/types" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
 itertools = "0.5"
 
 [build-dependencies]
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 
 [dev-dependencies]
 bincode = "0.8.0"
-cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 tempdir = "0.3.7"
 
 [features]

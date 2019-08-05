@@ -17,7 +17,7 @@ libsecp256k1 = "0.2.2"
 clap = "2.33.0"
 cita_trie = "2.0"
 
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 cita-vm = { git = "https://github.com/cryptape/cita-vm.git", branch = "cita" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 
