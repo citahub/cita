@@ -16,10 +16,10 @@
 
 //! Blockchain DB extras.
 
-use crate::basic_types::LogBloomGroup;
 use crate::block::BlockBody;
 use crate::db::DBIndex;
 use crate::header::{BlockNumber, Header};
+use crate::log_blooms::LogBloomGroup;
 use crate::receipt::Receipt;
 use bloomchain::group::GroupPosition;
 use cita_types::{H256, H264};

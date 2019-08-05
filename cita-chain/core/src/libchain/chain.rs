@@ -1,4 +1,3 @@
-use crate::basic_types::{LogBloom, LogBloomGroup};
 use crate::bloomchain::group::{
     BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition as BloomGroupPosition,
 };
@@ -6,6 +5,8 @@ use crate::bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainN
 use crate::filters::{PollFilter, PollManager};
 use crate::header::{BlockNumber, Header};
 use crate::libchain::status::Status;
+use crate::log_blooms::LogBloomGroup;
+use crate::log_entry::LogBloom;
 use crate::receipt::{LocalizedReceipt, Receipt};
 use cita_merklehash;
 use hashable::Hashable;
