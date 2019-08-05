@@ -6,21 +6,21 @@ edition = "2018"
 
 [dependencies]
 cita-logger = "0.1.0"
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 byteorder = { version = "1", default-features = false }
-cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 bincode = "0.8.0"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 rustc-hex = "1.0"
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 rustc-serialize = "0.3"
 lru-cache = "0.1.1"
-rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 lazy_static = "0.2"
 bit-set = "0.4"
 rust-crypto = "0.2.34"
@@ -32,16 +32,16 @@ crossbeam = "0.2"
 crossbeam-channel = "0.2"
 transient-hashmap = "0.4.0"
 
-cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-cita-crypto-trait = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-crypto-trait = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 ethabi = "4.2.0"
 zktx = { git = "https://github.com/cryptape/zktx.git", optional = true }
 enum_primitive = "0.1.1"

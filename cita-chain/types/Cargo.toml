@@ -6,21 +6,21 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 edition = "2018"
 
 [dependencies]
-rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 serde = "1.0"
 serde_derive = "1.0"
 bloomchain = "0.2"
 lazy_static = "0.2"
 time = "0.1"
 cita-logger = "0.1.0"
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-db" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
 
 [features]
