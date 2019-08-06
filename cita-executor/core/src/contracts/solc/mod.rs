@@ -63,7 +63,7 @@ impl<'a> ContractCallExt for Executor {
         address: &Address,
         encoded_method: &[u8],
         from: Option<Address>,
-        block_id: BlockTag,
+        block_tag: BlockTag,
     ) -> Result<Bytes, String> {
         let call_request = CallRequest {
             from,
@@ -71,6 +71,6 @@ impl<'a> ContractCallExt for Executor {
             data: Some(encoded_method.to_vec()),
         };
         trace!("data: {:?}", call_request.data);
-        self.eth_call(call_request, block_id)
+        self.eth_call(call_request, block_tag)
     }
 }

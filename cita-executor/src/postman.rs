@@ -1035,7 +1035,7 @@ mod tests {
 
         assert_eq!(
             res.err(),
-            Some(BlockTag::Number(2)),
+            Some(BlockTag::Height(2)),
             "no executed result, executed should roll back"
         );
     }
