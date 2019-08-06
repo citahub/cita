@@ -18,15 +18,15 @@
 
 use crate::block::BlockBody;
 use crate::block_number::BlockNumber;
+use crate::block_receipts::BlockReceipts;
 use crate::header::Header;
 use crate::log_blooms::LogBloomGroup;
 use crate::receipt::Receipt;
+use crate::transaction_index::TransactionIndex;
 use bloomchain::group::GroupPosition;
 use cita_types::{H256, H264};
 use libproto::blockchain::Proof;
-use rlp::*;
 use std::ops::{Deref, Index};
-use util::*;
 
 /// Represents index of extra data in database
 #[derive(Copy, Debug, Hash, Eq, PartialEq, Clone)]
@@ -217,12 +217,6 @@ impl From<GroupPosition> for LogGroupPosition {
     }
 }
 
-impl HeapSizeOf for LogGroupPosition {
-    fn heap_size_of_children(&self) -> usize {
-        0
-    }
-}
-
 impl DBIndex<LogBloomGroup> for LogGroupPosition {
     type Item = LogGroupKey;
 
@@ -238,87 +232,9 @@ impl DBIndex<LogBloomGroup> for LogGroupPosition {
     }
 }
 
-/// Represents address of certain transaction within block
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct TransactionIndex {
-    /// Block hash
-    pub block_hash: H256,
-    /// Transaction index within the block
-    pub index: usize,
-}
-
-impl HeapSizeOf for TransactionIndex {
-    fn heap_size_of_children(&self) -> usize {
-        0
-    }
-}
-
-impl Decodable for TransactionIndex {
-    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        let tx_address = TransactionIndex {
-            block_hash: rlp.val_at(0)?,
-            index: rlp.val_at(1)?,
-        };
-
-        Ok(tx_address)
-    }
-}
-
-impl Encodable for TransactionIndex {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(2);
-        s.append(&self.block_hash);
-        s.append(&self.index);
-    }
-}
-
-/// Contains all block receipts.
-#[derive(Clone)]
-pub struct BlockReceipts {
-    pub receipts: Vec<Receipt>,
-}
-
-impl BlockReceipts {
-    pub fn new(receipts: Vec<Receipt>) -> Self {
-        BlockReceipts { receipts }
-    }
-}
-
-impl Decodable for BlockReceipts {
-    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        Ok(BlockReceipts {
-            receipts: rlp.as_list()?,
-        })
-    }
-}
-
-impl Encodable for BlockReceipts {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        s.append_list(&self.receipts);
-    }
-}
-
 impl Index<usize> for BlockReceipts {
     type Output = Receipt;
     fn index(&self, i: usize) -> &Receipt {
         &self.receipts[i]
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::BlockReceipts;
-    use rlp::*;
-
-    #[test]
-    fn encode_block_receipts() {
-        let br = BlockReceipts::new(Vec::new());
-
-        let mut s = RlpStream::new_list(2);
-        s.append(&br);
-        assert!(!s.is_finished(), "List shouldn't finished yet");
-        s.append(&br);
-        assert!(s.is_finished(), "List should be finished now");
-        s.out();
     }
 }
