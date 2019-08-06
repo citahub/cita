@@ -17,8 +17,6 @@
 
 extern crate cita_crypto as crypto;
 #[macro_use]
-extern crate rlp_derive;
-#[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate lazy_static;

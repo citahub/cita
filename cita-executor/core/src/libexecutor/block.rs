@@ -509,4 +509,15 @@ mod tests {
 
         assert_eq!(body_rlp, body_encoded);
     }
+
+    #[test]
+    fn test_encode_and_decode_null() {
+        let transactions = vec![];
+        let body = BlockBody { transactions };
+        let body_rlp = rlp::encode(&body);
+        let body: BlockBody = rlp::decode(&body_rlp);
+        let body_encoded = rlp::encode(&body).into_vec();
+
+        assert_eq!(body_rlp, body_encoded);
+    }
 }
