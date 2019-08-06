@@ -201,10 +201,10 @@ impl ExecutedBlock {
 
                 // Note: quota_used in Receipt is self.current_quota_used, this will be
                 // handled by localized_receipt() while getting a single transaction receipt.
-                let cumulative_gas_used = context.quota_used + ret.quota_used;
+                let cumulative_quota_used = context.quota_used + ret.quota_used;
                 let receipt = Receipt::new(
                     None,
-                    cumulative_gas_used,
+                    cumulative_quota_used,
                     ret.logs,
                     receipt_error,
                     ret.account_nonce,

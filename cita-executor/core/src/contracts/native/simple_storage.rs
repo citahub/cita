@@ -1,17 +1,18 @@
 use self::bincode::internal::serialize_into;
 use self::bincode::Infinite;
 use super::factory::Contract;
-use crate::contracts::tools::method as method_tools;
 
 use bincode;
 use cita_types::{H256, U256};
 use std::io::Write;
 
-use byteorder::BigEndian;
-
-use crate::cita_executive::{EnvInfo, VmExecParams};
+use crate::cita_executive::VmExecParams;
+use crate::context::Context;
 use crate::contracts::native::factory::NativeError;
+use crate::contracts::tools::method as method_tools;
 use crate::storage::{Array, Map, Scalar};
+
+use byteorder::BigEndian;
 use cita_vm::evm::DataProvider;
 use cita_vm::evm::InterpreterResult;
 
@@ -28,7 +29,7 @@ impl Contract for SimpleStorage {
     fn exec(
         &mut self,
         params: &VmExecParams,
-        _env_info: &EnvInfo,
+        _context: &Context,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         if let Some(ref data) = params.data {

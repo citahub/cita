@@ -892,10 +892,10 @@ mod tests {
             .add_balance(&sender, U256::from(18 + 100_000))
             .unwrap();
 
-        let mut info = Context::default();
-        info.gas_limit = U256::from(100_000);
+        let mut context = Context::default();
+        context.block_quota_limit = U256::from(100_000);
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let native_factory = NativeFactory::default();
 
         let state = Arc::new(RefCell::new(state));
@@ -905,7 +905,7 @@ mod tests {
                 Arc::new(block_data_provider),
                 state,
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Charge,
             )
             .exec(&t, &BlockSysConfig::default())
@@ -943,10 +943,10 @@ mod tests {
             .add_balance(&sender, U256::from(18 + 100_000))
             .unwrap();
 
-        let mut info = Context::default();
-        info.gas_limit = U256::from(100_000);
+        let mut context = Context::default();
+        context.block_quota_limit = U256::from(100_000);
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
 
         let conf = BlockSysConfig::default();
 
@@ -957,7 +957,7 @@ mod tests {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Charge,
             )
             .exec(&t, &conf)
@@ -1000,11 +1000,11 @@ mod tests {
 
         let mut state = get_temp_state();
         state.add_balance(t.sender(), U256::from(100_042)).unwrap();
-        let mut info = Context::default();
-        info.gas_limit = U256::from(100_000);
+        let mut context = Context::default();
+        context.block_quota_limit = U256::from(100_000);
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         let result = {
@@ -1012,7 +1012,7 @@ mod tests {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Charge,
             )
             .exec(&t, &conf)
@@ -1044,11 +1044,11 @@ mod tests {
 
         let mut state = get_temp_state();
         state.add_balance(t.sender(), U256::from(100_042)).unwrap();
-        let mut info = Context::default();
-        info.gas_limit = U256::from(100);
+        let mut context = Context::default();
+        context.block_quota_limit = U256::from(100);
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         let result = {
@@ -1056,7 +1056,7 @@ mod tests {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Charge,
             )
             .exec(&t, &conf)
@@ -1086,11 +1086,11 @@ mod tests {
 
         let native_factory = NativeFactory::default();
         let state = get_temp_state();
-        let mut info = Context::default();
-        info.gas_limit = U256::from(100_000);
+        let mut context = Context::default();
+        context.block_quota_limit = U256::from(100_000);
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         let result = {
@@ -1098,7 +1098,7 @@ mod tests {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf)
@@ -1146,11 +1146,11 @@ contract HelloWorld {
 
         let state = get_temp_state();
 
-        let info = Context::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         let res = {
@@ -1158,7 +1158,7 @@ contract HelloWorld {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf)
@@ -1209,11 +1209,11 @@ contract AbiTest {
 
         let state = get_temp_state();
 
-        let info = Context::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         {
@@ -1221,7 +1221,7 @@ contract AbiTest {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf);
@@ -1275,11 +1275,11 @@ contract AbiTest {
         }
         .fake_sign(keypair.address().clone());
 
-        let info = Context::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         {
@@ -1287,7 +1287,7 @@ contract AbiTest {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf);
@@ -1351,11 +1351,11 @@ contract AbiTest {
         }
         .fake_sign(keypair.address().clone());
 
-        let info = Context::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         {
@@ -1363,7 +1363,7 @@ contract AbiTest {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf);
@@ -1432,11 +1432,11 @@ contract AbiTest {
         }
         .fake_sign(keypair.address().clone());
 
-        let info = Context::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         {
@@ -1444,7 +1444,7 @@ contract AbiTest {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf);
@@ -1529,11 +1529,11 @@ contract FakePermissionManagement {
         }
         .fake_sign(keypair.address().clone());
 
-        let info = Context::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         {
@@ -1541,7 +1541,7 @@ contract FakePermissionManagement {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf);
