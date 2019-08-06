@@ -21,6 +21,7 @@ use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::tx_gas_schedule::TxGasSchedule;
 use crate::types::context::Context;
+use crate::types::block_number::BlockNumber;
 use crate::types::log_entry::LogEntry;
 use crate::types::transaction::{Action, SignedTransaction};
 

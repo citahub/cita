@@ -22,7 +22,7 @@ use std::str::FromStr;
 
 use crate::contracts::tools::method as method_tools;
 use crate::libexecutor::executor::Executor;
-use crate::types::block_tag::BlockTag;
+use crate::types::block_number::BlockTag;
 use crate::types::reserved_addresses;
 
 use cita_types::{Address, H256};
@@ -72,7 +72,7 @@ impl<'a> VersionManager<'a> {
 //mod tests {
 //    use super::VersionManager;
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::block_tag::BlockTag;
+//    use crate::types::block_number::BlockTag;
 //
 //    #[test]
 //    fn test_get_version() {

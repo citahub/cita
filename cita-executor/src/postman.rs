@@ -20,7 +20,7 @@ use crate::core::libexecutor::block::{ClosedBlock, OpenBlock};
 use crate::core::libexecutor::call_request::CallRequest;
 use crate::core::receipt::ReceiptError;
 use crate::core::tx_gas_schedule::TxGasSchedule;
-use crate::types::block_tag::BlockTag;
+use crate::types::block_number::BlockTag;
 use cita_types::U256;
 use cita_types::{Address, H256};
 use crossbeam_channel::{Receiver, Sender};
@@ -253,9 +253,9 @@ impl Postman {
         // `ExecutedResult<height=51..60>` based on its persisted data. It has to rollback
         // to 50 to keep equal to cita-chain, and then re-synchronize.
         //
-        // Here the returned value `BlockTag::Number(height - 1)` would be passed out to main()
+        // Here the returned value `BlockTag::Height(height - 1)` would be passed out to main()
         // thread. Then main() would restart executor thread and let executor starts with
-        // `BlockTag::Number(height - 1)`.
+        // `BlockTag::Height(height - 1)`.
         if executed_result.is_none() {
             warn!(
                 "chain(height={}) is lagging behind executor(height={}). \

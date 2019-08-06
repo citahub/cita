@@ -16,7 +16,7 @@
 
 use super::{limit_logs, PollFilter, PollId};
 use crate::libchain::chain::Chain;
-use crate::types::block_tag::{BlockTag, Tag};
+use crate::types::block_number::{BlockTag, Tag};
 use crate::types::filter::Filter as EthcoreFilter;
 use cita_types::H256;
 use jsonrpc_types::rpc_types::{Filter, FilterChanges, Log};

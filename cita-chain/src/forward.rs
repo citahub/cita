@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::types::block_tag::BlockTag;
+use crate::types::block_number::BlockTag;
 use crate::types::filter::Filter;
 use cita_types::H256;
 use core::filters::eth_filter::EthFilter;

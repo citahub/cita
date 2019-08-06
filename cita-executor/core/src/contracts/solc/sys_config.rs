@@ -24,7 +24,7 @@ use crate::contracts::solc::version_management::VersionManager;
 use crate::contracts::tools::method as method_tools;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::Executor;
-use crate::types::block_tag::{BlockTag, Tag};
+use crate::types::block_number::{BlockTag, Tag};
 use crate::types::reserved_addresses;
 
 use cita_types::{Address, H256, U256};
@@ -355,7 +355,7 @@ impl<'a> SysConfig<'a> {
 //
 //    use super::{EconomicalModel, SysConfig, TokenInfo};
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::block_tag::BlockTag;
+//    use crate::types::block_number::BlockTag;
 //    use cita_types::Address;
 //    use std::str::FromStr;
 //

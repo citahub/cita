@@ -27,7 +27,7 @@ pub use crate::libexecutor::block::*;
 use crate::libexecutor::genesis::Genesis;
 use crate::log_blooms::LogBloomGroup;
 use crate::trie_db::TrieDB;
-use crate::types::block_tag::{BlockTag, Tag};
+use crate::types::block_number::{BlockTag, Tag};
 use crate::types::extras::DBIndex;
 use crate::types::extras::*;
 pub use byteorder::{BigEndian, ByteOrder};
@@ -455,131 +455,131 @@ pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
 
     consensus_config
 }
-//#[cfg(test)]
-//mod tests {
-//    extern crate cita_logger as logger;
-//    extern crate tempdir;
-//    use crate::libexecutor::command::Commander;
-//    use crate::libexecutor::command::{Command, CommandResp};
-//    use crate::libexecutor::fsm::FSM;
-//    use crate::tests::helpers;
-//    use crate::types::ids::BlockTag;
-//    use cita_crypto::{CreateKey, KeyPair};
-//    use cita_types::Address;
-//    use std::thread;
-//    use std::time::Duration;
-//
-//    #[test]
-//    #[cfg(feature = "sha3hash")]
-//    fn test_chain_name_valid_block_number() {
-//        use crate::contracts::solc::sys_config::SysConfig;
-//        use crate::types::reserved_addresses;
-//        use cita_types::H256;
-//        use rustc_hex::FromHex;
-//        use std::str::FromStr;
-//
-//        let privkey =
-//            H256::from("0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6");
-//
-//        let mut executor = helpers::init_executor();
-//        let to = Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
-//        let data = "c0c41f220000000000000000000000000000000000000000000\
-//                    000000000000000000020000000000000000000000000000000\
-//                    000000000000000000000000000000000531323334350000000\
-//                    00000000000000000000000000000000000000000000000";
-//        let code = data.from_hex().unwrap();
-//        let block = helpers::create_block(&executor, to, &code, (0, 1), &privkey);
-//
-//        let closed_block = executor.into_fsm(block);
-//        let _executed_result = executor.grow(closed_block);
-//
-//        let chain_name_latest = SysConfig::new(&executor)
-//            .chain_name(BlockTag::Latest)
-//            .unwrap();
-//
-//        let chain_name_pending = SysConfig::new(&executor)
-//            .chain_name(BlockTag::Tag(Tag::Pending))
-//            .unwrap();
-//
-//        assert_eq!(chain_name_pending, "12345");
-//        assert_eq!(chain_name_latest, "test-chain");
-//    }
-//
-//    #[test]
-//    fn test_rollback_current_height() {
-//        let keypair = KeyPair::gen_keypair();
-//        let privkey = keypair.privkey();
-//        let mut executor = helpers::init_executor();
-//
-//        let data = helpers::generate_contract();
-//        for _i in 0..5 {
-//            let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
-//            let closed_block = executor.into_fsm(block.clone());
-//            executor.grow(closed_block);
-//        }
-//
-//        let current_height = executor.get_current_height();
-//        assert_eq!(current_height, 5);
-//
-//        // rollback_height = current_height
-//        executor.rollback_current_height(BlockTag::Number(current_height));
-//        assert_eq!(executor.get_current_height(), current_height);
-//
-//        // rollback height = current_height - 3
-//        let rollback_to_2 = current_height - 3;
-//        executor.rollback_current_height(BlockTag::Number(rollback_to_2));
-//        assert_eq!(executor.get_current_height(), 2);
-//
-//        // rollback_height = 0
-//        executor.rollback_current_height(BlockTag::Earliest);
-//        assert_eq!(executor.get_current_height(), 0);
-//    }
-//
-//    #[test]
-//    fn test_closed_block_grow() {
-//        let keypair = KeyPair::gen_keypair();
-//        let privkey = keypair.privkey();
-//        let mut executor = helpers::init_executor();
-//
-//        let data = helpers::generate_contract();
-//        let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
-//        let closed_block = executor.into_fsm(block.clone());
-//        let closed_block_height = closed_block.number();
-//        let closed_block_hash = closed_block.hash();
-//        executor.grow(closed_block);
-//
-//        let current_height = executor.get_current_height();
-//        let current_hash = executor.block_hash(current_height);
-//        assert_eq!(closed_block_height, current_height);
-//        assert_eq!(closed_block_hash, current_hash);
-//    }
-//
-//    #[test]
-//    fn test_executor_exit() {
-//        let (_fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
-//        let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
-//        let (command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
-//        let (command_resp_sender, command_resp_receiver) = crossbeam_channel::bounded(0);
-//        let mut executor = helpers::init_executor2(
-//            fsm_req_receiver.clone(),
-//            fsm_resp_sender,
-//            command_req_receiver,
-//            command_resp_sender,
-//        );
-//
-//        let handle = thread::spawn(move || {
-//            executor.do_loop();
-//        });
-//        // send Command, this cause executor exit
-//        command_req_sender.send(Command::Exit(BlockTag::Number(0)));
-//
-//        ::std::thread::sleep(Duration::new(2, 0));
-//        let resp: CommandResp = command_resp_receiver.recv().unwrap();
-//        assert_eq!(format!("{}", resp), format!("{}", CommandResp::Exit));
-//
-//        handle.join().expect("
-//            We send command exit and expect executor thread return, so this test execute successfully.
-//            If executor did not died, this test will run in loop endless.
-//        ");
-//    }
-//}
+#[cfg(test)]
+mod tests {
+    extern crate cita_logger as logger;
+    extern crate tempdir;
+    use crate::libexecutor::command::Commander;
+    use crate::libexecutor::command::{Command, CommandResp};
+    use crate::libexecutor::fsm::FSM;
+    use crate::tests::helpers;
+    use crate::types::ids::BlockId;
+    use cita_crypto::{CreateKey, KeyPair};
+    use cita_types::Address;
+    use std::thread;
+    use std::time::Duration;
+
+    #[test]
+    #[cfg(feature = "sha3hash")]
+    fn test_chain_name_valid_block_number() {
+        use crate::contracts::solc::sys_config::SysConfig;
+        use crate::types::reserved_addresses;
+        use cita_types::H256;
+        use rustc_hex::FromHex;
+        use std::str::FromStr;
+
+        let privkey =
+            H256::from("0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6");
+
+        let mut executor = helpers::init_executor();
+        let to = Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
+        let data = "c0c41f220000000000000000000000000000000000000000000\
+                    000000000000000000020000000000000000000000000000000\
+                    000000000000000000000000000000000531323334350000000\
+                    00000000000000000000000000000000000000000000000";
+        let code = data.from_hex().unwrap();
+        let block = helpers::create_block(&executor, to, &code, (0, 1), &privkey);
+
+        let closed_block = executor.into_fsm(block);
+        let _executed_result = executor.grow(closed_block);
+
+        let chain_name_latest = SysConfig::new(&executor)
+            .chain_name(BlockId::Latest)
+            .unwrap();
+
+        let chain_name_pending = SysConfig::new(&executor)
+            .chain_name(BlockId::Pending)
+            .unwrap();
+
+        assert_eq!(chain_name_pending, "12345");
+        assert_eq!(chain_name_latest, "test-chain");
+    }
+
+    #[test]
+    fn test_rollback_current_height() {
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let mut executor = helpers::init_executor();
+
+        let data = helpers::generate_contract();
+        for _i in 0..5 {
+            let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
+            let closed_block = executor.into_fsm(block.clone());
+            executor.grow(closed_block);
+        }
+
+        let current_height = executor.get_current_height();
+        assert_eq!(current_height, 5);
+
+        // rollback_height = current_height
+        executor.rollback_current_height(BlockId::Number(current_height));
+        assert_eq!(executor.get_current_height(), current_height);
+
+        // rollback height = current_height - 3
+        let rollback_to_2 = current_height - 3;
+        executor.rollback_current_height(BlockId::Number(rollback_to_2));
+        assert_eq!(executor.get_current_height(), 2);
+
+        // rollback_height = 0
+        executor.rollback_current_height(BlockId::Earliest);
+        assert_eq!(executor.get_current_height(), 0);
+    }
+
+    #[test]
+    fn test_closed_block_grow() {
+        let keypair = KeyPair::gen_keypair();
+        let privkey = keypair.privkey();
+        let mut executor = helpers::init_executor();
+
+        let data = helpers::generate_contract();
+        let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
+        let closed_block = executor.into_fsm(block.clone());
+        let closed_block_height = closed_block.number();
+        let closed_block_hash = closed_block.hash();
+        executor.grow(closed_block);
+
+        let current_height = executor.get_current_height();
+        let current_hash = executor.block_hash(current_height);
+        assert_eq!(closed_block_height, current_height);
+        assert_eq!(closed_block_hash, current_hash);
+    }
+
+    #[test]
+    fn test_executor_exit() {
+        let (_fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
+        let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
+        let (command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
+        let (command_resp_sender, command_resp_receiver) = crossbeam_channel::bounded(0);
+        let mut executor = helpers::init_executor2(
+            fsm_req_receiver.clone(),
+            fsm_resp_sender,
+            command_req_receiver,
+            command_resp_sender,
+        );
+
+        let handle = thread::spawn(move || {
+            executor.do_loop();
+        });
+        // send Command, this cause executor exit
+        command_req_sender.send(Command::Exit(BlockId::Number(0)));
+
+        ::std::thread::sleep(Duration::new(2, 0));
+        let resp: CommandResp = command_resp_receiver.recv().unwrap();
+        assert_eq!(format!("{}", resp), format!("{}", CommandResp::Exit));
+
+        handle.join().expect("
+            We send command exit and expect executor thread return, so this test execute successfully.
+            If executor did not died, this test will run in loop endless.
+        ");
+    }
+}

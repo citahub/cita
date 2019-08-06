@@ -21,7 +21,7 @@ use crate::contracts::solc::{
     QuotaManager, Resource, SysConfig, UserManagement, VersionManager, AUTO_EXEC_QL_VALUE,
 };
 use crate::libexecutor::economical_model::EconomicalModel;
-use crate::types::block_tag::BlockTag;
+use crate::types::block_number::BlockTag;
 use cita_types::{Address, U256};
 use std::collections::HashMap;
 

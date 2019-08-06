@@ -22,7 +22,7 @@ use std::str::FromStr;
 
 use crate::contracts::tools::{decode as decode_tools, method as method_tools};
 use crate::libexecutor::executor::Executor;
-use crate::types::block_tag::BlockTag;
+use crate::types::block_number::BlockTag;
 use crate::types::reserved_addresses;
 
 use cita_types::{Address, H160, H256};
@@ -190,7 +190,7 @@ pub fn contains_resource(
 //    use super::{PermissionManagement, Resource, DEFAULT_SUPER_ADEMIN};
 //    use crate::contracts::tools::method as method_tools;
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::block_tag::BlockTag;
+//    use crate::types::block_number::BlockTag;
 //    use crate::types::reserved_addresses;
 //    use cita_types::{Address, H160, H256};
 //    use std::collections::HashMap;

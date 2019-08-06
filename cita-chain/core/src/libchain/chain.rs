@@ -35,7 +35,7 @@ pub use crate::types::extras::{
     LogGroupPosition, TransactionIndex,
 };
 use crate::types::{
-    block_tag::BlockTag, block_tag::Tag, block_tag::TransactionHash, filter::Filter,
+    block_number::BlockTag, block_number::Tag, block_number::TransactionHash, filter::Filter,
     log_entry::LocalizedLogEntry, log_entry::LogEntry, transaction::Action,
     transaction::SignedTransaction,
 };

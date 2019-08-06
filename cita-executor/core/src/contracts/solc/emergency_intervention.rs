@@ -22,7 +22,7 @@ use std::str::FromStr;
 use super::ContractCallExt;
 use crate::contracts::tools::method as method_tools;
 use crate::libexecutor::executor::Executor;
-use crate::types::block_tag::BlockTag;
+use crate::types::block_number::BlockTag;
 use crate::types::reserved_addresses;
 
 use cita_types::Address;
@@ -64,13 +64,13 @@ impl<'a> EmergencyIntervention<'a> {
 //mod tests {
 //    use super::EmergencyIntervention;
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::block_tag::BlockTag;
+//    use crate::types::block_number::{BlockTag, Tag};
 //
 //    #[test]
 //    fn test_state() {
 //        let executor = init_executor();
 //        let emergency_intervention = EmergencyIntervention::new(&executor);
-//        let state = emergency_intervention.state(BlockTag::Pending).unwrap();
+//        let state = emergency_intervention.state(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(state, false);
 //    }
 //}

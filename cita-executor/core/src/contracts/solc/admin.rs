@@ -20,7 +20,7 @@
 use super::ContractCallExt;
 use crate::contracts::tools::{decode as decode_tools, method as method_tools};
 use crate::libexecutor::executor::Executor;
-use crate::types::block_tag::BlockTag;
+use crate::types::block_number::BlockTag;
 use crate::types::reserved_addresses;
 use cita_types::Address;
 use std::str::FromStr;
@@ -52,14 +52,14 @@ impl<'a> Admin<'a> {
 //mod tests {
 //    use super::Admin;
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::block_tag::BlockTag;
+//    use crate::types::block_number::{BlockTag, Tag};
 //    use cita_types::Address;
 //
 //    #[test]
 //    fn test_admin() {
 //        let executor = init_executor();
 //        let admin = Admin::new(&executor);
-//        let addr = admin.get_admin(BlockTag::Pending).unwrap();
+//        let addr = admin.get_admin(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(
 //            addr,
 //            Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523")

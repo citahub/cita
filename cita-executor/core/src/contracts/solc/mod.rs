@@ -41,7 +41,7 @@ pub use self::version_management::VersionManager;
 use crate::libexecutor::call_request::CallRequest;
 use crate::libexecutor::command::Commander;
 use crate::libexecutor::executor::Executor;
-use crate::types::block_tag::BlockTag;
+use crate::types::block_number::BlockTag;
 use cita_types::Address;
 use util::Bytes;
 

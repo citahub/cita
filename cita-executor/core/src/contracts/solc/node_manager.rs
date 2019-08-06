@@ -24,7 +24,7 @@ use std::str::FromStr;
 use crate::contracts::tools::{decode as decode_tools, method as method_tools};
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::Executor;
-use crate::types::block_tag::BlockTag;
+use crate::types::block_number::BlockTag;
 use crate::types::reserved_addresses;
 
 use cita_types::{Address, H160};

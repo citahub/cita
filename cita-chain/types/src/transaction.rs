@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::block_tag::BlockNumber;
+use crate::block_number::BlockNumber;
 use crate::crypto::{
     pubkey_to_address, PubKey, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN,
 };

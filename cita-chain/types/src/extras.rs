@@ -17,7 +17,7 @@
 //! Blockchain DB extras.
 
 use crate::block::BlockBody;
-use crate::block_tag::BlockNumber;
+use crate::block_number::BlockNumber;
 use crate::header::Header;
 use crate::log_blooms::LogBloomGroup;
 use crate::receipt::Receipt;

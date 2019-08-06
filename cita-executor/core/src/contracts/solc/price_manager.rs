@@ -22,7 +22,7 @@ use std::str::FromStr;
 
 use crate::contracts::tools::{decode as decode_tools, method as method_tools};
 use crate::libexecutor::executor::Executor;
-use crate::types::block_tag::BlockTag;
+use crate::types::block_number::BlockTag;
 use crate::types::reserved_addresses;
 
 use cita_types::{Address, U256};
@@ -66,7 +66,7 @@ impl<'a> PriceManagement<'a> {
 //mod tests {
 //    use super::PriceManagement;
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::block_tag::BlockTag;
+//    use crate::types::block_number::BlockTag;
 //    use cita_types::U256;
 //
 //    #[test]

@@ -29,8 +29,12 @@ use crate::libexecutor::block::EVMBlockDataProvider;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::call_request::CallRequest;
 use crate::trie_db::TrieDB;
+<<<<<<< HEAD
 use crate::types::context::Context;
 use crate::types::block_tag::{BlockTag, Tag};
+=======
+use crate::types::block_number::{BlockTag, Tag};
+>>>>>>> [chores] use tag
 use crate::types::transaction::{Action, SignedTransaction, Transaction};
 pub use byteorder::{BigEndian, ByteOrder};
 use cita_database::RocksDB;

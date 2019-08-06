@@ -1,4 +1,4 @@
-use cita_types::{H256, U256};
+use cita_types::H256;
 use jsonrpc_types::rpc_types::{BlockNumber as RpcBlockNumber, BlockTag as RpcBlockTag};
 
 pub type TransactionHash = H256;

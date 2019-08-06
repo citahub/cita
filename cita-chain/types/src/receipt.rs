@@ -16,7 +16,7 @@
 
 //! Receipt
 
-use crate::block_tag::BlockNumber;
+use crate::block_number::BlockNumber;
 use crate::log_entry::{LocalizedLogEntry, LogBloom, LogEntry};
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};

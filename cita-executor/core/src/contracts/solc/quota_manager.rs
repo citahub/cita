@@ -23,7 +23,7 @@ use std::str::FromStr;
 
 use crate::contracts::tools::{decode as decode_tools, method as method_tools};
 use crate::libexecutor::executor::Executor;
-use crate::types::block_tag::BlockTag;
+use crate::types::block_number::BlockTag;
 use crate::types::reserved_addresses;
 
 use cita_types::{traits::LowerHex, Address, H160};
@@ -205,7 +205,7 @@ impl<'a> QuotaManager<'a> {
 //
 //    use super::{QuotaManager, AQL_VALUE, AUTO_EXEC_QL_VALUE, BQL_VALUE};
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::block_tag::BlockTag;
+//    use crate::types::block_number::BlockTag;
 //    use cita_types::H160;
 //    use std::str::FromStr;
 //
