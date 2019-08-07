@@ -71,27 +71,22 @@ extern crate rand;
 
 #[cfg(test)]
 pub mod benches;
-pub mod builtin;
 pub mod cita_executive;
 pub mod storage;
 pub mod tx_gas_schedule;
 
 // FIXME: Rename this after this work finished
 pub mod core_types;
+pub mod error;
 pub mod executed;
 pub mod factory;
 #[cfg(test)]
 pub mod tests;
-#[macro_use]
-pub mod engines;
-pub mod error;
 
 pub mod authentication;
 pub mod contracts;
 pub mod libexecutor;
 pub mod trie_db;
-
-mod spec;
 
 pub use crate::factory::*;
 pub use crate::types::*;
