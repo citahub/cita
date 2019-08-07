@@ -2,6 +2,13 @@ use crate::block_number::BlockNumber;
 use bloomchain::group::GroupPosition;
 use cita_types::{H256, H264};
 
+const TRANSACTION_INDEX: u8 = 0;
+const BLOCKRECEIPTS_INDEX: u8 = 1;
+const BLOCKSBLOOMS_INDEX: u8 = 2;
+const BLOCKHASH_INDEX: u8 = 3;
+const BLOCKHEADHASH_INDEX: u8 = 4;
+const BLOCKBODYHASH_INDEX: u8 = 5;
+
 pub trait DBIndex {
     fn get_index(&self) -> Vec<u8>;
 }
@@ -30,8 +37,7 @@ impl DBIndex for CurrentHeight {
     }
 }
 
-// pub struct HashToHeader;
-pub struct Hash2Header(H256);
+pub struct Hash2Header(pub H256);
 
 impl DBIndex for Hash2Header {
     fn get_index(&self) -> Vec<u8> {
@@ -39,7 +45,7 @@ impl DBIndex for Hash2Header {
     }
 }
 
-pub struct Hash2BlockBody(H256);
+pub struct Hash2BlockBody(pub H256);
 
 impl DBIndex for Hash2BlockBody {
     fn get_index(&self) -> Vec<u8> {
@@ -47,7 +53,7 @@ impl DBIndex for Hash2BlockBody {
     }
 }
 
-pub struct Hash2BlockNumber(H256);
+pub struct Hash2BlockNumber(pub H256);
 
 impl DBIndex for Hash2BlockNumber {
     fn get_index(&self) -> Vec<u8> {
@@ -55,13 +61,12 @@ impl DBIndex for Hash2BlockNumber {
     }
 }
 
-pub struct BlockNumber2Header(BlockNumber);
+pub struct BlockNumber2Header(pub BlockNumber);
 
 impl DBIndex for BlockNumber2Header {
     fn get_index(&self) -> Vec<u8> {
         let mut result = [0u8; 9];
-        // result[0] = ExtrasIndex::BlockHeadHash as u8;
-        result[0] = 4 as u8;
+        result[0] = BLOCKHEADHASH_INDEX as u8;
         result[1] = (self.0 >> 56) as u8;
         result[2] = (self.0 >> 48) as u8;
         result[3] = (self.0 >> 40) as u8;
@@ -74,13 +79,12 @@ impl DBIndex for BlockNumber2Header {
     }
 }
 
-pub struct BlockNumber2Body(BlockNumber);
+pub struct BlockNumber2Body(pub BlockNumber);
 
 impl DBIndex for BlockNumber2Body {
     fn get_index(&self) -> Vec<u8> {
         let mut result = [0u8; 9];
-        // result[0] = ExtrasIndex::BlockBodyHash as u8;
-        result[0] = 5 as u8;
+        result[0] = BLOCKBODYHASH_INDEX as u8;
         result[1] = (self.0 >> 56) as u8;
         result[2] = (self.0 >> 48) as u8;
         result[3] = (self.0 >> 40) as u8;
@@ -93,13 +97,12 @@ impl DBIndex for BlockNumber2Body {
     }
 }
 
-pub struct BlockNumber2Hash(BlockNumber);
+pub struct BlockNumber2Hash(pub BlockNumber);
 
 impl DBIndex for BlockNumber2Hash {
     fn get_index(&self) -> Vec<u8> {
         let mut result = [0u8; 5];
-        // result[0] = ExtrasIndex::BlockHash as u8;
-        result[0] = 3 as u8;
+        result[0] = BLOCKHASH_INDEX as u8;
         result[1] = (self.0 >> 24) as u8;
         result[2] = (self.0 >> 16) as u8;
         result[3] = (self.0 >> 8) as u8;
@@ -108,34 +111,41 @@ impl DBIndex for BlockNumber2Hash {
     }
 }
 
-pub struct Hash2TransactionIndex(H256);
+pub struct Hash2TransactionIndex(pub H256);
 
 impl DBIndex for Hash2TransactionIndex {
     fn get_index(&self) -> Vec<u8> {
         let mut result = H264::default();
-        result[0] = 0 as u8;
+        result[0] = TRANSACTION_INDEX as u8;
         (*result)[1..].clone_from_slice(&self.0);
         result.to_vec()
     }
 }
 
-pub struct Hash2BlockReceipts(H256);
+pub struct Hash2BlockReceipts(pub H256);
 
 impl DBIndex for Hash2BlockReceipts {
     fn get_index(&self) -> Vec<u8> {
         let mut result = H264::default();
-        result[0] = 1 as u8;
+        result[0] = BLOCKRECEIPTS_INDEX as u8;
         (*result)[1..].clone_from_slice(&self.0);
         result.to_vec()
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct LogGroupPosition(GroupPosition);
+
+impl From<GroupPosition> for LogGroupPosition {
+    fn from(position: GroupPosition) -> Self {
+        LogGroupPosition(position)
+    }
+}
 
 impl DBIndex for LogGroupPosition {
     fn get_index(&self) -> Vec<u8> {
         let mut result = [0u8; 6];
-        result[0] = 2 as u8;
+        result[0] = BLOCKSBLOOMS_INDEX as u8;
         result[1] = self.0.level as u8;
         result[2] = (self.0.index >> 24) as u8;
         result[3] = (self.0.index >> 16) as u8;
