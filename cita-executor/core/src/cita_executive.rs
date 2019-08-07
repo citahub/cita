@@ -216,21 +216,8 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         let mut finalize_result = match result {
             Ok(res) => {
                 if let Some(ref e) = res.exception {
-                    match e {
-                        // Note: cita-vm has not deduct cost for this four error.
-                        ExecutedException::VM(VMError::ExccedMaxBlockGasLimit) => {
-                            return Err(ExecutionError::BlockQuotaLimitReached)
-                        }
-                        ExecutedException::VM(VMError::InvalidNonce) => {
-                            return Err(ExecutionError::InvalidNonce)
-                        }
-                        ExecutedException::VM(VMError::NotEnoughBaseGas) => {
-                            return Err(ExecutionError::NotEnoughBaseGas)
-                        }
-                        ExecutedException::VM(VMError::NotEnoughBalance) => {
-                            return Err(ExecutionError::NotEnoughBalance)
-                        }
-                        _ => {}
+                    if let Some(err) = self.transform_base_gas_err(e) {
+                        return Err(err);
                     }
                 }
                 res
@@ -261,6 +248,22 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
         finalize_result.account_nonce = nonce;
         Ok(finalize_result)
+    }
+
+    fn transform_base_gas_err(&self, e: &ExecutedException) -> Option<ExecutionError> {
+        match e {
+            ExecutedException::VM(VMError::ExccedMaxBlockGasLimit) => {
+                Some(ExecutionError::BlockQuotaLimitReached)
+            }
+            ExecutedException::VM(VMError::InvalidNonce) => Some(ExecutionError::InvalidNonce),
+            ExecutedException::VM(VMError::NotEnoughBaseGas) => {
+                Some(ExecutionError::NotEnoughBaseGas)
+            }
+            ExecutedException::VM(VMError::NotEnoughBalance) => {
+                Some(ExecutionError::NotEnoughBalance)
+            }
+            _ => None,
+        }
     }
 
     fn payment_required(&self) -> bool {

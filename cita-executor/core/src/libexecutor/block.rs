@@ -187,7 +187,6 @@ impl ExecutedBlock {
                     ExecutedException::VM(VMError::Evm(EVMError::InvalidOpcode)) => {
                         Some(ReceiptError::BadInstruction)
                     }
-                    // ExecutionError::VM(VMError::Evm(EVMError::OutOfStack)) => Some(ReceiptError::StackUnderflow),
                     ExecutedException::VM(VMError::Evm(EVMError::OutOfStack)) => {
                         Some(ReceiptError::OutOfStack)
                     }
@@ -201,9 +200,16 @@ impl ExecutedBlock {
                     _ => Some(ReceiptError::Internal),
                 });
 
+                let tx_quota_used =
+                    if receipt_error.is_some() && receipt_error != Some(ReceiptError::Internal) {
+                        t.gas
+                    } else {
+                        ret.quota_used
+                    };
+
                 // Note: quota_used in Receipt is self.current_quota_used, this will be
                 // handled by localized_receipt() while getting a single transaction receipt.
-                let cumulative_quota_used = context.quota_used + ret.quota_used;
+                let cumulative_quota_used = context.quota_used + tx_quota_used;
                 let receipt = Receipt::new(
                     None,
                     cumulative_quota_used,
@@ -246,41 +252,24 @@ impl ExecutedBlock {
                 };
 
                 let schedule = TxGasSchedule::default();
-                let sender = *t.sender();
                 let tx_quota_used = match err {
                     ExecutionError::Internal(_) => t.gas,
                     _ => cmp::min(
                         self.state
                             .borrow_mut()
-                            .balance(&sender)
+                            .balance(t.sender())
                             .unwrap_or_else(|_| U256::from(0)),
                         U256::from(schedule.tx_gas),
                     ),
                 };
 
                 if (*conf).economical_model == EconomicalModel::Charge {
-                    let fee_value = tx_quota_used * t.gas_price();
-                    let sender_balance = self.state.borrow_mut().balance(&sender).unwrap();
-
-                    let tx_fee_value = if fee_value > sender_balance {
-                        sender_balance
-                    } else {
-                        fee_value
-                    };
-                    if let Err(err) = self.state.borrow_mut().sub_balance(&sender, tx_fee_value) {
-                        error!("Sub balance from error transaction sender failed, tx_fee_value={}, error={:?}", tx_fee_value, err);
-                    }
-
-                    if let Err(err) = self
-                        .state
-                        .borrow_mut()
-                        .add_balance(&context.coin_base, tx_fee_value)
-                    {
-                        error!(
-                            "Add fee to coinbase failed, tx_fee_value={}, error={:?}",
-                            tx_fee_value, err
-                        );
-                    }
+                    self.deal_with_err_gas_cost(
+                        t.sender(),
+                        &context.coin_base,
+                        tx_quota_used,
+                        t.gas_price(),
+                    );
                 }
 
                 let cumulative_quota_used = context.quota_used + tx_quota_used;
@@ -304,6 +293,40 @@ impl ExecutedBlock {
             if let Some(value) = self.account_gas.get_mut(t.sender()) {
                 *value -= tx_quota_used;
             }
+        }
+    }
+
+    fn deal_with_err_gas_cost(
+        &self,
+        sender: &Address,
+        coin_base: &Address,
+        gas: U256,
+        price: U256,
+    ) {
+        let fee_value = gas * price;
+        let sender_balance = self.state.borrow_mut().balance(sender).unwrap();
+
+        let tx_fee_value = if fee_value > sender_balance {
+            sender_balance
+        } else {
+            fee_value
+        };
+        if let Err(err) = self.state.borrow_mut().sub_balance(sender, tx_fee_value) {
+            error!(
+                "Sub balance from error transaction sender failed, tx_fee_value={}, error={:?}",
+                tx_fee_value, err
+            );
+        } else {
+            self.state
+                .borrow_mut()
+                .add_balance(&coin_base, tx_fee_value)
+                .map_err(|err| {
+                    error!(
+                        "Add fee to coinbase failed, tx_fee_value={}, error={:?}",
+                        tx_fee_value, err
+                    )
+                })
+                .ok();
         }
     }
 
