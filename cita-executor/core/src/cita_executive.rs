@@ -20,13 +20,9 @@ use crate::error::CallError;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::tx_gas_schedule::TxGasSchedule;
+use crate::types::context::Context;
 use crate::types::log_entry::LogEntry;
 use crate::types::transaction::{Action, SignedTransaction};
-use crate::types::BlockNumber;
-
-/// Simple vector of hashes, should be at most 256 items large, can be smaller if being used
-/// for a block whose number is less than 257.
-pub type LastHashes = Vec<H256>;
 
 ///amend the abi data
 const AMEND_ABI: u32 = 1;
@@ -44,7 +40,7 @@ pub struct CitaExecutive<'a, B> {
     block_provider: Arc<BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
     native_factory: &'a NativeFactory,
-    env_info: &'a EnvInfo,
+    context: &'a Context,
     economical_model: EconomicalModel,
 }
 
@@ -53,14 +49,14 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         block_provider: Arc<BlockDataProvider>,
         state: Arc<RefCell<State<B>>>,
         native_factory: &'a NativeFactory,
-        env_info: &'a EnvInfo,
+        context: &'a Context,
         economical_model: EconomicalModel,
     ) -> Self {
         Self {
             block_provider,
             state_provider: state,
             native_factory,
-            env_info,
+            context,
             economical_model,
         }
     }
@@ -258,7 +254,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
             let quota_used = t.gas - finalize_result.quota_left;
             let fee_value = quota_used * t.gas_price;
-            self.handle_tx_fee(&self.env_info.coin_base, fee_value)
+            self.handle_tx_fee(&self.context.coin_base, fee_value)
                 .expect("Add balance to coin_base must success");
             finalize_result.quota_used = quota_used;
         }
@@ -487,8 +483,8 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
     pub fn call_evm(&mut self, params: &VmExecParams) -> Result<ExecutedResult, ExecutionError> {
         let mut evm_transaction = build_evm_transaction(params);
-        let mut evm_config = build_evm_config(self.env_info.gas_limit.as_u64());
-        let evm_context = build_evm_context(&self.env_info);
+        let mut evm_config = build_evm_config(self.context.block_quota_limit.as_u64());
+        let evm_context = build_evm_context(&self.context);
 
         if !self.payment_required() {
             evm_transaction.value = U256::from(0);
@@ -541,7 +537,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 self.state_provider.clone(),
                 store,
             );
-            let result = match native_contract.exec(params, &self.env_info, &mut vm_data_provider) {
+            let result = match native_contract.exec(params, &self.context, &mut vm_data_provider) {
                 Ok(ret) => {
                     // Discard the checkpoint
                     self.state_provider.borrow_mut().discard_checkpoint();
@@ -579,13 +575,13 @@ pub fn build_evm_transaction(params: &VmExecParams) -> EVMTransaction {
     }
 }
 
-pub fn build_evm_context(env_info: &EnvInfo) -> EVMContext {
+pub fn build_evm_context(context: &Context) -> EVMContext {
     EVMContext {
-        gas_limit: env_info.gas_limit.as_u64(),
-        coinbase: env_info.coin_base,
-        number: U256::from(env_info.number),
-        timestamp: env_info.timestamp,
-        difficulty: env_info.difficulty,
+        gas_limit: context.block_quota_limit.as_u64(),
+        coinbase: context.coin_base,
+        number: U256::from(context.block_number),
+        timestamp: context.timestamp,
+        difficulty: context.difficulty,
     }
 }
 
@@ -790,41 +786,6 @@ impl Default for VmExecParams {
     }
 }
 
-/// Information concerning the execution environment for vm.
-#[derive(Debug, Clone)]
-pub struct EnvInfo {
-    /// The block number.
-    pub number: BlockNumber,
-    /// The fee refund address.
-    pub coin_base: Address,
-    /// The block timestamp.
-    pub timestamp: u64,
-    /// The block difficulty.
-    pub difficulty: U256,
-    /// The block gas limit.
-    pub gas_limit: U256,
-    /// The last 256 block hashes.
-    pub last_hashes: Arc<LastHashes>,
-    /// The gas used.
-    pub gas_used: U256,
-    pub account_gas_limit: U256,
-}
-
-impl Default for EnvInfo {
-    fn default() -> Self {
-        EnvInfo {
-            number: 0,
-            coin_base: Address::default(),
-            timestamp: 0,
-            difficulty: 0.into(),
-            gas_limit: U256::from(u64::max_value()),
-            last_hashes: Arc::new(vec![]),
-            gas_used: 0.into(),
-            account_gas_limit: 0.into(),
-        }
-    }
-}
-
 // There is not reverted expcetion in VMError, so handle this in ExecutedException.
 #[derive(Debug)]
 pub enum ExecutedException {
@@ -882,7 +843,7 @@ pub struct ExecutedResult {
 
 #[cfg(test)]
 mod tests {
-    use super::{CitaExecutive, EnvInfo, ExecutionError, TxGasSchedule};
+    use super::{CitaExecutive, Context, ExecutionError, TxGasSchedule};
     use crate::contracts::native::factory::Factory as NativeFactory;
     use crate::libexecutor::economical_model::EconomicalModel;
     use crate::libexecutor::{block::EVMBlockDataProvider, sys_config::BlockSysConfig};
@@ -931,10 +892,10 @@ mod tests {
             .add_balance(&sender, U256::from(18 + 100_000))
             .unwrap();
 
-        let mut info = EnvInfo::default();
-        info.gas_limit = U256::from(100_000);
+        let mut context = Context::default();
+        context.block_quota_limit = U256::from(100_000);
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let native_factory = NativeFactory::default();
 
         let state = Arc::new(RefCell::new(state));
@@ -944,7 +905,7 @@ mod tests {
                 Arc::new(block_data_provider),
                 state,
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Charge,
             )
             .exec(&t, &BlockSysConfig::default())
@@ -982,10 +943,10 @@ mod tests {
             .add_balance(&sender, U256::from(18 + 100_000))
             .unwrap();
 
-        let mut info = EnvInfo::default();
-        info.gas_limit = U256::from(100_000);
+        let mut context = Context::default();
+        context.block_quota_limit = U256::from(100_000);
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
 
         let conf = BlockSysConfig::default();
 
@@ -996,7 +957,7 @@ mod tests {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Charge,
             )
             .exec(&t, &conf)
@@ -1039,11 +1000,11 @@ mod tests {
 
         let mut state = get_temp_state();
         state.add_balance(t.sender(), U256::from(100_042)).unwrap();
-        let mut info = EnvInfo::default();
-        info.gas_limit = U256::from(100_000);
+        let mut context = Context::default();
+        context.block_quota_limit = U256::from(100_000);
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         let result = {
@@ -1051,7 +1012,7 @@ mod tests {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Charge,
             )
             .exec(&t, &conf)
@@ -1083,11 +1044,11 @@ mod tests {
 
         let mut state = get_temp_state();
         state.add_balance(t.sender(), U256::from(100_042)).unwrap();
-        let mut info = EnvInfo::default();
-        info.gas_limit = U256::from(100);
+        let mut context = Context::default();
+        context.block_quota_limit = U256::from(100);
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         let result = {
@@ -1095,7 +1056,7 @@ mod tests {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Charge,
             )
             .exec(&t, &conf)
@@ -1125,11 +1086,11 @@ mod tests {
 
         let native_factory = NativeFactory::default();
         let state = get_temp_state();
-        let mut info = EnvInfo::default();
-        info.gas_limit = U256::from(100_000);
+        let mut context = Context::default();
+        context.block_quota_limit = U256::from(100_000);
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         let result = {
@@ -1137,7 +1098,7 @@ mod tests {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf)
@@ -1185,11 +1146,11 @@ contract HelloWorld {
 
         let state = get_temp_state();
 
-        let info = EnvInfo::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         let res = {
@@ -1197,7 +1158,7 @@ contract HelloWorld {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf)
@@ -1248,11 +1209,11 @@ contract AbiTest {
 
         let state = get_temp_state();
 
-        let info = EnvInfo::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         {
@@ -1260,7 +1221,7 @@ contract AbiTest {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf);
@@ -1314,11 +1275,11 @@ contract AbiTest {
         }
         .fake_sign(keypair.address().clone());
 
-        let info = EnvInfo::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         {
@@ -1326,7 +1287,7 @@ contract AbiTest {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf);
@@ -1390,11 +1351,11 @@ contract AbiTest {
         }
         .fake_sign(keypair.address().clone());
 
-        let info = EnvInfo::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         {
@@ -1402,7 +1363,7 @@ contract AbiTest {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf);
@@ -1471,11 +1432,11 @@ contract AbiTest {
         }
         .fake_sign(keypair.address().clone());
 
-        let info = EnvInfo::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         {
@@ -1483,7 +1444,7 @@ contract AbiTest {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf);
@@ -1568,11 +1529,11 @@ contract FakePermissionManagement {
         }
         .fake_sign(keypair.address().clone());
 
-        let info = EnvInfo::default();
+        let context = Context::default();
 
         let conf = BlockSysConfig::default();
 
-        let block_data_provider = EVMBlockDataProvider::new(info.clone());
+        let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
 
         {
@@ -1580,7 +1541,7 @@ contract FakePermissionManagement {
                 Arc::new(block_data_provider),
                 state.clone(),
                 &native_factory,
-                &info,
+                &context,
                 EconomicalModel::Quota,
             )
             .exec(&t, &conf);

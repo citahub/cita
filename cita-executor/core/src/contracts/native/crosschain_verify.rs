@@ -1,4 +1,4 @@
-use crate::cita_executive::{EnvInfo, VmExecParams};
+use crate::cita_executive::VmExecParams;
 use crate::contracts::{
     native::factory::Contract, solc::ChainManagement, tools::method as method_tools,
 };
@@ -10,6 +10,7 @@ use ethabi;
 
 use crate::contracts::native::factory::NativeError;
 use crate::storage::Map;
+use crate::types::context::Context;
 use cita_vm::evm::DataProvider;
 use cita_vm::evm::InterpreterResult;
 
@@ -35,7 +36,7 @@ impl Contract for CrossChainVerify {
     fn exec(
         &mut self,
         params: &VmExecParams,
-        _env_info: &EnvInfo,
+        _context: &Context,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         if let Some(ref data) = params.data {

@@ -20,7 +20,7 @@ use super::fsm::FSM;
 use super::sys_config::GlobalSysConfig;
 use crate::bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 use crate::contracts::solc::NodeManager;
-use crate::core::env_info::LastHashes;
+use crate::core::context::LastHashes;
 use crate::header::*;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::genesis::Genesis;
