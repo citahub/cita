@@ -19,12 +19,12 @@ use super::economical_model::EconomicalModel;
 use super::executor::CitaTrieDB;
 use super::executor::{make_consensus_config, Executor};
 use super::sys_config::GlobalSysConfig;
-use crate::cita_executive::{CitaExecutive, ExecutedResult as CitaExecuted};
+use crate::cita_executive::{CitaExecutive, ExecutedResult as InnerExecutedResult};
 use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::solc::{
     sys_config::ChainId, PermissionManagement, SysConfig, VersionManager,
 };
-use crate::error::CallError;
+use crate::error::{CallError, ExecutedException};
 use crate::libexecutor::block::EVMBlockDataProvider;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::call_request::CallRequest;
@@ -81,7 +81,7 @@ pub enum CommandResp {
     NonceAt(Option<U256>),
     ETHCall(Result<Bytes, String>),
     SignCall(SignedTransaction),
-    Call(Result<CitaExecuted, CallError>),
+    Call(Result<InnerExecutedResult, ExecutedException>),
     ChainID(Option<ChainId>),
     Metadata(Result<MetaData, String>),
     EconomicalModel(EconomicalModel),
@@ -147,7 +147,11 @@ pub trait Commander {
     fn nonce_at(&self, address: &Address, block_tag: BlockTag) -> Option<U256>;
     fn eth_call(&self, request: CallRequest, block_tag: BlockTag) -> Result<Bytes, String>;
     fn sign_call(&self, request: CallRequest) -> SignedTransaction;
-    fn call(&self, t: &SignedTransaction, block_tag: BlockTag) -> Result<CitaExecuted, CallError>;
+    fn call(
+        &self,
+        t: &SignedTransaction,
+        block_tag: BlockTag,
+    ) -> Result<InnerExecutedResult, ExecutedException>;
     fn chain_id(&self) -> Option<ChainId>;
     fn metadata(&self, data: String) -> Result<MetaData, String>;
     fn economical_model(&self) -> EconomicalModel;
@@ -262,8 +266,14 @@ impl Commander for Executor {
         .fake_sign(from)
     }
 
-    fn call(&self, t: &SignedTransaction, block_tag: BlockTag) -> Result<CitaExecuted, CallError> {
-        let header = self.block_header(block_tag).ok_or(CallError::StatePruned)?;
+    fn call(
+        &self,
+        t: &SignedTransaction,
+        block_tag: BlockTag,
+    ) -> Result<InnerExecutedResult, ExecutedException> {
+        let header = self
+            .block_header(block_tag)
+            .ok_or(ExecutedException::from(CallError::StatePruned))?;
         let last_hashes = self.build_last_hashes(Some(header.hash().unwrap()), header.number());
         let context = Context {
             block_number: header.number(),
@@ -295,7 +305,7 @@ impl Commander for Executor {
             (*h.state_root())
         } else {
             error!("Can not get state rott from trie db!");
-            return Err(CallError::StatePruned);
+            return Err(CallError::StatePruned.into());
         };
 
         let state = match CitaState::from_existing(
@@ -305,7 +315,7 @@ impl Commander for Executor {
             Ok(state_db) => state_db,
             Err(e) => {
                 error!("Can not get state from trie db! error: {:?}", e);
-                return Err(CallError::StatePruned);
+                return Err(CallError::StatePruned.into());
             }
         };
 
@@ -318,7 +328,7 @@ impl Commander for Executor {
             conf.economical_model,
         )
         .exec(t, &conf)
-        .map_err(Into::into)
+        //.map(Into::into)
     }
 
     fn chain_id(&self) -> Option<ChainId> {
@@ -613,7 +623,7 @@ pub fn call(
     signed_transaction: SignedTransaction,
 
     block_tag: BlockTag,
-) -> Result<CitaExecuted, CallError> {
+) -> Result<InnerExecutedResult, ExecutedException> {
     command_req_sender.send(Command::Call(signed_transaction, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::Call(r) => r,

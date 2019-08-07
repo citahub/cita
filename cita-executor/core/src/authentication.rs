@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::contracts::solc::{permission_management::contains_resource, Resource};
+use crate::error::AuthenticationError;
 use crate::libexecutor::sys_config::CheckOptions;
 use crate::types::reserved_addresses;
 use crate::types::transaction::{Action, SignedTransaction};
@@ -219,12 +220,4 @@ fn get_groups(group_accounts: &HashMap<Address, Vec<Address>>, account: &Address
     }
 
     groups
-}
-
-#[derive(Debug, PartialEq)]
-pub enum AuthenticationError {
-    NoTransactionPermission,
-    NoContractPermission,
-    NoCallPermission,
-    TransactionMalformed(String),
 }

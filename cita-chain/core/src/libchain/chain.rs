@@ -361,8 +361,6 @@ pub fn get_chain_body_height(db: &RocksDB) -> Option<BlockNumber> {
 }
 
 pub fn contract_address(address: &Address, nonce: &U256) -> Address {
-    use rlp::RlpStream;
-
     let mut stream = RlpStream::new_list(2);
     stream.append(address);
     stream.append(nonce);

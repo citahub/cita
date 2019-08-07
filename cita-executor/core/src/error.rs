@@ -16,15 +16,110 @@
 
 //! General error types for use in ethcore.
 
+use crate::contracts::native::factory::NativeError;
+use crate::header::BlockNumber;
 use crate::log_entry::LogBloom;
 use cita_ed25519::Error as EthkeyError;
 use cita_types::{H256, U256};
-
-pub use crate::executed::{CallError, ExecutionError};
-use crate::header::BlockNumber;
+use cita_vm::state::Error as StateError;
 use snappy;
 use std::fmt;
 use util::*;
+
+pub use cita_vm::evm::Error as EVMError;
+pub use cita_vm::Error as ExecErr;
+
+#[derive(Debug, PartialEq)]
+pub enum AuthenticationError {
+    NoTransactionPermission,
+    NoContractPermission,
+    NoCallPermission,
+    TransactionMalformed(String),
+}
+
+/// Result of executing the transaction.
+#[derive(PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "ipc", binary)]
+pub enum CallError {
+    /// Couldn't find the transaction in the chain.
+    TransactionNotFound,
+    /// Couldn't find requested block's state in the chain.
+    StatePruned,
+    /// Couldn't find an amount of gas that didn't result in an exception.
+    Exceptional,
+    /// Corrupt state.
+    StateCorrupt,
+}
+
+impl fmt::Display for CallError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::CallError::*;
+
+        let msg = match *self {
+            TransactionNotFound => "Transaction couldn't be found in the chain".to_string(),
+            StatePruned => "Couldn't find the transaction block's state in the chain".to_string(),
+            Exceptional => "An exception happened in the execution".to_string(),
+            StateCorrupt => "Stored state found to be corrupted.".to_string(),
+        };
+
+        f.write_fmt(format_args!("Transaction execution error ({}).", msg))
+    }
+}
+
+// There is not reverted expcetion in VMError, so handle this in ExecutedException.
+#[derive(Debug)]
+pub enum ExecutedException {
+    VM(ExecErr),
+    NativeContract(NativeError),
+    Reverted,
+    AuthError(AuthenticationError),
+    CallError(CallError),
+}
+
+impl fmt::Display for ExecutedException {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let printable = match *self {
+            ExecutedException::VM(ref err) => format!("exception in vm: {:?}", err),
+            ExecutedException::NativeContract(ref err) => {
+                format!("exception in native contract: {:?}", err)
+            }
+            ExecutedException::Reverted => "execution reverted".to_owned(),
+            ExecutedException::AuthError(ref err) => format!("exception in auth: {:?}", err),
+            ExecutedException::CallError(ref err) => format!("exception in Call: {:?}", err),
+        };
+        write!(f, "{}", printable)
+    }
+}
+
+impl From<StateError> for ExecutedException {
+    fn from(err: StateError) -> Self {
+        ExecutedException::VM(ExecErr::from(err))
+    }
+}
+
+impl From<AuthenticationError> for ExecutedException {
+    fn from(err: AuthenticationError) -> Self {
+        ExecutedException::AuthError(err)
+    }
+}
+
+impl From<ExecErr> for ExecutedException {
+    fn from(err: ExecErr) -> Self {
+        ExecutedException::VM(err)
+    }
+}
+
+impl From<CallError> for ExecutedException {
+    fn from(err: CallError) -> Self {
+        ExecutedException::CallError(err)
+    }
+}
+
+impl From<NativeError> for ExecutedException {
+    fn from(err: NativeError) -> Self {
+        ExecutedException::NativeContract(err)
+    }
+}
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 /// Errors concerning transaction processing.
@@ -228,7 +323,7 @@ pub enum Error {
     /// Unknown engine given.
     UnknownEngineName(String),
     /// Error concerning EVM code execution.
-    Execution(ExecutionError),
+    //Execution(ExecutionError),
     /// Error concerning transaction processing.
     Transaction(TransactionError),
     /// Error concerning block import.
@@ -250,7 +345,7 @@ impl fmt::Display for Error {
         match *self {
             Error::Util(ref err) => err.fmt(f),
             Error::Block(ref err) => err.fmt(f),
-            Error::Execution(ref err) => err.fmt(f),
+            //Error::Execution(ref err) => err.fmt(f),
             Error::Transaction(ref err) => err.fmt(f),
             Error::Import(ref err) => err.fmt(f),
             Error::UnknownEngineName(ref name) => {
@@ -286,11 +381,11 @@ impl From<BlockError> for Error {
     }
 }
 
-impl From<ExecutionError> for Error {
+/*impl From<ExecutionError> for Error {
     fn from(err: ExecutionError) -> Error {
         Error::Execution(err)
     }
-}
+}*/
 
 impl From<::rlp::DecoderError> for Error {
     fn from(err: ::rlp::DecoderError) -> Error {

@@ -15,11 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::authentication::AuthenticationError;
-use crate::cita_executive::{CitaExecutive, ExecutedException, ExecutionError};
+use crate::cita_executive::CitaExecutive;
 use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::core::context::{Context, LastHashes};
-use crate::error::Error;
+use crate::error::{AuthenticationError, EVMError, Error, ExecErr, ExecutedException};
 use crate::libexecutor::auto_exec::auto_exec;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::CitaTrieDB;
@@ -32,9 +31,7 @@ use crate::types::transaction::SignedTransaction;
 use cita_merklehash;
 use cita_types::{Address, H256, U256};
 use cita_vm::BlockDataProvider;
-use cita_vm::{
-    evm::Error as EVMError, state::State as CitaState, state::StateObjectInfo, Error as VMError,
-};
+use cita_vm::{state::State as CitaState, state::StateObjectInfo};
 use hashable::Hashable;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use rlp::*;
@@ -174,31 +171,6 @@ impl ExecutedBlock {
         {
             Ok(ret) => {
                 // Note: ret.quota_used was a current transaction quota used.
-                // FIXME: hasn't handle some errors
-                let receipt_error = ret.exception.and_then(|error| match error {
-                    ExecutedException::VM(VMError::Evm(EVMError::OutOfGas)) => {
-                        Some(ReceiptError::OutOfQuota)
-                    }
-                    ExecutedException::VM(VMError::Evm(EVMError::InvalidJumpDestination)) => {
-                        Some(ReceiptError::BadJumpDestination)
-                    }
-                    ExecutedException::VM(VMError::Evm(EVMError::InvalidOpcode)) => {
-                        Some(ReceiptError::BadInstruction)
-                    }
-                    // ExecutionError::VM(VMError::Evm(EVMError::OutOfStack)) => Some(ReceiptError::StackUnderflow),
-                    ExecutedException::VM(VMError::Evm(EVMError::OutOfStack)) => {
-                        Some(ReceiptError::OutOfStack)
-                    }
-                    ExecutedException::VM(VMError::Evm(EVMError::MutableCallInStaticContext)) => {
-                        Some(ReceiptError::MutableCallInStaticContext)
-                    }
-                    ExecutedException::VM(VMError::Evm(EVMError::OutOfBounds)) => {
-                        Some(ReceiptError::OutOfBounds)
-                    }
-                    ExecutedException::Reverted => Some(ReceiptError::Reverted),
-                    _ => Some(ReceiptError::Internal),
-                });
-
                 // Note: quota_used in Receipt is self.current_quota_used, this will be
                 // handled by localized_receipt() while getting a single transaction receipt.
                 let cumulative_quota_used = context.quota_used + ret.quota_used;
@@ -206,7 +178,7 @@ impl ExecutedBlock {
                     None,
                     cumulative_quota_used,
                     ret.logs,
-                    receipt_error,
+                    None,
                     ret.account_nonce,
                     t.get_transaction_hash(),
                 );
@@ -217,43 +189,66 @@ impl ExecutedBlock {
             Err(err) => {
                 // FIXME: hasn't handle some errors.
                 let receipt_error = match err {
-                    ExecutionError::NotEnoughBaseGas => Some(ReceiptError::NotEnoughBaseQuota),
-                    // FIXME: need to handle this two situation.
-                    ExecutionError::BlockQuotaLimitReached => {
-                        Some(ReceiptError::BlockQuotaLimitReached)
+                    ExecutedException::VM(ExecErr::NotEnoughBaseGas) => {
+                        Some(ReceiptError::NotEnoughBaseQuota)
                     }
-                    ExecutionError::AccountQuotaLimitReached => {
-                        Some(ReceiptError::AccountQuotaLimitReached)
+                    //ExecutedException::VM(ExecErr::BlockQuotaLimitReached) => Some(ReceiptError::BlockQuotaLimitReached),
+                    //ExecutedException::VM(ExecErr::AccountQuotaLimitReached) => Some(ReceiptError::AccountQuotaLimitReached),
+                    ExecutedException::VM(ExecErr::InvalidNonce) => {
+                        Some(ReceiptError::InvalidNonce)
                     }
-                    ExecutionError::InvalidNonce => Some(ReceiptError::InvalidNonce),
-                    ExecutionError::NotEnoughBalance => Some(ReceiptError::NotEnoughCash),
-                    ExecutionError::Authentication(
-                        AuthenticationError::NoTransactionPermission,
-                    ) => Some(ReceiptError::NoTransactionPermission),
-                    ExecutionError::Authentication(AuthenticationError::NoContractPermission) => {
+                    ExecutedException::VM(ExecErr::NotEnoughBalance) => {
+                        Some(ReceiptError::NotEnoughCash)
+                    }
+                    ExecutedException::VM(ExecErr::Evm(EVMError::InvalidOpcode)) => {
+                        Some(ReceiptError::BadInstruction)
+                    }
+                    ExecutedException::VM(ExecErr::Evm(EVMError::OutOfGas)) => {
+                        Some(ReceiptError::OutOfQuota)
+                    }
+                    ExecutedException::VM(ExecErr::Evm(EVMError::InvalidJumpDestination)) => {
+                        Some(ReceiptError::BadJumpDestination)
+                    }
+                    ExecutedException::VM(ExecErr::Evm(EVMError::OutOfStack)) => {
+                        Some(ReceiptError::OutOfStack)
+                    }
+
+                    ExecutedException::VM(ExecErr::Evm(EVMError::MutableCallInStaticContext)) => {
+                        Some(ReceiptError::MutableCallInStaticContext)
+                    }
+                    ExecutedException::VM(ExecErr::Evm(EVMError::OutOfBounds)) => {
+                        Some(ReceiptError::OutOfBounds)
+                    }
+
+                    ExecutedException::VM(ExecErr::Evm(EVMError::Internal(_))) => {
+                        Some(ReceiptError::ExecutionInternal)
+                    }
+                    ExecutedException::AuthError(AuthenticationError::NoTransactionPermission) => {
+                        Some(ReceiptError::NoTransactionPermission)
+                    }
+                    ExecutedException::AuthError(AuthenticationError::NoContractPermission) => {
                         Some(ReceiptError::NoContractPermission)
                     }
-                    ExecutionError::Authentication(AuthenticationError::NoCallPermission) => {
+                    ExecutedException::AuthError(AuthenticationError::NoCallPermission) => {
                         Some(ReceiptError::NoCallPermission)
                     }
-                    ExecutionError::Internal { .. } => Some(ReceiptError::ExecutionInternal),
-                    ExecutionError::TransactionMalformed { .. } => {
-                        Some(ReceiptError::TransactionMalformed)
-                    }
+                    ExecutedException::AuthError(AuthenticationError::TransactionMalformed {
+                        ..
+                    }) => Some(ReceiptError::TransactionMalformed),
                     _ => Some(ReceiptError::Internal),
                 };
 
                 let schedule = TxGasSchedule::default();
                 let sender = *t.sender();
-                let tx_quota_used = match err {
-                    ExecutionError::Internal(_) => t.gas,
-                    _ => cmp::min(
-                        self.state
-                            .borrow_mut()
-                            .balance(&sender)
-                            .unwrap_or_else(|_| U256::from(0)),
-                        U256::from(schedule.tx_gas),
-                    ),
+                let tx_quota_used = match receipt_error {
+                    Some(ReceiptError::Internal)
+                    | Some(ReceiptError::BadInstruction)
+                    | Some(ReceiptError::OutOfQuota)
+                    | Some(ReceiptError::BadJumpDestination)
+                    | Some(ReceiptError::OutOfStack)
+                    | Some(ReceiptError::MutableCallInStaticContext)
+                    | Some(ReceiptError::OutOfBounds) => t.gas,
+                    _ => U256::from(schedule.tx_gas),
                 };
 
                 if (*conf).economical_model == EconomicalModel::Charge {
