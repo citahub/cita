@@ -37,8 +37,6 @@ extern crate util;
 #[macro_use]
 extern crate crossbeam_channel;
 
-// #[macro_use]
-// extern crate rlp_derive;
 extern crate rustc_hex;
 
 extern crate bit_set;

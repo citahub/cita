@@ -21,7 +21,7 @@ use crate::types::log_entry::LogEntry;
 //use crate::types::state_diff::StateDiff;
 use cita_types::{Address, U256, U512};
 use std::fmt;
-use util::Bytes;
+use types::Bytes;
 
 /// Transaction execution receipt.
 #[derive(Debug)]

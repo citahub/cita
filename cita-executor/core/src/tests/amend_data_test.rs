@@ -28,7 +28,7 @@ use crate::types::transaction::Action;
 use cita_types::{Address, H256, U256};
 use cita_vm::BlockDataProviderMock;
 use core::transaction::{SignedTransaction, Transaction};
-use util::Bytes;
+use types::Bytes;
 
 fn build_transaction(
     data: &Vec<u8>,

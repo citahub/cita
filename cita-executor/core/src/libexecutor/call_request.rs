@@ -17,7 +17,7 @@
 
 use cita_types::Address;
 use libproto::request::Call;
-use util::Bytes;
+use types::Bytes;
 
 /// Call request
 #[derive(Debug, Default, PartialEq)]
