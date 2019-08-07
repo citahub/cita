@@ -29,12 +29,8 @@ extern crate cita_database as cita_db;
 pub extern crate bloomchain;
 
 pub mod block;
-<<<<<<< HEAD
-pub mod context;
-pub mod block_tag;
-=======
 pub mod block_number;
->>>>>>> [chores] use tag
+pub mod context;
 pub mod extras;
 pub mod filter;
 pub mod header;
