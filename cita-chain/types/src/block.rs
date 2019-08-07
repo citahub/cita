@@ -17,7 +17,7 @@
 
 use crate::header::{Header, OpenHeader};
 
-use crate::extras::TransactionIndex;
+use crate::transaction_index::TransactionIndex;
 use cita_types::H256;
 use std::collections::HashMap;
 

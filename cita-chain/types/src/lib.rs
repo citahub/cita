@@ -28,6 +28,7 @@ pub extern crate bloomchain;
 
 pub mod block;
 pub mod block_number;
+pub mod block_receipts;
 pub mod context;
 pub mod extras;
 pub mod filter;
@@ -37,3 +38,4 @@ pub mod log_entry;
 pub mod receipt;
 pub mod reserved_addresses;
 pub mod transaction;
+pub mod transaction_index;

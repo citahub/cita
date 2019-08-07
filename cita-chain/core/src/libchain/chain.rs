@@ -30,13 +30,13 @@ use util::{Mutex, RwLock};
 
 use crate::types::block::{Block, BlockBody, OpenBlock};
 pub use crate::types::extras::{
-    BlockNumberKeyLong, BlockReceipts, CurrentHash, CurrentHeight, CurrentProof, LogGroupKey,
-    LogGroupPosition, TransactionIndex,
+    BlockNumberKeyLong, CurrentHash, CurrentHeight, CurrentProof, LogGroupKey, LogGroupPosition,
 };
 use crate::types::{
-    block_number::BlockTag, block_number::Tag, block_number::TransactionHash, filter::Filter,
-    log_entry::LocalizedLogEntry, log_entry::LogEntry, transaction::Action,
-    transaction::SignedTransaction,
+    block_number::BlockTag, block_number::Tag, block_number::TransactionHash,
+    block_receipts::BlockReceipts, filter::Filter, log_entry::LocalizedLogEntry,
+    log_entry::LogEntry, transaction::Action, transaction::SignedTransaction,
+    transaction_index::TransactionIndex,
 };
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, H264, U256};
