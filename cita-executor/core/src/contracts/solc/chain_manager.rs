@@ -17,14 +17,13 @@
 
 //! Chain manager.
 
-use crate::contracts::tools::decode as decode_tools;
-use crate::contracts::tools::method as method_tools;
-use crate::types::reserved_addresses;
-use cita_types::{Address, H160, H256, U256};
 use std::str::FromStr;
 
-use cita_vm::evm::OpCode;
-use cita_vm::evm::{DataProvider, InterpreterParams, InterpreterResult};
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::types::reserved_addresses;
+
+use cita_types::{Address, H160, H256, U256};
+use cita_vm::evm::{DataProvider, InterpreterParams, InterpreterResult, OpCode};
 
 const CHAIN_ID: &[u8] = &*b"getChainId()";
 const AUTHORITIES: &[u8] = &*b"getAuthorities(uint256)";

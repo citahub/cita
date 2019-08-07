@@ -17,15 +17,16 @@
 
 //! System Config
 
+use super::ContractCallExt;
 use std::str::FromStr;
 
-use super::ContractCallExt;
 use crate::contracts::solc::version_management::VersionManager;
 use crate::contracts::tools::method as method_tools;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::Executor;
-use crate::types::ids::BlockId;
+use crate::types::block_number::{BlockTag, Tag};
 use crate::types::reserved_addresses;
+
 use cita_types::{Address, H256, U256};
 use ethabi::{decode, ParamType, Token};
 use num::FromPrimitive;
@@ -82,20 +83,22 @@ impl<'a> SysConfig<'a> {
         &self,
         param_types: &[ParamType],
         method: &[u8],
-        block_id: BlockId,
+        block_tag: BlockTag,
     ) -> Result<Vec<Token>, String> {
         let address = &*CONTRACT_ADDRESS;
-        let output = self.executor.call_method(address, method, None, block_id)?;
+        let output = self
+            .executor
+            .call_method(address, method, None, block_tag)?;
         trace!("sys_config value output: {:?}", output);
         decode(param_types, &output).map_err(|_| "decode value error".to_string())
     }
 
     /// Delay block number before validate
-    pub fn delay_block_number(&self, block_id: BlockId) -> Option<u64> {
+    pub fn delay_block_number(&self, block_tag: BlockTag) -> Option<u64> {
         self.get_value(
             &[ParamType::Uint(256)],
             DELAY_BLOCK_NUMBER.as_slice(),
-            block_id,
+            block_tag,
         )
         .ok()
         .and_then(|mut x| x.remove(0).to_uint())
@@ -108,11 +111,11 @@ impl<'a> SysConfig<'a> {
     }
 
     /// Whether check call permission or not
-    pub fn call_permission_check(&self, block_id: BlockId) -> Option<bool> {
+    pub fn call_permission_check(&self, block_tag: BlockTag) -> Option<bool> {
         self.get_value(
             &[ParamType::Bool],
             CALL_PERMISSION_CHECK.as_slice(),
-            block_id,
+            block_tag,
         )
         .ok()
         .and_then(|mut x| x.remove(0).to_bool())
@@ -123,11 +126,11 @@ impl<'a> SysConfig<'a> {
         false
     }
 
-    pub fn send_tx_permission_check(&self, block_id: BlockId) -> Option<bool> {
+    pub fn send_tx_permission_check(&self, block_tag: BlockTag) -> Option<bool> {
         self.get_value(
             &[ParamType::Bool],
             PERMISSION_SEND_TX_CHECK.as_slice(),
-            block_id,
+            block_tag,
         )
         .ok()
         .and_then(|mut x| x.remove(0).to_bool())
@@ -138,11 +141,11 @@ impl<'a> SysConfig<'a> {
         false
     }
 
-    pub fn create_contract_permission_check(&self, block_id: BlockId) -> Option<bool> {
+    pub fn create_contract_permission_check(&self, block_tag: BlockTag) -> Option<bool> {
         self.get_value(
             &[ParamType::Bool],
             PERMISSION_CREATE_CONTRACT_CHECK.as_slice(),
-            block_id,
+            block_tag,
         )
         .ok()
         .and_then(|mut x| x.remove(0).to_bool())
@@ -154,8 +157,8 @@ impl<'a> SysConfig<'a> {
     }
 
     /// Whether check quota or not
-    pub fn quota_check(&self, block_id: BlockId) -> Option<bool> {
-        self.get_value(&[ParamType::Bool], QUOTA_CHECK.as_slice(), block_id)
+    pub fn quota_check(&self, block_tag: BlockTag) -> Option<bool> {
+        self.get_value(&[ParamType::Bool], QUOTA_CHECK.as_slice(), block_tag)
             .ok()
             .and_then(|mut x| x.remove(0).to_bool())
     }
@@ -166,11 +169,11 @@ impl<'a> SysConfig<'a> {
     }
 
     /// Check fee back to platform or node
-    pub fn fee_back_platform_check(&self, block_id: BlockId) -> Option<bool> {
+    pub fn fee_back_platform_check(&self, block_tag: BlockTag) -> Option<bool> {
         self.get_value(
             &[ParamType::Bool],
             FEE_BACK_PLATFORM_CHECK.as_slice(),
-            block_id,
+            block_tag,
         )
         .ok()
         .and_then(|mut x| x.remove(0).to_bool())
@@ -182,8 +185,8 @@ impl<'a> SysConfig<'a> {
     }
 
     /// The owner of current chain
-    pub fn chain_owner(&self, block_id: BlockId) -> Option<Address> {
-        self.get_value(&[ParamType::Address], CHAIN_OWNER.as_slice(), block_id)
+    pub fn chain_owner(&self, block_tag: BlockTag) -> Option<Address> {
+        self.get_value(&[ParamType::Address], CHAIN_OWNER.as_slice(), block_tag)
             .ok()
             .and_then(|mut x| x.remove(0).to_address())
             .map(Address::from)
@@ -195,15 +198,15 @@ impl<'a> SysConfig<'a> {
     }
 
     /// The name of current chain
-    pub fn chain_name(&self, block_id: BlockId) -> Option<String> {
-        self.get_value(&[ParamType::String], CHAIN_NAME.as_slice(), block_id)
+    pub fn chain_name(&self, block_tag: BlockTag) -> Option<String> {
+        self.get_value(&[ParamType::String], CHAIN_NAME.as_slice(), block_tag)
             .ok()
             .and_then(|mut x| x.remove(0).to_string())
     }
 
     /// The id of current chain
-    pub fn chain_id(&self, block_id: BlockId) -> Option<u32> {
-        self.get_value(&[ParamType::Uint(64)], CHAIN_ID.as_slice(), block_id)
+    pub fn chain_id(&self, block_tag: BlockTag) -> Option<u32> {
+        self.get_value(&[ParamType::Uint(64)], CHAIN_ID.as_slice(), block_tag)
             .ok()
             .and_then(|mut x| x.remove(0).to_uint())
             .map(|x| H256::from(x).low_u64() as u32)
@@ -215,8 +218,8 @@ impl<'a> SysConfig<'a> {
     }
 
     /// The id v1 of current chain
-    pub fn chain_id_v1(&self, block_id: BlockId) -> Option<U256> {
-        self.get_value(&[ParamType::Uint(256)], CHAIN_ID_V1.as_slice(), block_id)
+    pub fn chain_id_v1(&self, block_tag: BlockTag) -> Option<U256> {
+        self.get_value(&[ParamType::Uint(256)], CHAIN_ID_V1.as_slice(), block_tag)
             .ok()
             .and_then(|mut x| x.remove(0).to_uint())
             .map(U256::from)
@@ -228,22 +231,22 @@ impl<'a> SysConfig<'a> {
     }
 
     /// The operator of current chain
-    pub fn operator(&self, block_id: BlockId) -> Option<String> {
-        self.get_value(&[ParamType::String], OPERATOR.as_slice(), block_id)
+    pub fn operator(&self, block_tag: BlockTag) -> Option<String> {
+        self.get_value(&[ParamType::String], OPERATOR.as_slice(), block_tag)
             .ok()
             .and_then(|mut x| x.remove(0).to_string())
     }
 
     /// Current operator's website URL
-    pub fn website(&self, block_id: BlockId) -> Option<String> {
-        self.get_value(&[ParamType::String], WEBSITE.as_slice(), block_id)
+    pub fn website(&self, block_tag: BlockTag) -> Option<String> {
+        self.get_value(&[ParamType::String], WEBSITE.as_slice(), block_tag)
             .ok()
             .and_then(|mut x| x.remove(0).to_string())
     }
 
     /// The interval time for creating a block (milliseconds)
-    pub fn block_interval(&self, block_id: BlockId) -> Option<u64> {
-        self.get_value(&[ParamType::Uint(64)], BLOCK_INTERVAL.as_slice(), block_id)
+    pub fn block_interval(&self, block_tag: BlockTag) -> Option<u64> {
+        self.get_value(&[ParamType::Uint(64)], BLOCK_INTERVAL.as_slice(), block_tag)
             .ok()
             .and_then(|mut x| x.remove(0).to_uint())
             .map(|x| H256::from(x).low_u64())
@@ -257,11 +260,11 @@ impl<'a> SysConfig<'a> {
     /// enum EconomicalModel { Quota, Charge }
     /// Quota: Default config is quota
     /// Charge: Charging by gas * gasPrice and reward for proposer
-    pub fn economical_model(&self, block_id: BlockId) -> Option<EconomicalModel> {
+    pub fn economical_model(&self, block_tag: BlockTag) -> Option<EconomicalModel> {
         self.get_value(
             &[ParamType::Uint(64)],
             ECONOMICAL_MODEL.as_slice(),
-            block_id,
+            block_tag,
         )
         .ok()
         .and_then(|mut x| x.remove(0).to_uint())
@@ -274,13 +277,13 @@ impl<'a> SysConfig<'a> {
         EconomicalModel::Quota
     }
 
-    pub fn token_info(&self, block_id: BlockId) -> Option<TokenInfo> {
+    pub fn token_info(&self, block_tag: BlockTag) -> Option<TokenInfo> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 GET_TOKEN_INFO.as_slice(),
                 None,
-                block_id,
+                block_tag,
             )
             .ok()
             .and_then(|output| {
@@ -312,18 +315,18 @@ impl<'a> SysConfig<'a> {
 
     pub fn deal_chain_id_version(&self, version_manager: &VersionManager) -> Option<ChainId> {
         let version = version_manager
-            .get_version(BlockId::Pending)
+            .get_version(BlockTag::Tag(Tag::Pending))
             .unwrap_or_else(VersionManager::default_version);
 
         if version == 0 {
             let id_v0 = self
-                .chain_id(BlockId::Pending)
+                .chain_id(BlockTag::Tag(Tag::Pending))
                 .unwrap_or_else(SysConfig::default_chain_id);
 
             Some(ChainId::V0(id_v0))
         } else if version < 3 {
             let id_v1 = self
-                .chain_id_v1(BlockId::Pending)
+                .chain_id_v1(BlockTag::Tag(Tag::Pending))
                 .unwrap_or_else(SysConfig::default_chain_id_v1);
 
             Some(ChainId::V1(id_v1))
@@ -334,8 +337,8 @@ impl<'a> SysConfig<'a> {
     }
 
     /// Get the flag of autoExec
-    pub fn auto_exec(&self, block_id: BlockId) -> Option<bool> {
-        self.get_value(&[ParamType::Bool], AUTO_EXEC.as_slice(), block_id)
+    pub fn auto_exec(&self, block_tag: BlockTag) -> Option<bool> {
+        self.get_value(&[ParamType::Bool], AUTO_EXEC.as_slice(), block_tag)
             .ok()
             .and_then(|mut x| x.remove(0).to_bool())
     }
@@ -352,7 +355,7 @@ impl<'a> SysConfig<'a> {
 //
 //    use super::{EconomicalModel, SysConfig, TokenInfo};
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::ids::BlockId;
+//    use crate::types::block_number::BlockTag;
 //    use cita_types::Address;
 //    use std::str::FromStr;
 //
@@ -363,64 +366,64 @@ impl<'a> SysConfig<'a> {
 //        let config = SysConfig::new(&executor);
 //
 //        // Test delay block number
-//        let number = config.delay_block_number(BlockId::Pending).unwrap();
+//        let number = config.delay_block_number(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(number, 1);
 //
 //        // Test call permission_check
-//        let check_call_permission = config.call_permission_check(BlockId::Pending).unwrap();
+//        let check_call_permission = config.call_permission_check(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(check_call_permission, false);
 //
 //        // Test send_tx_permission_check
-//        let check_send_tx_permission = config.send_tx_permission_check(BlockId::Pending).unwrap();
+//        let check_send_tx_permission = config.send_tx_permission_check(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(check_send_tx_permission, false);
 //
 //        // Test create_contract_permission_check
 //        let check_create_contract_permission = config
-//            .create_contract_permission_check(BlockId::Pending)
+//            .create_contract_permission_check(BlockTag::Tag(Tag::Pending))
 //            .unwrap();
 //        assert_eq!(check_create_contract_permission, false);
 //
 //        // Test quota_check
-//        let check_quota = config.quota_check(BlockId::Pending).unwrap();
+//        let check_quota = config.quota_check(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(check_quota, false);
 //
 //        // Test fee_back_platform_check
-//        let check_fee_back_platform = config.fee_back_platform_check(BlockId::Pending).unwrap();
+//        let check_fee_back_platform = config.fee_back_platform_check(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(check_fee_back_platform, false);
 //
 //        // Test chain_owner
-//        let value = config.chain_owner(BlockId::Pending).unwrap();
+//        let value = config.chain_owner(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(
 //            value,
 //            Address::from_str("0000000000000000000000000000000000000000").unwrap()
 //        );
 //
 //        // Test chain_name
-//        let value = config.chain_name(BlockId::Pending).unwrap();
+//        let value = config.chain_name(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(value, "test-chain");
 //
 //        // Test chain_id
-//        let value = config.chain_id(BlockId::Pending).unwrap();
+//        let value = config.chain_id(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(value, 1);
 //
 //        // Test operator
-//        let value = config.operator(BlockId::Pending).unwrap();
+//        let value = config.operator(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(value, "test-operator");
 //
 //        // Test website
-//        let value = config.website(BlockId::Pending).unwrap();
+//        let value = config.website(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(value, "https://www.example.com");
 //
 //        // Test block_interval
-//        let value = config.block_interval(BlockId::Pending).unwrap();
+//        let value = config.block_interval(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(value, 3000);
 //
 //        // Test economical_model
-//        let value = config.economical_model(BlockId::Pending).unwrap();
+//        let value = config.economical_model(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(value, EconomicalModel::Quota);
 //
 //        // Test token info
-//        let value = config.token_info(BlockId::Pending).unwrap();
+//        let value = config.token_info(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(
 //            value,
 //            TokenInfo {
@@ -431,7 +434,7 @@ impl<'a> SysConfig<'a> {
 //        );
 //
 //        // Test auto_exec
-//        let auto_exec = config.auto_exec(BlockId::Pending).unwrap();
+//        let auto_exec = config.auto_exec(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(auto_exec, false);
 //    }
 //}

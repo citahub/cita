@@ -29,16 +29,13 @@ extern crate cita_database as cita_db;
 pub extern crate bloomchain;
 
 pub mod block;
+pub mod block_number;
 pub mod context;
 pub mod extras;
 pub mod filter;
 pub mod header;
-pub mod ids;
 pub mod log_blooms;
 pub mod log_entry;
 pub mod receipt;
 pub mod reserved_addresses;
 pub mod transaction;
-
-/// Type for block number.
-pub type BlockNumber = u64;

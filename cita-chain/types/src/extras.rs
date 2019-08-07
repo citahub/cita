@@ -17,7 +17,8 @@
 //! Blockchain DB extras.
 
 use crate::block::BlockBody;
-use crate::header::{BlockNumber, Header};
+use crate::block_number::BlockNumber;
+use crate::header::Header;
 use crate::log_blooms::LogBloomGroup;
 use crate::receipt::Receipt;
 use bloomchain::group::GroupPosition;
@@ -294,12 +295,6 @@ impl Decodable for BlockReceipts {
 impl Encodable for BlockReceipts {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.append_list(&self.receipts);
-    }
-}
-
-impl HeapSizeOf for BlockReceipts {
-    fn heap_size_of_children(&self) -> usize {
-        self.receipts.heap_size_of_children()
     }
 }
 

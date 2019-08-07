@@ -35,8 +35,9 @@ pub use crate::types::extras::{
     LogGroupPosition, TransactionIndex,
 };
 use crate::types::{
-    filter::Filter, ids::BlockId, ids::TransactionId, log_entry::LocalizedLogEntry,
-    log_entry::LogEntry, transaction::Action, transaction::SignedTransaction,
+    block_number::BlockTag, block_number::Tag, block_number::TransactionHash, filter::Filter,
+    log_entry::LocalizedLogEntry, log_entry::LogEntry, transaction::Action,
+    transaction::SignedTransaction,
 };
 use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, H264, U256};
@@ -397,14 +398,14 @@ impl Chain {
         chain
     }
 
-    /// Get block number by BlockId
-    fn block_number(&self, id: BlockId) -> Option<BlockNumber> {
-        match id {
-            BlockId::Number(number) => Some(number),
-            BlockId::Hash(hash) => self.block_height_by_hash(hash),
-            BlockId::Earliest => Some(0),
-            BlockId::Latest => Some(self.get_latest_height()),
-            BlockId::Pending => Some(self.get_pending_height()),
+    /// Get block number by BlockTag
+    fn block_number(&self, tag: BlockTag) -> Option<BlockNumber> {
+        match tag {
+            BlockTag::Height(number) => Some(number),
+            BlockTag::Hash(hash) => self.block_height_by_hash(hash),
+            BlockTag::Tag(Tag::Earliest) => Some(0),
+            BlockTag::Tag(Tag::Latest) => Some(self.get_latest_height()),
+            BlockTag::Tag(Tag::Pending) => Some(self.get_pending_height()),
         }
     }
 
@@ -677,14 +678,14 @@ impl Chain {
         *guard = new_map;
     }
 
-    /// Get block by BlockId
-    pub fn block(&self, id: BlockId) -> Option<Block> {
-        match id {
-            BlockId::Hash(hash) => self.block_by_hash(hash),
-            BlockId::Number(number) => self.block_by_height(number),
-            BlockId::Earliest => self.block_by_height(0),
-            BlockId::Latest => self.block_by_height(self.get_latest_height()),
-            BlockId::Pending => self.block_by_height(self.get_pending_height()),
+    /// Get block by BlockTag
+    pub fn block(&self, tag: BlockTag) -> Option<Block> {
+        match tag {
+            BlockTag::Hash(hash) => self.block_by_hash(hash),
+            BlockTag::Height(number) => self.block_by_height(number),
+            BlockTag::Tag(Tag::Earliest) => self.block_by_height(0),
+            BlockTag::Tag(Tag::Latest) => self.block_by_height(self.get_latest_height()),
+            BlockTag::Tag(Tag::Pending) => self.block_by_height(self.get_pending_height()),
         }
     }
 
@@ -705,14 +706,14 @@ impl Chain {
         }
     }
 
-    /// Get block header by BlockId
-    pub fn block_header(&self, id: BlockId) -> Option<Header> {
-        match id {
-            BlockId::Hash(hash) => self.block_header_by_hash(hash),
-            BlockId::Number(number) => self.block_header_by_height(number),
-            BlockId::Earliest => self.block_header_by_height(0),
-            BlockId::Latest => self.block_header_by_height(self.get_latest_height()),
-            BlockId::Pending => self.block_header_by_height(self.get_pending_height()),
+    /// Get block header by BlockTag
+    pub fn block_header(&self, tag: BlockTag) -> Option<Header> {
+        match tag {
+            BlockTag::Hash(hash) => self.block_header_by_hash(hash),
+            BlockTag::Height(number) => self.block_header_by_height(number),
+            BlockTag::Tag(Tag::Earliest) => self.block_header_by_height(0),
+            BlockTag::Tag(Tag::Latest) => self.block_header_by_height(self.get_latest_height()),
+            BlockTag::Tag(Tag::Pending) => self.block_header_by_height(self.get_pending_height()),
         }
     }
 
@@ -744,14 +745,14 @@ impl Chain {
             })
     }
 
-    /// Get block body by BlockId
-    pub fn block_body(&self, id: BlockId) -> Option<BlockBody> {
-        match id {
-            BlockId::Hash(hash) => self.block_body_by_hash(hash),
-            BlockId::Number(number) => self.block_body_by_height(number),
-            BlockId::Earliest => self.block_body_by_height(0),
-            BlockId::Latest => self.block_body_by_height(self.get_latest_height()),
-            BlockId::Pending => self.block_body_by_height(self.get_pending_height()),
+    /// Get block body by BlockTag
+    pub fn block_body(&self, tag: BlockTag) -> Option<BlockBody> {
+        match tag {
+            BlockTag::Hash(hash) => self.block_body_by_hash(hash),
+            BlockTag::Height(number) => self.block_body_by_height(number),
+            BlockTag::Tag(Tag::Earliest) => self.block_body_by_height(0),
+            BlockTag::Tag(Tag::Latest) => self.block_body_by_height(self.get_latest_height()),
+            BlockTag::Tag(Tag::Pending) => self.block_body_by_height(self.get_pending_height()),
         }
     }
 
@@ -789,7 +790,7 @@ impl Chain {
     }
 
     /// Get transaction by hash
-    pub fn transaction(&self, hash: TransactionId) -> Option<SignedTransaction> {
+    pub fn transaction(&self, hash: TransactionHash) -> Option<SignedTransaction> {
         self.transaction_index(hash).and_then(|addr| {
             let index = addr.index;
             let hash = addr.block_hash;
@@ -798,7 +799,7 @@ impl Chain {
     }
 
     /// Get address of transaction by hash.
-    fn transaction_index(&self, hash: TransactionId) -> Option<TransactionIndex> {
+    fn transaction_index(&self, hash: TransactionHash) -> Option<TransactionIndex> {
         self.db
             .get(
                 Some(cita_db::DataCategory::Extra),
@@ -821,12 +822,12 @@ impl Chain {
     }
 
     /// Get transaction hashes by block hash
-    pub fn transaction_hashes(&self, id: BlockId) -> Option<Vec<H256>> {
-        self.block_body(id).map(|body| body.transaction_hashes())
+    pub fn transaction_hashes(&self, tag: BlockTag) -> Option<Vec<H256>> {
+        self.block_body(tag).map(|body| body.transaction_hashes())
     }
 
     /// Get full transaction by hash
-    pub fn full_transaction(&self, hash: TransactionId) -> Option<FullTransaction> {
+    pub fn full_transaction(&self, hash: TransactionHash) -> Option<FullTransaction> {
         self.transaction_index(hash).and_then(|addr| {
             let index = addr.index;
             let hash = addr.block_hash;
@@ -843,7 +844,7 @@ impl Chain {
         })
     }
 
-    pub fn get_transaction_proof(&self, hash: TransactionId) -> Option<(Vec<u8>)> {
+    pub fn get_transaction_proof(&self, hash: TransactionHash) -> Option<(Vec<u8>)> {
         self.transaction_index(hash)
             .and_then(|addr| {
                 self.block_by_hash(addr.block_hash)
@@ -937,11 +938,11 @@ impl Chain {
             )
     }
 
-    pub fn get_block_header_bytes(&self, id: BlockId) -> Option<Vec<u8>> {
-        self.block_header(id).map(|x| x.rlp_bytes().into_vec())
+    pub fn get_block_header_bytes(&self, tag: BlockTag) -> Option<Vec<u8>> {
+        self.block_header(tag).map(|x| x.rlp_bytes().into_vec())
     }
 
-    pub fn localized_receipt(&self, id: TransactionId) -> Option<LocalizedReceipt> {
+    pub fn localized_receipt(&self, id: TransactionHash) -> Option<LocalizedReceipt> {
         trace!("Get receipt id: {:?}", id);
 
         let address = match self.transaction_index(id) {
@@ -1173,17 +1174,17 @@ impl Chain {
             .collect()
     }
 
-    /// Returns numbers of blocks containing given bloom by blockId.
+    /// Returns numbers of blocks containing given bloom by BlockTag.
     pub fn blocks_with_bloom_by_id(
         &self,
         bloom: &LogBloom,
-        from_block: BlockId,
-        to_block: BlockId,
+        from_block: BlockTag,
+        to_block: BlockTag,
     ) -> Option<Vec<BlockNumber>> {
         match (
             self.block_number(from_block),
             self.block_number(to_block),
-            self.block_number(BlockId::Pending),
+            self.block_number(BlockTag::Tag(Tag::Pending)),
         ) {
             (Some(from), Some(to), Some(pending)) => {
                 let end = if to > pending { pending } else { to };
@@ -1452,7 +1453,7 @@ mod tests {
     }
     #[test]
     fn test_cache_size() {
-        let transaction_addresses: HashMap<TransactionId, TransactionIndex> = HashMap::new();
+        let transaction_addresses: HashMap<TransactionHash, TransactionIndex> = HashMap::new();
         let blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup> = HashMap::new();
         let mut block_receipts: HashMap<H256, BlockReceipts> = HashMap::new();
 

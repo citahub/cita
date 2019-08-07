@@ -15,11 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::block_number::BlockNumber;
 use crate::crypto::{
     pubkey_to_address, PubKey, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN,
 };
 use crate::reserved_addresses::{ABI_ADDRESS, AMEND_ADDRESS, STORE_ADDRESS};
-use crate::BlockNumber;
 use cita_types::traits::LowerHex;
 use cita_types::{clean_0x, Address, H256, U256};
 use libproto::blockchain::{

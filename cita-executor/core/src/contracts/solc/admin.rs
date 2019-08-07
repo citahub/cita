@@ -20,7 +20,7 @@
 use super::ContractCallExt;
 use crate::contracts::tools::{decode as decode_tools, method as method_tools};
 use crate::libexecutor::executor::Executor;
-use crate::types::ids::BlockId;
+use crate::types::block_number::BlockTag;
 use crate::types::reserved_addresses;
 use cita_types::Address;
 use std::str::FromStr;
@@ -40,9 +40,9 @@ impl<'a> Admin<'a> {
     }
 
     /// Get Admin
-    pub fn get_admin(&self, block_id: BlockId) -> Option<Address> {
+    pub fn get_admin(&self, block_tag: BlockTag) -> Option<Address> {
         self.executor
-            .call_method(&*CONTRACT_ADDRESS, &*GET_ADMIN.as_slice(), None, block_id)
+            .call_method(&*CONTRACT_ADDRESS, &*GET_ADMIN.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_address(&output))
     }
@@ -52,14 +52,14 @@ impl<'a> Admin<'a> {
 //mod tests {
 //    use super::Admin;
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::ids::BlockId;
+//    use crate::types::block_number::{BlockTag, Tag};
 //    use cita_types::Address;
 //
 //    #[test]
 //    fn test_admin() {
 //        let executor = init_executor();
 //        let admin = Admin::new(&executor);
-//        let addr = admin.get_admin(BlockId::Pending).unwrap();
+//        let addr = admin.get_admin(BlockTag::Tag(Tag::Pending)).unwrap();
 //        assert_eq!(
 //            addr,
 //            Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523")

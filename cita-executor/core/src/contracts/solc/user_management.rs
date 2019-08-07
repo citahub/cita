@@ -17,13 +17,15 @@
 //! User management.
 
 use super::ContractCallExt;
-use crate::contracts::tools::{decode as decode_tools, method as method_tools};
-use crate::libexecutor::executor::Executor;
-use crate::types::ids::BlockId;
-use crate::types::reserved_addresses;
-use cita_types::{Address, H160};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::executor::Executor;
+use crate::types::block_number::BlockTag;
+use crate::types::reserved_addresses;
+
+use cita_types::{Address, H160};
 
 const ALLGROUPS: &[u8] = &*b"queryGroups()";
 const ACCOUNTS: &[u8] = &*b"queryAccounts()";
@@ -44,16 +46,16 @@ impl<'a> UserManagement<'a> {
         UserManagement { executor }
     }
 
-    pub fn load_group_accounts(&self, block_id: BlockId) -> HashMap<Address, Vec<Address>> {
+    pub fn load_group_accounts(&self, block_tag: BlockTag) -> HashMap<Address, Vec<Address>> {
         let mut group_accounts = HashMap::new();
         let groups = self
-            .all_groups(block_id)
+            .all_groups(block_tag)
             .unwrap_or_else(Self::default_all_groups);
 
         trace!("ALl groups: {:?}", groups);
         for group in groups {
             let accounts = self
-                .accounts(&group, block_id)
+                .accounts(&group, block_tag)
                 .unwrap_or_else(Self::default_accounts);
             trace!("ALl accounts for group {}: {:?}", group, accounts);
             group_accounts.insert(group, accounts);
@@ -63,13 +65,13 @@ impl<'a> UserManagement<'a> {
     }
 
     /// Group array
-    pub fn all_groups(&self, block_id: BlockId) -> Option<Vec<Address>> {
+    pub fn all_groups(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*ALLGROUPS_HASH.as_slice(),
                 None,
-                block_id,
+                block_tag,
             )
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
@@ -81,9 +83,9 @@ impl<'a> UserManagement<'a> {
     }
 
     /// Accounts array
-    pub fn accounts(&self, address: &Address, block_id: BlockId) -> Option<Vec<Address>> {
+    pub fn accounts(&self, address: &Address, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.executor
-            .call_method(address, &ACCOUNTS_HASH.as_slice(), None, block_id)
+            .call_method(address, &ACCOUNTS_HASH.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
@@ -100,7 +102,7 @@ impl<'a> UserManagement<'a> {
 //
 //    use super::UserManagement;
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::ids::BlockId;
+//    use crate::types::block_number::BlockTag;
 //    use crate::types::reserved_addresses;
 //    use cita_types::{Address, H160};
 //    use std::str::FromStr;
@@ -110,7 +112,7 @@ impl<'a> UserManagement<'a> {
 //        let executor = init_executor();
 //
 //        let user_management = UserManagement::new(&executor);
-//        let all_groups: Vec<Address> = user_management.all_groups(BlockId::Pending).unwrap();
+//        let all_groups: Vec<Address> = user_management.all_groups(BlockTag::Pending).unwrap();
 //
 //        assert_eq!(
 //            all_groups,

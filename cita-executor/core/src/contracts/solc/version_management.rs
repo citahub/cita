@@ -17,16 +17,15 @@
 
 //! version management
 
+use super::ContractCallExt;
 use std::str::FromStr;
 
-use super::ContractCallExt;
 use crate::contracts::tools::method as method_tools;
 use crate::libexecutor::executor::Executor;
-
-use crate::types::ids::BlockId;
+use crate::types::block_number::BlockTag;
 use crate::types::reserved_addresses;
-use cita_types::Address;
-use cita_types::H256;
+
+use cita_types::{Address, H256};
 use ethabi::{decode, ParamType};
 
 lazy_static! {
@@ -46,13 +45,13 @@ impl<'a> VersionManager<'a> {
         VersionManager { executor }
     }
 
-    pub fn get_version(&self, block_id: BlockId) -> Option<u32> {
+    pub fn get_version(&self, block_tag: BlockTag) -> Option<u32> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*VERSION_HASH.as_slice(),
                 None,
-                block_id,
+                block_tag,
             )
             .and_then(|output| {
                 decode(&[ParamType::Uint(64)], &output)
@@ -73,13 +72,13 @@ impl<'a> VersionManager<'a> {
 //mod tests {
 //    use super::VersionManager;
 //    use crate::tests::helpers::init_executor;
-//    use crate::types::ids::BlockId;
+//    use crate::types::block_number::BlockTag;
 //
 //    #[test]
 //    fn test_get_version() {
 //        let executor = init_executor();
 //        let version_management = VersionManager::new(&executor);
-//        let version = version_management.get_version(BlockId::Pending).unwrap();
+//        let version = version_management.get_version(BlockTag::Pending).unwrap();
 //        assert_eq!(version, 2);
 //    }
 //}
