@@ -22,7 +22,6 @@ use libproto::{
 };
 use proof::BftProof;
 use pubsub::channel::Sender;
-use rlp::{self, Encodable};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::Into;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -45,7 +44,7 @@ use cita_types::{Address, H256, H264, U256};
 use crate::cita_db::RocksDB;
 use crate::extras::DBIndex;
 use cita_db::Database;
-use rlp::decode;
+use rlp::{self, decode, Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
 
 pub const VERSION: u32 = 0;
 const LOG_BLOOMS_LEVELS: usize = 3;
@@ -60,7 +59,7 @@ pub struct RelayInfo {
     pub cross_chain_nonce: u64,
 }
 
-#[derive(Debug, Clone, RlpEncodable, RlpDecodable)]
+#[derive(Debug, Clone)]
 pub struct TxProof {
     tx: SignedTransaction,
     receipt: Receipt,
@@ -68,6 +67,35 @@ pub struct TxProof {
     block_header: Header,
     next_proposal_header: Header,
     proposal_proof: ProtoProof,
+}
+
+impl Encodable for TxProof {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.begin_list(6);
+        s.append(&self.tx);
+        s.append(&self.receipt);
+        s.append(&self.receipt_proof);
+        s.append(&self.block_header);
+        s.append(&self.next_proposal_header);
+        s.append(&self.proposal_proof);
+    }
+}
+
+impl Decodable for TxProof {
+    fn decode(r: &UntrustedRlp) -> Result<Self, DecoderError> {
+        if r.item_count()? != 6 {
+            return Err(DecoderError::RlpIncorrectListLen);
+        }
+        let tx_proof = TxProof {
+            tx: r.val_at(0)?,
+            receipt: r.val_at(1)?,
+            receipt_proof: r.val_at(2)?,
+            block_header: r.val_at(3)?,
+            next_proposal_header: r.val_at(4)?,
+            proposal_proof: r.val_at(5)?,
+        };
+        Ok(tx_proof)
+    }
 }
 
 impl TxProof {

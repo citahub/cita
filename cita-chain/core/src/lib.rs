@@ -33,8 +33,6 @@ extern crate util;
 extern crate cita_database as cita_db;
 extern crate cita_trie;
 
-#[macro_use]
-extern crate rlp_derive;
 extern crate rustc_hex;
 
 extern crate bincode;

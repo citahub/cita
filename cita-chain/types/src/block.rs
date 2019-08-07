@@ -158,10 +158,26 @@ impl Block {
 }
 
 /// body of block.
-#[derive(Default, Debug, Clone, PartialEq, RlpEncodableWrapper, RlpDecodableWrapper)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct BlockBody {
     /// The transactions in this body.
     pub transactions: Vec<SignedTransaction>,
+}
+
+impl Encodable for BlockBody {
+    fn rlp_append(&self, s: &mut rlp::RlpStream) {
+        s.append_list(&self.transactions);
+    }
+}
+
+impl Decodable for BlockBody {
+    fn decode(r: &UntrustedRlp) -> Result<Self, DecoderError> {
+        let block_body = BlockBody {
+            transactions: r.as_list()?,
+        };
+
+        Ok(block_body)
+    }
 }
 
 impl HeapSizeOf for BlockBody {
