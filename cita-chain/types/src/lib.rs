@@ -35,6 +35,7 @@ pub mod errors;
 pub mod extras;
 pub mod filter;
 pub mod header;
+pub mod indexes;
 pub mod log_blooms;
 pub mod log_entry;
 pub mod receipt;
