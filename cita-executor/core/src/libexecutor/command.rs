@@ -152,7 +152,7 @@ pub trait Commander {
     fn metadata(&self, data: String) -> Result<MetaData, String>;
     fn economical_model(&self) -> EconomicalModel;
     fn load_executed_result(&self, height: u64) -> ExecutedResult;
-    fn grow(&mut self, closed_block: ClosedBlock) -> ExecutedResult;
+    fn grow(&mut self, closed_block: &ClosedBlock) -> ExecutedResult;
     fn exit(&mut self, rollback_id: BlockTag);
     fn clone_executor_reader(&mut self) -> Self;
 }
@@ -189,7 +189,11 @@ impl Commander for Executor {
             Command::LoadExecutedResult(height) => {
                 CommandResp::LoadExecutedResult(self.load_executed_result(height))
             }
-            Command::Grow(closed_block) => CommandResp::Grow(self.grow(closed_block)),
+            Command::Grow(mut closed_block) => {
+                let r = self.grow(&closed_block);
+                closed_block.clear_cache();
+                CommandResp::Grow(r)
+            }
             Command::Exit(rollback_id) => {
                 self.exit(rollback_id);
                 CommandResp::Exit
@@ -431,7 +435,7 @@ impl Commander for Executor {
         self.executed_result_by_height(height)
     }
 
-    fn grow(&mut self, closed_block: ClosedBlock) -> ExecutedResult {
+    fn grow(&mut self, closed_block: &ClosedBlock) -> ExecutedResult {
         info!(
             "executor grow according to ClosedBlock(height: {}, hash: {:?}, parent_hash: {:?}, \
              timestamp: {}, state_root: {:?}, transaction_root: {:?}, proposer: {:?})",
@@ -464,6 +468,7 @@ impl Commander for Executor {
         self.write_batch(closed_block);
 
         if are_permissions_changed {
+            trace!("Permissions changed, reload global sys config.");
             self.sys_config = GlobalSysConfig::load(&self, BlockTag::Tag(Tag::Pending));
         }
         let mut executed_result = ExecutedResult::new();

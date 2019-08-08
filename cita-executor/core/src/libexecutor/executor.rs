@@ -198,7 +198,7 @@ impl Executor {
     /// 1. Header
     /// 2. CurrentHash
     /// 3. State
-    pub fn write_batch(&self, block: ClosedBlock) {
+    pub fn write_batch(&self, block: &ClosedBlock) {
         let height = block.number();
         let hash = block.hash().unwrap();
         let version = block.version();
@@ -514,8 +514,9 @@ mod tests {
         let data = helpers::generate_contract();
         for _i in 0..5 {
             let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
-            let closed_block = executor.into_fsm(block.clone());
-            executor.grow(closed_block);
+            let mut closed_block = executor.into_fsm(block.clone());
+            executor.grow(&closed_block);
+            closed_block.clear_cache();
         }
 
         let current_height = executor.get_current_height();
@@ -543,10 +544,11 @@ mod tests {
 
         let data = helpers::generate_contract();
         let block = helpers::create_block(&executor, Address::from(0), &data, (0, 1), &privkey);
-        let closed_block = executor.into_fsm(block.clone());
+        let mut closed_block = executor.into_fsm(block.clone());
         let closed_block_height = closed_block.number();
         let closed_block_hash = closed_block.hash();
-        executor.grow(closed_block);
+        executor.grow(&closed_block);
+        closed_block.clear_cache();
 
         let current_height = executor.get_current_height();
         let current_hash = executor.block_hash(current_height);
