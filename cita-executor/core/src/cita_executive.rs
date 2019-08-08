@@ -16,7 +16,7 @@ use types::Bytes;
 use crate::authentication::{check_permission, AuthenticationError};
 use crate::contracts::native::factory::{Factory as NativeFactory, NativeError};
 use crate::core_types::{Bloom, BloomInput, Hash};
-use crate::error::CallError;
+use crate::executed::CallError;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::tx_gas_schedule::TxGasSchedule;

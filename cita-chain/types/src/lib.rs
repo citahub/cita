@@ -31,6 +31,7 @@ pub mod block;
 pub mod block_number;
 pub mod block_receipts;
 pub mod context;
+pub mod errors;
 pub mod extras;
 pub mod filter;
 pub mod header;

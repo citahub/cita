@@ -24,7 +24,7 @@ use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::solc::{
     sys_config::ChainId, PermissionManagement, SysConfig, VersionManager,
 };
-use crate::error::CallError;
+use crate::executed::CallError;
 use crate::libexecutor::block::EVMBlockDataProvider;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::call_request::CallRequest;

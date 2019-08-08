@@ -13,11 +13,15 @@ hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remo
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 serde = "1.0"
 serde_derive = "1.0"
 bloomchain = "0.2"
 lazy_static = "0.2"
 time = "0.1"
+rustc-hex = "1.0"
+cita_trie = "2.0.0"
 cita-logger = "0.1.0"
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }

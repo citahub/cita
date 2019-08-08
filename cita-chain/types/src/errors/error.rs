@@ -18,11 +18,11 @@
 
 use crate::log_entry::LogBloom;
 use cita_ed25519::Error as EthkeyError;
-use cita_types::{H256, U256};
 
-pub use crate::executed::{CallError, ExecutionError};
 use crate::header::BlockNumber;
-use core::error::*;
+use cita_trie::TrieError;
+use cita_types::{H256, U256, U512};
+use rustc_hex::FromHexError;
 use snappy;
 use std::fmt;
 
@@ -217,6 +217,85 @@ impl fmt::Display for ImportError {
     }
 }
 
+/// Result of executing the transaction.
+#[derive(PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "ipc", binary)]
+pub enum ExecutionError {
+    /// Returned when there gas paid for transaction execution is
+    /// lower than base gas required.
+    NotEnoughBaseGas {
+        /// Absolute minimum gas required.
+        required: U256,
+        /// Gas provided.
+        got: U256,
+    },
+    /// Returned when block (quota_used + gas) > quota_limit.
+    ///
+    /// If gas =< quota_limit, upstream may try to execute the transaction
+    /// in next block.
+    BlockGasLimitReached {
+        /// Gas limit of block for transaction.
+        quota_limit: U256,
+        /// Gas used in block prior to transaction.
+        quota_used: U256,
+        /// Amount of gas in block.
+        gas: U256,
+    },
+    AccountGasLimitReached {
+        /// Account Gas limit left
+        quota_limit: U256,
+        /// Amount of gas in transaction
+        gas: U256,
+    },
+    /// Returned when transaction nonce does not match state nonce.
+    InvalidNonce {
+        /// Nonce expected.
+        expected: U256,
+        /// Nonce found.
+        got: U256,
+    },
+    /// Returned when cost of transaction (value + gas_price * gas) exceeds
+    /// current sender balance.
+    NotEnoughCash {
+        /// Minimum required balance.
+        required: U512,
+        /// Actual balance.
+        got: U512,
+    },
+    NoTransactionPermission,
+    NoContractPermission,
+    NoCallPermission,
+    /// Returned when internal evm error occurs.
+    ExecutionInternal(String),
+    /// Returned when generic transaction occurs
+    TransactionMalformed(String),
+}
+
+impl fmt::Display for ExecutionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::ExecutionError::*;
+
+        let msg = match *self {
+            NotEnoughBaseGas { ref required, ref got } => format!("Not enough base quota. {} is required, but only {} paid", required, got),
+            BlockGasLimitReached {
+                ref quota_limit,
+                ref quota_used,
+                ref gas,
+            } => format!("Block gas limit reached. The limit is {}, {} has already been used, and {} more is required", quota_limit, quota_used, gas),
+            AccountGasLimitReached { ref quota_limit, ref gas } => format!("Account gas limit reached. The limit is {}, {} more is required", quota_limit, gas),
+            InvalidNonce { ref expected, ref got } => format!("Invalid transaction nonce: expected {}, found {}", expected, got),
+            NotEnoughCash { ref required, ref got } => format!("Cost of transaction exceeds sender balance. {} is required but the sender only has {}", required, got),
+            ExecutionInternal(ref msg) => msg.clone(),
+            TransactionMalformed(ref err) => format!("Malformed transaction: {}", err),
+            NoTransactionPermission => "No transaction permission".to_owned(),
+            NoContractPermission => "No contract permission".to_owned(),
+            NoCallPermission => "No call contract permission".to_owned(),
+        };
+
+        f.write_fmt(format_args!("Transaction execution error ({}).", msg))
+    }
+}
+
 #[allow(unknown_lints, clippy::large_enum_variant)] // TODO clippy
 #[derive(Debug)]
 /// General error type which should be capable of representing all errors in ethcore.
@@ -237,6 +316,8 @@ pub enum Error {
     PowHashInvalid,
     /// The value of the nonce or mishash is invalid.
     PowInvalid,
+    /// Error concerning TrieDBs
+    Trie(TrieError),
     /// Standard io error.
     StdIo(::std::io::Error),
     /// Snappy error.
@@ -258,6 +339,7 @@ impl fmt::Display for Error {
             }
             Error::PowHashInvalid => f.write_str("Invalid or out of date PoW hash."),
             Error::PowInvalid => f.write_str("Invalid nonce or mishash"),
+            Error::Trie(ref err) => err.fmt(f),
             Error::StdIo(ref err) => err.fmt(f),
             Error::Snappy(ref err) => err.fmt(f),
             Error::Ethkey(ref err) => err.fmt(f),
@@ -304,6 +386,12 @@ impl From<UtilError> for Error {
     }
 }
 
+impl From<TrieError> for Error {
+    fn from(err: TrieError) -> Error {
+        Error::Trie(err)
+    }
+}
+
 impl From<::std::io::Error> for Error {
     fn from(err: ::std::io::Error) -> Error {
         Error::StdIo(err)
@@ -319,5 +407,149 @@ impl From<snappy::SnappyError> for Error {
 impl From<EthkeyError> for Error {
     fn from(err: EthkeyError) -> Error {
         Error::Ethkey(err)
+    }
+}
+
+// TODO: uncomment below once https://github.com/rust-lang/rust/issues/27336 sorted.
+/*#![feature(concat_idents)]
+macro_rules! assimilate {
+    ($name:ident) => (
+        impl From<concat_idents!($name, Error)> for Error {
+            fn from(err: concat_idents!($name, Error)) -> Error {
+                Error:: $name (err)
+            }
+        }
+    )
+}
+assimilate!(FromHex);
+assimilate!(BaseData);*/
+
+/// From the error of cita-common util.
+#[derive(Debug)]
+/// Error in database subsystem.
+pub enum BaseDataError {
+    /// An entry was removed more times than inserted.
+    NegativelyReferencedHash(H256),
+    /// A committed value was inserted more than once.
+    AlreadyExists(H256),
+}
+
+impl fmt::Display for BaseDataError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            BaseDataError::NegativelyReferencedHash(hash) => write!(
+                f,
+                "Entry {} removed from database more times than it was added.",
+                hash
+            ),
+            BaseDataError::AlreadyExists(hash) => {
+                write!(f, "Committed key already exists in database: {}", hash)
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+/// General error type which should be capable of representing all errors in ethcore.
+pub enum UtilError {
+    /// Error concerning the Rust standard library's IO subsystem.
+    StdIo(::std::io::Error),
+    /// Error concerning the hex conversion logic.
+    FromHex(FromHexError),
+    /// Error concerning the database abstraction logic.
+    BaseData(BaseDataError),
+    /// Error concerning the RLP decoder.
+    Decoder(::rlp::DecoderError),
+    /// Miscellaneous error described by a string.
+    SimpleString(String),
+    /// Error from a bad input size being given for the needed output.
+    BadSize,
+    /// Error from snappy.
+    Snappy(::snappy::SnappyError),
+}
+
+impl fmt::Display for UtilError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            UtilError::StdIo(ref err) => f.write_fmt(format_args!("{}", err)),
+            UtilError::FromHex(ref err) => f.write_fmt(format_args!("{}", err)),
+            UtilError::BaseData(ref err) => f.write_fmt(format_args!("{}", err)),
+            UtilError::Decoder(ref err) => f.write_fmt(format_args!("{}", err)),
+            UtilError::SimpleString(ref msg) => f.write_str(msg),
+            UtilError::BadSize => f.write_str("Bad input size."),
+            UtilError::Snappy(ref err) => f.write_fmt(format_args!("{}", err)),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+/// Error indicating an expected value was not found.
+pub struct Mismatch<T: fmt::Debug> {
+    /// Value expected.
+    pub expected: T,
+    /// Value found.
+    pub found: T,
+}
+
+impl<T: fmt::Debug + fmt::Display> fmt::Display for Mismatch<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "Expected {}, found {}",
+            self.expected, self.found
+        ))
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+/// Error indicating value found is outside of a valid range.
+pub struct OutOfBounds<T: fmt::Debug> {
+    /// Minimum allowed value.
+    pub min: Option<T>,
+    /// Maximum allowed value.
+    pub max: Option<T>,
+    /// Value found.
+    pub found: T,
+}
+
+impl<T: fmt::Debug + fmt::Display> fmt::Display for OutOfBounds<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let msg = match (self.min.as_ref(), self.max.as_ref()) {
+            (Some(min), Some(max)) => format!("Min={}, Max={}", min, max),
+            (Some(min), _) => format!("Min={}", min),
+            (_, Some(max)) => format!("Max={}", max),
+            (None, None) => "".into(),
+        };
+
+        f.write_fmt(format_args!("Value {} out of bounds. {}", self.found, msg))
+    }
+}
+
+impl From<FromHexError> for UtilError {
+    fn from(err: FromHexError) -> UtilError {
+        UtilError::FromHex(err)
+    }
+}
+
+impl From<::std::io::Error> for UtilError {
+    fn from(err: ::std::io::Error) -> UtilError {
+        UtilError::StdIo(err)
+    }
+}
+
+impl From<::rlp::DecoderError> for UtilError {
+    fn from(err: ::rlp::DecoderError) -> UtilError {
+        UtilError::Decoder(err)
+    }
+}
+
+impl From<String> for UtilError {
+    fn from(err: String) -> UtilError {
+        UtilError::SimpleString(err)
+    }
+}
+
+impl From<::snappy::SnappyError> for UtilError {
+    fn from(err: ::snappy::SnappyError) -> UtilError {
+        UtilError::Snappy(err)
     }
 }

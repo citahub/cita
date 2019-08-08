@@ -25,18 +25,13 @@ extern crate hashable;
 extern crate lru_cache;
 extern crate proof;
 extern crate rlp;
-extern crate snappy;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate util;
-extern crate cita_database as cita_db;
-extern crate cita_trie;
-
-extern crate rustc_hex;
-
 extern crate bincode;
 extern crate bit_set;
+extern crate cita_database as cita_db;
 extern crate cita_ed25519;
 extern crate cita_secp256k1;
 extern crate cita_types;
@@ -44,14 +39,13 @@ extern crate common_types as types;
 extern crate crossbeam;
 extern crate jsonrpc_types;
 extern crate pubsub;
+extern crate rustc_hex;
 extern crate time;
 extern crate transient_hashmap;
 
 #[cfg(test)]
 extern crate cita_crypto;
 
-#[macro_use]
-pub mod error;
 pub mod filters;
 pub mod libchain;
 pub use crate::types::*;
