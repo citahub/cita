@@ -23,7 +23,6 @@ cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch =
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
@@ -31,7 +30,6 @@ rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gp
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 common-types = { path = "../types" }
 cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
-cita_trie = "2.0.0"
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 
 [dev-dependencies]

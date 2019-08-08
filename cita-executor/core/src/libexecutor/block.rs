@@ -15,11 +15,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::cell::RefCell;
+use std::cmp;
+use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
+
+use cita_merklehash;
+use cita_types::{Address, H256, U256};
+use cita_vm::{
+    evm::Error as EVMError, state::State as CitaState, state::StateObjectInfo, BlockDataProvider,
+    Error as VMError,
+};
+use hashable::Hashable;
+use libproto::executor::{ExecutedInfo, ReceiptWithOption};
+use rlp::Encodable;
+
 use crate::authentication::AuthenticationError;
 use crate::cita_executive::{CitaExecutive, ExecutedException, ExecutionError};
 use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::core::context::{Context, LastHashes};
-use crate::error::Error;
 use crate::libexecutor::auto_exec::auto_exec;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::CitaTrieDB;
@@ -28,21 +43,8 @@ use crate::log_entry::LogBloom;
 use crate::receipt::{Receipt, ReceiptError};
 use crate::tx_gas_schedule::TxGasSchedule;
 pub use crate::types::block::{Block, BlockBody, OpenBlock};
+use crate::types::errors::Error;
 use crate::types::transaction::SignedTransaction;
-use cita_merklehash;
-use cita_types::{Address, H256, U256};
-use cita_vm::BlockDataProvider;
-use cita_vm::{
-    evm::Error as EVMError, state::State as CitaState, state::StateObjectInfo, Error as VMError,
-};
-use hashable::Hashable;
-use libproto::executor::{ExecutedInfo, ReceiptWithOption};
-use rlp::*;
-use std::cell::RefCell;
-use std::cmp;
-use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
-use std::sync::Arc;
 
 lazy_static! {
     /// Block Reward
