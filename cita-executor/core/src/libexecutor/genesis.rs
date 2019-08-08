@@ -17,8 +17,8 @@
 
 use crate::libexecutor::block::Block;
 use crate::libexecutor::executor::{CitaDB, CitaTrieDB};
-use crate::types::indexes;
-use crate::types::indexes::DBIndex;
+use crate::types::db_indexes;
+use crate::types::db_indexes::DBIndex;
 use cita_database::{DataCategory, Database};
 use cita_types::traits::ConvertType;
 use cita_types::{clean_0x, Address, H256, U256};
@@ -171,7 +171,7 @@ impl Genesis {
         let hash = self.block.hash().unwrap();
 
         // Insert [hash, block_header]
-        let hash_key = indexes::Hash2Header(hash).get_index();
+        let hash_key = db_indexes::Hash2Header(hash).get_index();
 
         // Need to get header in init function.
         db.insert(
@@ -182,7 +182,7 @@ impl Genesis {
         .expect("Insert block header error.");
 
         // Insert [current_hash, hash]
-        let current_hash_key = indexes::CurrentHash.get_index();
+        let current_hash_key = db_indexes::CurrentHash.get_index();
         let hash_value = encode(&hash).to_vec();
         db.insert(
             Some(DataCategory::Extra),
@@ -192,7 +192,7 @@ impl Genesis {
         .expect("Insert block hash error.");
 
         // Insert [block_number, hash]
-        let height_key = indexes::BlockNumber2Hash(self.block.number()).get_index();
+        let height_key = db_indexes::BlockNumber2Hash(self.block.number()).get_index();
 
         db.insert(Some(DataCategory::Extra), height_key.to_vec(), hash_value)
             .expect("Insert block hash error.");

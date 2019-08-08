@@ -28,7 +28,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use util::{Mutex, RwLock};
 
-use crate::indexes::{
+use crate::db_indexes::{
     BlockNumber2Body, BlockNumber2Header, CurrentHash, CurrentHeight, CurrentProof,
     Hash2BlockNumber, Hash2BlockReceipts, Hash2TransactionIndex, LogGroupPosition,
 };
@@ -44,7 +44,7 @@ use cita_types::traits::LowerHex;
 use cita_types::{Address, H256, U256};
 
 use crate::cita_db::RocksDB;
-use crate::indexes::DBIndex;
+use crate::db_indexes::DBIndex;
 use cita_db::Database;
 use rlp::{self, decode, Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
 
