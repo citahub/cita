@@ -28,7 +28,6 @@ hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remo
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 common-types = { path = "../types" }
 cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }

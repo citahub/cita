@@ -48,7 +48,7 @@ use std::cell::RefCell;
 use std::convert::{From, Into};
 use std::fmt;
 use std::sync::Arc;
-use util::Bytes;
+use types::Bytes;
 use util::RwLock;
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::large_enum_variant))]

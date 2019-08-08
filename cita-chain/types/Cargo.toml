@@ -7,7 +7,6 @@ edition = "2018"
 
 [dependencies]
 rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }

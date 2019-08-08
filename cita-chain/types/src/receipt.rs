@@ -16,6 +16,7 @@
 
 //! Receipt
 
+use super::Bytes;
 use crate::block_number::BlockNumber;
 use crate::log_entry::{LocalizedLogEntry, LogBloom, LogEntry};
 use cita_types::traits::LowerHex;
@@ -26,7 +27,6 @@ use libproto::executor::{
 };
 use rlp::*;
 use std::str::FromStr;
-use util::Bytes;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
 pub enum ReceiptError {

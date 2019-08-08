@@ -82,6 +82,8 @@
 #[macro_use]
 extern crate cita_logger as logger;
 
+#[macro_use]
+extern crate util;
 pub mod cita_protocol;
 pub mod config;
 pub mod mq_agent;
@@ -106,7 +108,6 @@ use std::path::Path;
 use std::sync::mpsc::channel;
 use std::thread;
 use tentacle::{builder::ServiceBuilder, secio::SecioKeyPair};
-use util::micro_service_init;
 use util::set_panic_handler;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));

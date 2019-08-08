@@ -43,7 +43,7 @@ use crate::libexecutor::command::Commander;
 use crate::libexecutor::executor::Executor;
 use crate::types::block_number::BlockTag;
 use cita_types::Address;
-use util::Bytes;
+use types::Bytes;
 
 /// Extend `Executor` with some methods related to contract
 trait ContractCallExt {

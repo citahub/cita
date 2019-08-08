@@ -26,6 +26,7 @@ extern crate cita_database as cita_db;
 
 pub extern crate bloomchain;
 
+pub type Bytes = Vec<u8>;
 pub mod block;
 pub mod block_number;
 pub mod block_receipts;

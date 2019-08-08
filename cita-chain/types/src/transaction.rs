@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use super::Bytes;
 use crate::block_number::BlockNumber;
 use crate::crypto::{
     pubkey_to_address, PubKey, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN,
@@ -29,7 +30,7 @@ use libproto::blockchain::{
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use util::{Bytes, HeapSizeOf};
+use util::HeapSizeOf;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Error {

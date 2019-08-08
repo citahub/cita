@@ -11,7 +11,7 @@ use std::cell::RefCell;
 use std::error::Error;
 use std::fmt;
 use std::sync::Arc;
-use util::Bytes;
+use types::Bytes;
 
 use crate::authentication::{check_permission, AuthenticationError};
 use crate::contracts::native::factory::{Factory as NativeFactory, NativeError};
