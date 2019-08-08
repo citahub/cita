@@ -21,7 +21,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use cita_types::H256;
-use core::filters::eth_filter::EthFilter;
+use core::filters::rpc_filter::RpcFilter as FilterMethod;
 use core::libchain::chain::{BlockInQueue, Chain};
 use error::ErrorCode;
 use jsonrpc_types::rpc_types::{
@@ -294,7 +294,7 @@ impl Forward {
 
             Request::filter_changes(filter_id) => {
                 trace!("filter_changes's id is {:?}", filter_id);
-                let log = self.chain.filter_changes(filter_id as usize).unwrap();
+                let log = self.chain.get_filter_changes(filter_id as usize).unwrap();
                 trace!("Log is: {:?}", log);
                 response.set_filter_changes(serde_json::to_string(&log).unwrap());
             }
@@ -303,7 +303,7 @@ impl Forward {
                 trace!("filter_log's id is {:?}", filter_id);
                 let log = self
                     .chain
-                    .filter_logs(filter_id as usize)
+                    .get_filter_logs(filter_id as usize)
                     .unwrap_or_default();
                 trace!("Log is: {:?}", log);
                 response.set_filter_logs(serde_json::to_string(&log).unwrap());
