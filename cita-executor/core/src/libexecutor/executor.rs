@@ -28,8 +28,8 @@ use crate::libexecutor::genesis::Genesis;
 use crate::log_blooms::LogBloomGroup;
 use crate::trie_db::TrieDB;
 use crate::types::block_number::{BlockTag, Tag};
-use crate::types::extras::DBIndex;
-use crate::types::extras::*;
+use crate::types::db_indexes;
+use crate::types::db_indexes::DBIndex;
 pub use byteorder::{BigEndian, ByteOrder};
 use cita_database::{Config, DataCategory, Database, RocksDB, NUM_COLUMNS};
 use cita_types::H256;
@@ -179,7 +179,7 @@ impl Executor {
                 .block_hash(rollback_height)
                 .expect("the target block to roll back should exist");
 
-            let current_hash_key = (&CurrentHash as &DBIndex<H256, Item = H256>).get_index();
+            let current_hash_key = db_indexes::CurrentHash.get_index();
             let hash_value = encode(&rollback_hash).to_vec();
             self.db
                 .insert(
@@ -210,7 +210,7 @@ impl Executor {
         );
 
         // Insert [hash : block_header].
-        let hash_key = (&hash as &DBIndex<Header, Item = H256>).get_index();
+        let hash_key = db_indexes::Hash2Header(hash).get_index();
         self.db
             .insert(
                 Some(DataCategory::Headers),
@@ -220,7 +220,7 @@ impl Executor {
             .expect("Insert block header error.");
 
         // Insert [CurrentHash : hash].
-        let current_hash_key = (&CurrentHash as &DBIndex<H256, Item = H256>).get_index();
+        let current_hash_key = db_indexes::CurrentHash.get_index();
         let hash_value = encode(&hash).to_vec();
         self.db
             .insert(
@@ -231,15 +231,15 @@ impl Executor {
             .expect("Insert block hash error.");
 
         // Insert [height : hash]
-        let height_key = (&height as &DBIndex<H256, Item = BlockNumberKey>).get_index();
+        let height_key = db_indexes::BlockNumber2Hash(height).get_index();
         self.db
             .insert(Some(DataCategory::Extra), height_key.to_vec(), hash_value)
             .expect("Insert block hash error.");
     }
 
     /// Get block hash by number
-    fn block_hash(&self, index: BlockNumber) -> Option<H256> {
-        let height_key = (&index as &DBIndex<H256, Item = BlockNumberKey>).get_index();
+    fn block_hash(&self, number: BlockNumber) -> Option<H256> {
+        let height_key = db_indexes::BlockNumber2Hash(number).get_index();
         self.db
             .get(Some(DataCategory::Extra), &height_key.to_vec())
             .map(|h| h.map(|hash| decode::<H256>(hash.as_slice())))
@@ -287,7 +287,7 @@ impl Executor {
             }
         }
 
-        let hash_key = (&hash as &DBIndex<Header, Item = H256>).get_index();
+        let hash_key = db_indexes::Hash2Header(hash).get_index();
         self.db
             .get(Some(DataCategory::Headers), &hash_key.to_vec())
             .map(|header| header.map(|bytes| decode::<Header>(bytes.as_slice())))
@@ -390,7 +390,7 @@ impl Executor {
 
 impl<'a> BloomGroupDatabase for Executor {
     fn blooms_at(&self, position: &GroupPosition) -> Option<BloomGroup> {
-        let position = LogGroupPosition::from(position.clone());
+        let position = db_indexes::LogGroupPosition::from(position.clone());
 
         let log_bloom_group = self
             .db
@@ -405,14 +405,14 @@ impl<'a> BloomGroupDatabase for Executor {
 }
 
 pub fn get_current_header(db: Arc<CitaDB>) -> Option<Header> {
-    let current_hash_key = (&CurrentHash as &DBIndex<H256, Item = H256>).get_index();
+    let current_hash_key = db_indexes::CurrentHash.get_index();
     if let Ok(hash) = db.get(Some(DataCategory::Extra), &current_hash_key.to_vec()) {
         let hash: H256 = if let Some(h) = hash {
             decode(h.as_slice())
         } else {
             return None;
         };
-        let hash_key = (&hash as &DBIndex<Header, Item = H256>).get_index();
+        let hash_key = db_indexes::Hash2Header(hash).get_index();
         if let Ok(header) = db.get(Some(DataCategory::Headers), &hash_key.to_vec()) {
             Some(decode::<Header>(header.unwrap().as_slice()))
         } else {
