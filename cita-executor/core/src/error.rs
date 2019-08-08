@@ -22,9 +22,9 @@ use cita_types::{H256, U256};
 
 pub use crate::executed::{CallError, ExecutionError};
 use crate::header::BlockNumber;
+use core::error::*;
 use snappy;
 use std::fmt;
-use util::*;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 /// Errors concerning transaction processing.
