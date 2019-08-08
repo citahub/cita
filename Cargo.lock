@@ -597,6 +597,7 @@ dependencies = [
  "cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
  "cita-logger 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
+ "cita-vm 0.2.1 (git+https://github.com/cryptape/cita-vm.git?branch=cita)",
  "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-types 0.1.0",
  "core-executor 0.1.0",
