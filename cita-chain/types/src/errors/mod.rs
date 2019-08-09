@@ -1,13 +1,22 @@
+mod authentication;
+mod call;
 mod execution;
+mod native;
 mod receipt;
 
+pub use authentication::AuthenticationError;
+pub use call::CallError;
 pub use execution::ExecutionError;
+pub use native::NativeError;
 pub use receipt::ReceiptError;
 
 #[derive(Debug)]
 pub enum Error {
     Execution(ExecutionError),
     Receipt(ReceiptError),
+    Call(CallError),
+    Native(NativeError),
+    Authentication(AuthenticationError),
 }
 
 impl std::fmt::Display for Error {
@@ -15,6 +24,9 @@ impl std::fmt::Display for Error {
         let err = match self {
             Error::Execution(ref err) => format!("Execution error {:?}", err),
             Error::Receipt(ref err) => format!("Receipt error {:?}", err),
+            Error::Call(ref err) => format!("Call error {:?}", err),
+            Error::Native(ref err) => format!("Native error {:?}", err),
+            Error::Authentication(ref err) => format!("Authentication error {:?}", err),
         };
         write!(f, "{}", err)
     }
@@ -29,5 +41,20 @@ impl From<ExecutionError> for Error {
 impl From<ReceiptError> for Error {
     fn from(err: ReceiptError) -> Error {
         Error::Receipt(err)
+    }
+}
+impl From<CallError> for Error {
+    fn from(err: CallError) -> Error {
+        Error::Call(err)
+    }
+}
+impl From<NativeError> for Error {
+    fn from(err: NativeError) -> Error {
+        Error::Native(err)
+    }
+}
+impl From<AuthenticationError> for Error {
+    fn from(err: AuthenticationError) -> Error {
+        Error::Authentication(err)
     }
 }

@@ -24,13 +24,13 @@ use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::solc::{
     sys_config::ChainId, PermissionManagement, SysConfig, VersionManager,
 };
-use crate::executed::CallError;
 use crate::libexecutor::block::EVMBlockDataProvider;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::call_request::CallRequest;
 use crate::trie_db::TrieDB;
 use crate::types::block_number::{BlockTag, Tag};
 use crate::types::context::Context;
+use crate::types::errors::CallError;
 use crate::types::transaction::{Action, SignedTransaction, Transaction};
 pub use byteorder::{BigEndian, ByteOrder};
 use cita_database::RocksDB;

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
-use std::fmt;
 use std::str::FromStr;
 
 use crate::cita_executive::VmExecParams;
 use crate::types::context::Context;
+use crate::types::errors::NativeError;
 use crate::types::reserved_addresses;
 
 use cita_types::Address;
@@ -94,19 +94,5 @@ impl Default for Factory {
             );
         }
         factory
-    }
-}
-
-#[derive(Debug)]
-pub enum NativeError {
-    Internal(String),
-}
-
-impl fmt::Display for NativeError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let printable = match self {
-            NativeError::Internal(str) => format!("Internal error {:?}", str),
-        };
-        write!(f, "{}", printable)
     }
 }

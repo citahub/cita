@@ -8,9 +8,9 @@ use core::header::Header;
 use core::libchain::chain::TxProof;
 use ethabi;
 
-use crate::contracts::native::factory::NativeError;
 use crate::storage::Map;
 use crate::types::context::Context;
+use crate::types::errors::NativeError;
 use cita_vm::evm::DataProvider;
 use cita_vm::evm::InterpreterResult;
 

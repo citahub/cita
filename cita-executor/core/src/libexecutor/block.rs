@@ -31,10 +31,10 @@ use hashable::Hashable;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use rlp::Encodable;
 
-use crate::authentication::AuthenticationError;
-use crate::cita_executive::{CitaExecutive, ExecutedException, ExecutionError};
+use crate::cita_executive::CitaExecutive;
 use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::core::context::{Context, LastHashes};
+use crate::exception::ExecutedException;
 use crate::libexecutor::auto_exec::auto_exec;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::CitaTrieDB;
@@ -45,6 +45,7 @@ use crate::tx_gas_schedule::TxGasSchedule;
 pub use crate::types::block::{Block, BlockBody, OpenBlock};
 use crate::types::errors::Error;
 use crate::types::errors::ReceiptError;
+use crate::types::errors::{AuthenticationError, ExecutionError};
 use crate::types::transaction::SignedTransaction;
 
 lazy_static! {
@@ -240,9 +241,7 @@ impl ExecutedBlock {
                         Some(ReceiptError::NoCallPermission)
                     }
                     ExecutionError::Internal { .. } => Some(ReceiptError::ExecutionInternal),
-                    ExecutionError::TransactionMalformed { .. } => {
-                        Some(ReceiptError::TransactionMalformed)
-                    }
+                    ExecutionError::InvalidTransaction => Some(ReceiptError::TransactionMalformed),
                     _ => Some(ReceiptError::Internal),
                 };
 

@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-/// Calculate contract method signature hash and return different types.
-use crate::contracts::native::factory::NativeError;
+use crate::types::errors::NativeError;
 use byteorder::{BigEndian, ByteOrder};
+/// Calculate contract method signature hash and return different types.
 use util::sha3;
 
 pub fn encode_to_array(name: &[u8]) -> [u8; 4] {

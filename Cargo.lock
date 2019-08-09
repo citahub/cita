@@ -855,6 +855,7 @@ dependencies = [
  "cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
  "cita-logger 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
+ "cita-vm 0.2.1 (git+https://github.com/cryptape/cita-vm.git?branch=cita)",
  "cita_trie 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
  "jsonrpc-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
