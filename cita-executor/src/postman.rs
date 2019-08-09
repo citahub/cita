@@ -43,6 +43,7 @@ use crate::core::libexecutor::lru_cache::LRUCache;
 use std::sync::RwLock;
 
 use super::backlogs::{wrap_height, Backlogs};
+use cita_vm::state::StateObjectInfo;
 
 pub struct Postman {
     backlogs: Backlogs,
@@ -358,10 +359,6 @@ impl Postman {
         }
     }
 
-    // fn get_economical_model(&self) -> EconomicalModel {
-    //     command::economical_model(&self.command_req_sender, &self.command_resp_receiver)
-    // }
-
     /// Find the public key of all senders that caused the specified error message, and then publish it
     // TODO: I think it is not necessary to distinguish economical_model, maybe remove
     //       this opinion in the future.
@@ -627,35 +624,35 @@ impl Postman {
             }
             Request::storage_key(skey) => {
                 trace!("storage key info is {:?}", skey);
-                // let _ = serde_json::from_str::<BlockNumber>(&skey.height)
-                //     .map(|block_id| {
-                //         match command::state_at(
-                //             &self.command_req_sender,
-                //             &self.command_resp_receiver,
-                //             block_id.into(),
-                //         )
-                //         .and_then(|state| {
-                //             state
-                //                 .storage_at(
-                //                     &Address::from(skey.get_address()),
-                //                     &H256::from(skey.get_position()),
-                //                 )
-                //                 .ok()
-                //         }) {
-                //             Some(storage_val) => {
-                //                 response.set_storage_value(storage_val.to_vec());
-                //             }
-                //             None => {
-                //                 response.set_code(ErrorCode::query_error());
-                //                 response
-                //                     .set_error_msg("get storage at something failed".to_string());
-                //             }
-                //         }
-                //     })
-                //     .map_err(|err| {
-                //         response.set_code(ErrorCode::query_error());
-                //         response.set_error_msg(format!("{:?}", err));
-                //     });
+                let _ = serde_json::from_str::<BlockNumber>(&skey.height)
+                    .map(|block_id| {
+                        match command::state_at(
+                            &self.command_req_sender,
+                            &self.command_resp_receiver,
+                            block_id.into(),
+                        )
+                        .and_then(|mut state| {
+                            state
+                                .get_storage(
+                                    &Address::from(skey.get_address()),
+                                    &H256::from(skey.get_position()),
+                                )
+                                .ok()
+                        }) {
+                            Some(storage_val) => {
+                                response.set_storage_value(storage_val.to_vec());
+                            }
+                            None => {
+                                response.set_code(ErrorCode::query_error());
+                                response
+                                    .set_error_msg("get storage at something failed".to_string());
+                            }
+                        }
+                    })
+                    .map_err(|err| {
+                        response.set_code(ErrorCode::query_error());
+                        response.set_error_msg(format!("{:?}", err));
+                    });
             }
 
             _ => {
