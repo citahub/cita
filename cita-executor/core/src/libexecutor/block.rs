@@ -52,12 +52,6 @@ lazy_static! {
     pub static ref BLOCK_REWARD: U256 = U256::from(5_000_000_000_000_000_000 as i64);
 }
 
-/// Trait for a object that has a state database.
-pub trait Drain {
-    /// Drop this object.
-    fn drain(self);
-}
-
 pub struct ExecutedBlock {
     pub block: OpenBlock,
     pub receipts: Vec<Receipt>,
@@ -322,6 +316,7 @@ impl ExecutedBlock {
             auto_exec(Arc::clone(&self.state), conf.auto_exec_quota_limit, context);
             self.state.borrow_mut().commit().expect("commit trie error");
         }
+
         // Rebuild block
         let mut block = Block::new(self.block);
         let state_root = self.state.borrow().root;
@@ -353,15 +348,14 @@ impl ExecutedBlock {
         block.set_log_bloom(log_bloom);
         block.rehash();
 
-        // Clear state cache.
-        self.state.borrow_mut().clear();
-
         // Note: It is ok to new a state, because no cache and checkpoint used.
-        let state = CitaState::from_existing(
+        let mut state = CitaState::from_existing(
             Arc::<CitaTrieDB>::clone(&self.state.borrow().db),
             self.state.borrow().root,
         )
         .expect("Get state from trie db");
+
+        state.cache = RefCell::new(self.state.borrow_mut().cache.to_owned().into_inner());
 
         ClosedBlock {
             block,
@@ -379,13 +373,6 @@ pub struct ClosedBlock {
     pub block: Block,
     pub receipts: Vec<Receipt>,
     pub state: CitaState<CitaTrieDB>,
-}
-
-impl Drain for ClosedBlock {
-    /// Drop this object
-    fn drain(mut self) {
-        self.state.clear();
-    }
 }
 
 impl ClosedBlock {
@@ -430,6 +417,10 @@ impl ClosedBlock {
             .mut_header()
             .set_proposer(self.proposer().to_vec());
         executed_info
+    }
+
+    pub fn clear_cache(&mut self) {
+        self.state.clear();
     }
 }
 

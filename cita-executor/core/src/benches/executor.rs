@@ -71,7 +71,8 @@ fn test_block_with_10000_tx_write_db(b: &mut Bencher) {
     let block = generate_block(&executor, 10000);
 
     b.iter(|| {
-        let closed_block = executor.into_fsm(block.clone());
-        executor.grow(closed_block);
+        let mut closed_block = executor.into_fsm(block.clone());
+        executor.grow(&closed_block);
+        closed_block.clear_cache();
     });
 }

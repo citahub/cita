@@ -111,7 +111,11 @@ fn check_send_tx(
         &func[..],
     );
 
-    trace!("has send tx permission: {:?}", has_permission);
+    trace!(
+        "Account {:?} has send tx permission: {:?}",
+        account,
+        has_permission
+    );
 
     if !has_permission {
         return Err(AuthenticationError::NoTransactionPermission);
