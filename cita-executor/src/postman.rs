@@ -18,9 +18,9 @@
 use crate::core::contracts::solc::sys_config::ChainId;
 use crate::core::libexecutor::block::{ClosedBlock, OpenBlock};
 use crate::core::libexecutor::call_request::CallRequest;
-use crate::core::receipt::ReceiptError;
 use crate::core::tx_gas_schedule::TxGasSchedule;
 use crate::types::block_number::BlockTag;
+use crate::types::errors::ReceiptError;
 use cita_types::U256;
 use cita_types::{Address, H256};
 use crossbeam_channel::{Receiver, Sender};

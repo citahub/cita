@@ -16,11 +16,12 @@
 
 //! Transaction execution format module.
 
-use crate::receipt::ReceiptError;
-use crate::types::log_entry::LogEntry;
-//use crate::types::state_diff::StateDiff;
-use cita_types::{Address, U256, U512};
 use std::fmt;
+
+use crate::types::errors::ReceiptError;
+use crate::types::log_entry::LogEntry;
+
+use cita_types::{Address, U256, U512};
 use types::Bytes;
 
 /// Transaction execution receipt.
