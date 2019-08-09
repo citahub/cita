@@ -21,7 +21,6 @@ use cita_ed25519::Error as EthkeyError;
 use cita_trie::TrieError;
 use std::fmt;
 
-use super::block::BlockError;
 use super::execution::ExecutionError;
 use super::util::UtilError;
 
@@ -31,8 +30,6 @@ use super::util::UtilError;
 pub enum Error {
     /// Error concerning a utility.
     Util(UtilError),
-    /// Error concerning block processing.
-    Block(BlockError),
     /// Unknown engine given.
     UnknownEngineName(String),
     /// Error concerning EVM code execution.
@@ -55,7 +52,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::Util(ref err) => err.fmt(f),
-            Error::Block(ref err) => err.fmt(f),
+            // Error::Block(ref err) => err.fmt(f),
             Error::Execution(ref err) => err.fmt(f),
             Error::UnknownEngineName(ref name) => {
                 f.write_fmt(format_args!("Unknown engine name ({})", name))
@@ -67,12 +64,6 @@ impl fmt::Display for Error {
             Error::Snappy(ref err) => err.fmt(f),
             Error::Ethkey(ref err) => err.fmt(f),
         }
-    }
-}
-
-impl From<BlockError> for Error {
-    fn from(err: BlockError) -> Error {
-        Error::Block(err)
     }
 }
 
