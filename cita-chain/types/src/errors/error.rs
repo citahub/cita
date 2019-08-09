@@ -23,7 +23,6 @@ use std::fmt;
 
 use super::block::BlockError;
 use super::execution::ExecutionError;
-use super::import::ImportError;
 use super::transaction::TransactionError;
 use super::util::UtilError;
 
@@ -41,8 +40,6 @@ pub enum Error {
     Execution(ExecutionError),
     /// Error concerning transaction processing.
     Transaction(TransactionError),
-    /// Error concerning block import.
-    Import(ImportError),
     /// PoW hash is invalid or out of date.
     PowHashInvalid,
     /// The value of the nonce or mishash is invalid.
@@ -64,7 +61,6 @@ impl fmt::Display for Error {
             Error::Block(ref err) => err.fmt(f),
             Error::Execution(ref err) => err.fmt(f),
             Error::Transaction(ref err) => err.fmt(f),
-            Error::Import(ref err) => err.fmt(f),
             Error::UnknownEngineName(ref name) => {
                 f.write_fmt(format_args!("Unknown engine name ({})", name))
             }
@@ -78,18 +74,9 @@ impl fmt::Display for Error {
     }
 }
 
-/// Result of import block operation.
-// pub type ImportResult = Result<H256, Error>;
-
 impl From<TransactionError> for Error {
     fn from(err: TransactionError) -> Error {
         Error::Transaction(err)
-    }
-}
-
-impl From<ImportError> for Error {
-    fn from(err: ImportError) -> Error {
-        Error::Import(err)
     }
 }
 
