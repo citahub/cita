@@ -40,10 +40,11 @@ use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::CitaTrieDB;
 use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::log_entry::LogBloom;
-use crate::receipt::{Receipt, ReceiptError};
+use crate::receipt::Receipt;
 use crate::tx_gas_schedule::TxGasSchedule;
 pub use crate::types::block::{Block, BlockBody, OpenBlock};
 use crate::types::errors::Error;
+use crate::types::errors::ReceiptError;
 use crate::types::transaction::SignedTransaction;
 
 lazy_static! {
