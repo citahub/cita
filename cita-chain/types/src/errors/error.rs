@@ -23,7 +23,6 @@ use std::fmt;
 
 use super::block::BlockError;
 use super::execution::ExecutionError;
-use super::transaction::TransactionError;
 use super::util::UtilError;
 
 #[allow(unknown_lints, clippy::large_enum_variant)] // TODO clippy
@@ -38,8 +37,6 @@ pub enum Error {
     UnknownEngineName(String),
     /// Error concerning EVM code execution.
     Execution(ExecutionError),
-    /// Error concerning transaction processing.
-    Transaction(TransactionError),
     /// PoW hash is invalid or out of date.
     PowHashInvalid,
     /// The value of the nonce or mishash is invalid.
@@ -60,7 +57,6 @@ impl fmt::Display for Error {
             Error::Util(ref err) => err.fmt(f),
             Error::Block(ref err) => err.fmt(f),
             Error::Execution(ref err) => err.fmt(f),
-            Error::Transaction(ref err) => err.fmt(f),
             Error::UnknownEngineName(ref name) => {
                 f.write_fmt(format_args!("Unknown engine name ({})", name))
             }
@@ -71,12 +67,6 @@ impl fmt::Display for Error {
             Error::Snappy(ref err) => err.fmt(f),
             Error::Ethkey(ref err) => err.fmt(f),
         }
-    }
-}
-
-impl From<TransactionError> for Error {
-    fn from(err: TransactionError) -> Error {
-        Error::Transaction(err)
     }
 }
 
