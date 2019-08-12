@@ -76,7 +76,6 @@ pub mod tx_gas_schedule;
 // FIXME: Rename this after this work finished
 pub mod core_types;
 pub mod executed;
-pub mod factory;
 #[cfg(test)]
 pub mod tests;
 
@@ -85,6 +84,5 @@ pub mod contracts;
 pub mod libexecutor;
 pub mod trie_db;
 
-pub use crate::factory::*;
 pub use crate::types::*;
 pub use trie_db::TrieDB;
