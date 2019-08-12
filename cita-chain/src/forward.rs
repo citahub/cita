@@ -201,7 +201,7 @@ impl Forward {
 
             Request::transaction_receipt(hash) => {
                 let tx_hash = H256::from_slice(&hash);
-                let receipt = self.chain.localized_receipt(tx_hash);
+                let receipt = self.chain.get_rich_receipt(tx_hash);
                 if let Some(receipt) = receipt {
                     let rpc_receipt: RpcReceipt = receipt.into();
                     let serialized = serde_json::to_string(&rpc_receipt).unwrap();

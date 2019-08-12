@@ -29,27 +29,18 @@ use jsonrpc_types::rpc_types::Receipt as RpcReceipt;
 use libproto::executor::{Receipt as ProtoReceipt, ReceiptErrorWithOption, StateRoot};
 use rlp::{Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
 
-/// Information describing execution of a transaction.
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
 pub struct Receipt {
-    /// The state root after executing the transaction. Optional since EIP98
     pub state_root: Option<H256>,
-    /// The total gas used in the block following execution of the transaction.
     pub quota_used: U256,
-    /// The OR-wide combination of all logs' blooms for this transaction.
     pub log_bloom: LogBloom,
-    /// The logs stemming from this transaction.
     pub logs: Vec<LogEntry>,
-    /// Transaction transact error
     pub error: Option<ReceiptError>,
-    /// For calculating contract address
     pub account_nonce: U256,
-    /// Transaction hash.
     pub transaction_hash: H256,
 }
 
 impl Receipt {
-    /// Create a new receipt.
     pub fn new(
         state_root: Option<H256>,
         quota_used: U256,
@@ -192,34 +183,22 @@ impl Decodable for Receipt {
     }
 }
 
-/// Receipt with additional info.
-#[derive(Debug, Clone, PartialEq)]
-pub struct LocalizedReceipt {
-    /// Transaction hash.
+#[derive(Debug, Clone)]
+pub struct RichReceipt {
     pub transaction_hash: H256,
-    /// Transaction index.
     pub transaction_index: usize,
-    /// Block hash.
     pub block_hash: H256,
-    /// Block number.
     pub block_number: BlockNumber,
-    /// The total gas used in the block following execution of the transaction.
     pub cumulative_quota_used: U256,
-    /// The gas used in the execution of the transaction. Note the difference of meaning to `Receipt::quota_used`.
     pub quota_used: U256,
-    /// Contract address.
     pub contract_address: Option<Address>,
-    /// Logs
     pub logs: Vec<LocalizedLogEntry>,
-    /// Logs bloom
     pub log_bloom: LogBloom,
-    /// State root
     pub state_root: Option<H256>,
-    /// Receipt error
     pub error: Option<ReceiptError>,
 }
 
-impl Into<RpcReceipt> for LocalizedReceipt {
+impl Into<RpcReceipt> for RichReceipt {
     fn into(self) -> RpcReceipt {
         RpcReceipt {
             transaction_hash: Some(self.transaction_hash),

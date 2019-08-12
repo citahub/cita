@@ -7,7 +7,7 @@ use crate::header::{BlockNumber, Header};
 use crate::libchain::status::Status;
 use crate::log_blooms::LogBloomGroup;
 use crate::log_entry::LogBloom;
-use crate::receipt::{LocalizedReceipt, Receipt};
+use crate::receipt::{Receipt, RichReceipt};
 use cita_merklehash;
 use hashable::Hashable;
 
@@ -937,74 +937,64 @@ impl Chain {
         self.block_header(tag).map(|x| x.rlp_bytes().into_vec())
     }
 
-    pub fn localized_receipt(&self, id: TransactionHash) -> Option<LocalizedReceipt> {
-        trace!("Get receipt id: {:?}", id);
+    pub fn get_rich_receipt(&self, tx_hash: TransactionHash) -> Option<RichReceipt> {
+        trace!("Get receipt by hash: {:?}", tx_hash);
+        if let Some(transaction_index) = self.transaction_index(tx_hash) {
+            let block_hash = transaction_index.block_hash;
+            let tx_index = transaction_index.index;
 
-        let address = match self.transaction_index(id) {
-            Some(addr) => addr,
-            _ => return None,
-        };
-        let hash = address.block_hash;
-        let index = address.index;
+            if let Some(res) = self.block_receipts(block_hash) {
+                let mut receipts = res.receipts;
+                receipts.truncate(tx_index + 1);
 
-        let mut receipts = match self.block_receipts(hash) {
-            Some(r) => r.receipts,
-            _ => return None,
-        };
+                let last_receipt = receipts.pop().expect("Current receipt is provided; qed");
+                let prior_quota_used = receipts.last().map_or(0.into(), |r| r.quota_used);
+                let log_position_block = receipts.iter().fold(0, |acc, r| acc + r.logs.len());
 
-        receipts.truncate(index + 1);
-        let last_receipt = receipts.pop().expect("Current receipt is provided; qed");
+                if last_receipt.transaction_hash == tx_hash {
+                    let stx = self
+                        .transaction_by_address(block_hash, tx_index)
+                        .unwrap_or_default();
+                    let block_number = self.block_height_by_hash(block_hash).unwrap_or(0);
+                    let contract_address = match *stx.action() {
+                        Action::Create if last_receipt.error.is_none() => {
+                            Some(contract_address(stx.sender(), &last_receipt.account_nonce))
+                        }
+                        _ => None,
+                    };
 
-        let prior_quota_used = match receipts.last() {
-            Some(ref r) => r.quota_used,
-            _ => 0.into(),
-        };
-
-        let no_of_logs = receipts.iter().fold(0, |acc, r| acc + r.logs.len());
-
-        if last_receipt.transaction_hash == id {
-            // Get sender
-            let stx = self.transaction_by_address(hash, index).unwrap();
-            let number = self.block_height_by_hash(hash).unwrap_or(0);
-
-            let contract_address = match *stx.action() {
-                Action::Create if last_receipt.error.is_none() => {
-                    Some(contract_address(stx.sender(), &last_receipt.account_nonce))
+                    let receipt = RichReceipt {
+                        transaction_hash: tx_hash,
+                        transaction_index: tx_index,
+                        block_hash,
+                        block_number,
+                        cumulative_quota_used: last_receipt.quota_used,
+                        quota_used: last_receipt.quota_used - prior_quota_used,
+                        contract_address,
+                        logs: last_receipt
+                            .logs
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, log)| LocalizedLogEntry {
+                                entry: log,
+                                block_hash,
+                                block_number,
+                                transaction_hash: tx_hash,
+                                transaction_index: tx_index,
+                                transaction_log_index: i,
+                                log_index: log_position_block + i,
+                            })
+                            .collect(),
+                        log_bloom: last_receipt.log_bloom,
+                        state_root: last_receipt.state_root,
+                        error: last_receipt.error,
+                    };
+                    return Some(receipt);
                 }
-                _ => None,
-            };
-
-            let receipt = LocalizedReceipt {
-                transaction_hash: id,
-                transaction_index: index,
-                block_hash: hash,
-                block_number: number,
-                cumulative_quota_used: last_receipt.quota_used,
-                quota_used: last_receipt.quota_used - prior_quota_used,
-                contract_address,
-                logs: last_receipt
-                    .logs
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, log)| LocalizedLogEntry {
-                        entry: log,
-                        block_hash: hash,
-                        block_number: number,
-                        transaction_hash: id,
-                        transaction_index: index,
-                        transaction_log_index: i,
-                        log_index: no_of_logs + i,
-                    })
-                    .collect(),
-                log_bloom: last_receipt.log_bloom,
-                state_root: last_receipt.state_root,
-                error: last_receipt.error,
-            };
-            Some(receipt)
-        } else {
-            error!("The transaction_hash in receipt is not equal to transaction hash from input.");
-            None
+            }
         }
+        info!("Get receipt by hash failed {:?}", tx_hash);
+        None
     }
 
     #[inline]
