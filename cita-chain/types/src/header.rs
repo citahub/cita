@@ -34,7 +34,6 @@ use hashable::{Hashable, HASH_NULL_RLP};
 use util::HeapSizeOf;
 
 // from parity
-pub use crate::log_blooms::LogBloomGroup;
 pub use crate::log_entry::LogBloom;
 lazy_static! {
     pub static ref ZERO_LOGBLOOM: LogBloom = LogBloom::from([0x00; 256]);
