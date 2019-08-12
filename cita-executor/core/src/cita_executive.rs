@@ -616,6 +616,8 @@ fn build_result_with_ok(init_gas: U256, ret: InterpreterResult) -> ExecutedResul
         InterpreterResult::Revert(data, quota_left) => {
             result.quota_used = init_gas - U256::from(quota_left);
             result.quota_left = U256::from(quota_left);
+            result.exception = Some(ExecutedException::Reverted);
+
             trace!(
                 "Get data after executed the transaction [Revert]: {:?}",
                 data
@@ -638,6 +640,7 @@ fn build_result_with_ok(init_gas: U256, ret: InterpreterResult) -> ExecutedResul
 }
 
 fn build_result_with_err(err: VMError) -> ExecutedResult {
+    trace!("EVM run error for the transaction, error info: {:?}", err);
     let mut result = ExecutedResult::default();
     result.exception = Some(ExecutedException::VM(err));
     result
