@@ -19,13 +19,11 @@ use super::command::{Command, CommandResp, Commander};
 use super::fsm::FSM;
 use super::sys_config::GlobalSysConfig;
 
-use crate::bloomchain::group::{BloomGroup, BloomGroupDatabase, GroupPosition};
 use crate::contracts::solc::NodeManager;
 use crate::core::context::LastHashes;
 use crate::header::*;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::genesis::Genesis;
-use crate::log_blooms::LogBloomGroup;
 use crate::trie_db::TrieDB;
 use crate::types::block_number::{BlockTag, Tag};
 use crate::types::db_indexes;
@@ -385,22 +383,6 @@ impl Executor {
             self.eth_compatibility,
         )
         .unwrap()
-    }
-}
-
-impl<'a> BloomGroupDatabase for Executor {
-    fn blooms_at(&self, position: &GroupPosition) -> Option<BloomGroup> {
-        let position = db_indexes::LogGroupPosition::from(position.clone());
-
-        let log_bloom_group = self
-            .db
-            .get(Some(DataCategory::Extra), &*position.get_index())
-            .map(|bytes| decode::<LogBloomGroup>(bytes.unwrap().as_slice()))
-            .expect("Get bloom group from db error.");
-
-        let bloom_group = log_bloom_group.into();
-
-        Some(bloom_group)
     }
 }
 
