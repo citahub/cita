@@ -34,6 +34,7 @@ impl Default for Context {
 #[cfg(test)]
 mod tests {
     use super::Context;
+    use cita_types::U256;
 
     #[test]
     fn test_default() {

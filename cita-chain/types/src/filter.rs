@@ -166,8 +166,8 @@ mod tests {
     #[test]
     fn test_bloom_possibilities_none() {
         let none_filter = Filter {
-            from_block: Blocktag::Tag(Tag::Earliest),
-            to_block: Blocktag::Tag(Tag::Latest),
+            from_block: BlockTag::Tag(Tag::Earliest),
+            to_block: BlockTag::Tag(Tag::Latest),
             address: None,
             topics: vec![None, None, None, None],
             limit: None,
@@ -182,8 +182,8 @@ mod tests {
     #[test]
     fn test_bloom_possibilities_single_address_and_topic() {
         let filter = Filter {
-            from_block: Blocktag::Tag(Tag::Earliest),
-            to_block: Blocktag::Tag(Tag::Latest),
+            from_block: BlockTag::Tag(Tag::Earliest),
+            to_block: BlockTag::Tag(Tag::Latest),
             address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
             topics: vec![
                 Some(vec![
@@ -213,8 +213,8 @@ mod tests {
     #[test]
     fn test_bloom_possibilities_single_address_and_many_topics() {
         let filter = Filter {
-            from_block: Blocktag::Tag(Tag::Earliest),
-            to_block: Blocktag::Tag(Tag::Latest),
+            from_block: BlockTag::Tag(Tag::Earliest),
+            to_block: BlockTag::Tag(Tag::Latest),
             address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
             topics: vec![
                 Some(vec![
@@ -246,8 +246,8 @@ mod tests {
     #[test]
     fn test_bloom_possibilites_multiple_addresses_and_topics() {
         let filter = Filter {
-            from_block: Blocktag::Tag(Tag::Earliest),
-            to_block: Blocktag::Tag(Tag::Latest),
+            from_block: BlockTag::Tag(Tag::Earliest),
+            to_block: BlockTag::Tag(Tag::Latest),
             address: Some(vec![
                 "b372018f3be9e171df0581136b59d2faf73a7d5d".into(),
                 "b372018f3be9e171df0581136b59d2faf73a7d5d".into(),
@@ -351,8 +351,8 @@ mod tests {
     #[test]
     fn test_filter_matches() {
         let filter = Filter {
-            from_block: Blocktag::Tag(Tag::Earliest),
-            to_block: Blocktag::Tag(Tag::Latest),
+            from_block: BlockTag::Tag(Tag::Earliest),
+            to_block: BlockTag::Tag(Tag::Latest),
             address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
             topics: vec![
                 Some(vec![
