@@ -16,4 +16,5 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod amend_data_test;
+pub mod exemock;
 pub mod helpers;
