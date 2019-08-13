@@ -13,7 +13,6 @@ use types::Bytes;
 
 use crate::authentication::check_permission;
 use crate::contracts::native::factory::Factory as NativeFactory;
-use crate::core_types::{Bloom, BloomInput, Hash};
 use crate::exception::ExecutedException;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
@@ -23,6 +22,7 @@ use crate::types::errors::AuthenticationError;
 use crate::types::errors::ExecutionError;
 use crate::types::log_entry::LogEntry;
 use crate::types::transaction::{Action, SignedTransaction};
+use ethbloom::{Bloom, Input as BloomInput};
 
 ///amend the abi data
 const AMEND_ABI: u32 = 1;
@@ -721,8 +721,8 @@ impl Default for VmExecParams {
 
 #[derive(Default, Debug)]
 pub struct ExecutedResult {
-    pub state_root: Hash,
-    pub transaction_hash: Hash,
+    pub state_root: H256,
+    pub transaction_hash: H256,
     pub quota_used: U256,
     pub quota_left: U256,
     pub logs_bloom: Bloom,
