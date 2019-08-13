@@ -45,10 +45,10 @@ pub mod libexecutor;
 pub mod storage;
 pub mod tx_gas_schedule;
 
-mod trie_db;
 mod authentication;
 mod exception;
+mod trie_db;
 
 pub use crate::types::*;
-pub use trie_db::TrieDB;
 pub use cita_database as cita_db;
+pub use trie_db::TrieDB;

@@ -5,14 +5,11 @@ authors = ["Cryptape Technologies <contact@cryptape.com>"]
 edition = "2018"
 
 [dependencies]
-byteorder = { version = "1", default-features = false }
 bincode = "0.8.0"
 serde = "1.0"
 serde_derive = "1.0"
 rustc-hex = "1.0"
-lru-cache = "0.1.1"
 lazy_static = "0.2"
-bit-set = "0.4"
 time = "0.1"
 crossbeam = "0.2"
 transient-hashmap = "0.4.0"
