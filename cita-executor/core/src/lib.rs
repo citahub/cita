@@ -75,7 +75,6 @@ pub mod tx_gas_schedule;
 
 // FIXME: Rename this after this work finished
 pub mod core_types;
-pub mod executed;
 #[cfg(test)]
 pub mod tests;
 
