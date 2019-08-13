@@ -204,7 +204,7 @@ impl ExecutedBlock {
                     };
 
                 // Note: quota_used in Receipt is self.current_quota_used, this will be
-                // handled by localized_receipt() while getting a single transaction receipt.
+                // handled by get_rich_receipt() while getting a single transaction receipt.
                 let cumulative_quota_used = context.quota_used + tx_quota_used;
                 let receipt = Receipt::new(
                     None,
