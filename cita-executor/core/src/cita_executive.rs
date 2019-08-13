@@ -6,7 +6,6 @@ use cita_vm::{
     BlockDataProvider, Config as VMConfig, DataProvider, Error as VMError, Store as VmSubState,
     Transaction as EVMTransaction,
 };
-use hashable::Hashable;
 use std::cell::RefCell;
 use std::sync::Arc;
 use types::Bytes;
@@ -671,16 +670,6 @@ fn accrue_log(bloom: &mut Bloom, log: &LogEntry) {
         let input = BloomInput::Hash(&topic.0);
         bloom.accrue(input);
     }
-}
-
-/// Returns new address created from address and given nonce.
-pub fn contract_address(address: &Address, nonce: &U256) -> Address {
-    use rlp::RlpStream;
-
-    let mut stream = RlpStream::new_list(2);
-    stream.append(address);
-    stream.append(nonce);
-    From::from(stream.out().crypt_hash())
 }
 
 #[derive(Clone, Debug)]

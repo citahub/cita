@@ -15,75 +15,40 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-extern crate bincode;
-extern crate byteorder;
-extern crate cita_crypto_trait;
-extern crate libproto;
-extern crate snappy;
 #[macro_use]
 extern crate cita_logger as logger;
-extern crate lru_cache;
-extern crate proof;
-extern crate rlp;
 #[macro_use]
 extern crate serde_derive;
-pub extern crate cita_database as cita_db;
-extern crate cita_merklehash;
-extern crate hashable;
 #[cfg_attr(test, macro_use)]
 extern crate serde_json;
-extern crate util;
-
 #[macro_use]
 extern crate crossbeam_channel;
-
-extern crate bit_set;
-extern crate cita_ed25519;
-extern crate cita_secp256k1;
-extern crate cita_types;
-pub extern crate common_types as types;
-extern crate crossbeam;
-extern crate crypto;
-extern crate jsonrpc_types;
-extern crate rustc_hex;
 #[macro_use]
 extern crate lazy_static;
-extern crate time;
-extern crate transient_hashmap;
-
 #[cfg(test)]
 extern crate cita_crypto;
-extern crate core;
-extern crate ethabi;
-
 #[cfg(feature = "privatetx")]
 extern crate zktx;
-
 #[macro_use]
 extern crate enum_primitive;
-extern crate cita_database;
-extern crate largest_remainder_method;
-extern crate num;
-extern crate rand;
-
 #[cfg(test)]
 pub mod benches;
+#[cfg(test)]
+pub mod tests;
+
+pub extern crate common_types as types;
+pub extern crate core;
+
 pub mod cita_executive;
+pub mod contracts;
+pub mod libexecutor;
 pub mod storage;
 pub mod tx_gas_schedule;
 
-// FIXME: Rename this after this work finished
-pub mod core_types;
-#[cfg(test)]
-pub mod tests;
-pub mod tx_gas_schedule;
-
-pub mod authentication;
-pub mod contracts;
-pub mod exception;
-pub mod executed;
-pub mod libexecutor;
-pub mod trie_db;
+mod trie_db;
+mod authentication;
+mod exception;
 
 pub use crate::types::*;
 pub use trie_db::TrieDB;
+pub use cita_database as cita_db;
