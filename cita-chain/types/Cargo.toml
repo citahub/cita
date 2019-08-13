@@ -25,6 +25,7 @@ cita_trie = "2.0.0"
 cita-logger = "0.1.0"
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
 cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
+cita-vm = { git = "https://github.com/cryptape/cita-vm.git", branch = "cita" }
 
 [features]
 default = ["secp256k1", "sha3hash"]

@@ -2,25 +2,25 @@ use cita_trie::DB;
 use cita_types::{Address, H160, H256, U256, U512};
 use cita_vm::{
     evm::{Context as EVMContext, Error as EVMError, InterpreterResult, Log as EVMLog},
-    state::{Error as StateError, State, StateObjectInfo},
+    state::{State, StateObjectInfo},
     BlockDataProvider, Config as VMConfig, DataProvider, Error as VMError, Store as VmSubState,
     Transaction as EVMTransaction,
 };
 use hashable::Hashable;
 use std::cell::RefCell;
-use std::error::Error;
-use std::fmt;
 use std::sync::Arc;
 use types::Bytes;
 
-use crate::authentication::{check_permission, AuthenticationError};
-use crate::contracts::native::factory::{Factory as NativeFactory, NativeError};
+use crate::authentication::check_permission;
+use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::core_types::{Bloom, BloomInput, Hash};
-use crate::executed::CallError;
+use crate::exception::ExecutedException;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
 use crate::tx_gas_schedule::TxGasSchedule;
 use crate::types::context::Context;
+use crate::types::errors::AuthenticationError;
+use crate::types::errors::ExecutionError;
 use crate::types::log_entry::LogEntry;
 use crate::types::transaction::{Action, SignedTransaction};
 
@@ -102,9 +102,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         }
 
         if t.action == Action::AbiStore && !self.transact_set_abi(&t.data) {
-            return Err(ExecutionError::TransactionMalformed(
-                "Account doesn't exist".to_owned(),
-            ));
+            return Err(ExecutionError::InvalidTransaction);
         }
 
         let init_gas = t.gas - U256::from(base_gas_required);
@@ -685,77 +683,6 @@ pub fn contract_address(address: &Address, nonce: &U256) -> Address {
     From::from(stream.out().crypt_hash())
 }
 
-// All the EVMError will be set into ExecutedResult's exception.
-// And some of them which need return Err in CitaExecutive.exec will be set to ExecutionError too.
-/// Error Result for execute a transaction
-#[derive(Debug, PartialEq)]
-pub enum ExecutionError {
-    /// Return when internal vm error occurs.
-    Internal(String),
-    /// Return when generic transaction occurs.
-    TransactionMalformed(String),
-    /// Return when authentication error occurs.
-    Authentication(AuthenticationError),
-    /// Return when the quota_limit in transaction lower then base quota required.
-    NotEnoughBaseGas,
-    /// Return when transaction nonce does not match state nonce.
-    InvalidNonce,
-    /// Return when the cost of transaction (value + quota_price * quota) exceeds.
-    NotEnoughBalance,
-    /// Return when the block quota exceeds block quota limit.
-    BlockQuotaLimitReached,
-    /// Return when sum quota for account in the block exceeds account quota limit.
-    AccountQuotaLimitReached,
-}
-
-impl Error for ExecutionError {}
-impl fmt::Display for ExecutionError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let printable = match *self {
-            ExecutionError::Internal(ref err) => format!("internal error: {:?}", err),
-            ExecutionError::TransactionMalformed(ref err) => format!("internal error: {:?}", err),
-            ExecutionError::Authentication(ref err) => format!("internal error: {:?}", err),
-            ExecutionError::NotEnoughBaseGas => "not enough base gas".to_owned(),
-            ExecutionError::InvalidNonce => "invalid nonce".to_owned(),
-            ExecutionError::NotEnoughBalance => "not enough balance".to_owned(),
-            ExecutionError::BlockQuotaLimitReached => "block quota limit reached".to_owned(),
-            ExecutionError::AccountQuotaLimitReached => "account quota limit reached".to_owned(),
-        };
-        write!(f, "{}", printable)
-    }
-}
-
-impl From<NativeError> for ExecutionError {
-    fn from(err: NativeError) -> Self {
-        match err {
-            NativeError::Internal(err_str) => ExecutionError::Internal(err_str),
-        }
-    }
-}
-
-impl From<AuthenticationError> for ExecutionError {
-    fn from(err: AuthenticationError) -> Self {
-        match err {
-            AuthenticationError::TransactionMalformed(err_str) => {
-                ExecutionError::TransactionMalformed(err_str)
-            }
-            _ => ExecutionError::Authentication(err),
-        }
-    }
-}
-
-impl From<StateError> for ExecutionError {
-    fn from(err: StateError) -> Self {
-        ExecutionError::Internal(format!("{}", err))
-    }
-}
-
-impl Into<CallError> for ExecutionError {
-    fn into(self) -> CallError {
-        CallError::Exceptional
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct VmExecParams {
     /// Address of currently executed code.
@@ -789,41 +716,6 @@ impl Default for VmExecParams {
             nonce: U256::zero(),
             data: None,
         }
-    }
-}
-
-// There is not reverted expcetion in VMError, so handle this in ExecutedException.
-#[derive(Debug)]
-pub enum ExecutedException {
-    VM(VMError),
-    NativeContract(NativeError),
-    Reverted,
-}
-
-impl Error for ExecutedException {}
-
-impl fmt::Display for ExecutedException {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let printable = match *self {
-            ExecutedException::VM(ref err) => format!("exception in vm: {:?}", err),
-            ExecutedException::NativeContract(ref err) => {
-                format!("exception in native contract: {:?}", err)
-            }
-            ExecutedException::Reverted => "execution reverted".to_owned(),
-        };
-        write!(f, "{}", printable)
-    }
-}
-
-impl From<VMError> for ExecutedException {
-    fn from(err: VMError) -> Self {
-        ExecutedException::VM(err)
-    }
-}
-
-impl From<NativeError> for ExecutedException {
-    fn from(err: NativeError) -> Self {
-        ExecutedException::NativeContract(err)
     }
 }
 

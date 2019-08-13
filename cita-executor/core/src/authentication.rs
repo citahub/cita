@@ -15,13 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::contracts::solc::{permission_management::contains_resource, Resource};
-use crate::libexecutor::sys_config::CheckOptions;
-use crate::types::reserved_addresses;
-use crate::types::transaction::{Action, SignedTransaction};
-use cita_types::{Address, H160};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+use crate::types::transaction::{Action, SignedTransaction};
+use cita_types::{Address, H160};
+
+use crate::contracts::solc::{permission_management::contains_resource, Resource};
+use crate::libexecutor::sys_config::CheckOptions;
+use crate::types::errors::AuthenticationError;
+use crate::types::reserved_addresses;
 
 /// Check the sender's permission
 #[allow(unknown_lints, clippy::implicit_hasher)] // TODO clippy
@@ -60,16 +63,12 @@ pub fn check_permission(
                 }
 
                 if t.data.len() < 4 {
-                    return Err(AuthenticationError::TransactionMalformed(
-                        "The length of transaction data is less than four bytes".to_string(),
-                    ));
+                    return Err(AuthenticationError::InvalidTransaction);
                 }
 
                 if address == group_management_addr {
                     if t.data.len() < 36 {
-                        return Err(AuthenticationError::TransactionMalformed(
-                            "Data should have at least one parameter".to_string(),
-                        ));
+                        return Err(AuthenticationError::InvalidTransaction);
                     }
                     check_origin_group(
                         account_permissions,
@@ -223,12 +222,4 @@ fn get_groups(group_accounts: &HashMap<Address, Vec<Address>>, account: &Address
     }
 
     groups
-}
-
-#[derive(Debug, PartialEq)]
-pub enum AuthenticationError {
-    NoTransactionPermission,
-    NoContractPermission,
-    NoCallPermission,
-    TransactionMalformed(String),
 }

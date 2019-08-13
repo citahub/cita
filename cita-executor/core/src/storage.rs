@@ -3,7 +3,7 @@ use std::boxed::Box;
 use std::convert::From;
 use util::sha3;
 
-use crate::contracts::native::factory::NativeError;
+use crate::types::errors::NativeError;
 use cita_vm::evm::DataProvider;
 
 pub trait Serialize {

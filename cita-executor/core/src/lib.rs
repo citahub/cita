@@ -81,6 +81,7 @@ pub mod tests;
 
 pub mod authentication;
 pub mod contracts;
+pub mod exception;
 pub mod libexecutor;
 pub mod trie_db;
 
