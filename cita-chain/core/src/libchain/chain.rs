@@ -1412,31 +1412,3 @@ impl Chain {
         self.set_max_store_height(self.get_current_height());
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use cita_types::H256;
-
-    #[test]
-    fn test_heapsizeof() {
-        let test: Vec<String> = Vec::new();
-        assert_eq!(test.heap_size_of_children(), 0);
-    }
-    #[test]
-    fn test_cache_size() {
-        let transaction_addresses: HashMap<TransactionHash, TransactionIndex> = HashMap::new();
-        let blocks_blooms: HashMap<LogGroupPosition, LogBloomGroup> = HashMap::new();
-        let mut block_receipts: HashMap<H256, BlockReceipts> = HashMap::new();
-
-        assert_eq!(transaction_addresses.heap_size_of_children(), 0);
-        assert_eq!(blocks_blooms.heap_size_of_children(), 0);
-        assert_eq!(block_receipts.heap_size_of_children(), 0);
-
-        block_receipts.insert(
-            H256::from("000000000000000000000000000000000000000000000000123456789abcdef0"),
-            BlockReceipts::new(vec![]),
-        );
-        assert_eq!(block_receipts.heap_size_of_children(), 1856);
-    }
-}
