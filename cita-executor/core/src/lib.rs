@@ -37,8 +37,6 @@ extern crate util;
 #[macro_use]
 extern crate crossbeam_channel;
 
-extern crate rustc_hex;
-
 extern crate bit_set;
 extern crate cita_ed25519;
 extern crate cita_secp256k1;
@@ -47,6 +45,7 @@ pub extern crate common_types as types;
 extern crate crossbeam;
 extern crate crypto;
 extern crate jsonrpc_types;
+extern crate rustc_hex;
 #[macro_use]
 extern crate lazy_static;
 extern crate time;
@@ -77,10 +76,12 @@ pub mod tx_gas_schedule;
 pub mod core_types;
 #[cfg(test)]
 pub mod tests;
+pub mod tx_gas_schedule;
 
 pub mod authentication;
 pub mod contracts;
 pub mod exception;
+pub mod executed;
 pub mod libexecutor;
 pub mod trie_db;
 
