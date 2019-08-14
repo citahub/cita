@@ -6,14 +6,12 @@ use cita_vm::{
     BlockDataProvider, Config as VMConfig, DataProvider, Error as VMError, Store as VmSubState,
     Transaction as EVMTransaction,
 };
-use hashable::Hashable;
 use std::cell::RefCell;
 use std::sync::Arc;
 use types::Bytes;
 
 use crate::authentication::check_permission;
 use crate::contracts::native::factory::Factory as NativeFactory;
-use crate::core_types::{Bloom, BloomInput, Hash};
 use crate::exception::ExecutedException;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::sys_config::BlockSysConfig;
@@ -23,6 +21,7 @@ use crate::types::errors::AuthenticationError;
 use crate::types::errors::ExecutionError;
 use crate::types::log_entry::LogEntry;
 use crate::types::transaction::{Action, SignedTransaction};
+use ethbloom::{Bloom, Input as BloomInput};
 
 ///amend the abi data
 const AMEND_ABI: u32 = 1;
@@ -673,16 +672,6 @@ fn accrue_log(bloom: &mut Bloom, log: &LogEntry) {
     }
 }
 
-/// Returns new address created from address and given nonce.
-pub fn contract_address(address: &Address, nonce: &U256) -> Address {
-    use rlp::RlpStream;
-
-    let mut stream = RlpStream::new_list(2);
-    stream.append(address);
-    stream.append(nonce);
-    From::from(stream.out().crypt_hash())
-}
-
 #[derive(Clone, Debug)]
 pub struct VmExecParams {
     /// Address of currently executed code.
@@ -721,8 +710,8 @@ impl Default for VmExecParams {
 
 #[derive(Default, Debug)]
 pub struct ExecutedResult {
-    pub state_root: Hash,
-    pub transaction_hash: Hash,
+    pub state_root: H256,
+    pub transaction_hash: H256,
     pub quota_used: U256,
     pub quota_left: U256,
     pub logs_bloom: Bloom,

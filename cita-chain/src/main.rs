@@ -77,18 +77,20 @@ extern crate util;
 mod block_processor;
 mod forward;
 
+use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
+use util::set_panic_handler;
+
 use crate::block_processor::BlockProcessor;
 use crate::forward::Forward;
+
 use cita_db::{Config as DatabaseConfig, RocksDB, NUM_COLUMNS};
 use cita_directories::DataPath;
 use clap::App;
 use core::libchain;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::{channel, start_pubsub};
-use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
-use util::set_panic_handler;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
@@ -131,8 +133,7 @@ fn main() {
     let nosql_path = DataPath::nosql_path();
     trace!("nosql_path is {:?}", nosql_path);
     let db_config = DatabaseConfig::with_category_num(NUM_COLUMNS);
-    // TODO Fix the unwrap
-    let db = RocksDB::open(&nosql_path, &db_config).unwrap();
+    let db = RocksDB::open(&nosql_path, &db_config).expect("Open DB failed unexpected.");
 
     let chain_config = libchain::chain::Config::new(config_path);
     let chain = Arc::new(libchain::chain::Chain::init_chain(

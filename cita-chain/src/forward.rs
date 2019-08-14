@@ -15,12 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::types::block_number::BlockTag;
-use crate::types::filter::Filter;
+use std::convert::Into;
+use std::mem;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+
 use cita_types::H256;
 use core::filters::eth_filter::EthFilter;
 use core::libchain::chain::{BlockInQueue, Chain};
-use core::libchain::OpenBlock;
 use error::ErrorCode;
 use jsonrpc_types::rpc_types::{
     BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
@@ -30,16 +32,15 @@ use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{
     request, response, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq, BlockWithProof,
     ExecutedResult, Message, OperateType, ProofType, Request_oneof_req as Request, SyncRequest,
-    SyncResponse,
+    SyncResponse, TryFrom, TryInto,
 };
-use libproto::{TryFrom, TryInto};
 use proof::BftProof;
 use pubsub::channel::Sender;
 use serde_json;
-use std::convert::Into;
-use std::mem;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
+
+use crate::types::block::OpenBlock;
+use crate::types::block_number::BlockTag;
+use crate::types::filter::Filter;
 
 /// Message forwarding and query data
 #[derive(Clone)]

@@ -237,16 +237,6 @@ pub enum BlockSource {
     NET = 1,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub enum CacheId {
-    BlockHeaders(BlockNumber),
-    BlockBodies(BlockNumber),
-    BlockHashes(H256),
-    TransactionIndexes(H256),
-    BlocksBlooms(LogGroupPosition),
-    BlockReceipts(H256),
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct Config {
     pub prooftype: u8,
