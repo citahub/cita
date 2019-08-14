@@ -435,9 +435,9 @@ workflows:
       - "Basic Test":
           requires:
             - "Release"
-      # - "Basic Tls Test":
-      #     requires:
-      #       - "Release"
+      - "Basic Tls Test":
+          requires:
+            - "Release"
 
       # - "JSON-RPC Mock Test in Charge Mode":
       #     requires:
@@ -493,7 +493,7 @@ workflows:
               - "Check Clippy"
               - "Release"
               - "Basic Test"
-            # - "Basic Tls Test"
+              - "Basic Tls Test"
             # - "JSON-RPC Mock Test in Charge Mode"
             # - "JSON-RPC Mock Test in Quota Mode"
             # - "Test Transfer Value in Charge Mode"
