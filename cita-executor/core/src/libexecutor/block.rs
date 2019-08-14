@@ -258,7 +258,7 @@ impl ExecutedBlock {
                 };
 
                 if (*conf).economical_model == EconomicalModel::Charge {
-                    self.deal_with_err_gas_cost(
+                    self.deal_err_quota_cost(
                         t.sender(),
                         &context.coin_base,
                         tx_quota_used,
@@ -290,37 +290,26 @@ impl ExecutedBlock {
         }
     }
 
-    fn deal_with_err_gas_cost(
+    fn deal_err_quota_cost(
         &self,
         sender: &Address,
         coin_base: &Address,
-        gas: U256,
-        price: U256,
+        quota: U256,
+        quota_price: U256,
     ) {
-        let fee_value = gas * price;
+        let fee_value = quota * quota_price;
         let sender_balance = self.state.borrow_mut().balance(sender).unwrap();
-
-        let tx_fee_value = if fee_value > sender_balance {
+        trace!(
+            "fee value-{:?}, sender balance-{:?}",
+            fee_value,
             sender_balance
+        );
+        let tx_fee = cmp::min(fee_value, sender_balance);
+
+        if self.state.borrow_mut().sub_balance(sender, tx_fee).is_err() {
+            error!("Sub balance failed. tx_fee: {:?}", tx_fee);
         } else {
-            fee_value
-        };
-        if let Err(err) = self.state.borrow_mut().sub_balance(sender, tx_fee_value) {
-            error!(
-                "Sub balance from error transaction sender failed, tx_fee_value={}, error={:?}",
-                tx_fee_value, err
-            );
-        } else {
-            self.state
-                .borrow_mut()
-                .add_balance(&coin_base, tx_fee_value)
-                .map_err(|err| {
-                    error!(
-                        "Add fee to coinbase failed, tx_fee_value={}, error={:?}",
-                        tx_fee_value, err
-                    )
-                })
-                .ok();
+            let _ = self.state.borrow_mut().add_balance(&coin_base, tx_fee);
         }
     }
 
