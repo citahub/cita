@@ -18,33 +18,32 @@
 extern crate rustc_serialize;
 extern crate tempdir;
 
-use self::rustc_serialize::hex::FromHex;
-use self::tempdir::TempDir;
-use crate::libexecutor::block::{BlockBody, ClosedBlock, OpenBlock};
-use crate::libexecutor::command;
-use crate::libexecutor::executor::Executor;
-use crate::types::header::OpenHeader;
-use crate::types::transaction::SignedTransaction;
-use cita_crypto::PrivKey;
-use cita_types::traits::LowerHex;
-use cita_types::{Address, U256};
-use core::libchain::chain;
-use crossbeam_channel::{Receiver, Sender};
-use libproto::blockchain;
 use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
+use std::sync::Arc;
 use std::time::UNIX_EPOCH;
+
+use self::rustc_serialize::hex::FromHex;
+use self::tempdir::TempDir;
+
+use crate::libexecutor::block::{BlockBody, ClosedBlock, OpenBlock};
+use crate::libexecutor::command;
+use crate::libexecutor::executor::Executor;
+use crate::types::header::OpenHeader;
+use crate::types::transaction::SignedTransaction;
+
+use cita_crypto::PrivKey;
+use cita_types::traits::LowerHex;
+use cita_types::{Address, U256};
+use cita_vm::{state::MemoryDB, state::State};
+use crossbeam_channel::{Receiver, Sender};
+use libproto::blockchain;
 use util::AsMillis;
 
-use std::sync::Arc;
-
-use cita_vm::{state::MemoryDB, state::State};
-
-const CHAIN_CONFIG: &str = "chain.toml";
 const SCRIPTS_DIR: &str = "../../scripts";
 
 pub fn get_temp_state() -> State<MemoryDB> {
@@ -128,15 +127,6 @@ pub fn init_executor2(
         false,
     );
     executor
-}
-
-pub fn init_chain() -> Arc<chain::Chain> {
-    unimplemented!()
-    // let tempdir = TempDir::new("solc_output").unwrap().into_path();
-    // let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-    // let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
-    // let chain_config = chain::Config::new(CHAIN_CONFIG);
-    // Arc::new(chain::Chain::init_chain(Arc::new(db), &chain_config))
 }
 
 pub fn create_block(

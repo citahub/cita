@@ -417,7 +417,7 @@ mod tests {
     use crate::core::header::OpenHeader;
     use crate::core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
     use crate::core::libexecutor::sys_config::BlockSysConfig;
-    use crate::core::trie_db::TrieDB;
+    use crate::core::TrieDB;
     use cita_database::{Config, RocksDB, NUM_COLUMNS};
     use hashable::HASH_NULL_RLP;
     use std::sync::Arc;
