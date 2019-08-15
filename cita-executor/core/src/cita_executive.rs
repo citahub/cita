@@ -337,24 +337,22 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         if data.len() <= 20 {
             return false;
         }
-
         let account = H160::from(&data[0..20]);
         let abi = &data[20..];
 
-        info!("Set abi for contract address: {:?}", account);
-
-        self.state_provider
+        let account_exist = self
+            .state_provider
             .borrow_mut()
             .exist(&account)
-            .map(|exists| {
-                exists
-                    && self
-                        .state_provider
-                        .borrow_mut()
-                        .set_abi(&account, abi.to_vec())
-                        .is_ok()
-            })
-            .unwrap_or(false)
+            .unwrap_or(false);
+        info!("Account-{:?} in state is {:?}", account, account_exist);
+
+        account_exist
+            && self
+                .state_provider
+                .borrow_mut()
+                .set_abi(&account, abi.to_vec())
+                .is_ok()
     }
 
     fn transact_set_code(&mut self, data: &[u8]) -> bool {
