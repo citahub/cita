@@ -373,21 +373,23 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         }
         let account = H160::from(&data[0..20]);
         let balance = U256::from(&data[20..52]);
-        self.state_provider
+
+        let now_val = self
+            .state_provider
             .borrow_mut()
             .balance(&account)
-            .and_then(|now_val| {
-                if now_val >= balance {
-                    self.state_provider
-                        .borrow_mut()
-                        .sub_balance(&account, now_val - balance)
-                } else {
-                    self.state_provider
-                        .borrow_mut()
-                        .add_balance(&account, balance - now_val)
-                }
-            })
-            .is_ok()
+            .unwrap_or_default();
+        if now_val > balance {
+            self.state_provider
+                .borrow_mut()
+                .sub_balance(&account, now_val - balance)
+                .is_ok()
+        } else {
+            self.state_provider
+                .borrow_mut()
+                .add_balance(&account, balance - now_val)
+                .is_ok()
+        }
     }
 
     fn transact_set_kv_h256(&mut self, data: &[u8]) -> bool {

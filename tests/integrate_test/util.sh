@@ -324,7 +324,7 @@ start_nodes() {
         bin/cita bebop setup $CHAIN_NAME/$i 2>&1
     done
     for ((i=0; i<num; i++)); do
-        bin/cita bebop start $CHAIN_NAME/$i 2>&1
+        bin/cita bebop start $CHAIN_NAME/$i trace 2>&1
     done
 }
 

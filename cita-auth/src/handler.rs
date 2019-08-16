@@ -195,6 +195,11 @@ impl MsgHandler {
         let tx = un_tx.get_transaction();
         let tx_version = tx.get_version();
         if tx_version != self.config_info.version.unwrap() {
+            info!(
+                "invalid version: tx_verion-{:?}, chain_version-{:?}",
+                tx_version,
+                self.config_info.version.unwrap()
+            );
             return Err(Error::InvalidVersion);
         }
         if tx_version == 0 {

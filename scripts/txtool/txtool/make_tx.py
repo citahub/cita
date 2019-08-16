@@ -82,7 +82,7 @@ def get_chainid():
 
 def get_chainid_v1():
     params = ['latest']
-    chainid = 0
+    chainid = 1
 
     try:
         url = endpoint()
@@ -91,11 +91,11 @@ def get_chainid_v1():
         chainid = response['chainIdV1']
         logger.debug(response)
     except:
-        chainid = "0x0"
+        chainid = "0x1"
 
     # padding to 32 bytes
     chainid = int(chainid, 16)
-    logger.debug("final chainId is {}".format(chainid))
+    logger.info("final chainId is {}".format(chainid))
     return chainid
 
 
@@ -137,11 +137,13 @@ def _blake2b_ed25519_deploy_data(current_height,
     tx.version = version
     if version == 0:
         chainid = get_chainid()
-        logger.debug("chainid is {}".format(chainid))
+        logger.info("version is {}".format(version))
+        logger.info("chainid is {}".format(chainid))
         tx.chain_id = chainid
     elif version < 3:
         chainid = get_chainid_v1()
-        logger.debug("chainid_v1 is {}".format(chainid))
+        logger.info("version is {}".format(version))
+        logger.info("chainid_v1 is {}".format(chainid))
         tx.chain_id_v1 = chainid.to_bytes(32, byteorder='big')
     else:
         logger.error("unexpected version {}".format(version))
@@ -200,11 +202,11 @@ def _sha3_secp256k1_deploy_data(current_height,
     tx.version = version
     if version == 0:
         chainid = get_chainid()
-        logger.debug("chainid is {}".format(chainid))
+        logger.info("version-{}, chainid-{}".format(version, chainid))
         tx.chain_id = chainid
     elif version < 3:
         chainid = get_chainid_v1()
-        logger.debug("chainid_v1 is {}".format(chainid))
+        logger.info("version-{}, chainid_v1-{}".format(version, chainid))
         tx.chain_id_v1 = chainid.to_bytes(32, byteorder='big')
     else:
         logger.error("unexpected version {}".format(version))
