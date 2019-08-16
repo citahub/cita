@@ -740,13 +740,14 @@ mod tests {
     use cita_crypto::{CreateKey, KeyPair};
     use cita_types::{Address, H256, U256};
     use cita_vm::state::StateObjectInfo;
-    use hashable::Hashable;
     use rustc_hex::FromHex;
     use std::cell::RefCell;
     use std::str::FromStr;
     use std::sync::Arc;
 
+    #[cfg(feature = "sha3hash")]
     pub fn contract_address(address: &Address, nonce: &U256) -> Address {
+        use hashable::Hashable;
         use rlp::RlpStream;
 
         let mut stream = RlpStream::new_list(2);
@@ -805,6 +806,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "sha3hash")]
     fn test_transfer_for_charge() {
         let keypair = KeyPair::gen_keypair();
         let t = Transaction {
@@ -1057,6 +1059,7 @@ contract HelloWorld {
     }
 
     #[test]
+    #[cfg(feature = "sha3hash")]
     fn test_create_contract() {
         logger::silent();
         let source = r#"
