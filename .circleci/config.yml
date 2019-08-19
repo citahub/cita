@@ -445,37 +445,37 @@ workflows:
       # - "JSON-RPC Mock Test in Quota Mode":
       #     requires:
       #       - "Release"
-      # - "Test Transfer Value in Charge Mode":
-      #     requires:
-      #       - "Release"
-      # - "Test System Features":
-      #     requires:
-      #       - "Release"
+      - "Test Transfer Value in Charge Mode":
+          requires:
+            - "Release"
+      - "Test System Features":
+          requires:
+            - "Release"
       # - "Test Snapshot Taking And Restoring":
       #     requires:
       #       - "Release"
-      # - "Test Amend":
-      #     requires:
-      #       - "Release"
-      # - "Test Executor Process Invalid Proof":
-      #     requires:
-      #       - "Release"
+      - "Test Amend":
+          requires:
+            - "Release"
+      - "Test Executor Process Invalid Proof":
+          requires:
+            - "Release"
 
-      # - "Discovery Test for network":
-      #     requires:
-      #       - "Release"
-      # - "Byzantine Test in Quota Mode":
-      #     requires:
-      #       - "Release"
-      # - "Byzantine Test in Charge Mode":
-      #     requires:
-      #       - "Release"
+      - "Discovery Test for network":
+          requires:
+            - "Release"
+      - "Byzantine Test in Quota Mode":
+          requires:
+            - "Release"
+      - "Byzantine Test in Charge Mode":
+          requires:
+            - "Release"
       # - "Crosschain Test":
       #     requires:
       #       - "Release"
-      # - "Robustness Test":
-      #     requires:
-      #       - "Release"
+      - "Robustness Test":
+          requires:
+            - "Release"
       - "Genesis Test":
           requires:
             - "Release"
@@ -496,16 +496,16 @@ workflows:
               - "Basic Tls Test"
             # - "JSON-RPC Mock Test in Charge Mode"
             # - "JSON-RPC Mock Test in Quota Mode"
-            # - "Test Transfer Value in Charge Mode"
-            # - "Test System Features"
+              - "Test Transfer Value in Charge Mode"
+              - "Test System Features"
             # - "Test Snapshot Taking And Restoring"
-            # - "Test Amend"
-            # - "Test Executor Process Invalid Proof"
-            # - "Discovery Test for network"
-            # - "Byzantine Test in Quota Mode"
-            # - "Byzantine Test in Charge Mode"
+              - "Test Amend"
+              - "Test Executor Process Invalid Proof"
+              - "Discovery Test for network"
+              - "Byzantine Test in Quota Mode"
+              - "Byzantine Test in Charge Mode"
             # - "Crosschain Test"
-            # - "Robustness Test"
+              - "Robustness Test"
               - "Genesis Test"
             # - "Unit Test (blake2b & ed25519)"
             # - "Unit Test (sm3 & sm2)"

@@ -337,24 +337,22 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         if data.len() <= 20 {
             return false;
         }
-
         let account = H160::from(&data[0..20]);
         let abi = &data[20..];
 
-        info!("Set abi for contract address: {:?}", account);
-
-        self.state_provider
+        let account_exist = self
+            .state_provider
             .borrow_mut()
             .exist(&account)
-            .map(|exists| {
-                exists
-                    && self
-                        .state_provider
-                        .borrow_mut()
-                        .set_abi(&account, abi.to_vec())
-                        .is_ok()
-            })
-            .unwrap_or(false)
+            .unwrap_or(false);
+        info!("Account-{:?} in state is {:?}", account, account_exist);
+
+        account_exist
+            && self
+                .state_provider
+                .borrow_mut()
+                .set_abi(&account, abi.to_vec())
+                .is_ok()
     }
 
     fn transact_set_code(&mut self, data: &[u8]) -> bool {
@@ -375,21 +373,23 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         }
         let account = H160::from(&data[0..20]);
         let balance = U256::from(&data[20..52]);
-        self.state_provider
+
+        let now_val = self
+            .state_provider
             .borrow_mut()
             .balance(&account)
-            .and_then(|now_val| {
-                if now_val >= balance {
-                    self.state_provider
-                        .borrow_mut()
-                        .sub_balance(&account, now_val - balance)
-                } else {
-                    self.state_provider
-                        .borrow_mut()
-                        .add_balance(&account, balance - now_val)
-                }
-            })
-            .is_ok()
+            .unwrap_or_default();
+        if now_val > balance {
+            self.state_provider
+                .borrow_mut()
+                .sub_balance(&account, now_val - balance)
+                .is_ok()
+        } else {
+            self.state_provider
+                .borrow_mut()
+                .add_balance(&account, balance - now_val)
+                .is_ok()
+        }
     }
 
     fn transact_set_kv_h256(&mut self, data: &[u8]) -> bool {
