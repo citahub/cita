@@ -428,10 +428,6 @@ workflows:
           requires:
             - "Check Basic"
 
-      # - "Unit Test (sha3 & secp256k1)":
-      #     requires:
-      #       - "Release"
-
       - "Basic Test":
           requires:
             - "Release"
@@ -480,12 +476,15 @@ workflows:
           requires:
             - "Release"
 
-      # - "Unit Test (blake2b & ed25519)":
-      #     requires:
-      #       - "Unit Test (sha3 & secp256k1)"
-      # - "Unit Test (sm3 & sm2)":
-      #     requires:
-      #       - "Unit Test (sha3 & secp256k1)"
+      - "Unit Test (sha3 & secp256k1)":
+          requires:
+            - "Release"
+      - "Unit Test (blake2b & ed25519)":
+          requires:
+            - "Unit Test (sha3 & secp256k1)"
+      - "Unit Test (sm3 & sm2)":
+          requires:
+            - "Unit Test (sha3 & secp256k1)"
 
       - "Passed":
           requires:
@@ -507,5 +506,5 @@ workflows:
             # - "Crosschain Test"
               - "Robustness Test"
               - "Genesis Test"
-            # - "Unit Test (blake2b & ed25519)"
-            # - "Unit Test (sm3 & sm2)"
+              - "Unit Test (blake2b & ed25519)"
+              - "Unit Test (sm3 & sm2)"
