@@ -99,7 +99,6 @@ impl Executor {
         };
 
         executor.sys_config = GlobalSysConfig::load(&executor, BlockTag::Tag(Tag::Pending));
-
         info!(
             "executor init, current_height: {}, current_hash: {:?}",
             executor.get_current_height(),
@@ -354,8 +353,8 @@ impl Executor {
         let consensus_config = make_consensus_config(sys_config);
         let executed_header = self
             .block_header(block_tag)
-            .unwrap()
-            .generate_executed_header();
+            .map(types::header::Header::generate_executed_header)
+            .unwrap_or_default();
         let mut executed_result = ExecutedResult::new();
         executed_result.set_config(consensus_config);
         executed_result

@@ -39,6 +39,7 @@ use crate::libexecutor::auto_exec::auto_exec;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::CitaTrieDB;
 use crate::libexecutor::sys_config::BlockSysConfig;
+use crate::libexecutor::sys_config::GlobalSysConfig;
 use crate::receipt::Receipt;
 use crate::tx_gas_schedule::TxGasSchedule;
 pub use crate::types::block::{Block, BlockBody, OpenBlock};
@@ -137,9 +138,12 @@ impl ExecutedBlock {
         }
     }
 
-    #[allow(unknown_lints, clippy::too_many_arguments)] // TODO clippy
-    pub fn apply_transaction(&mut self, t: &SignedTransaction, conf: &BlockSysConfig) {
+    pub fn apply_transaction(&mut self, t: &SignedTransaction, sys_config: &GlobalSysConfig) {
         let mut context = self.get_context();
+        context.block_quota_limit = U256::from(sys_config.block_quota_limit);
+        trace!("block quota limit is {:?}", context.block_quota_limit);
+
+        let conf = sys_config.block_sys_config.clone();
         self.account_gas
             .entry(*t.sender())
             .or_insert(self.account_gas_limit);
@@ -151,10 +155,10 @@ impl ExecutedBlock {
             .expect("account should exist in account_gas_limit");
 
         // Reset coin_base
-        if (*conf).check_options.fee_back_platform {
+        if conf.check_options.fee_back_platform {
             // Set coin_base to chain_owner if check_fee_back_platform is true, and chain_owner is set.
-            if (*conf).chain_owner != Address::from(0) {
-                context.coin_base = (*conf).chain_owner;
+            if conf.chain_owner != Address::from(0) {
+                context.coin_base = conf.chain_owner;
             }
         }
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
@@ -167,7 +171,7 @@ impl ExecutedBlock {
             &context,
             conf.economical_model,
         )
-        .exec(t, conf)
+        .exec(t, &conf)
         {
             Ok(ret) => {
                 // Note: ret.quota_used was a current transaction quota used.
@@ -187,6 +191,9 @@ impl ExecutedBlock {
                     }
                     ExecutedException::VM(VMError::Evm(EVMError::MutableCallInStaticContext)) => {
                         Some(ReceiptError::MutableCallInStaticContext)
+                    }
+                    ExecutedException::VM(VMError::Evm(EVMError::StackUnderflow)) => {
+                        Some(ReceiptError::StackUnderflow)
                     }
                     ExecutedException::VM(VMError::Evm(EVMError::OutOfBounds)) => {
                         Some(ReceiptError::OutOfBounds)
@@ -258,7 +265,7 @@ impl ExecutedBlock {
                     ),
                 };
 
-                if (*conf).economical_model == EconomicalModel::Charge {
+                if conf.economical_model == EconomicalModel::Charge {
                     self.deal_err_quota_cost(
                         t.sender(),
                         &context.coin_base,

@@ -124,8 +124,7 @@ impl FSM for Executor {
             transaction.gas_price = quota_price;
         }
 
-        executed_block.apply_transaction(&transaction, &conf);
-
+        executed_block.apply_transaction(&transaction, &self.sys_config);
         StatusOfFSM::Pause(executed_block, index)
     }
 
@@ -354,8 +353,7 @@ mod tests {
 
         // 2. execute 1th transaction
         let transaction = executed_block.body().transactions[0].clone();
-        executed_block
-            .apply_transaction(&transaction, &executor.sys_config.block_sys_config.clone());
+        executed_block.apply_transaction(&transaction, &executor.sys_config);
         executed_block
             .state
             .borrow_mut()
@@ -373,8 +371,7 @@ mod tests {
 
         // 4. continue until finalize
         let transaction = executed_block.body().transactions[1].clone();
-        executed_block
-            .apply_transaction(&transaction, &executor.sys_config.block_sys_config.clone());
+        executed_block.apply_transaction(&transaction, &executor.sys_config);
         executed_block
             .state
             .borrow_mut()
@@ -424,8 +421,7 @@ mod tests {
         let mut transactions = { executed_block.body.transactions.clone() };
         for transaction in transactions.iter_mut() {
             // let mut t = transaction.clone();
-            executed_block
-                .apply_transaction(&transaction, &executor.sys_config.block_sys_config.clone());
+            executed_block.apply_transaction(&transaction, &executor.sys_config);
         }
         executed_block
             .state

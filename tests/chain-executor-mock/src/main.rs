@@ -111,9 +111,8 @@ fn main() {
             return;
         }
     }
-    let mut repeat = 0u8;
-    let mut _current_height = 0u8;
 
+    let mut repeat = 0u8;
     loop {
         let (key, body) = rx_sub.recv().unwrap();
         info!("received: key={}", key);
@@ -125,7 +124,8 @@ fn main() {
 
             // Remove previous block
             if mock_blocks.remove(&rich_status.height).is_some() {
-                _current_height = rich_status.height as u8;
+                let current_height = rich_status.height as u8;
+                info!("current height-{:?}", current_height);
                 repeat = 0;
             } else if repeat < u8::MAX {
                 repeat += 1;
@@ -149,9 +149,10 @@ fn main() {
                     &privkey,
                 );
             } else {
-                warn!("No data for this block height = {:?}", height);
+                warn!("no data for this block height = {:?}", height);
             };
             if mock_blocks.is_empty() {
+                warn!("break for empty...");
                 break;
             }
         }

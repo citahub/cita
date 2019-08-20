@@ -70,7 +70,7 @@ impl<'a> ContractCallExt for Executor {
             to: *address,
             data: Some(encoded_method.to_vec()),
         };
-        trace!("data: {:?}", call_request.data);
+        trace!("call method request: {:?}", call_request);
         self.eth_call(call_request, block_tag)
     }
 }
