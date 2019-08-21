@@ -12,7 +12,6 @@ rustc-hex = "1.0"
 lazy_static = "0.2"
 time = "0.1"
 crossbeam = "0.2"
-transient-hashmap = "0.4.0"
 cita-logger = "0.1.0"
 common-types = { path = "../types" }
 

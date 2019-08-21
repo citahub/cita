@@ -2,7 +2,6 @@ use crate::bloomchain::group::{
     BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition as BloomGroupPosition,
 };
 use crate::bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
-use crate::filters::{PollFilter, PollManager};
 use crate::header::{BlockNumber, Header};
 use crate::libchain::status::Status;
 use crate::log_blooms::LogBloomGroup;
@@ -45,6 +44,7 @@ use cita_types::{Address, H256, U256};
 
 use crate::cita_db::RocksDB;
 use crate::db_indexes::DBIndex;
+use crate::filters::filterdb::FilterDB;
 use cita_db::Database;
 use rlp::{self, decode, Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
 
@@ -292,7 +292,8 @@ pub struct Chain {
     pub account_quota_limit: RwLock<ProtoAccountGasLimit>,
     pub check_quota: AtomicBool,
 
-    pub polls_filter: Arc<Mutex<PollManager<PollFilter>>>,
+    /// Filter Database
+    pub filterdb: Arc<Mutex<FilterDB>>,
     /// Proof type
     pub prooftype: u8,
     // snapshot flag
@@ -382,7 +383,7 @@ impl Chain {
             max_store_height,
             block_map: RwLock::new(BTreeMap::new()),
             db,
-            polls_filter: Arc::new(Mutex::new(PollManager::default())),
+            filterdb: Arc::new(Mutex::new(FilterDB::new())),
             nodes: RwLock::new(Vec::new()),
             validators: RwLock::new(Vec::new()),
             // need to be cautious here
@@ -1380,8 +1381,8 @@ impl Chain {
         }
     }
 
-    pub fn poll_filter(&self) -> Arc<Mutex<PollManager<PollFilter>>> {
-        Arc::clone(&self.polls_filter)
+    pub fn filter_db(&self) -> Arc<Mutex<FilterDB>> {
+        Arc::clone(&self.filterdb)
     }
 
     /// clear sync block
