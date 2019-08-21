@@ -1,81 +1,72 @@
-// Copyright 2015-2017 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// This software is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
-
-//! Blockchain filter
-
 use crate::block_number::BlockTag;
-use crate::log_entry::{LogBloom, LogEntry};
+#[cfg(test)]
+use crate::block_number::Tag;
+use crate::log::Log;
 use cita_types::traits::BloomTools;
-use cita_types::{Address, H256};
-use jsonrpc_types::rpc_types::{Filter as RpcFilter, VariadicValue};
+use cita_types::{Address, Bloom, H256};
+use jsonrpc_types::rpc_types::{Filter as RpcFilter, FilterAddress, Topic, VariadicValue};
 
-/// Blockchain Filter.
-#[derive(Debug, PartialEq)]
-pub struct Filter {
-    /// Blockchain will be searched from this block.
-    pub from_block: BlockTag,
-
-    /// Till this block.
-    pub to_block: BlockTag,
-
-    /// Search addresses.
-    ///
-    /// If None, match all.
-    /// If specified, log must be produced by one of these addresses.
-    pub address: Option<Vec<Address>>,
-
-    /// Search topics.
-    ///
-    /// If None, match all.
-    /// If specified, log must contain one of these topics.
-    pub topics: Vec<Option<Vec<H256>>>,
-
-    /// Logs limit
-    ///
-    /// If None, return all logs
-    /// If specified, should only return *last* `n` logs.
-    pub limit: Option<usize>,
+/// Address Filter.
+#[derive(Debug, PartialEq, Clone)]
+pub struct AddressFilter {
+    addresses: Option<Vec<Address>>,
 }
 
-impl Clone for Filter {
-    fn clone(&self) -> Self {
-        let mut topics = [None, None, None, None];
-        topics[..4].clone_from_slice(&self.topics[..4]);
+impl AddressFilter {
+    pub fn new(addresses: Option<Vec<Address>>) -> Self {
+        AddressFilter { addresses }
+    }
 
-        Filter {
-            from_block: self.from_block,
-            to_block: self.to_block,
-            address: self.address.clone(),
-            topics: topics[..].to_vec(),
-            limit: self.limit,
+    pub fn blooms(&self) -> Vec<Bloom> {
+        match self.addresses {
+            Some(ref addresses) if !addresses.is_empty() => addresses
+                .iter()
+                .map(|ref address| Bloom::from_raw(address))
+                .collect(),
+            _ => vec![Bloom::default()],
+        }
+    }
+
+    pub fn matches(&self, log: &Log) -> bool {
+        match self.addresses {
+            Some(ref addresses) if !addresses.is_empty() => {
+                addresses.iter().any(|address| &log.address == address)
+            }
+            _ => true,
         }
     }
 }
 
-impl Filter {
-    /// Returns combinations of each address and topic.
-    pub fn bloom_possibilities(&self) -> Vec<LogBloom> {
-        let blooms = match self.address {
-            Some(ref addresses) if !addresses.is_empty() => addresses
-                .iter()
-                .map(|ref address| LogBloom::from_raw(address))
-                .collect(),
-            _ => vec![LogBloom::default()],
-        };
+impl From<Option<FilterAddress>> for AddressFilter {
+    fn from(addresses: Option<FilterAddress>) -> AddressFilter {
+        let addresses = addresses.and_then(|address| match address {
+            VariadicValue::Null => None,
+            VariadicValue::Single(addr) => Some(vec![addr.into()]),
+            VariadicValue::Multiple(addr) => Some(addr.into_iter().map(Into::into).collect()),
+        });
 
+        AddressFilter { addresses }
+    }
+}
+
+impl Default for AddressFilter {
+    fn default() -> Self {
+        AddressFilter { addresses: None }
+    }
+}
+
+/// Topic Filter.
+#[derive(Debug, PartialEq)]
+pub struct TopicFilter {
+    topics: Vec<Option<Vec<H256>>>,
+}
+
+impl TopicFilter {
+    pub fn new(topics: Vec<Option<Vec<H256>>>) -> Self {
+        TopicFilter { topics }
+    }
+
+    pub fn zip_blooms(&self, blooms: Vec<Bloom>) -> Vec<Bloom> {
         self.topics.iter().fold(blooms, |bs, topic| match *topic {
             None => bs,
             Some(ref topics) => bs
@@ -84,36 +75,106 @@ impl Filter {
                     topics
                         .iter()
                         .map(|topic| {
-                            let mut b = bloom;
-                            b.accrue_raw(topic);
-                            b
+                            let mut bloom = bloom;
+                            bloom.accrue_raw(topic);
+                            bloom
                         })
-                        .collect::<Vec<LogBloom>>()
+                        .collect::<Vec<Bloom>>()
                 })
                 .collect(),
         })
     }
 
-    /// Returns true if given log entry matches filter.
-    pub fn matches(&self, log: &LogEntry) -> bool {
-        let matches = match self.address {
-            Some(ref addresses) if !addresses.is_empty() => {
-                addresses.iter().any(|address| &log.address == address)
-            }
-            _ => true,
-        };
+    pub fn matches(&self, log: &Log) -> bool {
+        self.topics
+            .iter()
+            .enumerate()
+            .all(|(index, topic)| match *topic {
+                Some(ref topics) if !topics.is_empty() => topics
+                    .iter()
+                    .any(|topic| log.topics.get(index) == Some(topic)),
+                _ => true,
+            })
+    }
+}
 
-        matches
-            && self
-                .topics
-                .iter()
-                .enumerate()
-                .all(|(i, topic)| match *topic {
-                    Some(ref topics) if !topics.is_empty() => {
-                        topics.iter().any(|topic| log.topics.get(i) == Some(topic))
-                    }
-                    _ => true,
-                })
+impl From<Option<Vec<Topic>>> for TopicFilter {
+    fn from(topics: Option<Vec<Topic>>) -> TopicFilter {
+        let mut iter = topics
+            .map_or_else(Vec::new, |topics| {
+                topics
+                    .into_iter()
+                    .take(4)
+                    .map(|topic| match topic {
+                        VariadicValue::Null => None,
+                        VariadicValue::Single(t) => Some(vec![t.into()]),
+                        VariadicValue::Multiple(t) => Some(t.into_iter().map(Into::into).collect()),
+                    })
+                    .collect()
+            })
+            .into_iter();
+
+        let topics = vec![
+            iter.next().unwrap_or(None),
+            iter.next().unwrap_or(None),
+            iter.next().unwrap_or(None),
+            iter.next().unwrap_or(None),
+        ];
+
+        TopicFilter { topics }
+    }
+}
+
+impl Clone for TopicFilter {
+    fn clone(&self) -> Self {
+        let mut topics = [None, None, None, None];
+        topics[..4].clone_from_slice(&self.topics[..4]);
+
+        TopicFilter {
+            topics: topics.to_vec(),
+        }
+    }
+}
+
+impl Default for TopicFilter {
+    fn default() -> Self {
+        let topics = vec![None, None, None, None];
+
+        TopicFilter { topics }
+    }
+}
+
+/// All filter.
+#[derive(Debug, PartialEq)]
+pub struct Filter {
+    pub from_block: BlockTag,
+    pub to_block: BlockTag,
+    pub addresses: AddressFilter,
+    pub topics: TopicFilter,
+    pub limit: Option<usize>,
+}
+
+impl Filter {
+    /// Zip blooms with address and topic.
+    pub fn zip_blooms(&self) -> Vec<Bloom> {
+        self.topics.zip_blooms(self.addresses.blooms())
+    }
+
+    /// Check the given log entry matches address or topic.
+    pub fn matches(&self, log: &Log) -> bool {
+        self.addresses.matches(log) && self.topics.matches(log)
+    }
+
+    // For test
+    #[cfg(test)]
+    pub fn new_with_address_and_topic(addresses: AddressFilter, topics: TopicFilter) -> Self {
+        Filter {
+            from_block: BlockTag::Tag(Tag::Earliest),
+            to_block: BlockTag::Tag(Tag::Latest),
+            addresses,
+            topics,
+            limit: None,
+        }
     }
 }
 
@@ -122,36 +183,8 @@ impl From<RpcFilter> for Filter {
         Filter {
             from_block: v.from_block.into(),
             to_block: v.to_block.into(),
-            address: v.address.and_then(|address| match address {
-                VariadicValue::Null => None,
-                VariadicValue::Single(a) => Some(vec![a.into()]),
-                VariadicValue::Multiple(a) => Some(a.into_iter().map(Into::into).collect()),
-            }),
-            topics: {
-                let mut iter = v
-                    .topics
-                    .map_or_else(Vec::new, |topics| {
-                        topics
-                            .into_iter()
-                            .take(4)
-                            .map(|topic| match topic {
-                                VariadicValue::Null => None,
-                                VariadicValue::Single(t) => Some(vec![t.into()]),
-                                VariadicValue::Multiple(t) => {
-                                    Some(t.into_iter().map(Into::into).collect())
-                                }
-                            })
-                            .collect()
-                    })
-                    .into_iter();
-
-                vec![
-                    iter.next().unwrap_or(None),
-                    iter.next().unwrap_or(None),
-                    iter.next().unwrap_or(None),
-                    iter.next().unwrap_or(None),
-                ]
-            },
+            addresses: v.address.into(),
+            topics: v.topics.into(),
             limit: v.limit,
         }
     }
@@ -159,242 +192,176 @@ impl From<RpcFilter> for Filter {
 
 #[cfg(test)]
 mod tests {
-    use crate::block_number::{BlockTag, Tag};
-    use crate::filter::Filter;
-    use crate::log_entry::{LogBloom, LogEntry};
+    use crate::filter::{AddressFilter, Filter, TopicFilter};
+    use crate::log::Log;
+    use cita_types::{Address, Bloom, H256};
 
     #[test]
-    fn test_bloom_possibilities_none() {
-        let none_filter = Filter {
-            from_block: BlockTag::Tag(Tag::Earliest),
-            to_block: BlockTag::Tag(Tag::Latest),
-            address: None,
-            topics: vec![None, None, None, None],
-            limit: None,
-        };
+    fn test_zip_blooms_none() {
+        let none_filter =
+            Filter::new_with_address_and_topic(Default::default(), Default::default());
 
-        let possibilities = none_filter.bloom_possibilities();
-        assert_eq!(possibilities.len(), 1);
-        assert!(possibilities[0].is_zero())
+        let blooms = none_filter.zip_blooms();
+        assert_eq!(blooms.len(), 1);
+        assert!(blooms[0].is_zero())
     }
 
-    // block 399849
     #[test]
-    fn test_bloom_possibilities_single_address_and_topic() {
-        let filter = Filter {
-            from_block: BlockTag::Tag(Tag::Earliest),
-            to_block: BlockTag::Tag(Tag::Latest),
-            address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
-            topics: vec![
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
-                None,
-                None,
-                None,
-            ],
-            limit: None,
-        };
-        let possibilities = filter.bloom_possibilities();
-        let blooms: Vec<LogBloom> = vec![
-            "0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000008
-             0000000000000000000000000000000000000000800000000000000000000000
-             0000000000000000000000000000000000000000000000400000000400000000
-             0000000000000000000000000000000000000000020000000000000000000000
+    fn test_zip_blooms_single_address_and_single_topic() {
+        let topics = vec![Some(vec![H256::zero()]), None, None, None];
+        let addresses = Some(vec![Address::default()]);
+
+        let filter = Filter::new_with_address_and_topic(
+            AddressFilter::new(addresses),
+            TopicFilter::new(topics),
+        );
+
+        let zip_blooms = filter.zip_blooms();
+        let blooms: Vec<Bloom> = vec![
+            "0000000000000000008000000000000000000000000000000000000000000000
+             0000000000000000000000000000000200000000000000000000000000000000
              0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000040000000000
+             0000000002000000000000000000080000000000000000000000000000000000
+             0000000000000000000000000000000100000000000000000000000000000000
+             0000000000000000000000000000000000000000000000000000000000000000
+             0000000000000000000000000000000000000000000000000000000000002000
              0000000000000000000000000000000000000000000000000000000000000000"
                 .into(),
         ];
-        assert_eq!(possibilities, blooms);
+        assert_eq!(zip_blooms, blooms);
     }
 
     #[test]
-    fn test_bloom_possibilities_single_address_and_many_topics() {
-        let filter = Filter {
-            from_block: BlockTag::Tag(Tag::Earliest),
-            to_block: BlockTag::Tag(Tag::Latest),
-            address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
-            topics: vec![
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
-                None,
-                None,
-            ],
-            limit: None,
-        };
-        let possibilities = filter.bloom_possibilities();
-        let blooms: Vec<LogBloom> = vec![
-            "0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000008
-             0000000000000000000000000000000000000000800000000000000000000000
-             0000000000000000000000000000000000000000000000400000000400000000
-             0000000000000000000000000000000000000000020000000000000000000000
+    fn test_zip_bloom_single_address_and_mul_topics() {
+        let topics = vec![
+            Some(vec![H256::zero()]),
+            Some(vec![H256::zero()]),
+            Some(vec![H256::zero()]),
+            Some(vec![H256::zero()]),
+        ];
+        let addresses = Some(vec![Address::default()]);
+
+        let filter = Filter::new_with_address_and_topic(
+            AddressFilter::new(addresses),
+            TopicFilter::new(topics),
+        );
+
+        let zip_blooms = filter.zip_blooms();
+        let blooms: Vec<Bloom> = vec![
+            "0000000000000000008000000000000000000000000000000000000000000000
+             0000000000000000000000000000000200000000000000000000000000000000
              0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000040000000000
+             0000000002000000000000000000080000000000000000000000000000000000
+             0000000000000000000000000000000100000000000000000000000000000000
+             0000000000000000000000000000000000000000000000000000000000000000
+             0000000000000000000000000000000000000000000000000000000000002000
              0000000000000000000000000000000000000000000000000000000000000000"
                 .into(),
         ];
-        assert_eq!(possibilities, blooms);
+        assert_eq!(zip_blooms, blooms);
     }
 
     #[test]
-    fn test_bloom_possibilites_multiple_addresses_and_topics() {
-        let filter = Filter {
-            from_block: BlockTag::Tag(Tag::Earliest),
-            to_block: BlockTag::Tag(Tag::Latest),
-            address: Some(vec![
-                "b372018f3be9e171df0581136b59d2faf73a7d5d".into(),
-                "b372018f3be9e171df0581136b59d2faf73a7d5d".into(),
-            ]),
-            topics: vec![
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
-                None,
-            ],
-            limit: None,
-        };
+    fn test_zip_blooms_mul_addresses_and_mul_topics() {
+        let topics = vec![
+            Some(vec![H256::zero(), H256::zero()]),
+            Some(vec![H256::zero()]),
+            Some(vec![H256::zero()]),
+            Some(vec![H256::zero()]),
+        ];
+        let addresses = Some(vec![Address::default(), Address::default()]);
 
-        // number of possibilites should be equal 2 * 2 * 2 * 1 = 8
-        let possibilities = filter.bloom_possibilities();
-        let blooms: Vec<LogBloom> = vec![
-            "0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000008
-             0000000000000000000000000000000000000000800000000000000000000000
-             0000000000000000000000000000000000000000000000400000000400000000
-             0000000000000000000000000000000000000000020000000000000000000000
+        let filter = Filter::new_with_address_and_topic(
+            AddressFilter::new(addresses),
+            TopicFilter::new(topics),
+        );
+
+        let zip_blooms = filter.zip_blooms();
+        let blooms: Vec<Bloom> = vec![
+            "0000000000000000008000000000000000000000000000000000000000000000
+             0000000000000000000000000000000200000000000000000000000000000000
              0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000040000000000
+             0000000002000000000000000000080000000000000000000000000000000000
+             0000000000000000000000000000000100000000000000000000000000000000
+             0000000000000000000000000000000000000000000000000000000000000000
+             0000000000000000000000000000000000000000000000000000000000002000
              0000000000000000000000000000000000000000000000000000000000000000"
                 .into(),
-            "0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000008
-             0000000000000000000000000000000000000000800000000000000000000000
-             0000000000000000000000000000000000000000000000400000000400000000
-             0000000000000000000000000000000000000000020000000000000000000000
+            "0000000000000000008000000000000000000000000000000000000000000000
+             0000000000000000000000000000000200000000000000000000000000000000
              0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000040000000000
+             0000000002000000000000000000080000000000000000000000000000000000
+             0000000000000000000000000000000100000000000000000000000000000000
+             0000000000000000000000000000000000000000000000000000000000000000
+             0000000000000000000000000000000000000000000000000000000000002000
              0000000000000000000000000000000000000000000000000000000000000000"
                 .into(),
-            "0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000008
-             0000000000000000000000000000000000000000800000000000000000000000
-             0000000000000000000000000000000000000000000000400000000400000000
-             0000000000000000000000000000000000000000020000000000000000000000
+            "0000000000000000008000000000000000000000000000000000000000000000
+             0000000000000000000000000000000200000000000000000000000000000000
              0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000040000000000
+             0000000002000000000000000000080000000000000000000000000000000000
+             0000000000000000000000000000000100000000000000000000000000000000
+             0000000000000000000000000000000000000000000000000000000000000000
+             0000000000000000000000000000000000000000000000000000000000002000
              0000000000000000000000000000000000000000000000000000000000000000"
                 .into(),
-            "0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000008
-             0000000000000000000000000000000000000000800000000000000000000000
-             0000000000000000000000000000000000000000000000400000000400000000
-             0000000000000000000000000000000000000000020000000000000000000000
+            "0000000000000000008000000000000000000000000000000000000000000000
+             0000000000000000000000000000000200000000000000000000000000000000
              0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000040000000000
-             0000000000000000000000000000000000000000000000000000000000000000"
-                .into(),
-            "0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000008
-             0000000000000000000000000000000000000000800000000000000000000000
-             0000000000000000000000000000000000000000000000400000000400000000
-             0000000000000000000000000000000000000000020000000000000000000000
+             0000000002000000000000000000080000000000000000000000000000000000
+             0000000000000000000000000000000100000000000000000000000000000000
              0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000040000000000
-             0000000000000000000000000000000000000000000000000000000000000000"
-                .into(),
-            "0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000008
-             0000000000000000000000000000000000000000800000000000000000000000
-             0000000000000000000000000000000000000000000000400000000400000000
-             0000000000000000000000000000000000000000020000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000040000000000
-             0000000000000000000000000000000000000000000000000000000000000000"
-                .into(),
-            "0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000008
-             0000000000000000000000000000000000000000800000000000000000000000
-             0000000000000000000000000000000000000000000000400000000400000000
-             0000000000000000000000000000000000000000020000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000040000000000
-             0000000000000000000000000000000000000000000000000000000000000000"
-                .into(),
-            "0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000008
-             0000000000000000000000000000000000000000800000000000000000000000
-             0000000000000000000000000000000000000000000000400000000400000000
-             0000000000000000000000000000000000000000020000000000000000000000
-             0000000000000000000000000000000000000000000000000000000000000000
-             0000000000000000000000000000000000000000000000000000040000000000
+             0000000000000000000000000000000000000000000000000000000000002000
              0000000000000000000000000000000000000000000000000000000000000000"
                 .into(),
         ];
-        assert_eq!(possibilities, blooms);
+        assert_eq!(zip_blooms, blooms);
     }
 
     #[test]
-    fn test_filter_matches() {
-        let filter = Filter {
-            from_block: BlockTag::Tag(Tag::Earliest),
-            to_block: BlockTag::Tag(Tag::Latest),
-            address: Some(vec!["b372018f3be9e171df0581136b59d2faf73a7d5d".into()]),
-            topics: vec![
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                ]),
-                Some(vec![
-                    "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23fa".into(),
-                ]),
-                None,
-                None,
-            ],
-            limit: None,
+    fn test_matches() {
+        let topics = vec![
+            Some(vec![H256::zero()]),
+            Some(vec![H256::zero()]),
+            None,
+            None,
+        ];
+        let addresses = Some(vec![Address::default()]);
+
+        let filter = Filter::new_with_address_and_topic(
+            AddressFilter::new(addresses),
+            TopicFilter::new(topics),
+        );
+
+        let entry0 = Log {
+            address: Address::default(),
+            topics: vec![H256::zero(), H256::zero(), H256::random()],
+            data: Default::default(),
         };
 
-        let entry0 = LogEntry {
-            address: "b372018f3be9e171df0581136b59d2faf73a7d5d".into(),
-            topics: vec![
-                "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23fa".into(),
-                "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-            ],
-            data: vec![],
+        let entry1 = Log {
+            address: Address::default(),
+            topics: vec![H256::zero(), H256::random(), H256::random()],
+            data: Default::default(),
         };
 
-        let entry1 = LogEntry {
-            address: "b372018f3be9e171df0581136b59d2faf73a7d5e".into(),
-            topics: vec![
-                "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-                "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23fa".into(),
-                "ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into(),
-            ],
-            data: vec![],
+        let entry2 = Log {
+            address: Address::random(),
+            topics: vec![H256::random(), H256::random(), H256::random()],
+            data: Default::default(),
         };
 
-        let entry2 = LogEntry {
-            address: "b372018f3be9e171df0581136b59d2faf73a7d5d".into(),
-            topics: vec!["ff74e91598aed6ae5d2fdcf8b24cd2c7be49a0808112a305069355b7160f23f9".into()],
-            data: vec![],
-        };
-
+        // Filter matches
         assert_eq!(filter.matches(&entry0), true);
         assert_eq!(filter.matches(&entry1), false);
         assert_eq!(filter.matches(&entry2), false);
+        // Topic filter matches
+        assert_eq!(filter.topics.matches(&entry0), true);
+        assert_eq!(filter.topics.matches(&entry1), false);
+        assert_eq!(filter.topics.matches(&entry2), false);
+        // Address filter matches
+        assert_eq!(filter.addresses.matches(&entry0), true);
+        assert_eq!(filter.addresses.matches(&entry1), true);
+        assert_eq!(filter.addresses.matches(&entry2), false);
     }
 }
