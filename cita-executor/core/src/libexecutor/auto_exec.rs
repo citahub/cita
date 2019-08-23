@@ -27,6 +27,7 @@ use std::str::FromStr;
 use crate::cita_executive::{build_evm_config, build_evm_context};
 use crate::libexecutor::executor::CitaTrieDB;
 use crate::types::context::Context;
+use cita_vm::evm::InterpreterResult;
 use cita_vm::state::State as CitaState;
 use cita_vm::Transaction as EVMTransaction;
 use std::cell::RefCell;
@@ -55,7 +56,11 @@ pub fn auto_exec(
         nonce: U256::from(0),
     };
 
-    let evm_config = build_evm_config(auto_exec_quota_limit);
+    let mut evm_config = build_evm_config(auto_exec_quota_limit);
+
+    // Do not check nonce and balance for auto exec
+    evm_config.check_nonce = false;
+    evm_config.check_balance = false;
     let evm_context = build_evm_context(&context);
 
     let block_provider = EVMBlockDataProvider::new(context.clone());
@@ -66,7 +71,17 @@ pub fn auto_exec(
         evm_config,
         evm_transaction,
     ) {
-        Ok(res) => trace!("Auto exec succeed: {:?}", res),
+        Ok(res) => match res {
+            InterpreterResult::Normal(_, _, _) => {
+                trace!("Auto exec run succeed.");
+            }
+            InterpreterResult::Revert(_, _) => {
+                info!("Auto exec run Revert!");
+            }
+            _ => {
+                info!("Auto exec should not run as create");
+            }
+        },
         Err(e) => info!("Auto exec failed: {}", e),
     }
 }
