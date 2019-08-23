@@ -251,7 +251,9 @@ impl ExecutedBlock {
                         self.state
                             .borrow_mut()
                             .balance(t.sender())
-                            .unwrap_or_else(|_| U256::from(0)),
+                            .unwrap_or_else(|_| U256::from(0))
+                            .checked_div(t.gas_price())
+                            .unwrap_or_else(U256::max_value),
                         U256::from(schedule.tx_gas),
                     ),
                 };
