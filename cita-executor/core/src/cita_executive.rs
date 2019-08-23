@@ -19,7 +19,7 @@ use crate::tx_gas_schedule::TxGasSchedule;
 use crate::types::context::Context;
 use crate::types::errors::AuthenticationError;
 use crate::types::errors::ExecutionError;
-use crate::types::log_entry::LogEntry;
+use crate::types::log::Log;
 use crate::types::transaction::{Action, SignedTransaction};
 use ethbloom::{Bloom, Input as BloomInput};
 
@@ -643,12 +643,12 @@ fn build_result_with_err(err: VMError) -> ExecutedResult {
     result
 }
 
-fn transform_logs(logs: Vec<EVMLog>) -> Vec<LogEntry> {
+fn transform_logs(logs: Vec<EVMLog>) -> Vec<Log> {
     logs.into_iter()
         .map(|log| {
             let EVMLog(address, topics, data) = log;
 
-            LogEntry {
+            Log {
                 address,
                 topics,
                 data,
@@ -657,14 +657,14 @@ fn transform_logs(logs: Vec<EVMLog>) -> Vec<LogEntry> {
         .collect()
 }
 
-fn logs_to_bloom(logs: &[LogEntry]) -> Bloom {
+fn logs_to_bloom(logs: &[Log]) -> Bloom {
     let mut bloom = Bloom::default();
 
     logs.iter().for_each(|log| accrue_log(&mut bloom, log));
     bloom
 }
 
-fn accrue_log(bloom: &mut Bloom, log: &LogEntry) {
+fn accrue_log(bloom: &mut Bloom, log: &Log) {
     bloom.accrue(BloomInput::Raw(&log.address.0));
     for topic in &log.topics {
         let input = BloomInput::Hash(&topic.0);
@@ -715,7 +715,7 @@ pub struct ExecutedResult {
     pub quota_used: U256,
     pub quota_left: U256,
     pub logs_bloom: Bloom,
-    pub logs: Vec<LogEntry>,
+    pub logs: Vec<Log>,
     pub exception: Option<ExecutedException>,
     pub contract_address: Option<Address>,
     pub account_nonce: U256,

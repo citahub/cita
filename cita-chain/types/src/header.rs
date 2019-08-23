@@ -17,7 +17,7 @@
 
 //! Block header.
 
-use cita_types::{Address, H256, U256};
+use cita_types::{Address, Bloom, H256, U256};
 use libproto::blockchain::{
     Block as ProtoBlock, BlockHeader as ProtoBlockHeader, Proof as ProtoProof, ProofType,
 };
@@ -33,10 +33,8 @@ pub use crate::block_number::BlockNumber;
 use hashable::{Hashable, HASH_NULL_RLP};
 use util::HeapSizeOf;
 
-// from parity
-pub use crate::log_entry::LogBloom;
 lazy_static! {
-    pub static ref ZERO_LOGBLOOM: LogBloom = LogBloom::from([0x00; 256]);
+    pub static ref ZERO_BLOOM: Bloom = Bloom::from([0x00; 256]);
 }
 
 #[derive(Debug, Clone, Eq)]
@@ -190,8 +188,8 @@ pub struct Header {
     state_root: H256,
     /// Block receipts root.
     receipts_root: H256,
-    /// Block bloom.
-    log_bloom: LogBloom,
+    /// Log bloom.
+    log_bloom: Bloom,
     /// Quota used for contracts execution.
     quota_used: U256,
     /// The hash of the header.
@@ -235,7 +233,7 @@ impl Default for Header {
             open_header: OpenHeader::default(),
             state_root: HASH_NULL_RLP,
             receipts_root: HASH_NULL_RLP,
-            log_bloom: *ZERO_LOGBLOOM,
+            log_bloom: *ZERO_BLOOM,
             quota_used: U256::default(),
             hash: None,
         };
@@ -250,7 +248,7 @@ impl Header {
             open_header: header,
             state_root: HASH_NULL_RLP,
             receipts_root: HASH_NULL_RLP,
-            log_bloom: *ZERO_LOGBLOOM,
+            log_bloom: *ZERO_BLOOM,
             quota_used: U256::default(),
             hash: None,
         }
@@ -269,7 +267,7 @@ impl Header {
         &self.receipts_root
     }
     /// Get the log bloom field of the header.
-    pub fn log_bloom(&self) -> &LogBloom {
+    pub fn log_bloom(&self) -> &Bloom {
         &self.log_bloom
     }
     /// Get the quota used field of the header.
@@ -287,7 +285,7 @@ impl Header {
         self.note_dirty();
     }
     /// Set the log bloom field of the header.
-    pub fn set_log_bloom(&mut self, a: LogBloom) {
+    pub fn set_log_bloom(&mut self, a: Bloom) {
         self.log_bloom = a;
     }
     /// Set the quota used field of the header.
@@ -408,7 +406,7 @@ impl Header {
                 proposer: self.open_header.proposer,
             },
             hash: None,
-            log_bloom: *ZERO_LOGBLOOM,
+            log_bloom: *ZERO_BLOOM,
             state_root: HASH_NULL_RLP,
             receipts_root: HASH_NULL_RLP,
             quota_used: U256::zero(),
@@ -456,7 +454,7 @@ impl Header {
                 version: open_header.version,
                 parent_hash: H256::from_slice(info.get_header().get_prevhash()),
             },
-            log_bloom: LogBloom::from(info.get_header().get_log_bloom()),
+            log_bloom: Bloom::from(info.get_header().get_log_bloom()),
             quota_used: U256::from(info.get_header().get_quota_used()),
             receipts_root: H256::from(info.get_header().get_receipts_root()),
             state_root: H256::from(info.get_header().get_state_root()),

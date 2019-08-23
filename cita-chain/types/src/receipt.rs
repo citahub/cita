@@ -21,10 +21,10 @@ use std::str::FromStr;
 
 use crate::block_number::BlockNumber;
 use crate::errors::ReceiptError;
-use crate::log_entry::{LocalizedLogEntry, LogBloom, LogEntry};
+use crate::log::{LocalizedLog, Log};
 
 use cita_types::traits::LowerHex;
-use cita_types::{Address, H256, U256};
+use cita_types::{Address, Bloom as LogBloom, H256, U256};
 use jsonrpc_types::rpc_types::Receipt as RpcReceipt;
 use libproto::executor::{Receipt as ProtoReceipt, ReceiptErrorWithOption, StateRoot};
 use rlp::{Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
@@ -34,7 +34,7 @@ pub struct Receipt {
     pub state_root: Option<H256>,
     pub quota_used: U256,
     pub log_bloom: LogBloom,
-    pub logs: Vec<LogEntry>,
+    pub logs: Vec<Log>,
     pub error: Option<ReceiptError>,
     pub account_nonce: U256,
     pub transaction_hash: H256,
@@ -44,7 +44,7 @@ impl Receipt {
     pub fn new(
         state_root: Option<H256>,
         quota_used: U256,
-        logs: Vec<LogEntry>,
+        logs: Vec<Log>,
         error: Option<ReceiptError>,
         account_nonce: U256,
         transaction_hash: H256,
@@ -115,7 +115,7 @@ impl From<ProtoReceipt> for Receipt {
                     .map(|topic| H256::from_slice(topic))
                     .collect();
                 let data: Bytes = Bytes::from(log_entry.get_data());
-                LogEntry {
+                Log {
                     address,
                     topics,
                     data,
@@ -192,7 +192,7 @@ pub struct RichReceipt {
     pub cumulative_quota_used: U256,
     pub quota_used: U256,
     pub contract_address: Option<Address>,
-    pub logs: Vec<LocalizedLogEntry>,
+    pub logs: Vec<LocalizedLog>,
     pub log_bloom: LogBloom,
     pub state_root: Option<H256>,
     pub error: Option<ReceiptError>,
@@ -219,14 +219,14 @@ impl Into<RpcReceipt> for RichReceipt {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::log_entry::LogEntry;
+    use crate::log::Log;
 
     #[test]
     fn test_no_state_root() {
         let r = Receipt::new(
             None,
             0x40cae.into(),
-            vec![LogEntry {
+            vec![Log {
                 address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
                 topics: vec![],
                 data: vec![0u8; 32],
@@ -247,7 +247,7 @@ mod tests {
         let r = Receipt::new(
             Some("2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into()),
             0x40cae.into(),
-            vec![LogEntry {
+            vec![Log {
                 address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
                 topics: vec![],
                 data: vec![0u8; 32],
@@ -267,7 +267,7 @@ mod tests {
         let r = Receipt::new(
             Some("2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into()),
             0x40cae.into(),
-            vec![LogEntry {
+            vec![Log {
                 address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
                 topics: vec![],
                 data: vec![0u8; 32],

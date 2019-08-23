@@ -5,7 +5,6 @@ use crate::bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainN
 use crate::header::{BlockNumber, Header};
 use crate::libchain::status::Status;
 use crate::log_blooms::LogBloomGroup;
-use crate::log_entry::LogBloom;
 use crate::receipt::{Receipt, RichReceipt};
 use cita_merklehash;
 use hashable::Hashable;
@@ -35,12 +34,11 @@ use crate::db_indexes::{
 use crate::types::block::{Block, BlockBody, OpenBlock};
 use crate::types::{
     block_number::BlockTag, block_number::Tag, block_number::TransactionHash,
-    block_receipts::BlockReceipts, filter::Filter, log_entry::LocalizedLogEntry,
-    log_entry::LogEntry, transaction::Action, transaction::SignedTransaction,
-    transaction_index::TransactionIndex,
+    block_receipts::BlockReceipts, filter::Filter, log::LocalizedLog, log::Log,
+    transaction::Action, transaction::SignedTransaction, transaction_index::TransactionIndex,
 };
 use cita_types::traits::LowerHex;
-use cita_types::{Address, H256, U256};
+use cita_types::{Address, Bloom as LogBloom, H256, U256};
 
 use crate::cita_db::RocksDB;
 use crate::db_indexes::DBIndex;
@@ -966,8 +964,8 @@ impl Chain {
                             .logs
                             .into_iter()
                             .enumerate()
-                            .map(|(i, log)| LocalizedLogEntry {
-                                entry: log,
+                            .map(|(i, log)| LocalizedLog {
+                                log,
                                 block_hash,
                                 block_number,
                                 transaction_hash: tx_hash,
@@ -1060,9 +1058,9 @@ impl Chain {
         mut blocks: Vec<BlockNumber>,
         matches: F,
         limit: Option<usize>,
-    ) -> Vec<LocalizedLogEntry>
+    ) -> Vec<LocalizedLog>
     where
-        F: Fn(&LogEntry) -> bool,
+        F: Fn(&Log) -> bool,
         Self: Sized,
     {
         // sort in reverse order
@@ -1110,8 +1108,8 @@ impl Chain {
 
                         logs.reverse();
                         logs.into_iter().enumerate().map(move |(i, log)| {
-                            LocalizedLogEntry {
-                                entry: log,
+                            LocalizedLog {
+                                log,
                                 block_hash: hash,
                                 block_number: number,
                                 transaction_hash: tx_hash,
@@ -1123,9 +1121,9 @@ impl Chain {
                         })
                     })
             })
-            .filter(|log_entry| matches(&log_entry.entry))
+            .filter(|log| matches(&log.log))
             .take(limit.unwrap_or(::std::usize::MAX))
-            .collect::<Vec<LocalizedLogEntry>>();
+            .collect::<Vec<LocalizedLog>>();
         logs.reverse();
         logs
     }
@@ -1165,9 +1163,9 @@ impl Chain {
         }
     }
 
-    pub fn get_logs(&self, filter: &Filter) -> Vec<LocalizedLogEntry> {
+    pub fn get_logs(&self, filter: &Filter) -> Vec<LocalizedLog> {
         let blocks = filter
-            .bloom_possibilities()
+            .zip_blooms()
             .iter()
             .filter_map(|bloom| {
                 self.blocks_with_bloom_by_id(bloom, filter.from_block, filter.to_block)

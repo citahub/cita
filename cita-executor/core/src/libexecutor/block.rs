@@ -22,7 +22,7 @@ use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 use cita_merklehash;
-use cita_types::{Address, H256, U256};
+use cita_types::{Address, Bloom as LogBloom, H256, U256};
 use cita_vm::{
     evm::Error as EVMError, state::State as CitaState, state::StateObjectInfo, BlockDataProvider,
     Error as VMError,
@@ -39,7 +39,6 @@ use crate::libexecutor::auto_exec::auto_exec;
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::CitaTrieDB;
 use crate::libexecutor::sys_config::BlockSysConfig;
-use crate::log_entry::LogBloom;
 use crate::receipt::Receipt;
 use crate::tx_gas_schedule::TxGasSchedule;
 pub use crate::types::block::{Block, BlockBody, OpenBlock};

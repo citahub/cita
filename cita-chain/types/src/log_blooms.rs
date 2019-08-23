@@ -1,6 +1,6 @@
-use crate::log_entry::LogBloom;
 use bloomchain::group::BloomGroup;
 use bloomchain::Bloom;
+use cita_types::Bloom as LogBloom;
 use rlp::{Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
 
 #[derive(Debug, Clone)]
