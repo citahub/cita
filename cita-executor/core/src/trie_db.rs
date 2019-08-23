@@ -70,12 +70,8 @@ where
         }
     }
 
-    fn remove(&self, key: &[u8]) -> Result<(), Self::Error> {
-        if H256::from(key) == HASH_NULL_RLP {
-            return Ok(());
-        }
-        self.cache.write().remove(key);
-        self.db.remove(Some(DataCategory::State), key)
+    fn remove(&self, _key: &[u8]) -> Result<(), Self::Error> {
+        Ok(())
     }
 
     fn insert_batch(&self, keys: Vec<Vec<u8>>, values: Vec<Vec<u8>>) -> Result<(), Self::Error> {
@@ -91,19 +87,8 @@ where
         Ok(())
     }
 
-    fn remove_batch(&self, keys: &[Vec<u8>]) -> Result<(), Self::Error> {
-        let keys: Vec<Vec<u8>> = keys
-            .iter()
-            .cloned()
-            .filter(|key| H256::from(key.as_slice()) != HASH_NULL_RLP)
-            .collect();
-        {
-            let mut cache = self.cache.write();
-            for key in &keys {
-                cache.remove(key);
-            }
-        }
-        self.db.remove_batch(Some(DataCategory::State), &keys)
+    fn remove_batch(&self, _keys: &[Vec<u8>]) -> Result<(), Self::Error> {
+        Ok(())
     }
 
     fn flush(&self) -> Result<(), Self::Error> {
