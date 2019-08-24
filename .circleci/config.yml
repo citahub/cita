@@ -238,19 +238,19 @@ jobs:
           name: Basic Tls Test
           command: ./tests/integrate_test/cita_basic.sh --enable_tls
 
-  "JSON-RPC Mock Test in Charge Mode":
-    <<: *job-default
-    steps:
-      - restore_cache: *restore-source-codes-cache
-      - restore_cache: *restore-release-cache
-      - run: *after-restore-release-cache
-      - run:
-          name: JSON-RPC Mock Test in Quota Mode
-          command: ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota
-      - run:
-          name: (Skip & TODO) JSON-RPC Mock Test in Charge Mode
-          command: |
-              echo "We should add it back later."
+  # "JSON-RPC Mock Test in Charge Mode":
+  #   <<: *job-default
+  #   steps:
+  #     - restore_cache: *restore-source-codes-cache
+  #     - restore_cache: *restore-release-cache
+  #     - run: *after-restore-release-cache
+  #     - run:
+  #         name: JSON-RPC Mock Test in Quota Mode
+  #         command: ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota
+  #     - run:
+  #         name: (Skip & TODO) JSON-RPC Mock Test in Charge Mode
+  #         command: |
+  #             echo "We should add it back later."
               # ./tests/integrate_test/cita_jsonrpc_schema_mock.sh charge
 
   "JSON-RPC Mock Test in Quota Mode":
@@ -417,9 +417,9 @@ workflows:
 
       # - "Check Contracts"
 
-      # - "Test Coverage":
-      #     requires:
-      #     - "Check Basic"
+      - "Test Coverage":
+          requires:
+          - "Check Basic"
 
       - "Check Clippy":
           requires:
@@ -438,9 +438,9 @@ workflows:
       # - "JSON-RPC Mock Test in Charge Mode":
       #     requires:
       #       - "Release"
-      # - "JSON-RPC Mock Test in Quota Mode":
-      #     requires:
-      #       - "Release"
+      - "JSON-RPC Mock Test in Quota Mode":
+          requires:
+            - "Release"
       - "Test Transfer Value in Charge Mode":
           requires:
             - "Release"
@@ -493,18 +493,18 @@ workflows:
               - "Release"
               - "Basic Test"
               - "Basic Tls Test"
-            # - "JSON-RPC Mock Test in Charge Mode"
-            # - "JSON-RPC Mock Test in Quota Mode"
+              - "JSON-RPC Mock Test in Quota Mode"
               - "Test Transfer Value in Charge Mode"
               - "Test System Features"
-            # - "Test Snapshot Taking And Restoring"
               - "Test Amend"
               - "Test Executor Process Invalid Proof"
               - "Discovery Test for network"
               - "Byzantine Test in Quota Mode"
               - "Byzantine Test in Charge Mode"
-            # - "Crosschain Test"
               - "Robustness Test"
               - "Genesis Test"
               - "Unit Test (blake2b & ed25519)"
               - "Unit Test (sm3 & sm2)"
+            # - "Crosschain Test"
+            # - "Test Snapshot Taking And Restoring"
+            # - "JSON-RPC Mock Test in Charge Mode"

@@ -258,7 +258,7 @@ impl ExecutedBlock {
                     _ => cmp::min(
                         self.state
                             .borrow_mut()
-                            .balance(&t.sender())
+                            .balance(t.sender())
                             .unwrap_or_else(|_| U256::from(0)),
                         U256::from(schedule.tx_gas),
                     ),
@@ -275,6 +275,11 @@ impl ExecutedBlock {
                 }
 
                 let cumulative_quota_used = context.quota_used + tx_quota_used;
+                trace!(
+                    "context quota used: {:?}, tx quota used： {:?}",
+                    context.quota_used,
+                    tx_quota_used
+                );
                 let receipt = Receipt::new(
                     None,
                     cumulative_quota_used,
