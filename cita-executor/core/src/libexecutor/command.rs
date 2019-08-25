@@ -259,7 +259,6 @@ impl Commander for Executor {
             value: U256::zero(),
             data: request.data.map_or_else(Vec::new, |d| d.to_vec()),
             block_limit: u64::max_value(),
-            // TODO: Should Fixed?
             chain_id: U256::default(),
             version: 0u32,
         }
@@ -269,7 +268,7 @@ impl Commander for Executor {
     fn call(&self, t: &SignedTransaction, block_tag: BlockTag) -> Result<CitaExecuted, CallError> {
         let header = self.block_header(block_tag).ok_or(CallError::StatePruned)?;
         let last_hashes = self.build_last_hashes(Some(header.hash().unwrap()), header.number());
-        let context = Context {
+        let mut context = Context {
             block_number: header.number(),
             coin_base: *header.proposer(),
             timestamp: if self.eth_compatibility {
@@ -283,6 +282,7 @@ impl Commander for Executor {
             block_quota_limit: *header.quota_limit(),
             account_quota_limit: u64::max_value().into(),
         };
+        context.block_quota_limit = U256::from(self.sys_config.block_quota_limit);
 
         // FIXME: Need to implement state_at
         // that's just a copy of the state.
@@ -298,7 +298,7 @@ impl Commander for Executor {
         let state_root = if let Some(h) = self.block_header(block_tag) {
             (*h.state_root())
         } else {
-            error!("Can not get state rott from trie db!");
+            error!("Can not get state root from trie db!");
             return Err(CallError::StatePruned);
         };
 

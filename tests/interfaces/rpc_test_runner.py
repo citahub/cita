@@ -99,7 +99,9 @@ class TestRunner(object):
             resolver=response_resolver,
         )
 
+        print("===> reqeust payload = {}", request_payload)
         resp = self.session.post(self.rpc_url, json=request_payload)
+        print("===> response = {}", resp.json())
         assert_data = {
             'receivedResponse': resp.json(),
             'expectedResponse': expected_response

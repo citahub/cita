@@ -67,6 +67,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
     ) -> Result<ExecutedResult, ExecutionError> {
         let sender = *t.sender();
         let nonce = self.state_provider.borrow_mut().nonce(&sender)?;
+        trace!("transaction sender: {:?}, nonce: {:?}", sender, nonce);
         self.state_provider.borrow_mut().inc_nonce(&sender)?;
 
         trace!(
@@ -483,6 +484,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
     pub fn call_evm(&mut self, params: &VmExecParams) -> Result<ExecutedResult, ExecutionError> {
         let mut evm_transaction = build_evm_transaction(params);
+        trace!("block quota limit is {:?}", self.context.block_quota_limit);
         let mut evm_config = build_evm_config(self.context.block_quota_limit.as_u64());
         let evm_context = build_evm_context(&self.context);
 
