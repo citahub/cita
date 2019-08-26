@@ -265,7 +265,7 @@ impl ExecutedBlock {
                 };
 
                 if conf.economical_model == EconomicalModel::Charge {
-                // When charge model, set the min(account.balance,gas_used)
+                    // When charge model, set the min(account.balance,gas_used)
                     let _ = self.deal_err_quota_cost(
                         t.sender(),
                         &context.coin_base,
