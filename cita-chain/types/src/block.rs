@@ -28,7 +28,6 @@ use rlp::*;
 use std::ops::{Deref, DerefMut};
 
 use crate::transaction::SignedTransaction;
-use util::HeapSizeOf;
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct OpenBlock {
@@ -177,12 +176,6 @@ impl Decodable for BlockBody {
         };
 
         Ok(block_body)
-    }
-}
-
-impl HeapSizeOf for BlockBody {
-    fn heap_size_of_children(&self) -> usize {
-        self.transactions.heap_size_of_children()
     }
 }
 

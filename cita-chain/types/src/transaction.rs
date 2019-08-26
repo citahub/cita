@@ -30,7 +30,6 @@ use libproto::blockchain::{
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use util::HeapSizeOf;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Error {
@@ -163,12 +162,6 @@ pub struct Transaction {
     pub chain_id: U256,
     /// transaction version
     pub version: u32,
-}
-
-impl HeapSizeOf for Transaction {
-    fn heap_size_of_children(&self) -> usize {
-        self.data.heap_size_of_children()
-    }
 }
 
 impl Decodable for Transaction {
@@ -498,12 +491,6 @@ impl Encodable for SignedTransaction {
         s.append(&self.hash);
         //TODO: remove it
         s.append(&self.public);
-    }
-}
-
-impl HeapSizeOf for SignedTransaction {
-    fn heap_size_of_children(&self) -> usize {
-        self.transaction.heap_size_of_children()
     }
 }
 
