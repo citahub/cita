@@ -252,21 +252,21 @@ impl ExecutedBlock {
                 };
 
                 let schedule = TxGasSchedule::default();
+                // Bellow has a error, need gas*price before compare with balance
                 let tx_quota_used = match err {
                     ExecutionError::Internal(_) => t.gas,
                     _ => cmp::min(
                         self.state
                             .borrow_mut()
-                            .balance(t.sender())
-                            .unwrap_or_else(|_| U256::from(0))
-                            .checked_div(t.gas_price())
-                            .unwrap_or_else(U256::max_value),
+                            .balance(&t.sender())
+                            .unwrap_or_else(|_| U256::from(0)),
                         U256::from(schedule.tx_gas),
                     ),
                 };
 
                 if conf.economical_model == EconomicalModel::Charge {
-                    self.deal_err_quota_cost(
+                    // When charge model, set the min(account.balance,gas_used)
+                    let _ = self.deal_err_quota_cost(
                         t.sender(),
                         &context.coin_base,
                         tx_quota_used,
@@ -304,20 +304,29 @@ impl ExecutedBlock {
         coin_base: &Address,
         quota: U256,
         quota_price: U256,
-    ) {
-        let fee_value = quota * quota_price;
+    ) -> U256 {
+        if quota_price == U256::zero() {
+            return quota;
+        }
         let sender_balance = self.state.borrow_mut().balance(sender).unwrap();
-        trace!(
-            "fee value-{:?}, sender balance-{:?}",
-            fee_value,
-            sender_balance
-        );
-        let tx_fee = cmp::min(fee_value, sender_balance);
+        let tx_fee = quota * quota_price;
+        trace!("fee -{:?}, sender balance-{:?}", tx_fee, sender_balance);
+        let real_fee = cmp::min(sender_balance, tx_fee);
 
-        if self.state.borrow_mut().sub_balance(sender, tx_fee).is_err() {
-            error!("Sub balance failed. tx_fee: {:?}", tx_fee);
+        if self
+            .state
+            .borrow_mut()
+            .sub_balance(sender, real_fee)
+            .is_err()
+        {
+            error!("Sub balance failed. tx_fee: {:?}", real_fee);
         } else {
-            let _ = self.state.borrow_mut().add_balance(&coin_base, tx_fee);
+            let _ = self.state.borrow_mut().add_balance(&coin_base, real_fee);
+        }
+        if real_fee == sender_balance {
+            sender_balance.checked_div(quota_price).unwrap()
+        } else {
+            quota
         }
     }
 
