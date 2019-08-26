@@ -417,9 +417,9 @@ workflows:
 
       # - "Check Contracts"
 
-      - "Test Coverage":
-          requires:
-          - "Check Basic"
+      # - "Test Coverage":
+      #     requires:
+      #     - "Check Basic"
 
       - "Check Clippy":
           requires:
