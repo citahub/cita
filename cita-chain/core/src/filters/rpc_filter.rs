@@ -66,7 +66,12 @@ impl RpcFilter for Chain {
     fn new_filter(&self, filter: Filter) -> usize {
         let filterdb = self.filter_db();
         let id = filterdb.try_lock().unwrap().gen_id();
+        let block_number = self.get_current_height();
         filterdb.try_lock().unwrap().gen_logs_filter(id, filter);
+        filterdb
+            .try_lock()
+            .unwrap()
+            .gen_block_filter(id, block_number);
         drop(filterdb);
         id
     }
