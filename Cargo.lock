@@ -3313,6 +3313,27 @@ version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "state-test"
+version = "0.1.0"
+dependencies = [
+ "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
+ "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
+ "cita-vm 0.2.1 (git+https://github.com/cryptape/cita-vm.git?branch=cita)",
+ "cita_trie 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "core-executor 0.1.0",
+ "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum-types 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
+ "libsecp256k1 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tiny-keccak 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "static_assertions"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"

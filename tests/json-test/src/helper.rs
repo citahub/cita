@@ -2,8 +2,8 @@
 // use core_executor::db;
 // use core_executor::state::State;
 // use core_executor::state_db::StateDB;
+use cita_types::{Address, H256, U256};
 use ethereum_types::Public;
-use evm::cita_types::{Address, H256, U256};
 // use std::sync::Arc;
 
 pub fn clean_0x(s: &str) -> &str {
