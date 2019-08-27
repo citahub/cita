@@ -112,12 +112,14 @@ impl FilterDB {
     /// Uninstall the filter id
     pub fn uninstall(&mut self, id: usize) -> bool {
         self.prune();
-        // Remove logs first. casue logs filter includes the block filter.
-        if self.is_logs_filter(id) {
-            self.logs_filter.remove(id);
-            true
-        } else if self.is_block_filter(id) {
+        // Logs filter includes the block filter.
+        // Remove block filter if is filter.
+        if self.is_filter(id) {
             self.block_filter.remove(id);
+            if self.is_logs_filter(id) {
+                self.logs_filter.remove(id);
+            }
+
             true
         } else {
             false
