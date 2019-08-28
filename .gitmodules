@@ -25,4 +25,4 @@
 [submodule "tests/jsondata"]
 	path = tests/jsondata
 	url = https://github.com/cryptape/cita-testdata.git
-	branch = master
+	branch = fix_state_test_price_case 
