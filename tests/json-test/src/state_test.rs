@@ -239,7 +239,7 @@ mod tests {
                 test_json_path(r"../jsondata/GeneralStateTests/stTransitionTest");
                 test_json_path(r"../jsondata/GeneralStateTests/stZeroCallsTest");
                 test_json_path(r"../jsondata/GeneralStateTests/stBugs");
-                test_json_path(r"../jsondata/GeneralStateTests/stBadOpcode");
+                //test_json_path(r"../jsondata/GeneralStateTests/stBadOpcode");
                 test_json_path(r"../jsondata/GeneralStateTests/stWalletTest");
                 test_json_path(r"../jsondata/GeneralStateTests/stNonZeroCallsTest");
                 test_json_path(r"../jsondata/GeneralStateTests/stCallDelegateCodesHomestead");
