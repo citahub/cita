@@ -49,18 +49,3 @@ pub fn secret_2_address(secret: &str) -> Address {
     public.copy_from_slice(&serialized[1..65]);
     public_2_address(&public)
 }
-
-// pub fn get_temp_state() -> State<StateDB> {
-//     let state_db = get_temp_state_db();
-//     State::new(state_db, Default::default())
-// }
-//
-// pub fn new_db() -> Arc<KeyValueDB> {
-//     Arc::new(kvdb::in_memory(8))
-// }
-//
-// pub fn get_temp_state_db() -> StateDB {
-//     let db = new_db();
-//     let journal_db = journaldb::new(db, journaldb::Algorithm::Archive, db::COL_STATE);
-//     StateDB::new(journal_db, 5 * 1024 * 1024)
-// }
