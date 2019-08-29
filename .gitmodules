@@ -25,4 +25,4 @@
 [submodule "tests/jsondata"]
 	path = tests/jsondata
 	url = https://github.com/cryptape/cita-testdata.git
-	branch = master 
+	branch = master
