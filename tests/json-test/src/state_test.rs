@@ -1,4 +1,3 @@
-
 use crate::helper::{secret_2_address, string_2_bytes, string_2_h256, string_2_u256};
 use crate::json::state::Test;
 
@@ -64,7 +63,7 @@ pub fn test_json_file(p: &str) {
 
             let mut evm_context = Context::default();
             evm_context.block_quota_limit = string_2_u256(str_block_gas.clone());
-            evm_context.coin_base = data.env.current_coinbase.clone();
+            evm_context.coin_base = data.env.current_coinbase();
             evm_context.block_number = string_2_u256(data.env.current_number.clone()).low_u64();
             evm_context.timestamp = string_2_u256(data.env.current_timestamp.clone()).low_u64();
             evm_context.difficulty = string_2_u256(data.env.current_difficulty.clone());
@@ -105,7 +104,7 @@ pub fn test_json_file(p: &str) {
             let tx = Transaction::create(&proto_tx).unwrap();
             let sender = secret_2_address(&data.transaction.secret_key);
             let mut signed_transaction = tx.clone().fake_sign(sender);
-            signed_transaction.gas_price = config.quota_price.clone();
+            signed_transaction.gas_price = config.quota_price;
 
             let exec_result = exepinst.exec(&signed_transaction, &config);
             match exec_result {
