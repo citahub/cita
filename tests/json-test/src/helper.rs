@@ -1,10 +1,5 @@
-// use core_executor::cita_db::{journaldb, kvdb, KeyValueDB};
-// use core_executor::db;
-// use core_executor::state::State;
-// use core_executor::state_db::StateDB;
 use cita_types::{Address, H256, U256};
 use ethereum_types::Public;
-// use std::sync::Arc;
 
 pub fn clean_0x(s: &str) -> &str {
     if s.starts_with("0x") {
