@@ -63,7 +63,7 @@ pub fn test_json_file(p: &str) {
 
             let mut evm_context = Context::default();
             evm_context.block_quota_limit = string_2_u256(str_block_gas.clone());
-            evm_context.coin_base = data.env.current_coinbase();
+            evm_context.coin_base = data.env.current_coinbase;
             evm_context.block_number = string_2_u256(data.env.current_number.clone()).low_u64();
             evm_context.timestamp = string_2_u256(data.env.current_timestamp.clone()).low_u64();
             evm_context.difficulty = string_2_u256(data.env.current_difficulty.clone());
