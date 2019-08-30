@@ -1,4 +1,4 @@
-use evm::cita_types::Address;
+use cita_types::Address;
 use serde_derive::Deserialize;
 use std::collections::BTreeMap;
 use std::io::Read;

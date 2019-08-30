@@ -196,7 +196,6 @@ pub fn generate_block_header() -> OpenHeader {
 
 pub fn generate_block_body() -> BlockBody {
     let mut stx = SignedTransaction::default();
-    use crate::types::transaction::SignedTransaction;
     stx.data = vec![1; 200];
     let transactions = vec![stx; 200];
     BlockBody { transactions }

@@ -4,4 +4,3 @@
 pub mod helper;
 pub mod json;
 pub mod state_test;
-pub mod vm_test;
