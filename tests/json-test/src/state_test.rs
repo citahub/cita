@@ -69,11 +69,6 @@ pub fn test_json_file(p: &str) {
             evm_context.quota_used = U256::zero();
             evm_context.last_hashes = Arc::new(vec![string_2_h256(str_prev_hash)]);
 
-            /*let mut cfg = Config::default();
-            cfg.check_balance = true;
-            cfg.check_nonce = false;
-            cfg.block_gas_limit = string_2_u256(str_block_gas.clone()).low_u64();*/
-
             let block_data_provider = EVMBlockDataProvider::new(evm_context.clone());
             let native_factory = NativeFactory::default();
             let mut exepinst = CitaExecutive::new(
