@@ -9,12 +9,12 @@ use core_executor::types::{context::Context, transaction::Transaction}; //,Actio
 
 use core_executor::types::errors::ExecutionError;
 
+use cita_types::U256;
+use cita_vm::state::{State, StateObjectInfo};
 use core_executor::tx_gas_schedule::TxGasSchedule;
 use libproto::blockchain::Transaction as ProtoTransaction;
 use std::fs;
 use std::sync::Arc;
-use cita_types::U256;
-use cita_vm::state::{State, StateObjectInfo};
 
 pub fn test_json_file(p: &str) {
     let f = fs::File::open(p).unwrap();
