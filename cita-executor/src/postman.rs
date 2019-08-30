@@ -369,7 +369,7 @@ impl Postman {
             .receipts
             .iter()
             .filter(|ref receipt| match receipt.error {
-                Some(ReceiptError::NotEnoughBaseQuota) => true,
+                Some(ReceiptError::NotEnoughCash) => true,
                 _ => false,
             })
             .map(|receipt| receipt.transaction_hash)
