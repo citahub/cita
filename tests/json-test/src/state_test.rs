@@ -13,7 +13,6 @@ use core_executor::tx_gas_schedule::TxGasSchedule;
 use libproto::blockchain::Transaction as ProtoTransaction;
 use std::fs;
 use std::sync::Arc;
-//use cita_crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
 use cita_types::U256;
 use cita_vm::state::{State, StateObjectInfo};
 
@@ -138,7 +137,6 @@ pub fn test_json_file(p: &str) {
                     }
                 }
             }
-            //println!("{:?}",exec_result);
             state_provider.borrow_mut().commit().unwrap();
             assert_eq!(
                 state_provider.borrow().root,
