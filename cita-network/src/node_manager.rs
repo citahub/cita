@@ -286,6 +286,8 @@ impl NodesManager {
         }
     }
 
+    // clippy
+    #[allow(clippy::drop_copy, clippy::zero_ptr)]
     pub fn run(&mut self) {
         loop {
             select! {
