@@ -84,7 +84,7 @@ CITA 目前仍在紧张的开发中，欢迎大家为 CITA 贡献自己的一份
 
 ## 开源协议
 
-GPLv3 license
+Apache 2.0 license
 
 ## 权益归属
 
