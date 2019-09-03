@@ -11,11 +11,11 @@ tentacle = "0.2.3"
 tokio = "0.1.14"
 futures = "0.1.25"
 cita-logger = "0.1.0"
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 serde = "1.0.84"
 serde_json = "1.0"
 serde_derive = "1.0.84"
@@ -31,7 +31,7 @@ notify = "4.0.10"
 tempfile = "3.0.5"
 
 [build-dependencies]
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]

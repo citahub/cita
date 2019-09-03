@@ -16,11 +16,11 @@ tiny-keccak = "1.4.2"
 env_logger = "0.6.1"
 log = "0.4.0"
 
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 core-executor = { path="../../cita-executor/core"}
 cita-vm = { git = "https://github.com/cryptape/cita-vm.git", branch = "cita" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita_trie = "2.0"
 
 [features]

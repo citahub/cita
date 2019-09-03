@@ -11,20 +11,20 @@ dotenv = "0.13.0"
 clap = "2"
 serde_json = "1.0"
 cita-logger = "0.1.0"
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-error = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 core = { path = "./core" }
 common-types = { path = "./types" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita_db = { git = "https://github.com/cryptape/cita-database.git", branch = "develop", package = "cita-database" }
 
 [build-dependencies]
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
