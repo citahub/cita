@@ -36,23 +36,23 @@ tiny-keccak = { version="1.4", optional=true }
 
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
-cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 zktx = { git = "https://github.com/cryptape/zktx.git", optional = true }
 cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
 cita-vm = { git = "https://github.com/cryptape/cita-vm.git", branch = "cita" }
 
-cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-cita-crypto-trait = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-crypto-trait = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [dev-dependencies]
 rand = "0.3"

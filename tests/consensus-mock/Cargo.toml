@@ -10,13 +10,13 @@ serde = "1.0"
 serde_derive = "1.0"
 bincode = "0.8.0"
 cita-logger = "0.1.0"
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 clap = "2"
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 chrono = "0.4.2"
 
 [features]

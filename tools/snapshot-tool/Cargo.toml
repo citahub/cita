@@ -10,10 +10,10 @@ dotenv = "0.13.0"
 clap = "2"
 fs2 = "0.4.3"
 cita-logger = "0.1.0"
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
-error =  { git = "https://github.com/cryptape/cita-common.git", branch = "remove-gpl" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+error =  { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
