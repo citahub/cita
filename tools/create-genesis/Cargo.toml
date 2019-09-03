@@ -19,6 +19,11 @@ clap = "2.33.0"
 cita_trie = "2.0"
 
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-vm = { git = "https://github.com/cryptape/cita-vm.git", branch = "cita" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+
+[dependencies.cita-vm]
+git = "https://github.com/cryptape/cita-vm.git"
+branch = "cita"
+default-features = false
+features = ["sha3hash"]
 

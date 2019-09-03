@@ -27,7 +27,6 @@ error =  { git = "https://github.com/cryptape/cita-common.git", branch = "develo
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
-cita-vm = { git = "https://github.com/cryptape/cita-vm.git", branch = "cita" }
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -37,6 +36,12 @@ bincode = "0.8.0"
 cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 tempdir = "0.3.7"
+
+[dependencies.cita-vm]
+git = "https://github.com/cryptape/cita-vm.git"
+branch = "cita"
+default-features = false 
+features = ["sha3hash"]
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
