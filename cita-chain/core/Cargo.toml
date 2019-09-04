@@ -13,7 +13,7 @@ rustc-hex = "1.0"
 lazy_static = "0.2"
 time = "0.1"
 crossbeam = "0.2"
-cita-logger = "0.1.0"
+cita-logger = "0.1.1"
 common-types = { path = "../types" }
 
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -34,7 +34,6 @@ pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develo
 rand = "0.3"
 cpuprofiler = "0.0.3"
 tempdir = "0.3.7"
-cita-logger = "0.1.0"
 
 [features]
 default = ["secp256k1", "sha3hash"]

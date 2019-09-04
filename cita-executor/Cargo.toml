@@ -12,7 +12,7 @@ serde = "1.0"
 crossbeam-channel = "0.2"
 serde_json = "1.0"
 serde_derive = "1.0"
-cita-logger = "0.1.0"
+cita-logger = "0.1.1"
 itertools = "0.5"
 
 core-executor = { path = "./core" }
@@ -40,7 +40,7 @@ tempdir = "0.3.7"
 [dependencies.cita-vm]
 git = "https://github.com/cryptape/cita-vm.git"
 branch = "cita"
-default-features = false 
+default-features = false
 features = ["sha3hash"]
 
 [features]
