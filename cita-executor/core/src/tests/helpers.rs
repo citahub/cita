@@ -1,42 +1,20 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyrighttape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 extern crate rustc_serialize;
 extern crate tempdir;
 
-use self::rustc_serialize::hex::FromHex;
-use self::tempdir::TempDir;
-use crate::cita_db::kvdb::{self, Database, DatabaseConfig};
-use crate::cita_db::KeyValueDB;
-use crate::db;
-use crate::journaldb;
-use crate::libexecutor::block::{BlockBody, ClosedBlock, OpenBlock};
-use crate::libexecutor::command;
-use crate::libexecutor::executor::Executor;
-use crate::state::State;
-use crate::state_db::*;
-use crate::types::header::OpenHeader;
-use crate::types::transaction::SignedTransaction;
-use cita_crypto::PrivKey;
-use cita_types::traits::LowerHex;
-use cita_types::{Address, U256};
-use core::libchain::chain;
-use crossbeam_channel::{Receiver, Sender};
-use libproto::blockchain;
 use std::env;
 use std::fs::File;
 use std::io::Read;
@@ -45,24 +23,29 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
 use std::time::UNIX_EPOCH;
+
+use self::rustc_serialize::hex::FromHex;
+use self::tempdir::TempDir;
+
+use crate::libexecutor::block::{BlockBody, ClosedBlock, OpenBlock};
+use crate::libexecutor::command;
+use crate::libexecutor::executor::Executor;
+use crate::types::header::OpenHeader;
+use crate::types::transaction::SignedTransaction;
+
+use cita_crypto::PrivKey;
+use cita_types::traits::LowerHex;
+use cita_types::{Address, U256};
+use cita_vm::{state::MemoryDB, state::State};
+use crossbeam_channel::{Receiver, Sender};
+use libproto::blockchain;
 use util::AsMillis;
 
-const CHAIN_CONFIG: &str = "chain.toml";
 const SCRIPTS_DIR: &str = "../../scripts";
 
-pub fn get_temp_state() -> State<StateDB> {
-    let state_db = get_temp_state_db();
-    State::new(state_db, 0.into(), Default::default())
-}
-
-fn new_db() -> Arc<KeyValueDB> {
-    Arc::new(kvdb::in_memory(8))
-}
-
-pub fn get_temp_state_db() -> StateDB {
-    let db = new_db();
-    let journal_db = journaldb::new(db, journaldb::Algorithm::Archive, crate::db::COL_STATE);
-    StateDB::new(journal_db, 5 * 1024 * 1024)
+pub fn get_temp_state() -> State<MemoryDB> {
+    let db = Arc::new(MemoryDB::new(false));
+    State::new(db).unwrap()
 }
 
 pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {
@@ -133,8 +116,6 @@ pub fn init_executor2(
     env::set_var("DATA_PATH", data_path);
     let executor = Executor::init(
         genesis_path.to_str().unwrap(),
-        "archive",
-        5 * 1024 * 1024,
         tempdir.to_str().unwrap().to_string(),
         fsm_req_receiver,
         fsm_resp_sender,
@@ -143,14 +124,6 @@ pub fn init_executor2(
         false,
     );
     executor
-}
-
-pub fn init_chain() -> Arc<chain::Chain> {
-    let tempdir = TempDir::new("solc_output").unwrap().into_path();
-    let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-    let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
-    let chain_config = chain::Config::new(CHAIN_CONFIG);
-    Arc::new(chain::Chain::init_chain(Arc::new(db), &chain_config))
 }
 
 pub fn create_block(
@@ -220,7 +193,6 @@ pub fn generate_block_header() -> OpenHeader {
 
 pub fn generate_block_body() -> BlockBody {
     let mut stx = SignedTransaction::default();
-    use crate::types::transaction::SignedTransaction;
     stx.data = vec![1; 200];
     let transactions = vec![stx; 200];
     BlockBody { transactions }

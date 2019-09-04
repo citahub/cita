@@ -1,25 +1,23 @@
-// CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+use super::Bytes;
+use crate::block_number::BlockNumber;
 use crate::crypto::{
     pubkey_to_address, PubKey, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN,
 };
 use crate::reserved_addresses::{ABI_ADDRESS, AMEND_ADDRESS, STORE_ADDRESS};
-use crate::BlockNumber;
 use cita_types::traits::LowerHex;
 use cita_types::{clean_0x, Address, H256, U256};
 use libproto::blockchain::{
@@ -29,7 +27,6 @@ use libproto::blockchain::{
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use util::{Bytes, HeapSizeOf};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Error {
@@ -162,12 +159,6 @@ pub struct Transaction {
     pub chain_id: U256,
     /// transaction version
     pub version: u32,
-}
-
-impl HeapSizeOf for Transaction {
-    fn heap_size_of_children(&self) -> usize {
-        self.data.heap_size_of_children()
-    }
 }
 
 impl Decodable for Transaction {
@@ -497,12 +488,6 @@ impl Encodable for SignedTransaction {
         s.append(&self.hash);
         //TODO: remove it
         s.append(&self.public);
-    }
-}
-
-impl HeapSizeOf for SignedTransaction {
-    fn heap_size_of_children(&self) -> usize {
-        self.transaction.heap_size_of_children()
     }
 }
 

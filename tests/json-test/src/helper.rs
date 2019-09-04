@@ -1,10 +1,19 @@
-use core_executor::cita_db::{journaldb, kvdb, KeyValueDB};
-use core_executor::db;
-use core_executor::state::State;
-use core_executor::state_db::StateDB;
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use cita_types::{Address, H256, U256};
 use ethereum_types::Public;
-use evm::cita_types::{Address, H256, U256};
-use std::sync::Arc;
 
 pub fn clean_0x(s: &str) -> &str {
     if s.starts_with("0x") {
@@ -53,19 +62,4 @@ pub fn secret_2_address(secret: &str) -> Address {
     let mut public = Public::default();
     public.copy_from_slice(&serialized[1..65]);
     public_2_address(&public)
-}
-
-pub fn get_temp_state() -> State<StateDB> {
-    let state_db = get_temp_state_db();
-    State::new(state_db, 0.into(), Default::default())
-}
-
-pub fn new_db() -> Arc<KeyValueDB> {
-    Arc::new(kvdb::in_memory(8))
-}
-
-pub fn get_temp_state_db() -> StateDB {
-    let db = new_db();
-    let journal_db = journaldb::new(db, journaldb::Algorithm::Archive, db::COL_STATE);
-    StateDB::new(journal_db, 5 * 1024 * 1024)
 }

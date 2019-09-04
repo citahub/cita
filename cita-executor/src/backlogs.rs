@@ -1,23 +1,20 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use super::core::libexecutor::block::{ClosedBlock, OpenBlock};
-use crate::cita_db::Itertools;
 use cita_types::Address;
+use itertools::Itertools;
 use libproto::{ExecutedResult, Proof};
 use std::cmp::min;
 use std::collections::BTreeMap;
@@ -414,12 +411,11 @@ pub fn wrap_height(height: usize) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::{wrap_height, Backlog, Backlogs, Priority};
-    use crate::cita_db::journaldb;
-    use crate::cita_db::kvdb::{in_memory, KeyValueDB};
     use crate::core::header::OpenHeader;
     use crate::core::libexecutor::block::{BlockBody, ClosedBlock, ExecutedBlock, OpenBlock};
     use crate::core::libexecutor::sys_config::BlockSysConfig;
-    use crate::core::state_db::StateDB;
+    use crate::core::TrieDB;
+    use cita_database::{Config, RocksDB, NUM_COLUMNS};
     use hashable::HASH_NULL_RLP;
     use std::sync::Arc;
 
@@ -456,12 +452,12 @@ mod tests {
         libproto::ExecutedResult::new()
     }
 
-    fn generate_state_db() -> StateDB {
-        let database = in_memory(7);
-        let database: Arc<KeyValueDB> = Arc::new(database);
-        let journaldb_type = journaldb::Algorithm::Archive;
-        let journal_db = journaldb::new(Arc::clone(&database), journaldb_type, None);
-        StateDB::new(journal_db, 5 * 1024 * 1024)
+    // TODO Use MemoryDB instead of RocksDB.
+    fn generate_state_db(path: &str) -> TrieDB<RocksDB> {
+        let config = Config::with_category_num(NUM_COLUMNS);
+        let rocks_db = RocksDB::open(path, &config).unwrap();
+        let db = Arc::new(rocks_db);
+        TrieDB::new(db.clone())
     }
 
     fn get_open_block(backlogs: &Backlogs, height: u64) -> Option<&OpenBlock> {
@@ -476,12 +472,12 @@ mod tests {
         assert_eq!(false, Backlog::default().is_completed());
     }
 
-    fn generate_closed_block(open_block: OpenBlock) -> ClosedBlock {
-        let state_db = generate_state_db();
+    fn generate_closed_block(open_block: OpenBlock, path: &str) -> ClosedBlock {
+        let db = generate_state_db(path);
+        let state_db = Arc::new(db);
+
         let exec_block = ExecutedBlock::create(
-            Default::default(),
             &BlockSysConfig::default(),
-            false,
             open_block.clone(),
             state_db,
             HASH_NULL_RLP,
@@ -495,19 +491,21 @@ mod tests {
     #[test]
     fn test_backlog_is_completed_with_none() {
         let height = 9;
+        let path = "test-rocksdb/backlog_is_completed_with_none";
+
         {
             let backlog = Backlog {
                 priority: Some(Priority::BlockWithProof),
                 open_block: None,
                 proof: Some(generate_proof(height - 1)),
-                closed_block: Some(generate_closed_block(generate_block(height))),
+                closed_block: Some(generate_closed_block(generate_block(height), path)),
             };
             assert_eq!(false, backlog.is_completed(), "block is none");
         }
 
         {
             let block = generate_block(height);
-            let closed_block = generate_closed_block(block.clone());
+            let closed_block = generate_closed_block(block.clone(), path);
             let backlog = Backlog {
                 priority: Some(Priority::BlockWithProof),
                 open_block: Some(block),
@@ -534,7 +532,8 @@ mod tests {
         let height = 9;
         {
             let mut block = generate_block(height);
-            let closed_block = generate_closed_block(block.clone());
+            let path = "test-rocksdb/is_completed_with_unequal_block";
+            let closed_block = generate_closed_block(block.clone(), path);
             block.header.set_timestamp(1);
             let backlog = Backlog {
                 priority: Some(Priority::BlockWithProof),
@@ -551,7 +550,8 @@ mod tests {
 
         {
             let block = generate_block(height);
-            let closed_block = generate_closed_block(block.clone());
+            let path = "test-rocksdb/is_completed_with_unequal_block";
+            let closed_block = generate_closed_block(block.clone(), path);
             let backlog = Backlog {
                 priority: Some(Priority::BlockWithProof),
                 open_block: Some(block),
@@ -567,7 +567,8 @@ mod tests {
     fn test_complete_but_is_completed_false() {
         let height = 9;
         let open_block = generate_block(height);
-        let closed_block = generate_closed_block(open_block.clone());
+        let path = "test-rocksdb/complete_but_is_false";
+        let closed_block = generate_closed_block(open_block.clone(), path);
 
         let backlog = Backlog {
             priority: Some(Priority::BlockWithProof),
@@ -585,7 +586,8 @@ mod tests {
     fn test_complete_normal() {
         let height = 9;
         let open_block = generate_block(height);
-        let closed_block = generate_closed_block(open_block.clone());
+        let path = "test-rocksdb/complete_normal";
+        let closed_block = generate_closed_block(open_block.clone(), path);
 
         let backlog = Backlog {
             priority: Some(Priority::BlockWithProof),
@@ -600,7 +602,8 @@ mod tests {
     #[test]
     fn test_backlogs_whole_flow() {
         let open_block = generate_block(2);
-        let closed_block = generate_closed_block(open_block.clone());
+        let path = "test-rocksdb/backlog_whole_flow";
+        let closed_block = generate_closed_block(open_block.clone(), path);
 
         // insert height 2 should be always failed
         let mut backlogs = Backlogs::new(2, Default::default());
@@ -625,7 +628,8 @@ mod tests {
 
         // insert height 3 should be ok
         let open_block = generate_block(3);
-        let closed_block = generate_closed_block(open_block.clone());
+        let path = "test-rocksdb/backlog_whole_flow";
+        let closed_block = generate_closed_block(open_block.clone(), path);
         assert_eq!(
             true,
             backlogs.insert_open(

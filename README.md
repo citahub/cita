@@ -64,9 +64,7 @@ Please check [CONTRIBUTING](.github/CONTRIBUTING.md) for more details.
 
 ## License
 
-CITA is currently under the GPLv3 license. See the LICENSE file for details.
-
-**CITA will move to Apache 2.0 license soon.**
+CITA is currently under Apache 2.0 license. See the LICENSE file for details.
 
 ## Credits
 

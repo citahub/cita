@@ -1,23 +1,20 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use crate::header::{Header, OpenHeader};
 
-use crate::extras::TransactionAddress;
+use crate::transaction_index::TransactionIndex;
 use cita_types::H256;
 use std::collections::HashMap;
 
@@ -28,7 +25,6 @@ use rlp::*;
 use std::ops::{Deref, DerefMut};
 
 use crate::transaction::SignedTransaction;
-use util::HeapSizeOf;
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct OpenBlock {
@@ -158,15 +154,25 @@ impl Block {
 }
 
 /// body of block.
-#[derive(Default, Debug, Clone, PartialEq, RlpEncodableWrapper, RlpDecodableWrapper)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct BlockBody {
     /// The transactions in this body.
     pub transactions: Vec<SignedTransaction>,
 }
 
-impl HeapSizeOf for BlockBody {
-    fn heap_size_of_children(&self) -> usize {
-        self.transactions.heap_size_of_children()
+impl Encodable for BlockBody {
+    fn rlp_append(&self, s: &mut rlp::RlpStream) {
+        s.append_list(&self.transactions);
+    }
+}
+
+impl Decodable for BlockBody {
+    fn decode(r: &UntrustedRlp) -> Result<Self, DecoderError> {
+        let block_body = BlockBody {
+            transactions: r.as_list()?,
+        };
+
+        Ok(block_body)
     }
 }
 
@@ -206,19 +212,19 @@ impl BlockBody {
         self.transactions().iter().map(|ts| ts.hash()).collect()
     }
 
-    pub fn transaction_addresses(&self, hash: H256) -> HashMap<H256, TransactionAddress> {
+    pub fn transaction_indexes(&self, hash: H256) -> HashMap<H256, TransactionIndex> {
         let tx_hashs = self.transaction_hashes();
-        // Create TransactionAddress
-        let mut transactions = HashMap::new();
+        // Create TransactionIndex
+        let mut tx_indexes = HashMap::new();
         for (i, tx_hash) in tx_hashs.into_iter().enumerate() {
-            let address = TransactionAddress {
+            let index = TransactionIndex {
                 block_hash: hash,
                 index: i,
             };
-            transactions.insert(tx_hash, address);
+            tx_indexes.insert(tx_hash, index);
         }
 
-        trace!("closed block transactions {:?}", transactions);
-        transactions
+        trace!("closed block transactions {:?}", tx_indexes);
+        tx_indexes
     }
 }

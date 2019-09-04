@@ -1,19 +1,16 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! ## Summary
 //! One of cita's main core components is to execute transaction,
@@ -87,7 +84,7 @@ extern crate common_types as types;
 extern crate core_executor as core;
 #[macro_use]
 extern crate crossbeam_channel;
-extern crate db as cita_db;
+extern crate cita_database as cita_db;
 #[cfg(test)]
 extern crate hashable;
 #[macro_use]
@@ -111,7 +108,6 @@ use util::set_panic_handler;
 
 mod backlogs;
 mod postman;
-mod snapshot;
 #[cfg(test)]
 mod tests;
 
@@ -208,8 +204,6 @@ fn main() {
         let data_path = DataPath::root_node_path();
         let mut executor = Executor::init(
             &options.genesis_path,
-            &options.journaldb_type,
-            options.statedb_cache_size,
             data_path,
             fsm_req_receiver.clone(),
             fsm_resp_sender.clone(),

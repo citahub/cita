@@ -1,22 +1,18 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-use chain_core::db;
-use cita_db::kvdb::{Database, DatabaseConfig, KeyValueDB};
+use cita_database::{Config, Database, RocksDB, NUM_COLUMNS};
 use cita_directories::DataPath;
 use cita_types::H256;
 use libproto::blockchain::SignedTransaction;
@@ -27,63 +23,71 @@ use std::sync::Arc;
 /// used to persist transaction pools message
 #[derive(Clone)]
 pub struct TxWal {
-    db: Arc<KeyValueDB>,
+    db: Arc<Database>,
 }
 
 impl TxWal {
     pub fn new(path: &str) -> Self {
         let nosql_path = DataPath::root_node_path() + path;
-        // TODO: Can remove db::NUM_COLUMNS
-        let config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-        let db = Database::open(&config, &nosql_path).unwrap();
+        // TODO: Can remove NUM_COLUMNS(useless)
+        let config = Config::with_category_num(NUM_COLUMNS);
+        let db = RocksDB::open(&nosql_path, &config).unwrap();
         TxWal { db: Arc::new(db) }
     }
 
     pub fn regenerate(&mut self, path: &str) {
         let nosql_path = DataPath::root_node_path() + path;
-        let _ = self.db.restore(&nosql_path);
+        let _ = Arc::get_mut(&mut self.db).unwrap().restore(&nosql_path);
     }
 
     pub fn write(&self, tx: &SignedTransaction) {
-        let mut batch = self.db.transaction();
+        // TODO Fix the block_binary. tx_binary?
         let block_binary: Vec<u8> = tx.try_into().unwrap();
-        batch.put_vec(None, tx.get_tx_hash(), block_binary);
-        self.db.write(batch).expect("insert tx");
+        self.db
+            .insert(None, tx.get_tx_hash().to_vec(), block_binary)
+            .expect("insert tx");
     }
 
     pub fn write_batch(&self, txs: &[SignedTransaction]) {
-        let mut batch = self.db.transaction();
+        let mut values: Vec<Vec<u8>> = Vec::new();
+        let mut keys: Vec<Vec<u8>> = Vec::new();
         for tx in txs {
             let block_binary: Vec<u8> = tx.try_into().unwrap();
-            batch.put_vec(None, tx.get_tx_hash(), block_binary);
+            values.push(block_binary);
+            keys.push(tx.get_tx_hash().to_vec());
         }
-        self.db.write(batch).expect("insert batch txs");
+        self.db
+            .insert_batch(None, keys, values)
+            .expect("insert batch txs");
     }
 
     pub fn delete_with_hash(&mut self, tx_hash: &H256) {
-        let mut batch = self.db.transaction();
-        batch.delete(None, tx_hash);
-        self.db.write(batch).expect("delete with hash");
+        self.db.remove(None, tx_hash).expect("delete with hash");
     }
 
     pub fn delete_with_hashes(&mut self, tx_hashes: &[H256]) {
-        let mut batch = self.db.transaction();
+        let mut keys: Vec<Vec<u8>> = Vec::new();
         for tx_hash in tx_hashes {
-            batch.delete(None, tx_hash);
+            keys.push(tx_hash.to_vec());
         }
-        self.db.write(batch).expect("delete with hashes");
+        self.db
+            .remove_batch(None, &keys)
+            .expect("delete with hashes");
     }
 
     pub fn read_all(&self) -> Vec<SignedTransaction> {
-        let items = self.db.iter(None);
+        // TODO fix the unwrap
+        let items = self.db.iterator(None).unwrap();
+
         items
             .map(|item| SignedTransaction::try_from(item.1.as_ref()).unwrap())
             .collect()
     }
 
     pub fn get(&self, tx_hash: &[u8]) -> Option<SignedTransaction> {
+        // TODO fix the unwrap
         let result = self.db.get(None, tx_hash).unwrap();
-        result.map(|item| SignedTransaction::try_from(item.as_ref()).unwrap())
+        result.map(|item| SignedTransaction::try_from(&item).unwrap())
     }
 }
 
@@ -97,8 +101,8 @@ mod tests {
 
     fn tx_wal() -> TxWal {
         let tempdir = TempDir::new("").unwrap().into_path();
-        let config = DatabaseConfig::with_columns(None);
-        let db = Database::open(&config, &tempdir.to_str().unwrap()).unwrap();
+        let config = Config::with_category_num(None);
+        let db = RocksDB::open(&tempdir.to_str().unwrap(), &config).unwrap();
         TxWal { db: Arc::new(db) }
     }
 

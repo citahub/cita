@@ -1,29 +1,29 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! User management.
 
 use super::ContractCallExt;
-use crate::contracts::tools::{decode as decode_tools, method as method_tools};
-use crate::libexecutor::executor::Executor;
-use crate::types::ids::BlockId;
-use crate::types::reserved_addresses;
-use cita_types::{Address, H160};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::executor::Executor;
+use crate::types::block_number::BlockTag;
+use crate::types::reserved_addresses;
+
+use cita_types::{Address, H160};
 
 const ALLGROUPS: &[u8] = &*b"queryGroups()";
 const ACCOUNTS: &[u8] = &*b"queryAccounts()";
@@ -44,16 +44,16 @@ impl<'a> UserManagement<'a> {
         UserManagement { executor }
     }
 
-    pub fn load_group_accounts(&self, block_id: BlockId) -> HashMap<Address, Vec<Address>> {
+    pub fn load_group_accounts(&self, block_tag: BlockTag) -> HashMap<Address, Vec<Address>> {
         let mut group_accounts = HashMap::new();
         let groups = self
-            .all_groups(block_id)
+            .all_groups(block_tag)
             .unwrap_or_else(Self::default_all_groups);
 
         trace!("ALl groups: {:?}", groups);
         for group in groups {
             let accounts = self
-                .accounts(&group, block_id)
+                .accounts(&group, block_tag)
                 .unwrap_or_else(Self::default_accounts);
             trace!("ALl accounts for group {}: {:?}", group, accounts);
             group_accounts.insert(group, accounts);
@@ -63,13 +63,13 @@ impl<'a> UserManagement<'a> {
     }
 
     /// Group array
-    pub fn all_groups(&self, block_id: BlockId) -> Option<Vec<Address>> {
+    pub fn all_groups(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*ALLGROUPS_HASH.as_slice(),
                 None,
-                block_id,
+                block_tag,
             )
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
@@ -81,9 +81,9 @@ impl<'a> UserManagement<'a> {
     }
 
     /// Accounts array
-    pub fn accounts(&self, address: &Address, block_id: BlockId) -> Option<Vec<Address>> {
+    pub fn accounts(&self, address: &Address, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.executor
-            .call_method(address, &ACCOUNTS_HASH.as_slice(), None, block_id)
+            .call_method(address, &ACCOUNTS_HASH.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
@@ -100,7 +100,7 @@ mod tests {
 
     use super::UserManagement;
     use crate::tests::helpers::init_executor;
-    use crate::types::ids::BlockId;
+    use crate::types::block_number::{BlockTag, Tag};
     use crate::types::reserved_addresses;
     use cita_types::{Address, H160};
     use std::str::FromStr;
@@ -110,7 +110,9 @@ mod tests {
         let executor = init_executor();
 
         let user_management = UserManagement::new(&executor);
-        let all_groups: Vec<Address> = user_management.all_groups(BlockId::Pending).unwrap();
+        let all_groups: Vec<Address> = user_management
+            .all_groups(BlockTag::Tag(Tag::Pending))
+            .unwrap();
 
         assert_eq!(
             all_groups,

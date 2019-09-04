@@ -1,28 +1,26 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Chain manager.
 
+use std::str::FromStr;
+
 use crate::contracts::tools::{decode as decode_tools, method as method_tools};
 use crate::types::reserved_addresses;
+
 use cita_types::{Address, H160, H256, U256};
-use evm::call_type::CallType;
-use evm::ext::{Ext, MessageCallResult};
-use std::str::FromStr;
+use cita_vm::evm::{DataProvider, InterpreterParams, InterpreterResult, OpCode};
 
 const CHAIN_ID: &[u8] = &*b"getChainId()";
 const AUTHORITIES: &[u8] = &*b"getAuthorities(uint256)";
@@ -36,63 +34,46 @@ lazy_static! {
 pub struct ChainManagement;
 
 impl ChainManagement {
-    pub fn ext_chain_id(ext: &mut Ext, gas: &U256, sender: &Address) -> Option<(U256, U256)> {
-        trace!("call system contract ChainManagement.ext_chain_id()");
-        let contract = &*CONTRACT_ADDRESS;
-        let tx_data = CHAIN_ID_ENCODED.to_vec();
-        let data = &tx_data.as_slice();
-        let mut output = Vec::<u8>::new();
-        match ext.call(
-            gas,
-            sender,
-            contract,
-            None,
-            data,
-            contract,
-            &mut output,
-            CallType::Call,
-        ) {
-            MessageCallResult::Success(gas_left, return_data) => {
-                decode_tools::to_u256(&*return_data).map(|x| (gas_left, x))
+    pub fn ext_chain_id(
+        data_provider: &mut DataProvider,
+        gas: &U256,
+        sender: &Address,
+    ) -> Option<(U256, U256)> {
+        trace!("Call chainManagement ext_chain_id()");
+        let mut params = InterpreterParams::default();
+        params.receiver = *CONTRACT_ADDRESS;
+        params.sender = *sender;
+        params.gas_limit = gas.low_u64();
+        params.input = CHAIN_ID_ENCODED.to_vec();
+
+        match data_provider.call(OpCode::CALL, params) {
+            Ok(InterpreterResult::Normal(output, gas_left, _)) => {
+                decode_tools::to_u256(&output).map(|x| (U256::from(gas_left), x))
             }
-            MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
+            _ => None,
         }
     }
 
     pub fn ext_authorities(
-        ext: &mut Ext,
+        data_provider: &mut DataProvider,
         gas: &U256,
         sender: &Address,
         chain_id: U256,
     ) -> Option<(U256, Vec<Address>)> {
-        trace!(
-            "call system contract ChainManagement.ext_authorities({})",
-            chain_id
-        );
-        let contract = &*CONTRACT_ADDRESS;
+        trace!("call chainManagement ext_authorities({})", chain_id);
+        let mut params = InterpreterParams::default();
+        params.receiver = *CONTRACT_ADDRESS;
+        params.sender = *sender;
+        params.gas_limit = gas.low_u64();
         let mut tx_data = AUTHORITIES_ENCODED.to_vec();
-        let param = H256::from(chain_id);
-        tx_data.extend(param.to_vec());
-        let data = &tx_data.as_slice();
-        let mut output = Vec::<u8>::new();
-        match ext.call(
-            gas,
-            sender,
-            contract,
-            None,
-            data,
-            contract,
-            &mut output,
-            CallType::Call,
-        ) {
-            MessageCallResult::Success(gas_left, return_data) => {
-                trace!(
-                    "call system contract ChainManagement.ext_authorities() return [{:?}]",
-                    return_data
-                );
-                decode_tools::to_address_vec(&*return_data).map(|addrs| (gas_left, addrs))
+        tx_data.extend(H256::from(chain_id).to_vec());
+
+        match data_provider.call(OpCode::CALL, params) {
+            Ok(InterpreterResult::Normal(output, gas_left, _logs)) => {
+                trace!("chainManagement ext_authorities() return [{:?}]", output);
+                decode_tools::to_address_vec(&output).map(|addrs| (U256::from(gas_left), addrs))
             }
-            MessageCallResult::Reverted(..) | MessageCallResult::Failed => None,
+            _ => None,
         }
     }
 }

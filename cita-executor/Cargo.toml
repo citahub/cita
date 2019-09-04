@@ -2,6 +2,7 @@
 name = "cita-executor"
 version = "0.1.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
+license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
@@ -12,6 +13,10 @@ crossbeam-channel = "0.2"
 serde_json = "1.0"
 serde_derive = "1.0"
 cita-logger = "0.1.0"
+itertools = "0.5"
+
+core-executor = { path = "./core" }
+common-types = { path = "../cita-chain/types" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -20,11 +25,8 @@ pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develo
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 error =  { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-core-executor = { path = "./core" }
-common-types = { path = "../cita-chain/types" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-evm = { path = "evm" }
-db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
@@ -34,6 +36,12 @@ bincode = "0.8.0"
 cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 tempdir = "0.3.7"
+
+[dependencies.cita-vm]
+git = "https://github.com/cryptape/cita-vm.git"
+branch = "cita"
+default-features = false 
+features = ["sha3hash"]
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
@@ -47,5 +55,3 @@ rabbitmq = ["pubsub/rabbitmq"]
 zeromq = ["pubsub/zeromq"]
 kafka = ["pubsub/kafka"]
 privatetx = ["core-executor/privatetx"]
-evm-debug = ["core-executor/evm-debug"]
-evm-debug-tests = ["evm-debug", "core-executor/evm-debug-tests"]
