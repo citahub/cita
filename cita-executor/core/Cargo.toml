@@ -46,13 +46,18 @@ proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 zktx = { git = "https://github.com/cryptape/zktx.git", optional = true }
 cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
-cita-vm = { git = "https://github.com/cryptape/cita-vm.git", branch = "cita" }
 
 cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto-trait = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+
+[dependencies.cita-vm]
+git = "https://github.com/cryptape/cita-vm.git"
+branch = "cita"
+default-features = false
+features = ["sha3hash"]
 
 [dev-dependencies]
 rand = "0.3"
