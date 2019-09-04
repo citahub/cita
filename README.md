@@ -62,7 +62,7 @@ Please check [CONTRIBUTING](.github/CONTRIBUTING.md) for more details.
 
 [Weibo](http://weibo.com/u/6307204864)
 
-## License
+## License [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcryptape%2Fcita.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcryptape%2Fcita?ref=badge_shield)
 
 CITA is currently under Apache 2.0 license. See the LICENSE file for details.
 
