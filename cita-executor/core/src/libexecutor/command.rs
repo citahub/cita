@@ -512,7 +512,7 @@ pub fn state_at(
     command_resp_receiver: &Receiver<CommandResp>,
     block_tag: BlockTag,
 ) -> Option<CitaState<CitaTrieDB>> {
-    command_req_sender.send(Command::StateAt(block_tag));
+    let _ = command_req_sender.send(Command::StateAt(block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::StateAt(r) => r,
         _ => unimplemented!(),
@@ -525,7 +525,7 @@ pub fn gen_state(
     root: H256,
     parent_hash: H256,
 ) -> Option<CitaState<CitaTrieDB>> {
-    command_req_sender.send(Command::GenState(root, parent_hash));
+    let _ = command_req_sender.send(Command::GenState(root, parent_hash));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::GenState(r) => r,
         _ => unimplemented!(),
@@ -538,7 +538,7 @@ pub fn code_at(
     address: Address,
     block_tag: BlockTag,
 ) -> Option<Bytes> {
-    command_req_sender.send(Command::CodeAt(address, block_tag));
+    let _ = command_req_sender.send(Command::CodeAt(address, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::CodeAt(r) => r,
         _ => unimplemented!(),
@@ -551,7 +551,7 @@ pub fn abi_at(
     address: Address,
     block_tag: BlockTag,
 ) -> Option<Bytes> {
-    command_req_sender.send(Command::ABIAt(address, block_tag));
+    let _ = command_req_sender.send(Command::ABIAt(address, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::ABIAt(r) => r,
         _ => unimplemented!(),
@@ -564,7 +564,7 @@ pub fn balance_at(
     address: Address,
     block_tag: BlockTag,
 ) -> Option<Bytes> {
-    command_req_sender.send(Command::BalanceAt(address, block_tag));
+    let _ = command_req_sender.send(Command::BalanceAt(address, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::BalanceAt(r) => r,
         _ => unimplemented!(),
@@ -577,7 +577,7 @@ pub fn nonce_at(
     address: Address,
     block_tag: BlockTag,
 ) -> Option<U256> {
-    command_req_sender.send(Command::NonceAt(address, block_tag));
+    let _ = command_req_sender.send(Command::NonceAt(address, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::NonceAt(r) => r,
         _ => unimplemented!(),
@@ -590,7 +590,7 @@ pub fn eth_call(
     call_request: CallRequest,
     block_tag: BlockTag,
 ) -> Result<Bytes, String> {
-    command_req_sender.send(Command::ETHCall(call_request, block_tag));
+    let _ = command_req_sender.send(Command::ETHCall(call_request, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::ETHCall(r) => r,
         _ => unimplemented!(),
@@ -602,7 +602,7 @@ pub fn sign_call(
     command_resp_receiver: &Receiver<CommandResp>,
     call_request: CallRequest,
 ) -> SignedTransaction {
-    command_req_sender.send(Command::SignCall(call_request));
+    let _ = command_req_sender.send(Command::SignCall(call_request));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::SignCall(r) => r,
         _ => unimplemented!(),
@@ -616,7 +616,7 @@ pub fn call(
 
     block_tag: BlockTag,
 ) -> Result<CitaExecuted, CallError> {
-    command_req_sender.send(Command::Call(signed_transaction, block_tag));
+    let _ = command_req_sender.send(Command::Call(signed_transaction, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::Call(r) => r,
         _ => unimplemented!(),
@@ -627,7 +627,7 @@ pub fn chain_id(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
 ) -> Option<ChainId> {
-    command_req_sender.send(Command::ChainID);
+    let _ = command_req_sender.send(Command::ChainID);
     match command_resp_receiver.recv().unwrap() {
         CommandResp::ChainID(r) => r,
         _ => unimplemented!(),
@@ -639,7 +639,7 @@ pub fn metadata(
     command_resp_receiver: &Receiver<CommandResp>,
     data: String,
 ) -> Result<MetaData, String> {
-    command_req_sender.send(Command::Metadata(data));
+    let _ = command_req_sender.send(Command::Metadata(data));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::Metadata(r) => r,
         _ => unimplemented!(),
@@ -650,7 +650,7 @@ pub fn economical_model(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
 ) -> EconomicalModel {
-    command_req_sender.send(Command::EconomicalModel);
+    let _ = command_req_sender.send(Command::EconomicalModel);
     match command_resp_receiver.recv().unwrap() {
         CommandResp::EconomicalModel(r) => r,
         _ => unimplemented!(),
@@ -662,7 +662,7 @@ pub fn load_executed_result(
     command_resp_receiver: &Receiver<CommandResp>,
     height: u64,
 ) -> ExecutedResult {
-    command_req_sender.send(Command::LoadExecutedResult(height));
+    let _ = command_req_sender.send(Command::LoadExecutedResult(height));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::LoadExecutedResult(r) => r,
         _ => unimplemented!(),
@@ -674,7 +674,7 @@ pub fn grow(
     command_resp_receiver: &Receiver<CommandResp>,
     closed_block: ClosedBlock,
 ) -> ExecutedResult {
-    command_req_sender.send(Command::Grow(closed_block));
+    let _ = command_req_sender.send(Command::Grow(closed_block));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::Grow(r) => r,
         _ => unimplemented!(),
@@ -686,7 +686,7 @@ pub fn exit(
     command_resp_receiver: &Receiver<CommandResp>,
     rollback_id: BlockTag,
 ) {
-    command_req_sender.send(Command::Exit(rollback_id));
+    let _ = command_req_sender.send(Command::Exit(rollback_id));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::Exit => {}
         _ => unimplemented!(),
@@ -697,7 +697,7 @@ pub fn clone_executor_reader(
     command_req_sender: &Sender<Command>,
     command_resp_receiver: &Receiver<CommandResp>,
 ) -> Executor {
-    command_req_sender.send(Command::CloneExecutorReader);
+    let _ = command_req_sender.send(Command::CloneExecutorReader);
     match command_resp_receiver.recv().unwrap() {
         CommandResp::CloneExecutorReader(r) => r,
         _ => unimplemented!(),

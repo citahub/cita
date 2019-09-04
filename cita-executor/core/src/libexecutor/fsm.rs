@@ -95,14 +95,14 @@ impl FSM for Executor {
 
     fn fsm_pause(&self, executed_block: ExecutedBlock, index: usize) -> StatusOfFSM {
         match self.fsm_req_receiver.try_recv() {
-            None => {
+            Err(_) => {
                 if index == executed_block.body().transactions().len() {
                     StatusOfFSM::Finalize(executed_block)
                 } else {
                     StatusOfFSM::Execute(executed_block, index + 1)
                 }
             }
-            Some(open_block) => {
+            Ok(open_block) => {
                 if executed_block.header().is_equivalent(&open_block.header()) {
                     StatusOfFSM::Pause(executed_block, index)
                 } else {
@@ -277,7 +277,7 @@ mod tests {
             let mut new_open_block = generate_empty_block();
             new_open_block.header.set_timestamp(2);
             // new_open_block is different from outside open_block
-            fsm_req_sender.send(new_open_block);
+            let _ = fsm_req_sender.send(new_open_block);
         });
         ::std::thread::sleep(Duration::new(2, 0));
         let status_after_pause_2 = executor.fsm_pause(executed_block, 2);
@@ -309,7 +309,7 @@ mod tests {
         thread::spawn(move || {
             let new_open_block = generate_empty_block();
             // new_open_block the same as outside open_block
-            fsm_req_sender.send(new_open_block);
+            let _ = fsm_req_sender.send(new_open_block);
         });
         ::std::thread::sleep(Duration::new(2, 0));
         let status_after_pause_2 = executor.fsm_pause(executed_block, 2);
@@ -364,7 +364,7 @@ mod tests {
 
         // 3. send an equivalent OpenBlock into fsm_req channel
         let new_open_block = open_block.clone();
-        fsm_req_sender.send(new_open_block);
+        let _ = fsm_req_sender.send(new_open_block);
 
         // 4. continue until finalize
         let transaction = executed_block.body().transactions[1].clone();
@@ -411,7 +411,7 @@ mod tests {
 
         // 3. send an un-equivalent OpenBlock into fsm_req channel
         let new_open_block = generate_block(&executor, 10);
-        fsm_req_sender.send(new_open_block.clone());
+        let _ = fsm_req_sender.send(new_open_block.clone());
 
         // 4. continue until finalize
         let mut executed_block = executor.to_executed_block(new_open_block);

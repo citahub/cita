@@ -6,7 +6,7 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-cita-logger = "0.1.0"
+cita-logger = "0.1.1"
 byteorder = { version = "1", default-features = false }
 bincode = "0.8.0"
 serde = "1.0"
@@ -22,8 +22,7 @@ num = "0.1"
 rand = "0.3"
 time = "0.1"
 hex = "0.3"
-crossbeam = "0.2"
-crossbeam-channel = "0.2"
+crossbeam-channel = "0.3.9"
 transient-hashmap = "0.4.0"
 ethabi = "4.2.0"
 enum_primitive = "0.1.1"
