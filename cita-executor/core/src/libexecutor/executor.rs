@@ -125,33 +125,36 @@ impl Executor {
                     trace!("executor receive {}", command);
                     match self.operate(command) {
                         CommandResp::Exit => {
-                            self.command_resp_sender.send(CommandResp::Exit);
+                            let _ = self.command_resp_sender.send(CommandResp::Exit);
                             return;
                         }
-                        command_resp => self.command_resp_sender.send(command_resp),
-                    }
+                        command_resp => {
+                            let _ = self.command_resp_sender.send(command_resp);
+                        }
+                    };
                 }
                 (None, Some(block)) => {
                     let fsm_resp = self.into_fsm(block);
-                    self.fsm_resp_sender.send(fsm_resp);
+                    let _ = self.fsm_resp_sender.send(fsm_resp);
                 }
             }
         }
     }
 
+    #[allow(clippy::zero_ptr, clippy::drop_copy)]
     fn recv(&self) -> (Option<Command>, Option<OpenBlock>) {
         let err_flag = (None, None);
         select! {
-            recv(self.command_req_receiver, command_req) => {
+            recv(self.command_req_receiver) -> command_req => {
                 match command_req {
-                    Some(command_req) => (Some(command_req), None),
-                    None => err_flag,
+                    Ok(command_req) => (Some(command_req), None),
+                    Err(_) => err_flag,
                 }
             },
-            recv(self.fsm_req_receiver, fsm_req) => {
+            recv(self.fsm_req_receiver) -> fsm_req => {
                 match fsm_req {
-                    Some(fsm_req) => (None, Some(fsm_req)),
-                    None => err_flag,
+                    Ok(fsm_req) => (None, Some(fsm_req)),
+                    Err(_) => err_flag,
                 }
             }
         }
@@ -551,7 +554,7 @@ mod tests {
             executor.do_loop();
         });
         // send Command, this cause executor exit
-        command_req_sender.send(Command::Exit(BlockTag::Height(0)));
+        let _ = command_req_sender.send(Command::Exit(BlockTag::Height(0)));
 
         ::std::thread::sleep(Duration::new(2, 0));
         let resp: CommandResp = command_resp_receiver.recv().unwrap();

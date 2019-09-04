@@ -187,14 +187,18 @@ fn main() {
     // start threads to forward messages between mpsc::channel and crosebeam::channel
     thread::spawn(move || loop {
         match forward_req_receiver.recv() {
-            Ok(message) => mq_req_sender.send(message),
+            Ok(message) => {
+                let _ = mq_req_sender.send(message);
+            }
             Err(_) => return,
-        }
+        };
     });
     thread::spawn(move || loop {
         match mq_resp_receiver.recv() {
-            Some(message) => forward_resp_sender.send(message).unwrap(),
-            None => return,
+            Ok(message) => {
+                forward_resp_sender.send(message).unwrap();
+            }
+            Err(_) => return,
         }
     });
 

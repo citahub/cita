@@ -138,19 +138,22 @@ impl Postman {
     // listen messages from RabbitMQ and Executor.
     //
     // Return `(None, None)` if any channel closed
-    #[cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
+    #[cfg_attr(
+        feature = "cargo-clippy",
+        allow(clippy::type_complexity, clippy::zero_ptr, clippy::drop_copy)
+    )]
     fn recv(&self) -> (Option<(String, Vec<u8>)>, Option<ClosedBlock>) {
         select! {
-            recv(self.mq_req_receiver, mq_req) => {
+            recv(self.mq_req_receiver) -> mq_req => {
                 match mq_req {
-                    Some(mq_req) => (Some(mq_req), None),
-                    None => (None, None),
+                    Ok(mq_req) => (Some(mq_req), None),
+                    Err(_) => (None, None),
                 }
             },
-            recv(self.fsm_resp_receiver, fsm_resp) => {
+            recv(self.fsm_resp_receiver) -> fsm_resp => {
                 match fsm_resp {
-                    Some(fsm_resp) => (None, Some(fsm_resp)),
-                    None => (None, None),
+                    Ok(fsm_resp) => (None, Some(fsm_resp)),
+                    Err(_) => (None, None),
                 }
             }
         }
@@ -350,7 +353,7 @@ impl Postman {
         match self.backlogs.ready(next_height) {
             Ok(open_block) => {
                 trace!("postman send {}-th block to executor", next_height);
-                self.fsm_req_sender.send(open_block.clone());
+                let _ = self.fsm_req_sender.send(open_block.clone());
             }
             Err(reason) => trace!("{}", reason),
         }
@@ -683,7 +686,7 @@ impl Postman {
 
     fn response_mq(&self, key: String, message: Vec<u8>) {
         trace!("send {} into RabbitMQ", key);
-        self.mq_resp_sender.send((key, message));
+        let _ = self.mq_resp_sender.send((key, message));
     }
 }
 
@@ -739,9 +742,11 @@ mod tests {
         ::std::thread::spawn(move || {
             let command = command_req_receiver.recv().unwrap();
             match command {
-                command::Command::LoadExecutedResult(3) => command_resp_sender.send(
-                    command::CommandResp::LoadExecutedResult(libproto::ExecutedResult::new()),
-                ),
+                command::Command::LoadExecutedResult(3) => {
+                    let _ = command_resp_sender.send(command::CommandResp::LoadExecutedResult(
+                        libproto::ExecutedResult::new(),
+                    ));
+                }
                 _ => panic!("received should be Command::LoadExecutedResult(3)"),
             }
             let command = command_req_receiver.recv().unwrap();
