@@ -141,12 +141,12 @@ jobs:
           name: Check Format
           command: make fmt
       - save_cache: *save-source-codes-cache
-      # - run: *before-restore-security-audit-cache
-      # - restore_cache: *restore-security-audit-cache
-      # - run:
-      #     name: Check Security Audit
-      #     command: make security_audit
-      # - save_cache: *save-security-audit-cache
+      - run: *before-restore-security-audit-cache
+      - restore_cache: *restore-security-audit-cache
+      - run:
+          name: Check Security Audit
+          command: make security_audit
+      - save_cache: *save-security-audit-cache
 
   "Check Contracts":
     docker:
