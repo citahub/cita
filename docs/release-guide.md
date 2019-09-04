@@ -119,10 +119,10 @@ git push origin vx.y.z
 
 ### Merge into the develop Branch
 
-***The transition branch is named `merge-master-to-develop`***
+***The transition branch is named `merge-master-into-develop`***
 
 Merge the `master` branch into the `develop` branch.
-Because of the branch protection, we need to create a middle branch `merge-master-to-develop` via `pull request`.
+Because of the branch protection, we need to create a middle branch `merge-master-into-develop` via `pull request`.
 
 1. Update the `master` branch code as follows:
 
@@ -130,21 +130,21 @@ Because of the branch protection, we need to create a middle branch `merge-maste
 git checkout origin/master && git pull
 ```
 
-2. Create `merge-master-to-develop` as follows:
+2. Create `merge-master-into-develop` as follows:
 
 ```shell
-git checkout -b merge-master-to-develop
+git checkout -b merge-master-into-develop
 ```
 
 3. Push the branch to the code repository as follows:
 
 ```shell
-git push origin merge-master-to-develop
+git push origin merge-master-into-develop
 ```
 
 4. Merge into `develop`
 
-Merge the transition branch `merge-master-to-develop` into the `develop` branch via pull request.
+Merge the transition branch `merge-master-into-develop` into the `develop` branch via pull request.
 
 ## Release
 
@@ -187,7 +187,7 @@ git push --delete origin release-x.y.z
 2. Clean up the transition branch as follows:
 
 ```shell
-git push --delete origin merge-master-to-develop
+git push --delete origin merge-master-into-develop
 ```
 
 ### Update Version of CITAHub Docs
@@ -324,9 +324,9 @@ git push origin vx.y.z
 
 ### 合并入 `develop` 分支
 
-***过渡分支命名为 `merge-master-to-develop`***
+***过渡分支命名为 `merge-master-into-develop`***
 
-把 `master` 分支合并入 `develop` 分支，由于分支保护，创建一个中间分支 `merge-master-to-develop` 通过 `pull request` 合并。
+把 `master` 分支合并入 `develop` 分支，由于分支保护，创建一个中间分支 `merge-master-into-develop` 通过 `pull request` 合并。
 
 1. 更新 `master` 分支代码，具体操作如下：
 
@@ -334,21 +334,21 @@ git push origin vx.y.z
 git checkout origin/master && git pull
 ```
 
-2. 创建 `merge-master-to-develop`，具体操作如下：
+2. 创建 `merge-master-into-develop`，具体操作如下：
 
 ```shell
-git checkout -b merge-master-to-develop
+git checkout -b merge-master-into-develop
 ```
 
 3. 推送分支到代码仓库，具体操作如下：
 
 ```shell
-git push origin merge-master-to-develop
+git push origin merge-master-into-develop
 ```
 
 4. 合并入 `develop`
 
-通过 `pull request` 把过渡分支 `merge-master-to-develop` 合并入 `develop` 分支。
+通过 `pull request` 把过渡分支 `merge-master-into-develop` 合并入 `develop` 分支。
 
 ## 发布
 
@@ -391,7 +391,7 @@ git push --delete origin release-x.y.z
 2. 清理过渡分支，具体操作如下：
 
 ```shell
-git push --delete origin merge-master-to-develop
+git push --delete origin merge-master-into-develop
 ```
 
 ### CITAHub Docs 版本更新

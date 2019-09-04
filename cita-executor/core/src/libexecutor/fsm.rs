@@ -1,19 +1,16 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use super::block::{ClosedBlock, ExecutedBlock, OpenBlock};
 use super::economical_model::EconomicalModel;
@@ -42,7 +39,7 @@ impl std::fmt::Display for StatusOfFSM {
                 "StatusOfFSM::Pause(height: {}, parent_hash: {:?}, state_root: {:?}, timestamp: {}, index: {})",
                 executed_block.number(),
                 executed_block.parent_hash(),
-                executed_block.state.root(),
+                executed_block.state_root,
                 executed_block.timestamp(),
                 index,
             ),
@@ -51,7 +48,7 @@ impl std::fmt::Display for StatusOfFSM {
                 "StatusOfFSM::Execute(height: {}, parent_hash: {:?}, state_root: {:?}, timestamp: {}, index: {})",
                 executed_block.number(),
                 executed_block.parent_hash(),
-                executed_block.state.root(),
+                executed_block.state_root,
                 executed_block.timestamp(),
                 index,
             ),
@@ -60,7 +57,7 @@ impl std::fmt::Display for StatusOfFSM {
                 "StatusOfFSM::Finalize(height: {}, parent_hash: {:?}, state_root: {:?}, timestamp: {})",
                 executed_block.number(),
                 executed_block.parent_hash(),
-                executed_block.state.root(),
+                executed_block.state_root,
                 executed_block.timestamp(),
             ),
         }
@@ -124,17 +121,16 @@ impl FSM for Executor {
             transaction.gas_price = quota_price;
         }
 
-        executed_block.apply_transaction(&*self.engine, &transaction, &conf);
-
+        executed_block.apply_transaction(&transaction, &self.sys_config);
         StatusOfFSM::Pause(executed_block, index)
     }
 
-    fn fsm_finalize(&self, mut executed_block: ExecutedBlock) -> ClosedBlock {
-        // commit changed-accounts into trie structure
+    fn fsm_finalize(&self, executed_block: ExecutedBlock) -> ClosedBlock {
         executed_block
             .state
+            .borrow_mut()
             .commit()
-            .expect("failed to commit state trie");
+            .expect("Commit state error.");
         executed_block.close(&(self.sys_config.block_sys_config))
     }
 }
@@ -183,16 +179,28 @@ mod tests {
         };
         match new_status {
             StatusOfFSM::Initialize(open_block) => StatusOfFSM::Initialize(open_block),
-            StatusOfFSM::Pause(mut executed_block, iter) => {
-                executed_block.state.commit().expect("commit state");
+            StatusOfFSM::Pause(executed_block, iter) => {
+                executed_block
+                    .state
+                    .borrow_mut()
+                    .commit()
+                    .expect("commit state");
                 StatusOfFSM::Pause(executed_block, iter)
             }
-            StatusOfFSM::Execute(mut executed_block, iter) => {
-                executed_block.state.commit().expect("commit state");
+            StatusOfFSM::Execute(executed_block, iter) => {
+                executed_block
+                    .state
+                    .borrow_mut()
+                    .commit()
+                    .expect("commit state");
                 StatusOfFSM::Execute(executed_block, iter)
             }
-            StatusOfFSM::Finalize(mut executed_block) => {
-                executed_block.state.commit().expect("commit state");
+            StatusOfFSM::Finalize(executed_block) => {
+                executed_block
+                    .state
+                    .borrow_mut()
+                    .commit()
+                    .expect("commit state");
                 StatusOfFSM::Finalize(executed_block)
             }
         }
@@ -342,13 +350,10 @@ mod tests {
 
         // 2. execute 1th transaction
         let transaction = executed_block.body().transactions[0].clone();
-        executed_block.apply_transaction(
-            &*executor.engine,
-            &transaction,
-            &executor.sys_config.block_sys_config.clone(),
-        );
+        executed_block.apply_transaction(&transaction, &executor.sys_config);
         executed_block
             .state
+            .borrow_mut()
             .commit()
             .expect("commit state to re-calculate state root");
         let (status_of_pause_1th, mut executed_block) = transit_and_assert(
@@ -363,13 +368,10 @@ mod tests {
 
         // 4. continue until finalize
         let transaction = executed_block.body().transactions[1].clone();
-        executed_block.apply_transaction(
-            &*executor.engine,
-            &transaction,
-            &executor.sys_config.block_sys_config.clone(),
-        );
+        executed_block.apply_transaction(&transaction, &executor.sys_config);
         executed_block
             .state
+            .borrow_mut()
             .commit()
             .expect("commit state to re-calculate state root");
         let mut status = status_of_pause_1th;
@@ -416,14 +418,11 @@ mod tests {
         let mut transactions = { executed_block.body.transactions.clone() };
         for transaction in transactions.iter_mut() {
             // let mut t = transaction.clone();
-            executed_block.apply_transaction(
-                &*executor.engine,
-                &transaction,
-                &executor.sys_config.block_sys_config.clone(),
-            );
+            executed_block.apply_transaction(&transaction, &executor.sys_config);
         }
         executed_block
             .state
+            .borrow_mut()
             .commit()
             .expect("commit state to re-calculate state root");
         let mut status = status_of_pause;

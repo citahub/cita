@@ -1,31 +1,28 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-use crate::cita_db::kvdb::KeyValueDB;
-use crate::db::{self as db, Writable};
-use crate::factory::Factories;
 use crate::libexecutor::block::Block;
-use crate::state::State;
-use crate::state_db::StateDB;
-use crate::types::extras::*;
+use crate::libexecutor::executor::{CitaDB, CitaTrieDB};
+use crate::types::db_indexes;
+use crate::types::db_indexes::DBIndex;
+use cita_database::{DataCategory, Database};
 use cita_types::traits::ConvertType;
 use cita_types::{clean_0x, Address, H256, U256};
+use cita_vm::state::{State as CitaState, StateObjectInfo};
 use crypto::digest::Digest;
 use crypto::md5::Md5;
+use rlp::encode;
 use rustc_hex::FromHex;
 use serde_json;
 use std::collections::HashMap;
@@ -34,6 +31,7 @@ use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
+
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
 
@@ -104,18 +102,13 @@ impl Genesis {
         }
     }
 
-    pub fn lazy_execute(
-        &mut self,
-        state_db: &StateDB,
-        factories: &Factories,
-    ) -> Result<(), String> {
-        let mut state = State::from_existing(
-            state_db.boxed_clone_canon(&self.spec.prevhash),
+    pub fn lazy_execute(&mut self, state_db: Arc<CitaTrieDB>) -> Result<(), String> {
+        let mut state = CitaState::from_existing(
+            Arc::<CitaTrieDB>::clone(&state_db),
             *self.block.state_root(),
-            U256::from(0),
-            factories.clone(),
         )
-        .expect("state db error");
+        .expect("Can not get state from db!");
+
         self.block.set_version(0);
         self.block.set_parent_hash(self.spec.prevhash);
         self.block.set_timestamp(self.spec.timestamp);
@@ -125,14 +118,14 @@ impl Genesis {
         trace!("**** begin **** \n");
         for (address, contract) in self.spec.alloc.clone() {
             let address = Address::from_unaligned(address.as_str()).unwrap();
-            state.new_contract(&address, U256::from(0), U256::from(0));
+            state.new_contract(&address, U256::from(0), U256::from(0), vec![]);
             {
                 state
-                    .init_code(&address, clean_0x(&contract.code).from_hex().unwrap())
+                    .set_code(&address, clean_0x(&contract.code).from_hex().unwrap())
                     .expect("init code fail");
                 if let Some(value) = contract.value {
                     state
-                        .add_balance(&address, &value)
+                        .add_balance(&address, value)
                         .expect("init balance fail");
                 }
             }
@@ -152,7 +145,7 @@ impl Genesis {
             let address = Address::from_unaligned(address.as_str()).unwrap();
             for (key, values) in &contract.storage {
                 let result =
-                    state.storage_at(&address, &H256::from_unaligned(key.as_ref()).unwrap());
+                    state.get_storage(&address, &H256::from_unaligned(key.as_ref()).unwrap());
                 assert_eq!(
                     H256::from_unaligned(values.as_ref()).unwrap(),
                     result.expect("storage error")
@@ -161,27 +154,47 @@ impl Genesis {
         }
 
         trace!("**** end **** \n");
-        let root = *state.root();
+        let root = state.root;
         trace!("root {:?}", root);
         self.block.set_state_root(root);
         self.block.rehash();
 
-        self.save(state, state_db.journal_db().backing())
+        self.save(state_db.database())
     }
 
-    fn save(&mut self, state: State<StateDB>, db: &Arc<KeyValueDB>) -> Result<(), String> {
-        let mut batch = db.transaction();
+    fn save(&mut self, db: Arc<CitaDB>) -> Result<(), String> {
+        // Note: All the key should be the index from extras.rs, and
+        // all the value should be a rlp value.
         let hash = self.block.hash().unwrap();
-        let height = self.block.number();
-        //初始化的时候需要获取头部信息
-        batch.write(db::COL_HEADERS, &hash, self.block.header());
-        batch.write(db::COL_EXTRA, &CurrentHash, &hash);
-        batch.write(db::COL_EXTRA, &height, &hash);
-        let mut state_db = state.drop().1;
-        state_db
-            .journal_under(&mut batch, height, &hash)
-            .expect("DB commit failed");
-        db.write(batch)
+
+        // Insert [hash, block_header]
+        let hash_key = db_indexes::Hash2Header(hash).get_index();
+
+        // Need to get header in init function.
+        db.insert(
+            Some(DataCategory::Headers),
+            hash_key.to_vec(),
+            self.block.header().rlp(),
+        )
+        .expect("Insert block header error.");
+
+        // Insert [current_hash, hash]
+        let current_hash_key = db_indexes::CurrentHash.get_index();
+        let hash_value = encode(&hash).to_vec();
+        db.insert(
+            Some(DataCategory::Extra),
+            current_hash_key.to_vec(),
+            hash_value.clone(),
+        )
+        .expect("Insert block hash error.");
+
+        // Insert [block_number, hash]
+        let height_key = db_indexes::BlockNumber2Hash(self.block.number()).get_index();
+
+        db.insert(Some(DataCategory::Extra), height_key.to_vec(), hash_value)
+            .expect("Insert block hash error.");
+
+        Ok(())
     }
 }
 

@@ -1,29 +1,29 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Permission management.
 
 use super::ContractCallExt;
-use crate::contracts::tools::{decode as decode_tools, method as method_tools};
-use crate::libexecutor::executor::Executor;
-use crate::types::ids::BlockId;
-use crate::types::reserved_addresses;
-use cita_types::{Address, H160, H256};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::executor::Executor;
+use crate::types::block_number::BlockTag;
+use crate::types::reserved_addresses;
+
+use cita_types::{Address, H160, H256};
 
 const ALLACCOUNTS: &[u8] = &*b"queryAllAccounts()";
 const PERMISSIONS: &[u8] = &*b"queryPermissions(address)";
@@ -75,20 +75,20 @@ impl<'a> PermissionManagement<'a> {
         PermissionManagement { executor }
     }
 
-    pub fn load_account_permissions(&self, block_id: BlockId) -> HashMap<Address, Vec<Resource>> {
+    pub fn load_account_permissions(&self, block_tag: BlockTag) -> HashMap<Address, Vec<Resource>> {
         let mut account_permissions = HashMap::new();
         let accounts = self
-            .all_accounts(block_id)
+            .all_accounts(block_tag)
             .unwrap_or_else(Self::default_all_accounts);
         trace!("ALl accounts: {:?}", accounts);
         for account in accounts {
             let permissions = self
-                .permissions(&(H256::from(account)), block_id)
+                .permissions(&(H256::from(account)), block_tag)
                 .unwrap_or_else(Self::default_permissions);
             trace!("ALl permissions for account {}: {:?}", account, permissions);
             let mut resources = vec![];
             for permission in permissions {
-                if let Some(res) = self.resources(&permission, block_id) {
+                if let Some(res) = self.resources(&permission, block_tag) {
                     resources.extend(res);
                 };
             }
@@ -99,13 +99,13 @@ impl<'a> PermissionManagement<'a> {
     }
 
     /// Account array
-    pub fn all_accounts(&self, block_id: BlockId) -> Option<Vec<Address>> {
+    pub fn all_accounts(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*ALLACCOUNTS_HASH.as_slice(),
                 None,
-                block_id,
+                block_tag,
             )
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
@@ -116,30 +116,30 @@ impl<'a> PermissionManagement<'a> {
         Vec::new()
     }
 
-    pub fn get_super_admin_account(&self, block_id: BlockId) -> Option<Address> {
-        self.all_accounts(block_id)
+    pub fn get_super_admin_account(&self, block_tag: BlockTag) -> Option<Address> {
+        self.all_accounts(block_tag)
             .and_then(|accounts| accounts.first().cloned())
     }
 
     /// Permission array
-    pub fn permissions(&self, param: &H256, block_id: BlockId) -> Option<Vec<Address>> {
+    pub fn permissions(&self, param: &H256, block_tag: BlockTag) -> Option<Vec<Address>> {
         let mut tx_data = PERMISSIONS_HASH.to_vec();
         tx_data.extend(param.to_vec());
         debug!("tx_data: {:?}", tx_data);
         self.executor
-            .call_method(&*CONTRACT_ADDRESS, &tx_data.as_slice(), None, block_id)
+            .call_method(&*CONTRACT_ADDRESS, &tx_data.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
-    pub fn permission_addresses(&self, block_id: BlockId) -> Vec<Address> {
+    pub fn permission_addresses(&self, block_tag: BlockTag) -> Vec<Address> {
         let mut res: Vec<Address> = Vec::new();
         let accounts = self
-            .all_accounts(block_id)
+            .all_accounts(block_tag)
             .unwrap_or_else(Self::default_all_accounts);
         for account in accounts {
             let permissions = self
-                .permissions(&(H256::from(account)), block_id)
+                .permissions(&(H256::from(account)), block_tag)
                 .unwrap_or_else(Self::default_permissions);
             res.extend(permissions);
         }
@@ -152,9 +152,9 @@ impl<'a> PermissionManagement<'a> {
     }
 
     /// Resources array
-    pub fn resources(&self, address: &Address, block_id: BlockId) -> Option<Vec<Resource>> {
+    pub fn resources(&self, address: &Address, block_tag: BlockTag) -> Option<Vec<Resource>> {
         self.executor
-            .call_method(address, &*RESOURCES_HASH.as_slice(), None, block_id)
+            .call_method(address, &*RESOURCES_HASH.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_resource_vec(&output))
     }
@@ -188,7 +188,7 @@ mod tests {
     use super::{PermissionManagement, Resource, DEFAULT_SUPER_ADEMIN};
     use crate::contracts::tools::method as method_tools;
     use crate::tests::helpers::init_executor;
-    use crate::types::ids::BlockId;
+    use crate::types::block_number::{BlockTag, Tag};
     use crate::types::reserved_addresses;
     use cita_types::{Address, H160, H256};
     use std::collections::HashMap;
@@ -286,7 +286,7 @@ mod tests {
         // Test all_accounts
         let permission_management = PermissionManagement::new(&executor);
         let all_accounts: Vec<Address> = permission_management
-            .all_accounts(BlockId::Pending)
+            .all_accounts(BlockTag::Tag(Tag::Pending))
             .unwrap();
 
         assert_eq!(
@@ -301,7 +301,10 @@ mod tests {
         let super_admin_address = Address::from_str(DEFAULT_SUPER_ADEMIN).unwrap();
 
         let mut permissions: Vec<Address> = permission_management
-            .permissions(&(H256::from(super_admin_address)), BlockId::Pending)
+            .permissions(
+                &(H256::from(super_admin_address)),
+                BlockTag::Tag(Tag::Pending),
+            )
             .unwrap();
         permissions.sort();
 
@@ -337,7 +340,7 @@ mod tests {
 
         // Test account permissions
         let account_permissions: HashMap<Address, Vec<Resource>> =
-            permission_management.load_account_permissions(BlockId::Pending);
+            permission_management.load_account_permissions(BlockTag::Tag(Tag::Pending));
         assert_eq!(account_permissions.contains_key(&super_admin_address), true);
 
         let mut resources = (*account_permissions.get(&super_admin_address).unwrap()).clone();
@@ -528,7 +531,7 @@ mod tests {
         // Test resources
         let permission_management = PermissionManagement::new(&executor);
         let resources: Vec<Resource> = permission_management
-            .resources(&permission, BlockId::Pending)
+            .resources(&permission, BlockTag::Tag(Tag::Pending))
             .unwrap();
         assert_eq!(
             resources,
@@ -542,7 +545,7 @@ mod tests {
         let permission = Address::from(0x13);
 
         let resources = permission_management
-            .resources(&permission, BlockId::Pending)
+            .resources(&permission, BlockTag::Tag(Tag::Pending))
             .unwrap();
         assert_eq!(resources, vec![]);
     }

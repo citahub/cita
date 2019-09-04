@@ -1,28 +1,27 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-use crate::contracts::solc::{permission_management::contains_resource, Resource};
-use crate::executed::ExecutionError;
-use crate::libexecutor::sys_config::CheckOptions;
-use crate::types::reserved_addresses;
-use crate::types::transaction::{Action, SignedTransaction};
-use cita_types::{Address, H160};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+use crate::types::transaction::{Action, SignedTransaction};
+use cita_types::{Address, H160};
+
+use crate::contracts::solc::{permission_management::contains_resource, Resource};
+use crate::libexecutor::sys_config::CheckOptions;
+use crate::types::errors::AuthenticationError;
+use crate::types::reserved_addresses;
 
 /// Check the sender's permission
 #[allow(unknown_lints, clippy::implicit_hasher)] // TODO clippy
@@ -31,7 +30,7 @@ pub fn check_permission(
     account_permissions: &HashMap<Address, Vec<Resource>>,
     t: &SignedTransaction,
     options: CheckOptions,
-) -> Result<(), ExecutionError> {
+) -> Result<(), AuthenticationError> {
     let sender = *t.sender();
     // It's eth_call when the account is zero.
     // No need to check the options in case that the option is true.
@@ -61,16 +60,12 @@ pub fn check_permission(
                 }
 
                 if t.data.len() < 4 {
-                    return Err(ExecutionError::TransactionMalformed(
-                        "The length of transaction data is less than four bytes".to_string(),
-                    ));
+                    return Err(AuthenticationError::InvalidTransaction);
                 }
 
                 if address == group_management_addr {
                     if t.data.len() < 36 {
-                        return Err(ExecutionError::TransactionMalformed(
-                            "Data should have at least one parameter".to_string(),
-                        ));
+                        return Err(AuthenticationError::InvalidTransaction);
                     }
                     check_origin_group(
                         account_permissions,
@@ -101,7 +96,7 @@ fn check_send_tx(
     group_accounts: &HashMap<Address, Vec<Address>>,
     account_permissions: &HashMap<Address, Vec<Resource>>,
     account: &Address,
-) -> Result<(), ExecutionError> {
+) -> Result<(), AuthenticationError> {
     let cont = Address::from_str(reserved_addresses::PERMISSION_SEND_TX).unwrap();
     let func = vec![0; 4];
     let has_permission = has_resource(
@@ -112,10 +107,14 @@ fn check_send_tx(
         &func[..],
     );
 
-    trace!("has send tx permission: {:?}", has_permission);
+    trace!(
+        "Account {:?} has send tx permission: {:?}",
+        account,
+        has_permission
+    );
 
     if !has_permission {
-        return Err(ExecutionError::NoTransactionPermission);
+        return Err(AuthenticationError::NoTransactionPermission);
     }
 
     Ok(())
@@ -126,7 +125,7 @@ fn check_create_contract(
     group_accounts: &HashMap<Address, Vec<Address>>,
     account_permissions: &HashMap<Address, Vec<Resource>>,
     account: &Address,
-) -> Result<(), ExecutionError> {
+) -> Result<(), AuthenticationError> {
     let cont = Address::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap();
     let func = vec![0; 4];
     let has_permission = has_resource(
@@ -140,7 +139,7 @@ fn check_create_contract(
     trace!("has create contract permission: {:?}", has_permission);
 
     if !has_permission {
-        return Err(ExecutionError::NoContractPermission);
+        return Err(AuthenticationError::NoContractPermission);
     }
 
     Ok(())
@@ -153,13 +152,13 @@ fn check_call_contract(
     account: &Address,
     cont: &Address,
     func: &[u8],
-) -> Result<(), ExecutionError> {
+) -> Result<(), AuthenticationError> {
     let has_permission = has_resource(group_accounts, account_permissions, account, cont, func);
 
     trace!("has call contract permission: {:?}", has_permission);
 
     if !has_permission {
-        return Err(ExecutionError::NoCallPermission);
+        return Err(AuthenticationError::NoCallPermission);
     }
 
     Ok(())
@@ -172,13 +171,13 @@ fn check_origin_group(
     cont: &Address,
     func: &[u8],
     param: &Address,
-) -> Result<(), ExecutionError> {
+) -> Result<(), AuthenticationError> {
     let has_permission = contains_resource(account_permissions, account, *cont, func);
 
     trace!("Sender has call contract permission: {:?}", has_permission);
 
     if !has_permission && !contains_resource(account_permissions, param, *cont, func) {
-        return Err(ExecutionError::NoCallPermission);
+        return Err(AuthenticationError::NoCallPermission);
     }
 
     Ok(())

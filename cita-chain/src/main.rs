@@ -1,19 +1,16 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! ## Summary
 //! One of CITA's core components that processing blocks and transaction storage,
@@ -73,25 +70,24 @@ extern crate libproto;
 extern crate cita_logger as logger;
 #[macro_use]
 extern crate util;
-extern crate db as cita_db;
 
 mod block_processor;
 mod forward;
 
+use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
+use util::set_panic_handler;
+
 use crate::block_processor::BlockProcessor;
-use crate::cita_db::kvdb::{Database, DatabaseConfig};
 use crate::forward::Forward;
+
+use cita_db::{Config as DatabaseConfig, RocksDB, NUM_COLUMNS};
 use cita_directories::DataPath;
 use clap::App;
-use core::db;
 use core::libchain;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use pubsub::{channel, start_pubsub};
-use std::sync::Arc;
-use std::thread;
-use std::time;
-use std::time::Duration;
-use util::set_panic_handler;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
@@ -133,13 +129,13 @@ fn main() {
 
     let nosql_path = DataPath::nosql_path();
     trace!("nosql_path is {:?}", nosql_path);
-    let db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-    let db = Database::open(&db_config, &nosql_path).unwrap();
+    let db_config = DatabaseConfig::with_category_num(NUM_COLUMNS);
+    let db = RocksDB::open(&nosql_path, &db_config).expect("Open DB failed unexpected.");
 
     let chain_config = libchain::chain::Config::new(config_path);
     let chain = Arc::new(libchain::chain::Chain::init_chain(
         Arc::new(db),
-        &chain_config,
+        chain_config,
     ));
 
     let (write_sender, write_receiver) = channel::unbounded();
@@ -156,41 +152,30 @@ fn main() {
     });
 
     // Write: add block
-    thread::spawn(move || {
-        let mut timeout_factor = 0u8;
-        loop {
-            if let Ok(einfo) = write_receiver
-                .recv_timeout(Duration::new(18 * (2u64.pow(u32::from(timeout_factor))), 0))
-            {
-                block_processor.set_executed_result(&einfo);
-                timeout_factor = 0;
-            } else if !*block_processor.chain.is_snapshot.read() {
-                // Here will be these status:
-                // 1. Executor process restarts, lost cached block information.
-                // 2. Executor encountered an invalid block and cleared the block map.
-                // 3. Bft restarted, lost chain status information, unable to consensus, unable to generate block.
-                //
-                // This will trigger:
-                // 1. Network retransmits block information or initiates a synchronization request,
-                //    and then the executor will receive a block message
-                // 2. Bft will receive the latest status of chain
-                info!("Chain enters the timeout retransmission phase");
-                block_processor.reset_max_store_height();
-                block_processor.signal_to_executor();
-                block_processor.broadcast_current_status();
-                if timeout_factor < 6 {
-                    timeout_factor += 1
-                }
-            }
-        }
-    });
-
-    //garbage collect
+    let mut timeout_factor = 0u8;
     loop {
-        thread::sleep(time::Duration::from_millis(1000));
-        if chain.cache_size().total() > chain_config.cache_size.unwrap() / 2 {
-            trace!("cache_manager begin collect garbage...");
-            chain.collect_garbage();
+        if let Ok(einfo) = write_receiver
+            .recv_timeout(Duration::new(18 * (2u64.pow(u32::from(timeout_factor))), 0))
+        {
+            block_processor.set_executed_result(&einfo);
+            timeout_factor = 0;
+        } else if !*block_processor.chain.is_snapshot.read() {
+            // Here will be these status:
+            // 1. Executor process restarts, lost cached block information.
+            // 2. Executor encountered an invalid block and cleared the block map.
+            // 3. Bft restarted, lost chain status information, unable to consensus, unable to generate block.
+            //
+            // This will trigger:
+            // 1. Network retransmits block information or initiates a synchronization request,
+            //    and then the executor will receive a block message
+            // 2. Bft will receive the latest status of chain
+            info!("Chain enters the timeout retransmission phase");
+            block_processor.reset_max_store_height();
+            block_processor.signal_to_executor();
+            block_processor.broadcast_current_status();
+            if timeout_factor < 6 {
+                timeout_factor += 1
+            }
         }
     }
 }

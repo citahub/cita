@@ -18,21 +18,22 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@cryptape/cita-sdk@^0.23.1":
-  version "0.23.1"
-  resolved "https://registry.yarnpkg.com/@cryptape/cita-sdk/-/cita-sdk-0.23.1.tgz#9d970cba62358f7a20d2500bd3e529211d1833a3"
-  integrity sha512-S9/WxMdRgCBuESgw9WJumyXZ4XEJFOrER2N0oyu33FlxWfmyN5h0R8jLSfJW17dPiAJxjIzxRypkiy+AK/S41g==
+"@cryptape/cita-sdk@^0.25.1":
+  version "0.25.1"
+  resolved "https://registry.yarnpkg.com/@cryptape/cita-sdk/-/cita-sdk-0.25.1.tgz#b4d7e95a40a977775634a3773a5190297e5188e3"
+  integrity sha512-2R224eRYA4qxFVv62LckqBByvWOWqK9xTKjzzDOYEXEgLDSLOP6sRAF5sndxrbAj8WHMUgWH9YPmKITQ9XFZmw==
   dependencies:
-    "@cryptape/cita-signer" "^2.3.0"
+    "@cryptape/cita-signer" "^2.5.2"
+    fstream "1.0.12"
     web3 "1.0.0-beta.37"
 
-"@cryptape/cita-signer@^2.3.0":
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/@cryptape/cita-signer/-/cita-signer-2.4.1.tgz#4074b0c0296885405d14f511dd98e2810d6dddb4"
-  integrity sha512-zV7/SfQZxSj3reHp5oGImKqDojUB2zDX7xfkJT58tn0603E7IkJhhHMGcpJEW2P+pb3+uRTyCkhnVnOMjh+Mgw==
+"@cryptape/cita-signer@^2.5.2":
+  version "2.5.2"
+  resolved "https://registry.yarnpkg.com/@cryptape/cita-signer/-/cita-signer-2.5.2.tgz#b6fd68d6ab19483499526fe13205e3acf024d350"
+  integrity sha512-j3DsO4i5DQxwuGev+eiKZkbGYl/3PkwlxUGqLzLHPNAbejVwNdiXg5K+zL6AAPXch8Ci3YQ4cUexLjSWB1sYqQ==
   dependencies:
-    ec "^0.0.1"
     elliptic "^6.4.0"
+    fstream "1.0.12"
     google-protobuf "^3.5.0"
     web3 "1.0.0-beta.37"
 
@@ -790,11 +791,6 @@ duplexer3@^0.1.4:
   resolved "https://registry.yarnpkg.com/duplexer3/-/duplexer3-0.1.4.tgz#ee01dd1cac0ed3cbc7fdbea37dc0a8f1ce002ce2"
   integrity sha1-7gHdHKwO08vH/b6jfcCo8c4ALOI=
 
-ec@^0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/ec/-/ec-0.0.1.tgz#5579aad6053f2ce337bc712a905188f69450b8e1"
-  integrity sha1-VXmq1gU/LOM3vHEqkFGI9pRQuOE=
-
 ecc-jsbn@~0.1.1:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/ecc-jsbn/-/ecc-jsbn-0.1.2.tgz#3a83a904e54353287874c564b7549386849a98c9"
@@ -937,16 +933,16 @@ eslint-scope@^4.0.3:
     estraverse "^4.1.1"
 
 eslint-utils@^1.3.1:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/eslint-utils/-/eslint-utils-1.4.0.tgz#e2c3c8dba768425f897cf0f9e51fe2e241485d4c"
-  integrity sha512-7ehnzPaP5IIEh1r1tkjuIrxqhNkzUJa9z3R92tLJdZIVdWaczEhr3EbhGtsMrVxi1KeR8qA7Off6SWc5WNQqyQ==
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/eslint-utils/-/eslint-utils-1.4.2.tgz#166a5180ef6ab7eb462f162fd0e6f2463d7309ab"
+  integrity sha512-eAZS2sEUMlIeCjBeubdj45dmBHQwPHWyBcT1VSYB7o9x9WRRqKxyUoiXlRjyAwzN7YEzHJlYg0NmzDRWx6GP4Q==
   dependencies:
     eslint-visitor-keys "^1.0.0"
 
 eslint-visitor-keys@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/eslint-visitor-keys/-/eslint-visitor-keys-1.0.0.tgz#3f3180fb2e291017716acb4c9d6d5b5c34a6a81d"
-  integrity sha512-qzm/XxIbxm/FHyH341ZrbnMUpe+5Bocte9xkmFMzPMjRaZMcXww+MpBptFvtU+79L362nqiLhekCxCxDPaUMBQ==
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/eslint-visitor-keys/-/eslint-visitor-keys-1.1.0.tgz#e2a82cea84ff246ad6fb57f9bde5b46621459ec2"
+  integrity sha512-8y9YjtM1JBJU/A9Kc+SbaOV4y29sSWckBwMHa+FGtVj5gN/sbnKDf6xJUl+8g7FAij9LVaP8C24DUiH/f/2Z9A==
 
 eslint@^5.16.0:
   version "5.16.0"
@@ -1340,7 +1336,7 @@ fs.realpath@^1.0.0:
   resolved "https://registry.yarnpkg.com/fs.realpath/-/fs.realpath-1.0.0.tgz#1504ad2523158caa40db4a2787cb01411994ea4f"
   integrity sha1-FQStJSMVjKpA20onh8sBQRmU6k8=
 
-fstream@^1.0.12, fstream@^1.0.8:
+fstream@1.0.12, fstream@^1.0.12, fstream@^1.0.8:
   version "1.0.12"
   resolved "https://registry.yarnpkg.com/fstream/-/fstream-1.0.12.tgz#4e8ba8ee2d48be4f7d0de505455548eae5932045"
   integrity sha512-WvJ193OHa0GHPEL+AycEJgxvBEwyfRkN1vhjca23OaPVMCaLCXTd5qAu82AjTcgP1UJmytkOKb63Ypde7raDIg==

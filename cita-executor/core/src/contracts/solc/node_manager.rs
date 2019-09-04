@@ -1,33 +1,32 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Node manager.
 
 use super::ContractCallExt;
+use std::iter;
+use std::str::FromStr;
+
 use crate::contracts::tools::{decode as decode_tools, method as method_tools};
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::libexecutor::executor::Executor;
-use crate::types::ids::BlockId;
+use crate::types::block_number::BlockTag;
 use crate::types::reserved_addresses;
+
 use cita_types::{Address, H160};
 use largest_remainder_method::apportion;
 use rand::{Rng, SeedableRng, StdRng};
-use std::iter;
-use std::str::FromStr;
 
 const LIST_NODE: &[u8] = &*b"listNode()";
 const LIST_STAKE: &[u8] = &*b"listStake()";
@@ -75,32 +74,32 @@ impl<'a> NodeManager<'a> {
         NodeManager { executor, rng_seed }
     }
 
-    pub fn nodes(&self, block_id: BlockId) -> Option<Vec<Address>> {
+    pub fn nodes(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*LIST_NODE_ENCODED.as_slice(),
                 None,
-                block_id,
+                block_tag,
             )
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
-    pub fn stakes(&self, block_id: BlockId) -> Option<Vec<u64>> {
+    pub fn stakes(&self, block_tag: BlockTag) -> Option<Vec<u64>> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*LIST_STAKE_ENCODED.as_slice(),
                 None,
-                block_id,
+                block_tag,
             )
             .ok()
             .and_then(|output| decode_tools::to_u64_vec(&output))
     }
 
-    pub fn shuffled_stake_nodes(&self, block_id: BlockId) -> Option<Vec<Address>> {
-        self.stake_nodes(block_id).map(|mut stake_nodes| {
+    pub fn shuffled_stake_nodes(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
+        self.stake_nodes(block_tag).map(|mut stake_nodes| {
             shuffle(&mut stake_nodes, self.rng_seed);
             stake_nodes
         })
@@ -111,14 +110,14 @@ impl<'a> NodeManager<'a> {
         Vec::new()
     }
 
-    pub fn stake_nodes(&self, block_id: BlockId) -> Option<Vec<Address>> {
-        self.nodes(block_id).and_then(|nodes| {
+    pub fn stake_nodes(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
+        self.nodes(block_tag).and_then(|nodes| {
             if let EconomicalModel::Quota =
                 self.executor.sys_config.block_sys_config.economical_model
             {
                 Some(nodes)
             } else {
-                self.stakes(block_id).map(|stakes| {
+                self.stakes(block_tag).map(|stakes| {
                     let total: u64 = stakes.iter().sum();
                     if total == 0 {
                         nodes
