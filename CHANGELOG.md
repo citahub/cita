@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+## [v0.25.1] - 2019-07-31
+
+Fix the issue about showing the wrong version.
+Check the details at [#747]
+
 ## [v0.25.0] - 2019-06-28
 
 ### Framework
@@ -860,7 +865,8 @@ Release the first version of CITA.
 [set quota price]: https://docs.citahub.com/zh-CN/cita/system/price
 [sidechain exit mechanism]: https://docs.nervos.org/cita/#/crosschain/crosschain_contract_example
 
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.25.0...HEAD
+[Unreleased]: https://github.com/cryptape/cita/compare/v0.25.1...HEAD
+[v0.25.1]: https://github.com/cryptape/cita/compare/v0.25.0...v0.25.1
 [v0.25.0]: https://github.com/cryptape/cita/compare/v0.24.1...v0.25.0
 [v0.24.1]: https://github.com/cryptape/cita/compare/v0.24.0...v0.24.1
 [v0.24.0]: https://github.com/cryptape/cita/compare/v0.23.0...v0.24.0
