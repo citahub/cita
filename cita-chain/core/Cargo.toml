@@ -1,51 +1,45 @@
 [package]
 name = "core"
 version = "0.1.0"
-authors = ["Cryptape Technologies <contact@cryptape.com>", "Parity Technologies <admin@parity.io>"]
+authors = ["Cryptape Technologies <contact@cryptape.com>"]
+license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-byteorder = { version = "1", default-features = false }
 bincode = "0.8.0"
 serde = "1.0"
 serde_derive = "1.0"
 rustc-hex = "1.0"
-lru-cache = "0.1.1"
 lazy_static = "0.2"
-bit-set = "0.4"
 time = "0.1"
 crossbeam = "0.2"
-transient-hashmap = "0.4.0"
-cita-logger = "0.1.0"
+cita-logger = "0.1.1"
+common-types = { path = "../types" }
+
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-rlp_derive = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-common-types = { path = "../types" }
-db = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 
 [dev-dependencies]
 rand = "0.3"
 cpuprofiler = "0.0.3"
 tempdir = "0.3.7"
-cita-logger = "0.1.0"
 
 [features]
 default = ["secp256k1", "sha3hash"]
 secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1", "proof/secp256k1"]
 ed25519 = ["cita-crypto/ed25519", "libproto/ed25519", "proof/ed25519"]
 sm2 = ["cita-crypto/sm2", "libproto/sm2", "proof/sm2"]
-sha3hash = ["hashable/sha3hash", "db/sha3hash", "libproto/sha3hash", "proof/sha3hash"]
-blake2bhash = ["hashable/blake2bhash", "db/blake2bhash", "libproto/blake2bhash", "proof/blake2bhash"]
-sm3hash = ["hashable/sm3hash", "db/sm3hash", "libproto/sm3hash", "proof/sm3hash"]
-evm-debug= []
+sha3hash = ["hashable/sha3hash", "libproto/sha3hash", "proof/sha3hash"]
+blake2bhash = ["hashable/blake2bhash", "libproto/blake2bhash", "proof/blake2bhash"]
+sm3hash = ["hashable/sm3hash", "libproto/sm3hash", "proof/sm3hash"]

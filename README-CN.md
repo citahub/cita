@@ -82,9 +82,9 @@ CITA 目前仍在紧张的开发中，欢迎大家为 CITA 贡献自己的一份
 
 [Weibo](http://weibo.com/u/6307204864)
 
-## 开源协议
+## 开源协议 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcryptape%2Fcita.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcryptape%2Fcita?ref=badge_shield)
 
-GPLv3 license
+Apache 2.0 license
 
 ## 权益归属
 

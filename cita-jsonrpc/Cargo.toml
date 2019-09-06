@@ -2,6 +2,7 @@
 name = "cita-jsonrpc"
 version = "0.1.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
+license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
@@ -15,7 +16,7 @@ serde_json = "1.0"
 cpuprofiler = "0.0.3"
 dotenv = "0.13.0"
 clap = "2"
-cita-logger = "0.1.0"
+cita-logger = "0.1.1"
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

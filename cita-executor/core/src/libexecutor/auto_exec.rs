@@ -1,38 +1,34 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-use crate::contracts::native::factory::Factory as NativeFactory;
+// use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::tools::method as method_tools;
-use crate::engines::NullEngine;
-use crate::externalities::{Externalities, OriginInfo, OutputPolicy};
-use crate::libexecutor::economical_model::EconomicalModel;
-use crate::state::State;
-use crate::state::Substate;
-use crate::state_db::StateDB;
-use crate::trace::Tracer;
-use crate::trace::{NoopTracer, NoopVMTracer};
+// use crate::engines::NullEngine;
+use crate::libexecutor::block::EVMBlockDataProvider;
 use crate::types::reserved_addresses;
 use cita_types::{Address, H160, U256};
-use evm::action_params::{ActionParams, ActionValue};
-use evm::call_type::CallType;
-use evm::env_info::EnvInfo;
-use evm::{Factory, Finalize, VMType};
+// use evm::{Factory, VMType};
 use std::str::FromStr;
-use util::BytesRef;
+// use util::BytesRef;
+use crate::cita_executive::{build_evm_config, build_evm_context};
+use crate::libexecutor::executor::CitaTrieDB;
+use crate::types::context::Context;
+use cita_vm::evm::InterpreterResult;
+use cita_vm::state::State as CitaState;
+use cita_vm::Transaction as EVMTransaction;
+use std::cell::RefCell;
+use std::sync::Arc;
 
 const AUTO_EXEC: &[u8] = &*b"autoExec()";
 
@@ -42,63 +38,47 @@ lazy_static! {
 }
 
 pub fn auto_exec(
-    state: &mut State<StateDB>,
+    state: Arc<RefCell<CitaState<CitaTrieDB>>>,
     auto_exec_quota_limit: u64,
-    economical_model: EconomicalModel,
-    env_info: EnvInfo,
-    chain_version: u32,
+    context: Context,
 ) {
     let hash = &*AUTO_EXEC_HASH;
-    let params = ActionParams {
-        code_address: *AUTO_EXEC_ADDR,
-        address: *AUTO_EXEC_ADDR,
-        sender: Address::from(0x0),
-        origin: Address::from(0x0),
-        gas: U256::from(auto_exec_quota_limit),
+    let evm_transaction = EVMTransaction {
+        from: Address::from(0x0),
+        value: U256::from(0),
+        gas_limit: auto_exec_quota_limit,
         gas_price: U256::from(1),
-        value: ActionValue::Transfer(U256::from(0)),
-        code: state.code(&*AUTO_EXEC_ADDR).unwrap(),
-        code_hash: state.code_hash(&*AUTO_EXEC_ADDR).unwrap(),
-        data: Some(hash.to_vec()),
-        call_type: CallType::Call,
+        input: hash.to_vec(),
+        to: Some(*AUTO_EXEC_ADDR),
+        nonce: U256::from(0),
     };
 
-    let mut substate = Substate::new();
-    let mut tracer = NoopTracer;
-    let mut out = vec![];
-    let mut trace_output = tracer.prepare_trace_output();
-    let output = OutputPolicy::Return(BytesRef::Flexible(&mut out), trace_output.as_mut());
-    let factory = Factory::new(VMType::Interpreter, 1024 * 32);
+    let mut evm_config = build_evm_config(auto_exec_quota_limit);
 
-    let engine = NullEngine::default();
-    let native_factory = NativeFactory::default();
-    let origin_info = OriginInfo::from(&params);
-    let mut vm_tracer = NoopVMTracer;
-    let mut ext = Externalities::new(
+    // Do not check nonce and balance for auto exec
+    evm_config.check_nonce = false;
+    evm_config.check_balance = false;
+    let evm_context = build_evm_context(&context);
+
+    let block_provider = EVMBlockDataProvider::new(context.clone());
+    match cita_vm::exec(
+        Arc::new(block_provider),
         state,
-        &env_info,
-        &engine,
-        &factory,
-        &native_factory,
-        0,
-        origin_info,
-        &mut substate,
-        output,
-        &mut tracer,
-        &mut vm_tracer,
-        false,
-        economical_model,
-        chain_version,
-    );
-    let res = {
-        factory
-            .create(params.gas)
-            .exec(&params, &mut ext)
-            .finalize(ext)
-    };
-
-    match res {
-        Ok(res) => trace!("Auto exec succeed: {:?}", res),
+        evm_context,
+        evm_config,
+        evm_transaction,
+    ) {
+        Ok(res) => match res {
+            InterpreterResult::Normal(_, _, _) => {
+                trace!("Auto exec run succeed.");
+            }
+            InterpreterResult::Revert(_, _) => {
+                info!("Auto exec run Revert!");
+            }
+            _ => {
+                info!("Auto exec should not run as create");
+            }
+        },
         Err(e) => info!("Auto exec failed: {}", e),
     }
 }

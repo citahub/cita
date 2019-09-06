@@ -1,32 +1,30 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// CopyrightTechnologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Quota manager.
 
 use super::ContractCallExt;
-use crate::contracts::tools::{decode as decode_tools, method as method_tools};
-use crate::libexecutor::executor::Executor;
-use crate::types::ids::BlockId;
-use crate::types::reserved_addresses;
-use cita_types::traits::LowerHex;
-use cita_types::{Address, H160};
-use libproto::blockchain::AccountGasLimit as ProtoAccountQuotaLimit;
 use std::collections::HashMap;
 use std::str::FromStr;
+
+use crate::contracts::tools::{decode as decode_tools, method as method_tools};
+use crate::libexecutor::executor::Executor;
+use crate::types::block_number::BlockTag;
+use crate::types::reserved_addresses;
+
+use cita_types::{traits::LowerHex, Address, H160};
+use libproto::blockchain::AccountGasLimit as ProtoAccountQuotaLimit;
 
 const QUOTAS: &[u8] = &*b"getQuotas()";
 const ACCOUNTS: &[u8] = &*b"getAccounts()";
@@ -102,9 +100,9 @@ impl<'a> QuotaManager<'a> {
     }
 
     /// Special account quota limit
-    pub fn specific(&self, block_id: BlockId) -> HashMap<Address, u64> {
-        let users = self.users(block_id).unwrap_or_else(Self::default_users);
-        let quota = self.quota(block_id).unwrap_or_else(Self::default_quota);
+    pub fn specific(&self, block_tag: BlockTag) -> HashMap<Address, u64> {
+        let users = self.users(block_tag).unwrap_or_else(Self::default_users);
+        let quota = self.quota(block_tag).unwrap_or_else(Self::default_quota);
         let mut specific = HashMap::new();
         for (k, v) in users.iter().zip(quota.iter()) {
             specific.insert(*k, *v);
@@ -113,9 +111,14 @@ impl<'a> QuotaManager<'a> {
     }
 
     /// Quota array
-    pub fn quota(&self, block_id: BlockId) -> Option<Vec<u64>> {
+    pub fn quota(&self, block_tag: BlockTag) -> Option<Vec<u64>> {
         self.executor
-            .call_method(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice(), None, block_id)
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*QUOTAS_HASH.as_slice(),
+                None,
+                block_tag,
+            )
             .ok()
             .and_then(|output| decode_tools::to_u64_vec(&output))
     }
@@ -126,13 +129,13 @@ impl<'a> QuotaManager<'a> {
     }
 
     /// Account array
-    pub fn users(&self, block_id: BlockId) -> Option<Vec<Address>> {
+    pub fn users(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*ACCOUNTS_HASH.as_slice(),
                 None,
-                block_id,
+                block_tag,
             )
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
@@ -144,9 +147,9 @@ impl<'a> QuotaManager<'a> {
     }
 
     /// Global quota limit
-    pub fn block_quota_limit(&self, block_id: BlockId) -> Option<u64> {
+    pub fn block_quota_limit(&self, block_tag: BlockTag) -> Option<u64> {
         self.executor
-            .call_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice(), None, block_id)
+            .call_method(&*CONTRACT_ADDRESS, &*BQL_HASH.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_u64(&output))
     }
@@ -157,13 +160,13 @@ impl<'a> QuotaManager<'a> {
     }
 
     /// Global account quota limit
-    pub fn account_quota_limit(&self, block_id: BlockId) -> Option<u64> {
+    pub fn account_quota_limit(&self, block_tag: BlockTag) -> Option<u64> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*DEFAULT_AQL_HASH.as_slice(),
                 None,
-                block_id,
+                block_tag,
             )
             .ok()
             .and_then(|output| decode_tools::to_u64(&output))
@@ -175,13 +178,13 @@ impl<'a> QuotaManager<'a> {
     }
 
     /// Auto exec quota limit
-    pub fn auto_exec_quota_limit(&self, block_id: BlockId) -> Option<u64> {
+    pub fn auto_exec_quota_limit(&self, block_tag: BlockTag) -> Option<u64> {
         self.executor
             .call_method(
                 &*CONTRACT_ADDRESS,
                 &*AUTO_EXEC_QL_HASH.as_slice(),
                 None,
-                block_id,
+                block_tag,
             )
             .ok()
             .and_then(|output| decode_tools::to_u64(&output))
@@ -199,7 +202,7 @@ mod tests {
 
     use super::{QuotaManager, AQL_VALUE, AUTO_EXEC_QL_VALUE, BQL_VALUE};
     use crate::tests::helpers::init_executor;
-    use crate::types::ids::BlockId;
+    use crate::types::block_number::{BlockTag, Tag};
     use cita_types::H160;
     use std::str::FromStr;
 
@@ -208,7 +211,7 @@ mod tests {
         let executor = init_executor();
 
         let quota_management = QuotaManager::new(&executor);
-        let users = quota_management.users(BlockId::Pending).unwrap();
+        let users = quota_management.users(BlockTag::Tag(Tag::Pending)).unwrap();
         assert_eq!(
             users,
             vec![H160::from_str("4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523").unwrap()]
@@ -221,24 +224,24 @@ mod tests {
         let quota_management = QuotaManager::new(&executor);
 
         // Test quota
-        let quota = quota_management.quota(BlockId::Pending).unwrap();
+        let quota = quota_management.quota(BlockTag::Tag(Tag::Pending)).unwrap();
         assert_eq!(quota, vec![BQL_VALUE]);
 
         // Test block quota limit
         let block_quota_limit = quota_management
-            .block_quota_limit(BlockId::Pending)
+            .block_quota_limit(BlockTag::Tag(Tag::Pending))
             .unwrap();
         assert_eq!(block_quota_limit, BQL_VALUE);
 
         // Test account quota limit
         let account_quota_limit = quota_management
-            .account_quota_limit(BlockId::Pending)
+            .account_quota_limit(BlockTag::Tag(Tag::Pending))
             .unwrap();
         assert_eq!(account_quota_limit, AQL_VALUE);
 
         // Test auto exec quota limit
         let auto_exec_quota_limit = quota_management
-            .auto_exec_quota_limit(BlockId::Pending)
+            .auto_exec_quota_limit(BlockTag::Tag(Tag::Pending))
             .unwrap();
         assert_eq!(auto_exec_quota_limit, AUTO_EXEC_QL_VALUE);
     }

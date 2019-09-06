@@ -1,25 +1,23 @@
-// CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+use super::Bytes;
+use crate::block_number::BlockNumber;
 use crate::crypto::{
     pubkey_to_address, PubKey, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN,
 };
-use crate::reserved_addresses::{ABI_ADDRESS, AMEND_ADDRESS, GO_CONTRACT, STORE_ADDRESS};
-use crate::BlockNumber;
+use crate::reserved_addresses::{ABI_ADDRESS, AMEND_ADDRESS, STORE_ADDRESS};
 use cita_types::traits::LowerHex;
 use cita_types::{clean_0x, Address, H256, U256};
 use libproto::blockchain::{
@@ -29,7 +27,6 @@ use libproto::blockchain::{
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use util::{Bytes, HeapSizeOf};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Error {
@@ -51,8 +48,6 @@ pub enum Action {
     Call(Address),
     /// Store the contract ABI
     AbiStore,
-    /// Create creates new contract for grpc.
-    GoCreate,
     /// amend data in state
     AmendData,
 }
@@ -70,15 +65,12 @@ impl Decodable for Action {
         } else {
             let store_addr: Address = STORE_ADDRESS.into();
             let abi_addr: Address = ABI_ADDRESS.into();
-            let go_addr: Address = GO_CONTRACT.into();
             let amend_addr: Address = AMEND_ADDRESS.into();
             let addr: Address = rlp.as_val()?;
             if addr == store_addr {
                 Ok(Action::Store)
             } else if addr == abi_addr {
                 Ok(Action::AbiStore)
-            } else if addr == go_addr {
-                Ok(Action::GoCreate)
             } else if addr == amend_addr {
                 Ok(Action::AmendData)
             } else {
@@ -92,14 +84,12 @@ impl Encodable for Action {
     fn rlp_append(&self, s: &mut RlpStream) {
         let store_addr: Address = STORE_ADDRESS.into();
         let abi_addr: Address = ABI_ADDRESS.into();
-        let go_addr: Address = GO_CONTRACT.into();
         let amend_addr: Address = AMEND_ADDRESS.into();
         match *self {
             Action::Create => s.append_internal(&""),
             Action::Call(ref addr) => s.append_internal(addr),
             Action::Store => s.append_internal(&store_addr),
             Action::AbiStore => s.append_internal(&abi_addr),
-            Action::GoCreate => s.append_internal(&go_addr),
             Action::AmendData => s.append_internal(&amend_addr),
         };
     }
@@ -171,12 +161,6 @@ pub struct Transaction {
     pub version: u32,
 }
 
-impl HeapSizeOf for Transaction {
-    fn heap_size_of_children(&self) -> usize {
-        self.data.heap_size_of_children()
-    }
-}
-
 impl Decodable for Transaction {
     fn decode(d: &UntrustedRlp) -> Result<Self, DecoderError> {
         if d.item_count()? != 9 {
@@ -227,7 +211,6 @@ impl Transaction {
                         "" => Action::Create,
                         STORE_ADDRESS => Action::Store,
                         ABI_ADDRESS => Action::AbiStore,
-                        GO_CONTRACT => Action::GoCreate,
                         AMEND_ADDRESS => Action::AmendData,
                         _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
                     }
@@ -240,7 +223,6 @@ impl Transaction {
                         match to_addr.lower_hex().as_str() {
                             STORE_ADDRESS => Action::Store,
                             ABI_ADDRESS => Action::AbiStore,
-                            GO_CONTRACT => Action::GoCreate,
                             AMEND_ADDRESS => Action::AmendData,
                             _ => Action::Call(to_addr),
                         }
@@ -325,7 +307,6 @@ impl Transaction {
                 Action::Call(ref to) => pt.set_to(to.lower_hex()),
                 Action::Store => pt.set_to(STORE_ADDRESS.into()),
                 Action::AbiStore => pt.set_to(ABI_ADDRESS.into()),
-                Action::GoCreate => pt.set_to(GO_CONTRACT.into()),
                 Action::AmendData => pt.set_to(AMEND_ADDRESS.into()),
             }
         } else {
@@ -334,7 +315,6 @@ impl Transaction {
                 Action::Call(ref to) => pt.set_to_v1(to.to_vec()),
                 Action::Store => pt.set_to_v1(Address::from_str(STORE_ADDRESS).unwrap().to_vec()),
                 Action::AbiStore => pt.set_to_v1(Address::from_str(ABI_ADDRESS).unwrap().to_vec()),
-                Action::GoCreate => pt.set_to_v1(Address::from_str(GO_CONTRACT).unwrap().to_vec()),
                 Action::AmendData => {
                     pt.set_to_v1(Address::from_str(AMEND_ADDRESS).unwrap().to_vec())
                 }
@@ -508,12 +488,6 @@ impl Encodable for SignedTransaction {
         s.append(&self.hash);
         //TODO: remove it
         s.append(&self.public);
-    }
-}
-
-impl HeapSizeOf for SignedTransaction {
-    fn heap_size_of_children(&self) -> usize {
-        self.transaction.heap_size_of_children()
     }
 }
 

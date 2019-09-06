@@ -1,28 +1,25 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use crate::core::contracts::solc::sys_config::ChainId;
-use crate::core::libexecutor::blacklist::BlackList;
 use crate::core::libexecutor::block::{ClosedBlock, OpenBlock};
 use crate::core::libexecutor::call_request::CallRequest;
-use crate::core::libexecutor::economical_model::EconomicalModel;
-use crate::core::receipt::ReceiptError;
-use crate::types::ids::BlockId;
-use cita_types::{Address, H256, U256};
+use crate::core::tx_gas_schedule::TxGasSchedule;
+use crate::types::block_number::BlockTag;
+use crate::types::errors::ReceiptError;
+use cita_types::U256;
+use cita_types::{Address, H256};
 use crossbeam_channel::{Receiver, Sender};
 use error::ErrorCode;
 use jsonrpc_types::rpc_types::{BlockNumber, CountOrCode};
@@ -30,20 +27,20 @@ use libproto::auth::Miscellaneous;
 use libproto::blockchain::{RichStatus, StateSignal};
 use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
-use libproto::snapshot::{Cmd as SnapshotCommand, SnapshotReq};
 use libproto::{request, response, Message};
 use libproto::{TryFrom, TryInto};
 use serde_json;
 use std::convert::Into;
-use std::sync::RwLock;
 use std::u8;
 
+use crate::core::libexecutor::blacklist::BlackList;
 use crate::core::libexecutor::command;
 use crate::core::libexecutor::lru_cache::LRUCache;
-use evm::Schedule;
+
+use std::sync::RwLock;
 
 use super::backlogs::{wrap_height, Backlogs};
-use super::snapshot;
+use cita_vm::state::StateObjectInfo;
 
 pub struct Postman {
     backlogs: Backlogs,
@@ -128,8 +125,8 @@ impl Postman {
     }
 
     // make sure executor exit also
-    fn close(&self, rollback_id: BlockId) {
-        if rollback_id != BlockId::Number(::std::usize::MAX as u64) {
+    fn close(&self, rollback_id: BlockTag) {
+        if rollback_id != BlockTag::Height(::std::usize::MAX as u64) {
             command::exit(
                 &self.command_req_sender,
                 &self.command_resp_receiver,
@@ -141,19 +138,22 @@ impl Postman {
     // listen messages from RabbitMQ and Executor.
     //
     // Return `(None, None)` if any channel closed
-    #[cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
+    #[cfg_attr(
+        feature = "cargo-clippy",
+        allow(clippy::type_complexity, clippy::zero_ptr, clippy::drop_copy)
+    )]
     fn recv(&self) -> (Option<(String, Vec<u8>)>, Option<ClosedBlock>) {
         select! {
-            recv(self.mq_req_receiver, mq_req) => {
+            recv(self.mq_req_receiver) -> mq_req => {
                 match mq_req {
-                    Some(mq_req) => (Some(mq_req), None),
-                    None => (None, None),
+                    Ok(mq_req) => (Some(mq_req), None),
+                    Err(_) => (None, None),
                 }
             },
-            recv(self.fsm_resp_receiver, fsm_resp) => {
+            recv(self.fsm_resp_receiver) -> fsm_resp => {
                 match fsm_resp {
-                    Some(fsm_resp) => (None, Some(fsm_resp)),
-                    None => (None, None),
+                    Ok(fsm_resp) => (None, Some(fsm_resp)),
+                    Err(_) => (None, None),
                 }
             }
         }
@@ -166,7 +166,7 @@ impl Postman {
         self.backlogs.insert_closed(height, closed_block);
     }
 
-    fn handle_mq_message(&mut self, key: &str, msg_vec: Vec<u8>) -> Result<(), BlockId> {
+    fn handle_mq_message(&mut self, key: &str, msg_vec: Vec<u8>) -> Result<(), BlockTag> {
         let mut msg = Message::try_from(msg_vec).unwrap();
         trace!("receive {} from RabbitMQ", key);
         match RoutingKey::from(key) {
@@ -191,11 +191,6 @@ impl Postman {
                 }
             }
 
-            routing_key!(Snapshot >> SnapshotReq) => {
-                let snapshot_req = msg.take_snapshot_req().unwrap();
-                self.deal_snapshot(snapshot_req)?;
-            }
-
             routing_key!(Consensus >> SignedProposal)
             | routing_key!(Consensus >> BlockWithProof)
             | routing_key!(Net >> SyncResponse)
@@ -214,7 +209,7 @@ impl Postman {
 
     // cita-chain broadcast StateSignal to indicate its state. So we could figure out
     // which blocks cita-chain lack of, then re-send the lacking blocks to cita-chain.
-    fn reply_chain_state_signal(&self, state_signal: &StateSignal) -> Result<(), BlockId> {
+    fn reply_chain_state_signal(&self, state_signal: &StateSignal) -> Result<(), BlockTag> {
         let specified_height = state_signal.get_height();
         if specified_height < self.get_current_height() {
             self.send_executed_info_to_chain(specified_height + 1)?;
@@ -229,7 +224,7 @@ impl Postman {
         Ok(())
     }
 
-    fn send_executed_info_to_chain(&self, height: u64) -> Result<(), BlockId> {
+    fn send_executed_info_to_chain(&self, height: u64) -> Result<(), BlockTag> {
         if height > self.get_current_height() {
             error!("This must be because the Executor database was manually deleted.");
             return Ok(());
@@ -259,9 +254,9 @@ impl Postman {
         // `ExecutedResult<height=51..60>` based on its persisted data. It has to rollback
         // to 50 to keep equal to cita-chain, and then re-synchronize.
         //
-        // Here the returned value `BlockId::Number(height - 1)` would be passed out to main()
+        // Here the returned value `BlockTag::Height(height - 1)` would be passed out to main()
         // thread. Then main() would restart executor thread and let executor starts with
-        // `BlockId::Number(height - 1)`.
+        // `BlockTag::Height(height - 1)`.
         if executed_result.is_none() {
             warn!(
                 "chain(height={}) is lagging behind executor(height={}). \
@@ -270,7 +265,7 @@ impl Postman {
                 self.get_current_height(),
                 height - 1
             );
-            return Err(BlockId::Number(height - 1));
+            return Err(BlockTag::Height(height - 1));
         }
 
         trace!("send {}-th ExecutedResult", height);
@@ -310,7 +305,7 @@ impl Postman {
                 for proto_block in sync_res.take_blocks().into_iter() {
                     let open_block = OpenBlock::from(proto_block);
                     if !self.backlogs.insert_synchronized(open_block) {
-                        return false;
+                        continue;
                     }
                 }
                 true
@@ -358,90 +353,85 @@ impl Postman {
         match self.backlogs.ready(next_height) {
             Ok(open_block) => {
                 trace!("postman send {}-th block to executor", next_height);
-                self.fsm_req_sender.send(open_block.clone());
+                let _ = self.fsm_req_sender.send(open_block.clone());
             }
             Err(reason) => trace!("{}", reason),
         }
     }
 
-    fn get_economical_model(&self) -> EconomicalModel {
-        command::economical_model(&self.command_req_sender, &self.command_resp_receiver)
-    }
-
     /// Find the public key of all senders that caused the specified error message, and then publish it
     // TODO: I think it is not necessary to distinguish economical_model, maybe remove
-    //       this opinion in the future
+    //       this opinion in the future.
+    // To Be reconside black list,or use other method
     fn pub_black_list(&self, close_block: &ClosedBlock) {
-        match self.get_economical_model() {
-            EconomicalModel::Charge => {
-                // Get all transaction hash that is reported as not enough quota
-                let blacklist_transaction_hash: Vec<H256> = close_block
-                    .receipts
-                    .iter()
-                    .filter(|ref receipt| match receipt.error {
-                        Some(ReceiptError::NotEnoughBaseQuota) => true,
-                        _ => false,
-                    })
-                    .map(|receipt| receipt.transaction_hash)
-                    .filter(|hash| hash != &H256::default())
-                    .collect();
+        // Get all transaction hash that is reported as not enough quota
+        let blacklist_transaction_hash: Vec<H256> = close_block
+            .receipts
+            .iter()
+            .filter(|ref receipt| match receipt.error {
+                Some(ReceiptError::NotEnoughCash) => true,
+                _ => false,
+            })
+            .map(|receipt| receipt.transaction_hash)
+            .filter(|hash| hash != &H256::default())
+            .collect();
 
-                let schedule = Schedule::new_v1();
-                // Filter out accounts in the black list where the account balance has reached the benchmark value.
-                // Get the smaller value between tx_create_gas and tx_gas for the benchmark value.
-                let bm_value = std::cmp::min(schedule.tx_gas, schedule.tx_create_gas);
-                let mut clear_list: Vec<Address> = self
-                    .black_list_cache
-                    .read()
-                    .unwrap()
-                    .values()
-                    .filter(|address| {
-                        close_block
-                            .state
-                            .balance(address)
-                            .and_then(|x| Ok(x >= U256::from(bm_value)))
-                            .unwrap_or(false)
-                    })
-                    .cloned()
-                    .collect();
+        let schedule = TxGasSchedule::default();
+        // Filter out accounts in the black list where the account balance has reached the benchmark value.
+        // Get the smaller value between tx_create_gas and tx_gas for the benchmark value.
+        let bm_value = std::cmp::min(schedule.tx_gas, schedule.tx_create_gas);
+        let mut clear_list: Vec<Address> = self
+            .black_list_cache
+            .read()
+            .unwrap()
+            .values()
+            .filter(|address| {
+                command::balance_at(
+                    &self.command_req_sender,
+                    &self.command_resp_receiver,
+                    **address,
+                    BlockTag::Height(close_block.block.header.number()),
+                )
+                .and_then(|x| Some(U256::from(x.as_slice()) >= U256::from(bm_value)))
+                .unwrap_or(false)
+            })
+            .cloned()
+            .collect();
 
-                // Get address of sending account by transaction hash
-                let blacklist: Vec<Address> = close_block
-                    .body()
-                    .transactions()
-                    .iter()
-                    .filter(|tx| blacklist_transaction_hash.contains(&tx.get_transaction_hash()))
-                    .map(|tx| *tx.sender())
-                    .collect();
+        // Get address of sending account by transaction hash
+        let blacklist: Vec<Address> = close_block
+            .body()
+            .transactions()
+            .iter()
+            .filter(|tx| blacklist_transaction_hash.contains(&tx.get_transaction_hash()))
+            .map(|tx| *tx.sender())
+            .collect();
 
-                {
-                    let mut black_list_cache = self.black_list_cache.write().unwrap();
-                    black_list_cache
-                        .prune(&clear_list)
-                        .extend(&blacklist[..], close_block.number());
-                    clear_list.extend(black_list_cache.lru().iter());
-                }
+        {
+            let mut black_list_cache = self.black_list_cache.write().unwrap();
+            black_list_cache
+                .prune(&clear_list)
+                .extend(&blacklist[..], close_block.number());
+            clear_list.extend(black_list_cache.lru().iter());
+        }
 
-                let black_list = BlackList::new()
-                    .set_black_list(blacklist)
-                    .set_clear_list(clear_list);
+        let black_list = BlackList::new()
+            .set_black_list(blacklist)
+            .set_clear_list(clear_list);
 
-                if !black_list.is_empty() {
-                    let black_list_bytes: Message = black_list.protobuf().into();
+        if !black_list.is_empty() {
+            let black_list_bytes: Message = black_list.protobuf().into();
 
-                    info!(
-                        "black list is {:?}, clear list is {:?}",
-                        black_list.black_list(),
-                        black_list.clear_list()
-                    );
+            info!(
+                "black list is {:?}, clear list is {:?}",
+                black_list.black_list(),
+                black_list.clear_list()
+            );
 
-                    self.response_mq(
-                        routing_key!(Executor >> BlackList).into(),
-                        black_list_bytes.try_into().unwrap(),
-                    );
-                }
-            }
-            EconomicalModel::Quota => {}
+            self.response_mq(
+                routing_key!(Executor >> BlackList).into(),
+                black_list_bytes.try_into().unwrap(),
+            );
         }
     }
 
@@ -613,13 +603,16 @@ impl Postman {
                             block_id.into(),
                         )
                         .and_then(|state| {
-                            state.get_state_proof(
-                                &Address::from(state_info.get_address()),
-                                &H256::from(state_info.get_position()),
-                            )
+                            state
+                                .get_storage_proof(
+                                    &Address::from(state_info.get_address()),
+                                    &H256::from(state_info.get_position()),
+                                )
+                                .ok()
                         }) {
                             Some(state_proof_bs) => {
-                                response.set_state_proof(state_proof_bs);
+                                let buf: Vec<u8> = state_proof_bs.into_iter().flatten().collect();
+                                response.set_state_proof(buf);
                             }
                             None => {
                                 response.set_code(ErrorCode::query_error());
@@ -632,6 +625,7 @@ impl Postman {
                         response.set_error_msg(format!("{:?}", err));
                     });
             }
+
             Request::storage_key(skey) => {
                 trace!("storage key info is {:?}", skey);
                 let _ = serde_json::from_str::<BlockNumber>(&skey.height)
@@ -641,9 +635,9 @@ impl Postman {
                             &self.command_resp_receiver,
                             block_id.into(),
                         )
-                        .and_then(|state| {
+                        .and_then(|mut state| {
                             state
-                                .storage_at(
+                                .get_storage(
                                     &Address::from(skey.get_address()),
                                     &H256::from(skey.get_position()),
                                 )
@@ -692,73 +686,7 @@ impl Postman {
 
     fn response_mq(&self, key: String, message: Vec<u8>) {
         trace!("send {} into RabbitMQ", key);
-        self.mq_resp_sender.send((key, message));
-    }
-
-    fn deal_snapshot(&self, req: SnapshotReq) -> Result<(), BlockId> {
-        match req.cmd {
-            SnapshotCommand::Snapshot => {
-                let highest_height = snapshot::handle_snapshot_height(
-                    req.get_end_height(),
-                    self.get_current_height(),
-                );
-                let filename = snapshot::handle_snapshot_filename(req.file);
-                let _ = snapshot::spawn_take_snapshot(
-                    filename,
-                    highest_height,
-                    &self.command_req_sender,
-                    &self.command_resp_receiver,
-                    &self.mq_resp_sender,
-                );
-                Ok(())
-            }
-            SnapshotCommand::Begin => {
-                snapshot::response(
-                    &self.mq_resp_sender,
-                    libproto::snapshot::Resp::BeginAck,
-                    Ok(()),
-                );
-                Ok(())
-            }
-            SnapshotCommand::Restore => {
-                let filename = snapshot::handle_snapshot_filename(req.file);
-                let _ = snapshot::spawn_restore_snapshot(
-                    &filename,
-                    &self.command_req_sender,
-                    &self.command_resp_receiver,
-                    &self.mq_resp_sender,
-                );
-                Ok(())
-            }
-            SnapshotCommand::Clear => {
-                // We change Executor's DB with snapshot's DB when receive `SnapshotCommand::Clear`
-                //   1. Ensure Executor stopped
-                command::exit(
-                    &self.command_req_sender,
-                    &self.command_resp_receiver,
-                    BlockId::Number(self.get_current_height()),
-                );
-
-                //   2. Move snapshot's DB to replace Executor's DB
-                let origin_db = cita_directories::DataPath::root_node_path() + "/statedb";
-                let restoration_db = cita_directories::DataPath::root_node_path()
-                    + "/snapshot_executor/restoration/db";
-                snapshot::change_database(&self.mq_resp_sender, origin_db, restoration_db);
-
-                // TODO: This is a dirty trick, for close Postman without noticing Executor.
-                //       Hope refactor it with more graceful way
-                //   3. Postman exit too so that main() would restart them
-                Err(BlockId::Number(::std::usize::MAX as u64))
-            }
-            SnapshotCommand::End => {
-                snapshot::response(
-                    &self.mq_resp_sender,
-                    libproto::snapshot::Resp::EndAck,
-                    Ok(()),
-                );
-                Ok(())
-            }
-        }
+        let _ = self.mq_resp_sender.send((key, message));
     }
 }
 
@@ -814,9 +742,11 @@ mod tests {
         ::std::thread::spawn(move || {
             let command = command_req_receiver.recv().unwrap();
             match command {
-                command::Command::LoadExecutedResult(3) => command_resp_sender.send(
-                    command::CommandResp::LoadExecutedResult(libproto::ExecutedResult::new()),
-                ),
+                command::Command::LoadExecutedResult(3) => {
+                    let _ = command_resp_sender.send(command::CommandResp::LoadExecutedResult(
+                        libproto::ExecutedResult::new(),
+                    ));
+                }
                 _ => panic!("received should be Command::LoadExecutedResult(3)"),
             }
             let command = command_req_receiver.recv().unwrap();
@@ -1108,7 +1038,7 @@ mod tests {
 
         assert_eq!(
             res.err(),
-            Some(BlockId::Number(2)),
+            Some(BlockTag::Height(2)),
             "no executed result, executed should roll back"
         );
     }

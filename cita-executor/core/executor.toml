@@ -1,3 +1,2 @@
 prooftype = 2
 journaldb_type = "archive"
-grpc_port = 5000

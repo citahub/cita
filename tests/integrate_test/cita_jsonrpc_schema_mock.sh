@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+# set -e
 
 ECONOMICAL_MODEL="0"
 if [[ -n "$1" ]] && [ "$1" = "charge" ]; then
@@ -37,7 +37,7 @@ main() {
 
     echo -n "2) just start node0  ...  "
     bin/cita bebop setup "$CHAIN_NAME"/0 > /dev/null
-    bin/cita bebop start "$CHAIN_NAME"/0
+    bin/cita bebop start "$CHAIN_NAME"/0 trace
     echo "DONE"
 
     echo -n "3) generate mock data  ...  "

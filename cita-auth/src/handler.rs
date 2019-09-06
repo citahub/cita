@@ -1,19 +1,16 @@
-// CITA
-// Copyright 2016-2019 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use crate::block_txn::{BlockTxnMessage, BlockTxnReq};
 use crate::block_verify::BlockVerify;
@@ -26,7 +23,7 @@ use crypto::{pubkey_to_address, PubKey, Sign, Signature, SIGNATURE_BYTES_LEN};
 use error::ErrorCode;
 use jsonrpc_types::rpc_types::TxResponse;
 use libproto::auth::{Miscellaneous, MiscellaneousReq};
-use libproto::blockchain::{AccountGasLimit, SignedTransaction};
+use libproto::blockchain::{AccountGasLimit, SignedTransaction, Transaction};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
 use libproto::{
@@ -46,6 +43,12 @@ use std::time::Duration;
 use util::BLOCKLIMIT;
 
 const TX_OK: &str = "OK";
+// Paid for every non-zero byte of data or code for a transaction
+const G_TX_DATA_NON_ZERO: usize = 68;
+// Paid for every transaction
+const G_TRANSACTION: usize = 21000;
+// Paid for contract create
+const G_CREATE: usize = 32000;
 
 // verify signature
 pub fn verify_tx_sig(crypto: Crypto, hash: &H256, sig_bytes: &[u8]) -> Result<Vec<u8>, ()> {
@@ -183,12 +186,17 @@ impl MsgHandler {
         true
     }
 
-    // verify to and version
+    // verify to and version and min quota
     fn verify_request(&self, req: &Request) -> Result<(), Error> {
         let un_tx = req.get_un_tx();
         let tx = un_tx.get_transaction();
         let tx_version = tx.get_version();
         if tx_version != self.config_info.version.unwrap() {
+            info!(
+                "invalid version: tx_verion-{:?}, chain_version-{:?}",
+                tx_version,
+                self.config_info.version.unwrap()
+            );
             return Err(Error::InvalidVersion);
         }
         if tx_version == 0 {
@@ -213,6 +221,10 @@ impl MsgHandler {
         } else {
             error!("unexpected version {}!", tx_version);
             return Err(Error::InvalidValue);
+        }
+
+        if !verify_base_quota_required(tx) {
+            return Err(Error::QuotaNotEnough);
         }
 
         Ok(())
@@ -1089,4 +1101,20 @@ fn snapshot_response(sender: &Sender<(String, Vec<u8>)>, ack: Resp, flag: bool) 
             (&msg).try_into().unwrap(),
         ))
         .unwrap();
+}
+
+// only verify if tx.version > 2
+pub fn verify_base_quota_required(tx: &Transaction) -> bool {
+    match tx.get_version() {
+        0...2 => true,
+        _ => {
+            let to = tx.get_to_v1();
+            if to.is_empty() || Address::from(to) == Address::zero() {
+                tx.get_quota() as usize
+                    >= tx.data.len() * G_TX_DATA_NON_ZERO + G_TRANSACTION + G_CREATE
+            } else {
+                tx.get_quota() as usize >= tx.data.len() * G_TX_DATA_NON_ZERO + G_TRANSACTION
+            }
+        }
+    }
 }

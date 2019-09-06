@@ -321,15 +321,15 @@ start_nodes() {
         num=4
     fi
     for ((i=0; i<num; i++)); do
-        bin/cita bebop setup $CHAIN_NAME/$i 2>&1
+        bin/cita bebop setup $CHAIN_NAME/$i
     done
     for ((i=0; i<num; i++)); do
-        bin/cita bebop start $CHAIN_NAME/$i 2>&1
+        bin/cita bebop start $CHAIN_NAME/$i trace
     done
 }
 
 config_script() {
-    ./scripts/create_cita_config.py "$@" > /dev/null 2>&1
+    ./scripts/create_cita_config.py "$@"
 }
 
 create_config() {

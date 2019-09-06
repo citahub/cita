@@ -28,6 +28,8 @@ scripts/create_cita_config.py create \
     --chain_name tmp \
     --super_admin "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523" \
     --nodes "127.0.0.1:4000" \
+    --contract_arguments SysConfig.chainId="$2" \
+    --contract_arguments VersionManager.version="$3" \
 && cp tmp/0/genesis.json scripts/ \
 && cd ./scripts/txtool/txtool \
 && python3 "${SOURCE_DIR}"/scripts/amend_system_contracts.py \
