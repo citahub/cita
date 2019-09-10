@@ -26,7 +26,7 @@ uuid = { version = "0.7", features = ["v4"] }
 lru = "0.1"
 rayon = "1.2"
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
+cita-database = "0.1"
 
 [dev-dependencies]
 tempfile = "2"
