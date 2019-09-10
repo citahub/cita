@@ -135,7 +135,7 @@ dependencies = [
 [[package]]
 name = "authority_manage"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -273,7 +273,7 @@ dependencies = [
 [[package]]
 name = "blake2b"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "cc 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -457,7 +457,7 @@ dependencies = [
 
 [[package]]
 name = "cita-auth"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-database 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -487,7 +487,7 @@ dependencies = [
 
 [[package]]
 name = "cita-bft"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "authority_manage 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -514,7 +514,7 @@ dependencies = [
 
 [[package]]
 name = "cita-chain"
-version = "0.6.0"
+version = "1.0.0"
 dependencies = [
  "cita-database 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-directories 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -536,7 +536,7 @@ dependencies = [
 [[package]]
 name = "cita-crypto"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "cita-crypto-trait 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -547,7 +547,7 @@ dependencies = [
 [[package]]
 name = "cita-crypto-trait"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
 ]
@@ -564,7 +564,7 @@ dependencies = [
 [[package]]
 name = "cita-directories"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -572,7 +572,7 @@ dependencies = [
 [[package]]
 name = "cita-ed25519"
 version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto-trait 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -586,7 +586,7 @@ dependencies = [
 
 [[package]]
 name = "cita-executor"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -617,7 +617,7 @@ dependencies = [
 
 [[package]]
 name = "cita-forever"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -629,7 +629,7 @@ dependencies = [
 
 [[package]]
 name = "cita-jsonrpc"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -680,7 +680,7 @@ dependencies = [
 [[package]]
 name = "cita-merklehash"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -690,7 +690,7 @@ dependencies = [
 
 [[package]]
 name = "cita-network"
-version = "0.6.0"
+version = "1.0.0"
 dependencies = [
  "byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -739,7 +739,7 @@ dependencies = [
 [[package]]
 name = "cita-secp256k1"
 version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto-trait 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -756,7 +756,7 @@ dependencies = [
 [[package]]
 name = "cita-sm2"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "cita-crypto-trait 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -770,7 +770,7 @@ dependencies = [
 [[package]]
 name = "cita-types"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "ethereum-types 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "plain_hasher 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1202,7 +1202,7 @@ dependencies = [
 [[package]]
 name = "engine"
 version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -1265,7 +1265,7 @@ dependencies = [
 [[package]]
 name = "error"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 
 [[package]]
 name = "error-chain"
@@ -1602,7 +1602,7 @@ dependencies = [
 [[package]]
 name = "hashable"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "blake2b 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -1834,7 +1834,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "jsonrpc-proto"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1851,7 +1851,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-types"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -1865,7 +1865,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-types-internals"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "proc-macro2 0.4.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1963,7 +1963,7 @@ dependencies = [
 [[package]]
 name = "libproto"
 version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2463,7 +2463,7 @@ dependencies = [
 [[package]]
 name = "panic_hook"
 version = "0.0.1"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "backtrace 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2577,7 +2577,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -2600,7 +2600,7 @@ dependencies = [
 [[package]]
 name = "pubsub"
 version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "dotenv 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub_kafka 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -2611,7 +2611,7 @@ dependencies = [
 [[package]]
 name = "pubsub_kafka"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2623,7 +2623,7 @@ dependencies = [
 [[package]]
 name = "pubsub_rabbitmq"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "amqp 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2632,7 +2632,7 @@ dependencies = [
 [[package]]
 name = "pubsub_zeromq"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2953,7 +2953,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "rlp"
 version = "0.2.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -3200,7 +3200,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "snappy"
 version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "libc 0.2.46 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -3791,7 +3791,7 @@ dependencies = [
 [[package]]
 name = "tx_pool"
 version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
@@ -3908,7 +3908,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "util"
 version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=develop#788444602d6181741281c06c2684d3d60374a350"
+source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "ansi_term 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
