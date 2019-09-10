@@ -26,7 +26,7 @@ libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "deve
 error =  { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
+cita-database = "0.1"
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
