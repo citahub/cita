@@ -21,7 +21,6 @@ def main():
 
     tx_hash = send_tx(
         admin_privkey, to=system_contract_address, code=code, version=version)
-    time.sleep(5)       # ensure tx execution.
     receipt = get_receipt(tx_hash)
     assert receipt['errorMessage'] == None, "Transaction execution failed"
 

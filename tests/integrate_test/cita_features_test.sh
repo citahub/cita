@@ -65,7 +65,9 @@ main() {
 
     echo -e "6) Run block interval tests ...\n"
     test_change_block_interval 2
-    timeout=$(check_height_growth_normal 0 60) || (echo "Block interval changed")
+    timeout=$(check_height_growth_normal 0 60) && (echo "FAILED"
+                                                    echo "failed to change block interval"
+                                                    exit 1)
     echo "Done"
 }
 
