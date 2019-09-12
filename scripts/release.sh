@@ -54,6 +54,7 @@ cp -f   scripts/create_cita_config.py      target/install/scripts/
 
 # 5) txtool
 cp -rf scripts/txtool                      target/install/scripts/
+cp -rf scripts/upgrade                     target/install/scripts/
 
 # 6) docker env
 cp -f  env.sh                              target/install/bin/cita-env
