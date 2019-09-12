@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::tools::method as method_tools;
 // use crate::engines::NullEngine;
 use crate::libexecutor::block::EVMBlockDataProvider;
@@ -21,12 +20,15 @@ use cita_types::{Address, H160, U256};
 // use evm::{Factory, VMType};
 use std::str::FromStr;
 // use util::BytesRef;
-use crate::cita_executive::{build_evm_config, build_evm_context};
+use crate::cita_executive::{
+    build_evm_context, build_vm_exec_params, call as vm_call, ExecutiveParams,
+};
+use crate::cita_vm_helper::get_interpreter_conf;
+use crate::data_provider::Store as VMSubState;
 use crate::libexecutor::executor::CitaTrieDB;
 use crate::types::context::Context;
 use cita_vm::evm::InterpreterResult;
 use cita_vm::state::State as CitaState;
-use cita_vm::Transaction as EVMTransaction;
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -43,30 +45,29 @@ pub fn auto_exec(
     context: Context,
 ) {
     let hash = &*AUTO_EXEC_HASH;
-    let evm_transaction = EVMTransaction {
-        from: Address::from(0x0),
-        value: U256::from(0),
-        gas_limit: auto_exec_quota_limit,
+    let params = ExecutiveParams {
+        code_address: Some(*AUTO_EXEC_ADDR),
+        sender: Address::from(0x0),
+        to_address: Some(*AUTO_EXEC_ADDR),
+        gas: U256::from(auto_exec_quota_limit),
         gas_price: U256::from(1),
-        input: hash.to_vec(),
-        to: Some(*AUTO_EXEC_ADDR),
+        value: U256::from(0),
         nonce: U256::from(0),
+        data: Some(hash.to_vec()),
     };
-
-    let mut evm_config = build_evm_config(auto_exec_quota_limit);
-
-    // Do not check nonce and balance for auto exec
-    evm_config.check_nonce = false;
-    evm_config.check_balance = false;
-    let evm_context = build_evm_context(&context);
-
     let block_provider = EVMBlockDataProvider::new(context.clone());
-    match cita_vm::exec(
+    let vm_exec_params = build_vm_exec_params(&params, state.clone());
+    let mut sub_state = VMSubState::default();
+
+    sub_state.evm_context = build_evm_context(&context.clone());
+    sub_state.evm_cfg = get_interpreter_conf();
+    let sub_state = Arc::new(RefCell::new(sub_state));
+
+    match vm_call(
         Arc::new(block_provider),
-        state,
-        evm_context,
-        evm_config,
-        evm_transaction,
+        state.clone(),
+        sub_state.clone(),
+        &vm_exec_params.into(),
     ) {
         Ok(res) => match res {
             InterpreterResult::Normal(_, _, _) => {

@@ -12,11 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use cita_vm::evm::Error as EVMError;
+use cita_vm::Error as VMError;
 use std::fmt;
 
 #[derive(Debug)]
 pub enum NativeError {
     Internal(String),
+}
+
+impl Into<VMError> for NativeError {
+    fn into(self) -> VMError {
+        match self {
+            NativeError::Internal(str) => VMError::Evm(EVMError::Internal(str)),
+        }
+    }
 }
 
 impl fmt::Display for NativeError {

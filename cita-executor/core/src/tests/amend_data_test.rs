@@ -16,14 +16,13 @@ use std::cell::RefCell;
 use std::sync::Arc;
 
 use crate::cita_executive::CitaExecutive;
-use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::libexecutor::{economical_model::EconomicalModel, sys_config::BlockSysConfig};
 use crate::tests::helpers::get_temp_state;
 use crate::types::context::Context;
 use crate::types::transaction::Action;
 
+use crate::data_provider::BlockDataProviderMock;
 use cita_types::{Address, H256, U256};
-use cita_vm::BlockDataProviderMock;
 use core::transaction::{SignedTransaction, Transaction};
 use types::Bytes;
 
@@ -50,13 +49,11 @@ fn build_transaction(
 #[test]
 fn test_amend_tool() {
     let state = get_temp_state();
-    let native_factory = NativeFactory::default();
     let context = Context::default();
 
     let mut e = CitaExecutive::new(
         Arc::new(BlockDataProviderMock::default()),
         Arc::new(RefCell::new(state)),
-        &native_factory,
         &context,
         EconomicalModel::default(),
     );

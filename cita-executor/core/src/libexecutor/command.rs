@@ -17,7 +17,6 @@ use super::executor::CitaTrieDB;
 use super::executor::{make_consensus_config, Executor};
 use super::sys_config::GlobalSysConfig;
 use crate::cita_executive::{CitaExecutive, ExecutedResult as CitaExecuted};
-use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::solc::{
     sys_config::ChainId, PermissionManagement, SysConfig, VersionManager,
 };
@@ -290,7 +289,6 @@ impl Commander for Executor {
         conf.exempt_checking();
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
-        let native_factory = NativeFactory::default();
 
         let state_root = if let Some(h) = self.block_header(block_tag) {
             (*h.state_root())
@@ -314,7 +312,6 @@ impl Commander for Executor {
         CitaExecutive::new(
             Arc::new(block_data_provider),
             state,
-            &native_factory,
             &context,
             conf.economical_model,
         )
