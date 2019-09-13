@@ -10,17 +10,17 @@ serde = "1.0"
 serde_derive = "1.0"
 bincode = "0.8.0"
 cita-logger = "0.1.0"
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
 clap = "2"
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
 chrono = "0.4.2"
 
 [features]
-default = ["secp256k1", "sha3hash", "rabbitmq"]
+default = ["secp256k1", "sha3hash", "zeromq"]
 secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1", "proof/secp256k1"]
 ed25519 = ["cita-crypto/ed25519", "libproto/ed25519", "proof/ed25519"]
 sm2 = ["cita-crypto/sm2", "libproto/sm2", "proof/sm2"]

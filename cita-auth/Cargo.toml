@@ -13,19 +13,19 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 cita-logger = "0.1.1"
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-tx_pool = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+error = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+tx_pool = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
 uuid = { version = "0.7", features = ["v4"] }
 lru = "0.1"
 rayon = "1.2"
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
 cita-database = "0.1"
 
 [dev-dependencies]
@@ -34,10 +34,10 @@ tempdir = "0.3.7"
 quickcheck = "0.7.2"
 
 [build-dependencies]
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/cryptape/cita-common.git", branch = "fix_zero_mq" }
 
 [features]
-default = ["secp256k1", "sha3hash", "rabbitmq"]
+default = ["secp256k1", "sha3hash", "zeromq"]
 secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1", "tx_pool/secp256k1"]
 ed25519 = ["cita-crypto/ed25519", "libproto/ed25519", "tx_pool/ed25519"]
 sm2 = ["cita-crypto/sm2", "libproto/sm2", "tx_pool/sm2"]
