@@ -60,3 +60,8 @@ def rpc_request(method, params):
 def get_balance(addr):
     """ Get the balance of an address """
     return int(rpc_request('getBalance', [addr, 'pending']), 16)
+
+def get_metadata():
+    """ Get metadata """
+    response = rpc_request('getMetaData', ["pending"])
+    return response
