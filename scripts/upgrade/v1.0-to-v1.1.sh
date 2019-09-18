@@ -29,11 +29,15 @@ fi
 if [ "$1" = "help" ]; then
     echo "Admin private key, url as the params.
         For example: \\
-        bin/cita scripts/v1.0-to-v1.1.sh \\
+        bin/cita scripts/upgrade/v1.0-to-v1.1.sh \\
             0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \\
             http://127.0.0.1:1337"
     exit 0
 fi
+
+echo "==> Prepare environment"
+rm -rf tmp/
+rm -f "${SOURCE_DIR}"/genesis.json
 
 echo "==> Create temp chain and get new genesis.json"
 python3 scripts/create_cita_config.py create \
