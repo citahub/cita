@@ -21,7 +21,7 @@ pub use log_entry::LogBloom;
 
 pub use log_blooms::LogBloomGroup;
 
-/// Constant 2048-bit datum for 0. Often used as a default.
+// Constant 2048-bit datum for 0. Often used as a default.
 lazy_static! {
     pub static ref ZERO_LOGBLOOM: LogBloom = LogBloom::from([0x00; 256]);
 }

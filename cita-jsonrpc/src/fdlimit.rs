@@ -17,7 +17,6 @@
 
 #[cfg(any(target_os = "linux"))]
 pub fn set_fd_limit() {
-    use libc;
     use std::io;
 
     unsafe {

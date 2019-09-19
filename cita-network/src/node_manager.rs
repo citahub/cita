@@ -854,7 +854,7 @@ impl DelConnectedNodeReq {
             self.fix_node_status(trans_addr, service);
 
             // Remove connected peer keys
-            for (key, value) in service.connected_peer_keys.iter() {
+            for (key, value) in service.connected_peer_keys.clone().iter() {
                 if self.session_id == *value {
                     info!(
                         "[NodeManager] Remove session [{:?}] from connected_peer_keys.",
