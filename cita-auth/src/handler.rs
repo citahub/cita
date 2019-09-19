@@ -1069,11 +1069,14 @@ impl MsgHandler {
                         let un_tx = tx.get_transaction_with_sig();
                         self.save_ret_to_cache(
                             H256::from_slice(tx.get_tx_hash()),
-                            Some(un_tx.get_signature().to_vec()),
+                            Some(un_tx.clone().get_signature().to_vec()),
                         );
-                    }
 
-                    self.dispatcher.add_txs_to_pool(signed_txn);
+                        let req = un_tx.tx_verify_req_msg();
+                        if self.verify_tx_req(&req).is_ok() {
+                            self.dispatcher.add_tx_to_pool(tx);
+                        }
+                    }
                     return true;
                 }
                 Err(error) => {
