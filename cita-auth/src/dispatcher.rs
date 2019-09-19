@@ -120,7 +120,7 @@ impl Dispatcher {
     }
 
     pub fn add_tx_to_pool(&self, tx: &SignedTransaction) -> bool {
-        trace!("add tx {} to pool", tx.get_tx_hash().lower_hex());
+        info!("add tx {} to pool", tx.get_tx_hash().lower_hex());
         let txs_pool = &mut self.txs_pool.borrow_mut();
         let success = txs_pool.enqueue(tx.clone());
         if self.wal_enable {
@@ -141,7 +141,10 @@ impl Dispatcher {
         let txs_pool = &mut self.txs_pool.borrow_mut();
         let added: Vec<SignedTransaction> = txs
             .into_iter()
-            .filter(|tx| txs_pool.enqueue(tx.clone()))
+            .filter(|tx| {
+                info!("add txs {} to pool", tx.get_tx_hash().lower_hex());
+                txs_pool.enqueue(tx.clone())
+            })
             .collect();
         if self.wal_enable {
             self.wal.write_batch(&added);
