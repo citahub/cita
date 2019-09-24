@@ -213,7 +213,7 @@ impl Synchronizer {
             self.add_latest_sync_lists(status.get_height(), origin);
 
             if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT
-                && !self.is_synchronizing
+                || !self.is_synchronizing
             {
                 self.start_sync_req(current_height + 1);
             }

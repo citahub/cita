@@ -310,7 +310,7 @@ impl Postman {
                 for proto_block in sync_res.take_blocks().into_iter() {
                     let open_block = OpenBlock::from(proto_block);
                     if !self.backlogs.insert_synchronized(open_block) {
-                        return false;
+                        continue;
                     }
                 }
                 true
