@@ -7,11 +7,11 @@
 # In cita 1.1.0, a interface named `setBlockInterval` was added in system contract.
 # So, if you were using cita version 1.1 below and wanted to upgrade to version 1.1, this file is prepared for you.
 #
-# II. How to use this bach?
+# II. How to use this bash?
 #
 #   1. Download the cita version 1.1 release package from https://github.com/cryptape/cita/releases
 #   2. Extract the package and copy directory bin/ and scripts/ to corresponding dir under your nodes.
-#   3. Next, upgrade your node use this helper. Tap the comand below, remember to update the admin privkey
+#   3. Next, upgrade your node use this helper. Tap the command below, remember to update the admin privkey
 #       and node url params.
 
 #          ./scripts/upgrade/v1.0-to-v1.1.sh \
