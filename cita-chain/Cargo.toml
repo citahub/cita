@@ -1,7 +1,7 @@
 [package]
 description = "CITA node."
 name = "cita-chain"
-version = "0.6.0"
+version = "1.0.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
 license = "Apache-2.0"
 edition = "2018"
@@ -21,7 +21,7 @@ jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = 
 core = { path = "./core" }
 common-types = { path = "./types" }
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita_db = { git = "https://github.com/cryptape/cita-database.git", branch = "develop", package = "cita-database" }
+cita_db = { version = "0.1", package = "cita-database" }
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

@@ -44,7 +44,7 @@ libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "deve
 proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 zktx = { git = "https://github.com/cryptape/zktx.git", optional = true }
-cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
+cita-database = "0.1"
 
 cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

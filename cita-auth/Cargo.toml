@@ -1,6 +1,6 @@
 [package]
 name = "cita-auth"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
 license = "Apache-2.0"
 edition = "2018"
@@ -26,7 +26,7 @@ uuid = { version = "0.7", features = ["v4"] }
 lru = "0.1"
 rayon = "1.2"
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
+cita-database = "0.1"
 
 [dev-dependencies]
 tempfile = "2"
