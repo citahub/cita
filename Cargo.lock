@@ -207,17 +207,17 @@ dependencies = [
 [[package]]
 name = "bft-rs"
 version = "0.2.0-alpha"
-source = "git+https://github.com/cryptape/bft-rs.git?branch=bft_for_cita#c2a678596eaab7ced23082878f8f559c244b910c"
+source = "git+https://github.com/cryptape/bft-rs.git?branch=bft_for_cita#2cd0499cf8406a6f0f55add3489c7117509e5480"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
+ "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "crossbeam 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-utils 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex_fmt 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "min-max-heap 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
+ "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "rand 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_pcg 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -568,28 +568,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "cita-crypto"
-version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-gpl#c143a218ac7f3bd8b79fc6357e8ff94502891b72"
-dependencies = [
- "cita-crypto-trait 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "cita-secp256k1 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
-]
-
-[[package]]
 name = "cita-crypto-trait"
 version = "0.1.0"
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
 dependencies = [
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
-]
-
-[[package]]
-name = "cita-crypto-trait"
-version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-gpl#c143a218ac7f3bd8b79fc6357e8ff94502891b72"
-dependencies = [
- "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
 ]
 
 [[package]]
@@ -605,14 +588,6 @@ dependencies = [
 name = "cita-directories"
 version = "0.1.0"
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
-dependencies = [
- "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "cita-directories"
-version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-gpl#c143a218ac7f3bd8b79fc6357e8ff94502891b72"
 dependencies = [
  "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -737,17 +712,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cita-merklehash"
-version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-gpl#c143a218ac7f3bd8b79fc6357e8ff94502891b72"
-dependencies = [
- "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "static_merkle_tree 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "cita-network"
 version = "1.0.0"
 dependencies = [
@@ -813,23 +777,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cita-secp256k1"
-version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-gpl#c143a218ac7f3bd8b79fc6357e8ff94502891b72"
-dependencies = [
- "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-crypto-trait 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "secp256k1 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "cita-sm2"
 version = "0.1.0"
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
@@ -847,15 +794,6 @@ dependencies = [
 name = "cita-types"
 version = "0.1.0"
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
-dependencies = [
- "ethereum-types 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "plain_hasher 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "cita-types"
-version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-gpl#c143a218ac7f3bd8b79fc6357e8ff94502891b72"
 dependencies = [
  "ethereum-types 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "plain_hasher 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1711,15 +1649,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hashable"
-version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-gpl#c143a218ac7f3bd8b79fc6357e8ff94502891b72"
-dependencies = [
- "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "tiny-keccak 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2094,25 +2023,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "libproto"
-version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-gpl#c143a218ac7f3bd8b79fc6357e8ff94502891b72"
-dependencies = [
- "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-merklehash 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "protobuf 2.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "snappy 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "tls-api 0.1.20 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "librocksdb-sys"
 version = "6.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2476,7 +2386,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "num-integer 0.1.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2723,21 +2633,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "proof"
-version = "0.6.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-gpl#c143a218ac7f3bd8b79fc6357e8ff94502891b72"
-dependencies = [
- "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "cita-directories 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "protobuf"
 version = "2.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2869,7 +2764,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "autocfg 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand_core 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand_core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2898,7 +2793,7 @@ name = "rand_hc"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "rand_core 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand_core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2946,7 +2841,7 @@ name = "rand_xorshift"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "rand_core 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand_core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3105,18 +3000,6 @@ source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e9
 dependencies = [
  "byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "elastic-array 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "rlp"
-version = "0.2.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-gpl#c143a218ac7f3bd8b79fc6357e8ff94502891b72"
-dependencies = [
- "byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)",
  "elastic-array 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3361,14 +3244,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "snappy"
 version = "0.1.0"
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#084e4e969672f39a5fb27b64679f56be9ab24a4a"
-dependencies = [
- "libc 0.2.46 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "snappy"
-version = "0.1.0"
-source = "git+https://github.com/cryptape/cita-common.git?branch=remove-gpl#c143a218ac7f3bd8b79fc6357e8ff94502891b72"
 dependencies = [
  "libc 0.2.46 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -4346,21 +4221,15 @@ dependencies = [
 "checksum cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "082bb9b28e00d3c9d39cc03e64ce4cea0f1bb9b3fde493f0cbc008472d22bdf4"
 "checksum chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "45912881121cb26fad7c38c17ba7daa18764771836b34fab7d3fbd93ed633878"
 "checksum cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum cita-crypto 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)" = "<none>"
 "checksum cita-crypto-trait 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum cita-crypto-trait 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)" = "<none>"
 "checksum cita-database 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b4c3c40408c9123b12ebae63591d3f5d413215f7ba196c0712130be4f4c0e21a"
 "checksum cita-directories 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum cita-directories 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)" = "<none>"
 "checksum cita-ed25519 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
 "checksum cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "3f28d41799c3ceeaa16c6aef432fbffb96722a270fe877696c09656cfead4e2b"
 "checksum cita-merklehash 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum cita-merklehash 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)" = "<none>"
 "checksum cita-secp256k1 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum cita-secp256k1 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)" = "<none>"
 "checksum cita-sm2 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
 "checksum cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)" = "<none>"
 "checksum cita-vm 0.2.1 (git+https://github.com/cryptape/cita-vm.git?branch=cita)" = "<none>"
 "checksum cita_trie 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b90456b297d4aa962afb8712ed5a581abdde0f7835653e5f2142c5ed06d1eeed"
 "checksum clang-sys 0.28.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4227269cec09f5f83ff160be12a1e9b0262dd1aa305302d5ba296c2ebd291055"
@@ -4438,7 +4307,6 @@ dependencies = [
 "checksum glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 "checksum h2 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)" = "1ac030ae20dee464c5d0f36544d8b914a6bc606da44a57e052d2b0f5dae129e0"
 "checksum hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum hashable 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)" = "<none>"
 "checksum hashbrown 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "29fba9abe4742d586dfd0c06ae4f7e73a1c2d86b856933509b269d82cdf06e18"
 "checksum hasher 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "10e8846de73a692b8012bcb5b52e76c33087da83da9b36edded3b1af60efd71a"
 "checksum heapsize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1679e6ea370dee694f91f1dc469bf94cf8f52051d147aec3e1f9497c6fc22461"
@@ -4479,7 +4347,6 @@ dependencies = [
 "checksum libgit2-sys 0.7.10 (registry+https://github.com/rust-lang/crates.io-index)" = "4916b5addc78ec36cc309acfcdf0b9f9d97ab7b84083118b248709c5b7029356"
 "checksum libloading 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9c3ad660d7cb8c5822cd83d10897b0f1f1526792737a179e73896152f85b88c2"
 "checksum libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum libproto 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)" = "<none>"
 "checksum librocksdb-sys 6.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a6af56e6599bce586321e8ba8acf8a0a5e97431fd9ab49f9b69f92d93fe642c6"
 "checksum libsecp256k1 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "688e8d65e495567c2c35ea0001b26b9debf0b4ea11f8cccc954233b75fc3428a"
 "checksum libsm 0.3.0 (git+https://github.com/cryptape/libsm?rev=4d0e6199fca0934c58131de1d0036e9aa4da26c1)" = "<none>"
@@ -4544,7 +4411,6 @@ dependencies = [
 "checksum plain_hasher 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "83ae80873992f511142c07d0ec6c44de5636628fdb7e204abd655932ea79d995"
 "checksum proc-macro2 0.4.20 (registry+https://github.com/rust-lang/crates.io-index)" = "3d7b7eaaa90b4a90a932a9ea6666c95a389e424eff347f0f793979289429feee"
 "checksum proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)" = "<none>"
 "checksum protobuf 2.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7e9076cae823584ab4d8fab3a111658d1232faf106611dc8378161b7d062b628"
 "checksum pubsub 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
 "checksum pubsub_kafka 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
@@ -4584,7 +4450,6 @@ dependencies = [
 "checksum ripemd160 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ad5112e0dbbb87577bfbc56c42450235e3012ce336e29c5befd7807bd626da4a"
 "checksum rle-decode-fast 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "cabe4fa914dec5870285fa7f71f602645da47c486e68486d2b4ceb4a343e90ac"
 "checksum rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)" = "<none>"
 "checksum rlp 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "16d1effe9845d54f90e7be8420ee49e5c94623140b97ee4bc6fb5bfddb745720"
 "checksum rlp 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3b0d56c1450bfbef1181fdeb78b902dc1d23178de77c23d705317508e03d1b7c"
 "checksum rocksdb 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2e7523c32e26bf2ebc4540645961dafcbd086c652e8ecb563a507f432eb7636d"
@@ -4617,7 +4482,6 @@ dependencies = [
 "checksum slab 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5f9776d6b986f77b35c6cf846c11ad986ff128fe0b2b63a3628e3755e8d3102d"
 "checksum smallvec 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)" = "ab606a9c5e214920bb66c458cd7be8ef094f813f20fe77a54cc7dbfff220d4b7"
 "checksum snappy 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)" = "<none>"
-"checksum snappy 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=remove-gpl)" = "<none>"
 "checksum sodiumoxide 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "31532969f87f66ea5667b203fdee70aec8ddbe25aac69d243daff58c01688152"
 "checksum spin 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 "checksum stable_deref_trait 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "dba1a27d3efae4351c8051072d619e3ade2820635c3958d826bfea39d59b54c8"
