@@ -616,8 +616,10 @@ pub fn create<B: DB + 'static>(
                 state_provider.borrow_mut().revert_checkpoint();
                 return Err(VMError::ExccedMaxCodeSize);
             }
+            let tx_gas_schedule = TxGasSchedule::default();
             // Pay every byte returnd from CREATE
-            let gas_code_deposit: u64 = 200 * output.len() as u64;
+            let gas_code_deposit: u64 =
+                tx_gas_schedule.create_data_gas as u64 * output.len() as u64;
             if gas_left < gas_code_deposit {
                 state_provider.borrow_mut().revert_checkpoint();
                 return Err(VMError::Evm(evm::Error::OutOfGas));
