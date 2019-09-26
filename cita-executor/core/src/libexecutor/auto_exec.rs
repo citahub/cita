@@ -12,24 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::contracts::tools::method as method_tools;
-// use crate::engines::NullEngine;
-use crate::libexecutor::block::EVMBlockDataProvider;
-use crate::types::reserved_addresses;
-use cita_types::{Address, H160, U256};
-// use evm::{Factory, VMType};
-use std::str::FromStr;
-// use util::BytesRef;
 use crate::cita_executive::{
     build_evm_context, build_vm_exec_params, call as vm_call, ExecutiveParams,
 };
 use crate::cita_vm_helper::get_interpreter_conf;
+use crate::contracts::tools::method as method_tools;
 use crate::data_provider::Store as VMSubState;
+use crate::libexecutor::block::EVMBlockDataProvider;
 use crate::libexecutor::executor::CitaTrieDB;
 use crate::types::context::Context;
+use crate::types::reserved_addresses;
+use cita_types::{Address, H160, U256};
 use cita_vm::evm::InterpreterResult;
 use cita_vm::state::State as CitaState;
 use std::cell::RefCell;
+use std::str::FromStr;
 use std::sync::Arc;
 
 const AUTO_EXEC: &[u8] = &*b"autoExec()";
