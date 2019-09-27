@@ -32,6 +32,8 @@ cita_trie = "2.0"
 ethbloom = "0.6"
 sha3 = { version="0.8", optional=true }
 tiny-keccak = { version="1.4", optional=true }
+hashbrown = { version = "0.3", features = ["rayon"] }
+hasher = { version="0.1" }
 
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }

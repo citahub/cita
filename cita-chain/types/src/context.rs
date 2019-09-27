@@ -14,6 +14,7 @@
 
 use crate::header::BlockNumber;
 use cita_types::{Address, H256, U256};
+use cita_vm::evm::Context as EVMContext;
 use std::sync::Arc;
 
 pub type LastHashes = Vec<H256>;
@@ -41,6 +42,19 @@ impl Default for Context {
             last_hashes: Arc::new(vec![]),
             quota_used: U256::default(),
             account_quota_limit: U256::default(),
+        }
+    }
+}
+
+impl From<EVMContext> for Context {
+    fn from(evm_context: EVMContext) -> Context {
+        Context {
+            block_quota_limit: U256::from(evm_context.gas_limit),
+            coin_base: evm_context.coinbase,
+            block_number: evm_context.number.as_u64(),
+            timestamp: evm_context.timestamp,
+            difficulty: evm_context.difficulty,
+            ..Default::default()
         }
     }
 }

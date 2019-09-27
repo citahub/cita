@@ -12,19 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::data_provider::{BlockDataProvider, DataProvider, Store as VMSubState};
 use cita_trie::DB;
 use cita_types::{Address, H160, H256, U256, U512};
 use cita_vm::{
-    evm::{Context as EVMContext, Error as EVMError, InterpreterResult, Log as EVMLog},
+    evm::{
+        self, Context as EVMContext, Contract, Error as EVMError, InterpreterParams,
+        InterpreterResult, Log as EVMLog,
+    },
     state::{State, StateObjectInfo},
-    BlockDataProvider, Config as VMConfig, DataProvider, Error as VMError, Store as VmSubState,
-    Transaction as EVMTransaction,
+    summary, Error as VMError,
 };
+use rlp::RlpStream;
 use std::cell::RefCell;
 use std::sync::Arc;
 use types::Bytes;
 
 use crate::authentication::check_permission;
+use crate::cita_vm_helper::{call_pure, get_interpreter_conf};
 use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::exception::ExecutedException;
 use crate::libexecutor::economical_model::EconomicalModel;
@@ -48,11 +53,13 @@ const AMEND_GET_KV_H256: u32 = 4;
 ///amend account's balance
 const AMEND_ACCOUNT_BALANCE: u32 = 5;
 
+/// See: https://github.com/ethereum/EIPs/issues/659
+const MAX_CREATE_CODE_SIZE: u64 = std::u64::MAX;
+
 // FIXME: CITAExecutive need rename to Executive after all works ready.
 pub struct CitaExecutive<'a, B> {
     block_provider: Arc<BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
-    native_factory: &'a NativeFactory,
     context: &'a Context,
     economical_model: EconomicalModel,
 }
@@ -61,14 +68,12 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
     pub fn new(
         block_provider: Arc<BlockDataProvider>,
         state: Arc<RefCell<State<B>>>,
-        native_factory: &'a NativeFactory,
         context: &'a Context,
         economical_model: EconomicalModel,
     ) -> Self {
         Self {
             block_provider,
             state_provider: state,
-            native_factory,
             context,
             economical_model,
         }
@@ -104,7 +109,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             0...2 => 0,
             _ => t.data.len() * tx_gas_schedule.tx_data_non_zero_gas,
         };
-
         if sender != Address::zero() && t.gas < U256::from(base_gas_required) {
             // FIXME: It is better to change NotEnoughBaseGas to
             //    NotEnoughBaseGas {
@@ -119,22 +123,22 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             return Err(ExecutionError::InvalidTransaction);
         }
 
+        // Prepaid t.gas for the transaction.
+        self.prepaid(t.sender(), t.gas, t.gas_price, t.value)?;
         let init_gas = t.gas - U256::from(base_gas_required);
+
+        let mut store = VMSubState::default();
+        store.evm_context = build_evm_context(&self.context.clone());
+        store.evm_cfg = get_interpreter_conf();
+        let store = Arc::new(RefCell::new(store));
 
         let result = match t.action {
             Action::Store | Action::AbiStore => {
-                // Prepaid t.gas for the transaction.
-                self.prepaid(t.sender(), t.gas, t.gas_price, t.value)?;
-
                 // Maybe use tx_gas_schedule.tx_data_non_zero_gas for each byte store, it is more reasonable.
                 // But for the data compatible, just let it as tx_gas_schedule.create_data_gas for now.
                 let store_gas_used = U256::from(t.data.len() * tx_gas_schedule.create_data_gas);
                 if let Some(gas_left) = init_gas.checked_sub(store_gas_used) {
-                    let mut result = ExecutedResult::default();
-                    result.quota_left = gas_left;
-                    result.is_evm_call = false;
-
-                    Ok(result)
+                    Ok(InterpreterResult::Normal(vec![], gas_left.as_u64(), vec![]))
                 } else {
                     // FIXME: Should not return an error after self.prepaid().
                     // But for compatibility, should keep this. Need to be upgrade in new version.
@@ -143,18 +147,28 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             }
             Action::Create => {
                 // Note: Fees has been handle in cita_vm.
-                let params = VmExecParams {
+                let params = ExecutiveParams {
                     code_address: None,
                     sender,
                     to_address: None,
-                    gas: t.gas,
+                    gas: init_gas,
                     gas_price: t.gas_price(),
                     value: t.value,
                     nonce,
                     data: Some(t.data.clone()),
                 };
 
-                self.call_evm(&params)
+                let mut vm_exec_params = build_vm_exec_params(&params, self.state_provider.clone());
+                if !self.payment_required() {
+                    vm_exec_params.disable_transfer_value = true;
+                }
+                create(
+                    self.block_provider.clone(),
+                    self.state_provider.clone(),
+                    store.clone(),
+                    &vm_exec_params.into(),
+                    CreateKind::FromAddressAndNonce,
+                )
             }
 
             Action::AmendData => {
@@ -171,9 +185,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                     ));
                 }
 
-                // Prepaid for the transaction
-                self.prepaid(t.sender(), t.gas, t.gas_price, t.value)?;
-
                 // Backup used in case of running error
                 self.state_provider.borrow_mut().checkpoint();
 
@@ -181,101 +192,186 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                     Ok(Some(val)) => {
                         // Discard the checkpoint because of amend data ok.
                         self.state_provider.borrow_mut().discard_checkpoint();
-
-                        let mut result = ExecutedResult::default();
-                        // Refund gas, AmendData do not use any additional gas.
-                        result.quota_left = init_gas;
-                        result.is_evm_call = false;
-                        result.output = val.to_vec();
-                        Ok(result)
+                        Ok(InterpreterResult::Normal(
+                            val.to_vec(),
+                            init_gas.as_u64(),
+                            vec![],
+                        ))
                     }
                     Ok(None) => {
                         // Discard the checkpoint because of amend data ok.
                         self.state_provider.borrow_mut().discard_checkpoint();
-
-                        let mut result = ExecutedResult::default();
-                        // Refund gas, AmendData do not use any additional gas.
-                        result.quota_left = init_gas;
-                        result.is_evm_call = false;
-                        Ok(result)
+                        Ok(InterpreterResult::Normal(vec![], init_gas.as_u64(), vec![]))
                     }
                     Err(e) => {
-                        let mut result = ExecutedResult::default();
-
                         // Need to revert the state.
                         self.state_provider.borrow_mut().revert_checkpoint();
-                        result.exception = Some(ExecutedException::VM(e));
-                        result.is_evm_call = false;
-                        Ok(result)
+                        Err(e)
                     }
                 }
             }
             Action::Call(ref address) => {
-                let params = VmExecParams {
+                let params = ExecutiveParams {
                     code_address: Some(*address),
                     sender,
                     to_address: Some(*address),
-                    gas: t.gas,
+                    gas: init_gas,
                     gas_price: t.gas_price(),
                     value: t.value,
                     nonce,
                     data: Some(t.data.clone()),
                 };
-                self.call(&params)
-            }
-        };
-
-        let mut finalize_result = match result {
-            Ok(res) => {
-                if let Some(ref e) = res.exception {
-                    if let Some(err) = self.transform_base_gas_err(e) {
-                        return Err(err);
-                    }
+                let mut vm_exec_params = build_vm_exec_params(&params, self.state_provider.clone());
+                if !self.payment_required() {
+                    vm_exec_params.disable_transfer_value = true;
                 }
-                res
-            }
-            Err(_) => {
-                // Don't care about what is the error info in this situation, just let it as
-                // ReceiptError::Internal in Receipt.
-                let mut r = ExecutedResult::default();
-                r.quota_left = U256::from(0);
-                r.quota_used = t.gas;
-                r.is_evm_call = false;
-                r
+                call(
+                    self.block_provider.clone(),
+                    self.state_provider.clone(),
+                    store.clone(),
+                    &vm_exec_params.into(),
+                )
             }
         };
 
-        if !finalize_result.is_evm_call {
-            let refund_value = finalize_result.quota_left * t.gas_price;
-            // Note: should not be error at refund.
-            self.refund(t.sender(), refund_value)
-                .expect("refund balance to sender must success");
-
-            let quota_used = t.gas - finalize_result.quota_left;
-            let fee_value = quota_used * t.gas_price;
-            self.handle_tx_fee(&self.context.coin_base, fee_value)
-                .expect("Add balance to coin_base must success");
-            finalize_result.quota_used = quota_used;
-        }
-
+        let mut finalize_result = self.finalize(result, store, t.gas, sender, t.gas_price());
         finalize_result.account_nonce = nonce;
         Ok(finalize_result)
     }
 
-    fn transform_base_gas_err(&self, e: &ExecutedException) -> Option<ExecutionError> {
-        match e {
-            ExecutedException::VM(VMError::ExccedMaxBlockGasLimit) => {
-                Some(ExecutionError::BlockQuotaLimitReached)
+    fn finalize(
+        &mut self,
+        result: Result<InterpreterResult, VMError>,
+        store: Arc<RefCell<VMSubState>>,
+        gas_limit: U256,
+        sender: Address,
+        gas_price: U256,
+    ) -> ExecutedResult {
+        let mut finalize_result = ExecutedResult::default();
+
+        match result {
+            Ok(InterpreterResult::Normal(output, gas_left, logs)) => {
+                if self.payment_required() {
+                    let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
+                    if let Err(e) = liquidtion(
+                        self.state_provider.clone(),
+                        store.clone(),
+                        sender,
+                        gas_price,
+                        gas_limit.as_u64(),
+                        gas_left,
+                        refund,
+                    ) {
+                        finalize_result.exception = Some(ExecutedException::VM(e));
+                        return finalize_result;
+                    }
+                }
+                // Handle self destruct: Kill it.
+                // Note: must after ends of the transaction.
+                for e in store.borrow_mut().selfdestruct.drain() {
+                    self.state_provider.borrow_mut().kill_contract(&e);
+                }
+                self.state_provider
+                    .borrow_mut()
+                    .kill_garbage(&store.borrow().inused.clone());
+                finalize_result.quota_used = gas_limit - U256::from(gas_left);
+                finalize_result.quota_left = U256::from(gas_left);
+                finalize_result.logs = transform_logs(logs);
+                finalize_result.logs_bloom = logs_to_bloom(&finalize_result.logs);
+
+                trace!(
+                    "Get data after executed the transaction [Normal]: {:?}",
+                    output
+                );
+                finalize_result.output = output;
             }
-            ExecutedException::VM(VMError::InvalidNonce) => Some(ExecutionError::InvalidNonce),
-            ExecutedException::VM(VMError::NotEnoughBaseGas) => {
-                Some(ExecutionError::NotEnoughBaseGas)
+            Ok(InterpreterResult::Revert(output, gas_left)) => {
+                if self.payment_required() {
+                    if let Err(e) = liquidtion(
+                        self.state_provider.clone(),
+                        store.clone(),
+                        sender,
+                        gas_price,
+                        gas_limit.as_u64(),
+                        gas_left,
+                        0,
+                    ) {
+                        finalize_result.exception = Some(ExecutedException::VM(e));
+                        return finalize_result;
+                    }
+                }
+                self.state_provider
+                    .borrow_mut()
+                    .kill_garbage(&store.borrow().inused.clone());
+
+                finalize_result.quota_used = gas_limit - U256::from(gas_left);
+                finalize_result.quota_left = U256::from(gas_left);
+                finalize_result.exception = Some(ExecutedException::Reverted);
+                trace!(
+                    "Get data after executed the transaction [Revert]: {:?}",
+                    output
+                );
             }
-            ExecutedException::VM(VMError::NotEnoughBalance) => {
-                Some(ExecutionError::NotEnoughBalance)
+            Ok(InterpreterResult::Create(output, gas_left, logs, addr)) => {
+                if self.payment_required() {
+                    let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
+                    if let Err(e) = liquidtion(
+                        self.state_provider.clone(),
+                        store.clone(),
+                        sender,
+                        gas_price,
+                        gas_limit.as_u64(),
+                        gas_left,
+                        refund,
+                    ) {
+                        finalize_result.exception = Some(ExecutedException::VM(e));
+                        return finalize_result;
+                    }
+                }
+
+                for e in store.borrow_mut().selfdestruct.drain() {
+                    self.state_provider.borrow_mut().kill_contract(&e);
+                }
+                self.state_provider
+                    .borrow_mut()
+                    .kill_garbage(&store.borrow().inused.clone());
+                finalize_result.quota_used = gas_limit - U256::from(gas_left);
+                finalize_result.quota_left = U256::from(gas_left);
+                finalize_result.logs = transform_logs(logs);
+                finalize_result.logs_bloom = logs_to_bloom(&finalize_result.logs);
+                finalize_result.contract_address = Some(addr);
+
+                trace!(
+                "Get data after executed the transaction [Create], contract address: {:?}, contract data : {:?}",
+                finalize_result.contract_address, output
+                );
             }
-            _ => None,
+            Err(e) => {
+                if self.payment_required() {
+                    if let Err(e) = liquidtion(
+                        self.state_provider.clone(),
+                        store.clone(),
+                        sender,
+                        gas_price,
+                        gas_limit.as_u64(),
+                        0,
+                        0,
+                    ) {
+                        finalize_result.exception = Some(ExecutedException::VM(e));
+                        return finalize_result;
+                    }
+                }
+                self.state_provider
+                    .borrow_mut()
+                    .kill_garbage(&store.borrow().inused.clone());
+
+                finalize_result.exception = Some(ExecutedException::VM(e));
+                finalize_result.quota_used = gas_limit;
+                finalize_result.quota_left = U256::from(0);
+            }
         }
+
+        finalize_result
     }
 
     fn payment_required(&self) -> bool {
@@ -304,48 +400,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 .sub_balance(&sender, U256::from(gas_cost))?;
         }
         Ok(())
-    }
-
-    fn refund(&mut self, address: &Address, value: U256) -> Result<(), ExecutionError> {
-        if self.payment_required() {
-            self.state_provider
-                .borrow_mut()
-                .add_balance(address, value)
-                .map_err(ExecutionError::from)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn handle_tx_fee(
-        &mut self,
-        coin_base: &Address,
-        fee_value: U256,
-    ) -> Result<(), ExecutionError> {
-        if self.payment_required() {
-            self.state_provider
-                .borrow_mut()
-                .add_balance(coin_base, fee_value)
-                .map_err(ExecutionError::from)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn transfer_balance(
-        &mut self,
-        from: &Address,
-        to: &Address,
-        value: U256,
-    ) -> Result<(), ExecutionError> {
-        if self.payment_required() {
-            self.state_provider
-                .borrow_mut()
-                .transfer_balance(from, to, value)
-                .map_err(ExecutionError::from)
-        } else {
-            Ok(())
-        }
     }
 
     fn transact_set_abi(&mut self, data: &[u8]) -> bool {
@@ -495,99 +549,172 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             _ => Ok(None),
         }
     }
+}
 
-    pub fn call_evm(&mut self, params: &VmExecParams) -> Result<ExecutedResult, ExecutionError> {
-        let mut evm_transaction = build_evm_transaction(params);
-        trace!("block quota limit is {:?}", self.context.block_quota_limit);
-        let mut evm_config = build_evm_config(self.context.block_quota_limit.as_u64());
-        let evm_context = build_evm_context(&self.context);
-
-        if !self.payment_required() {
-            evm_transaction.value = U256::from(0);
-            evm_config.check_balance = false;
+/// Function create creates a new contract.
+pub fn create<B: DB + 'static>(
+    block_provider: Arc<BlockDataProvider>,
+    state_provider: Arc<RefCell<State<B>>>,
+    store: Arc<RefCell<VMSubState>>,
+    request: &InterpreterParams,
+    create_kind: CreateKind,
+) -> Result<evm::InterpreterResult, VMError> {
+    debug!("create request={:?}", request);
+    let address = match create_kind {
+        CreateKind::FromAddressAndNonce => {
+            // Generate new address created from address, nonce
+            create_address_from_address_and_nonce(&request.sender, &request.nonce)
         }
-
-        trace!("Call evm with params: {:?}", params);
-        let mut result = match cita_vm::exec(
-            self.block_provider.clone(),
-            self.state_provider.clone(),
-            evm_context,
-            evm_config,
-            evm_transaction,
-        ) {
-            Ok(evm_result) => build_result_with_ok(params.gas, evm_result),
-            Err(e) => build_result_with_err(e),
-        };
-        result.is_evm_call = true;
-        Ok(result)
+        CreateKind::FromSaltAndCodeHash => {
+            // Generate new address created from sender salt and code hash
+            create_address_from_salt_and_code_hash(
+                &request.sender,
+                request.extra,
+                request.input.clone(),
+            )
+        }
+    };
+    debug!("create address={:?}", address);
+    // Ensure there's no existing contract already at the designated address
+    if !can_create(state_provider.clone(), &address)? {
+        return Err(VMError::ContractAlreadyExist);
     }
-
-    fn call(&mut self, params: &VmExecParams) -> Result<ExecutedResult, ExecutionError> {
-        // Check and call Native Contract.
-        if let Some(mut native_contract) = self
-            .native_factory
-            .new_contract(params.code_address.unwrap())
-        {
-            self.prepaid(&params.sender, params.gas, params.gas_price, params.value)?;
-
-            // Backup used in case of running out of gas
-            self.state_provider.borrow_mut().checkpoint();
-
-            // At first, transfer value to destination.
-            if self.payment_required()
-                && self
-                    .transfer_balance(&params.sender, &params.to_address.unwrap(), params.value)
-                    .is_err()
-            {
-                // Discard the checkpoint
-                self.state_provider.borrow_mut().revert_checkpoint();
-                return Err(ExecutionError::Internal(
-                    "Transfer balance failed while calling native contract.".to_string(),
-                ));
+    // Make a checkpoint here
+    state_provider.borrow_mut().checkpoint();
+    // Create a new contract
+    let balance = state_provider.borrow_mut().balance(&address)?;
+    state_provider.borrow_mut().new_contract(
+        &address,
+        balance,
+        // The init nonce for a new contract is one, see above documents.
+        U256::zero(),
+        // The init code should be none. Consider a situation: ContractA will create
+        // ContractB with address 0x1ff...fff, but ContractB's init code contains some
+        // op like "get code hash from 0x1ff..fff or get code size form 0x1ff...fff",
+        // The right result should be "summary(none)" and "0".
+        vec![],
+    );
+    let mut reqchan = request.clone();
+    reqchan.address = address;
+    reqchan.receiver = address;
+    reqchan.is_create = false;
+    reqchan.input = vec![];
+    reqchan.contract = evm::Contract {
+        code_address: address,
+        code_data: request.input.clone(),
+    };
+    let r = call(
+        block_provider.clone(),
+        state_provider.clone(),
+        store.clone(),
+        &reqchan,
+    );
+    match r {
+        Ok(evm::InterpreterResult::Normal(output, gas_left, logs)) => {
+            // Ensure code size
+            if output.len() as u64 > MAX_CREATE_CODE_SIZE {
+                state_provider.borrow_mut().revert_checkpoint();
+                return Err(VMError::ExccedMaxCodeSize);
             }
-
-            let store = VmSubState::default();
-            let store = Arc::new(RefCell::new(store));
-            let mut vm_data_provider = DataProvider::new(
-                self.block_provider.clone(),
-                self.state_provider.clone(),
-                store,
-            );
-            let result = match native_contract.exec(params, &self.context, &mut vm_data_provider) {
-                Ok(ret) => {
-                    // Discard the checkpoint
-                    self.state_provider.borrow_mut().discard_checkpoint();
-                    let mut result = build_result_with_ok(params.gas, ret);
-                    result.is_evm_call = false;
-                    result
-                }
-                Err(e) => {
-                    // If error, revert the checkpoint
-                    self.state_provider.borrow_mut().revert_checkpoint();
-
-                    let mut result = ExecutedResult::default();
-                    result.exception = Some(ExecutedException::NativeContract(e));
-                    result.is_evm_call = false;
-                    result
-                }
-            };
-            Ok(result)
-        } else {
-            // Call EVM contract
-            self.call_evm(params)
+            let tx_gas_schedule = TxGasSchedule::default();
+            // Pay every byte returnd from CREATE
+            let gas_code_deposit: u64 =
+                tx_gas_schedule.create_data_gas as u64 * output.len() as u64;
+            if gas_left < gas_code_deposit {
+                state_provider.borrow_mut().revert_checkpoint();
+                return Err(VMError::Evm(evm::Error::OutOfGas));
+            }
+            let gas_left = gas_left - gas_code_deposit;
+            state_provider
+                .borrow_mut()
+                .set_code(&address, output.clone())?;
+            state_provider.borrow_mut().discard_checkpoint();
+            let r = Ok(evm::InterpreterResult::Create(
+                output, gas_left, logs, address,
+            ));
+            debug!("create result={:?}", r);
+            debug!("create gas_left={:?}", gas_left);
+            r
         }
+        Ok(evm::InterpreterResult::Revert(output, gas_left)) => {
+            state_provider.borrow_mut().revert_checkpoint();
+            let r = Ok(evm::InterpreterResult::Revert(output, gas_left));
+            debug!("create gas_left={:?}", gas_left);
+            debug!("create result={:?}", r);
+            r
+        }
+        Err(e) => {
+            debug!("create err={:?}", e);
+            state_provider.borrow_mut().revert_checkpoint();
+            Err(e)
+        }
+        _ => unimplemented!(),
     }
 }
 
-pub fn build_evm_transaction(params: &VmExecParams) -> EVMTransaction {
-    EVMTransaction {
-        from: params.sender,
-        value: params.value,
-        gas_limit: params.gas.as_u64(),
-        gas_price: params.gas_price,
-        input: params.data.clone().unwrap_or_default(),
-        to: params.to_address,
-        nonce: params.nonce,
+/// Function call enters into the specific contract.
+pub fn call<B: DB + 'static>(
+    block_provider: Arc<BlockDataProvider>,
+    state_provider: Arc<RefCell<State<B>>>,
+    store: Arc<RefCell<VMSubState>>,
+    request: &InterpreterParams,
+) -> Result<evm::InterpreterResult, VMError> {
+    // Here not need check twice,becauce prepay is subed ,but need think call_static
+    /*if !request.disable_transfer_value && state_provider.borrow_mut().balance(&request.sender)? < request.value {
+        return Err(err::Error::NotEnoughBalance);
+    }*/
+    // Run
+    state_provider.borrow_mut().checkpoint();
+    let store_son = Arc::new(RefCell::new(store.borrow_mut().clone()));
+    let native_factory = NativeFactory::default();
+    // Check and call Native Contract.
+    if let Some(mut native_contract) = native_factory.new_contract(request.contract.code_address) {
+        let mut vm_data_provider = DataProvider::new(
+            block_provider.clone(),
+            state_provider.clone(),
+            store.clone(),
+        );
+        let context = store.borrow().evm_context.clone();
+        match native_contract.exec(
+            &VmExecParams::from(request.to_owned()),
+            &Context::from(context),
+            &mut vm_data_provider,
+        ) {
+            Ok(ret) => {
+                // Discard the checkpoint
+                state_provider.borrow_mut().discard_checkpoint();
+                Ok(ret)
+            }
+            Err(e) => {
+                // If error, revert the checkpoint
+                state_provider.borrow_mut().revert_checkpoint();
+                Err(e.into())
+            }
+        }
+    } else {
+        let r = call_pure(
+            block_provider.clone(),
+            state_provider.clone(),
+            store_son.clone(),
+            request,
+        );
+        debug!("call result={:?}", r);
+        match r {
+            Ok(evm::InterpreterResult::Normal(output, gas_left, logs)) => {
+                state_provider.borrow_mut().discard_checkpoint();
+                store.borrow_mut().merge(store_son);
+                Ok(evm::InterpreterResult::Normal(output, gas_left, logs))
+            }
+            Ok(evm::InterpreterResult::Revert(output, gas_left)) => {
+                state_provider.borrow_mut().revert_checkpoint();
+                Ok(evm::InterpreterResult::Revert(output, gas_left))
+            }
+            Err(e) => {
+                state_provider.borrow_mut().revert_checkpoint();
+                Err(e)
+            }
+            _ => unimplemented!(),
+        }
     }
 }
 
@@ -601,62 +728,46 @@ pub fn build_evm_context(context: &Context) -> EVMContext {
     }
 }
 
-pub fn build_evm_config(block_gas_limit: u64) -> VMConfig {
-    VMConfig {
-        // block_gas_limit is meaningless in cita_vm, so let it as default_block_quota_limit.
-        block_gas_limit,
-        check_nonce: true,
-        ..Default::default()
-    }
-}
-
-fn build_result_with_ok(init_gas: U256, ret: InterpreterResult) -> ExecutedResult {
-    let mut result = ExecutedResult::default();
-
-    match ret {
-        InterpreterResult::Normal(data, quota_left, logs) => {
-            result.quota_used = init_gas - U256::from(quota_left);
-            result.quota_left = U256::from(quota_left);
-            result.logs = transform_logs(logs);
-            result.logs_bloom = logs_to_bloom(&result.logs);
-
-            trace!(
-                "Get data after executed the transaction [Normal]: {:?}",
-                data
-            );
-            result.output = data;
-        }
-        InterpreterResult::Revert(data, quota_left) => {
-            result.quota_used = init_gas - U256::from(quota_left);
-            result.quota_left = U256::from(quota_left);
-            result.exception = Some(ExecutedException::Reverted);
-
-            trace!(
-                "Get data after executed the transaction [Revert]: {:?}",
-                data
-            );
-        }
-        InterpreterResult::Create(data, quota_left, logs, contract_address) => {
-            result.quota_used = init_gas - U256::from(quota_left);
-            result.quota_left = U256::from(quota_left);
-            result.logs = transform_logs(logs);
-            result.logs_bloom = logs_to_bloom(&result.logs);
-
-            result.contract_address = Some(contract_address);
-            trace!(
-                "Get data after executed the transaction [Create], contract address: {:?}, contract data : {:?}",
-                result.contract_address, data
-            );
-        }
+/// Function get_refund returns the real ammount to refund for a transaction.
+fn get_refund(
+    store: Arc<RefCell<VMSubState>>,
+    origin: Address,
+    gas_limit: u64,
+    gas_left: u64,
+) -> u64 {
+    let refunds_bound = match store.borrow().refund.get(&origin) {
+        Some(&data) => data,
+        None => 0u64,
     };
-    result
+    // Get real ammount to refund
+    std::cmp::min(refunds_bound, (gas_limit - gas_left) >> 1)
 }
 
-fn build_result_with_err(err: VMError) -> ExecutedResult {
-    trace!("EVM run error for the transaction, error info: {:?}", err);
-    let mut result = ExecutedResult::default();
-    result.exception = Some(ExecutedException::VM(err));
-    result
+/// Liquidtion for a transaction.
+fn liquidtion<B: DB + 'static>(
+    state_provider: Arc<RefCell<State<B>>>,
+    store: Arc<RefCell<VMSubState>>,
+    sender: Address,
+    gas_price: U256,
+    gas_limit: u64,
+    gas_left: u64,
+    refund: u64,
+) -> Result<(), VMError> {
+    trace!(
+        "gas_price: {:?}, gas limit:{:?}, gas left: {:?}, refund: {:?}",
+        gas_price,
+        gas_limit,
+        gas_left,
+        refund
+    );
+    state_provider
+        .borrow_mut()
+        .add_balance(&sender, gas_price * (gas_left + refund))?;
+    state_provider.borrow_mut().add_balance(
+        &store.borrow().evm_context.coinbase,
+        gas_price * (gas_limit - gas_left - refund),
+    )?;
+    Ok(())
 }
 
 fn transform_logs(logs: Vec<EVMLog>) -> Vec<Log> {
@@ -688,8 +799,49 @@ fn accrue_log(bloom: &mut Bloom, log: &Log) {
     }
 }
 
+/// Returns new address created from address and nonce.
+pub fn create_address_from_address_and_nonce(address: &Address, nonce: &U256) -> Address {
+    let mut stream = RlpStream::new_list(2);
+    stream.append(address);
+    stream.append(nonce);
+    Address::from(H256::from(summary(stream.as_raw()).as_slice()))
+}
+
+/// Returns new address created from sender salt and code hash.
+/// See: EIP 1014.
+pub fn create_address_from_salt_and_code_hash(
+    address: &Address,
+    salt: H256,
+    code: Vec<u8>,
+) -> Address {
+    let code_hash = &summary(&code[..])[..];
+    let mut buffer = [0u8; 1 + 20 + 32 + 32];
+    buffer[0] = 0xff;
+    buffer[1..=20].copy_from_slice(&address[..]);
+    buffer[(1 + 20)..(1 + 20 + 32)].copy_from_slice(&salt[..]);
+    buffer[(1 + 20 + 32)..].copy_from_slice(code_hash);
+    Address::from(H256::from(summary(&buffer[..]).as_slice()))
+}
+
+/// If a contract creation is attempted, due to either a creation transaction
+/// or the CREATE (or future CREATE2) opcode, and the destination address
+/// already has either nonzero nonce, or nonempty code, then the creation
+/// throws immediately, with exactly the same behavior as would arise if the
+/// first byte in the init code were an invalid opcode. This applies
+/// retroactively starting from genesis.
+///
+/// See: EIP 684
+pub fn can_create<B: DB + 'static>(
+    state_provider: Arc<RefCell<State<B>>>,
+    address: &Address,
+) -> Result<bool, VMError> {
+    let a = state_provider.borrow_mut().nonce(&address)?;
+    let b = state_provider.borrow_mut().code(&address)?;
+    Ok(a.is_zero() && b.is_empty())
+}
+
 #[derive(Clone, Debug)]
-pub struct VmExecParams {
+pub struct ExecutiveParams {
     /// Address of currently executed code.
     pub code_address: Option<Address>,
     /// Sender of current part of the transaction.
@@ -708,10 +860,10 @@ pub struct VmExecParams {
     pub data: Option<Bytes>,
 }
 
-impl Default for VmExecParams {
+impl Default for ExecutiveParams {
     /// Returns default ActionParams initialized with zeros
-    fn default() -> VmExecParams {
-        VmExecParams {
+    fn default() -> ExecutiveParams {
+        ExecutiveParams {
             code_address: None,
             sender: Address::new(),
             to_address: None,
@@ -722,6 +874,109 @@ impl Default for VmExecParams {
             data: None,
         }
     }
+}
+
+pub fn build_vm_exec_params<B: DB + 'static>(
+    params: &ExecutiveParams,
+    state_provider: Arc<RefCell<State<B>>>,
+) -> VmExecParams {
+    let mut vm_exec_params = VmExecParams::default();
+    vm_exec_params.origin = params.sender;
+    vm_exec_params.sender = params.sender;
+    if let Some(data) = params.to_address {
+        vm_exec_params.to_address = data;
+        vm_exec_params.storage_address = data;
+        vm_exec_params.code_address = data;
+        vm_exec_params.code_data = state_provider.borrow_mut().code(&data).unwrap_or_default();
+    }
+
+    vm_exec_params.gas_price = params.gas_price;
+    vm_exec_params.gas = params.gas.as_u64();
+    vm_exec_params.value = params.value;
+    vm_exec_params.data = params.data.clone().unwrap_or_default();
+    vm_exec_params.nonce = params.nonce;
+    vm_exec_params
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct VmExecParams {
+    pub origin: Address,
+    pub storage_address: Address,
+    /// Address of currently executed code.
+    pub code_address: Address,
+    pub code_data: Vec<u8>,
+    /// Sender of current part of the transaction.
+    pub sender: Address,
+    /// Receive address. Usually equal to code_address,
+    pub to_address: Address,
+    /// Gas paid up front for transaction execution
+    pub gas: u64,
+    /// Gas price.
+    pub gas_price: U256,
+    /// Transaction value.
+    pub value: U256,
+    /// nonce
+    pub nonce: U256,
+    /// Input data.
+    pub data: Bytes,
+    pub read_only: bool,
+    pub extra: H256,
+    pub depth: u64,
+    pub disable_transfer_value: bool,
+}
+
+impl From<InterpreterParams> for VmExecParams {
+    fn from(params: InterpreterParams) -> Self {
+        Self {
+            origin: params.origin,
+            storage_address: params.address,
+            code_address: params.contract.code_address,
+            code_data: params.contract.code_data,
+            sender: params.sender,
+            to_address: params.receiver,
+            gas: params.gas_limit,
+            gas_price: params.gas_price,
+            value: params.value,
+            nonce: params.nonce,
+            data: params.input.clone(),
+            read_only: params.read_only,
+            extra: params.extra,
+            depth: params.depth,
+            disable_transfer_value: params.disable_transfer_value,
+        }
+    }
+}
+
+impl Into<InterpreterParams> for VmExecParams {
+    fn into(self) -> InterpreterParams {
+        InterpreterParams {
+            origin: self.origin,
+            address: self.storage_address,
+            contract: Contract {
+                code_address: self.code_address,
+                code_data: self.code_data,
+            },
+            sender: self.sender,
+            receiver: self.to_address,
+            gas_limit: self.gas,
+            gas_price: self.gas_price,
+            value: self.value,
+            nonce: self.nonce,
+            input: self.data.clone(),
+            read_only: self.read_only,
+            extra: self.extra,
+            depth: self.depth,
+            is_create: false,
+            disable_transfer_value: self.disable_transfer_value,
+        }
+    }
+}
+
+/// A selector for func create_address_from_address_and_nonce() and
+/// create_address_from_salt_and_code_hash()
+pub enum CreateKind {
+    FromAddressAndNonce, // use create_address_from_address_and_nonce
+    FromSaltAndCodeHash, // use create_address_from_salt_and_code_hash
 }
 
 #[derive(Default, Debug)]
@@ -747,7 +1002,6 @@ pub struct ExecutedResult {
 #[cfg(test)]
 mod tests {
     use super::{CitaExecutive, Context, ExecutionError, TxGasSchedule};
-    use crate::contracts::native::factory::Factory as NativeFactory;
     use crate::libexecutor::economical_model::EconomicalModel;
     use crate::libexecutor::{block::EVMBlockDataProvider, sys_config::BlockSysConfig};
     use crate::tests::helpers::*;
@@ -800,7 +1054,6 @@ mod tests {
         context.block_quota_limit = U256::from(100_000);
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
-        let native_factory = NativeFactory::default();
 
         let state = Arc::new(RefCell::new(state));
 
@@ -808,7 +1061,6 @@ mod tests {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state,
-                &native_factory,
                 &context,
                 EconomicalModel::Charge,
             )
@@ -840,8 +1092,6 @@ mod tests {
         let sender = t.sender();
         let contract = contract_address(t.sender(), &U256::zero());
 
-        let native_factory = NativeFactory::default();
-
         let mut state = get_temp_state();
 
         state
@@ -861,7 +1111,6 @@ mod tests {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
-                &native_factory,
                 &context,
                 EconomicalModel::Charge,
             )
@@ -901,8 +1150,6 @@ mod tests {
         }
         .fake_sign(keypair.address().clone());
 
-        let native_factory = NativeFactory::default();
-
         let mut state = get_temp_state();
         state.add_balance(t.sender(), U256::from(100_042)).unwrap();
         let mut context = Context::default();
@@ -916,7 +1163,6 @@ mod tests {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
-                &native_factory,
                 &context,
                 EconomicalModel::Charge,
             )
@@ -945,8 +1191,6 @@ mod tests {
         }
         .fake_sign(keypair.address().clone());
 
-        let native_factory = NativeFactory::default();
-
         let mut state = get_temp_state();
         state.add_balance(t.sender(), U256::from(100_042)).unwrap();
         let mut context = Context::default();
@@ -960,7 +1204,6 @@ mod tests {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
-                &native_factory,
                 &context,
                 EconomicalModel::Charge,
             )
@@ -989,7 +1232,6 @@ mod tests {
         }
         .fake_sign(keypair.address().clone());
 
-        let native_factory = NativeFactory::default();
         let state = get_temp_state();
         let mut context = Context::default();
         context.block_quota_limit = U256::from(100_000);
@@ -1002,7 +1244,6 @@ mod tests {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
-                &native_factory,
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1033,7 +1274,6 @@ contract HelloWorld {
         let gas_required = U256::from(schedule.tx_gas + 1000);
 
         let (deploy_code, _runtime_code) = solc("HelloWorld", source);
-        let native_factory = NativeFactory::default();
 
         let keypair = KeyPair::gen_keypair();
         let t = Transaction {
@@ -1062,7 +1302,6 @@ contract HelloWorld {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
-                &native_factory,
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1093,7 +1332,6 @@ contract AbiTest {
         let gas_required = U256::from(schedule.tx_gas + 100_000);
 
         let (deploy_code, runtime_code) = solc("AbiTest", source);
-        let native_factory = NativeFactory::default();
 
         let keypair = KeyPair::gen_keypair();
         let t = Transaction {
@@ -1126,7 +1364,6 @@ contract AbiTest {
             let _ = CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
-                &native_factory,
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1161,7 +1398,6 @@ contract AbiTest {
         let data = "552410770000000000000000000000000000000000000000000000000000000012345678"
             .from_hex()
             .unwrap();
-        let native_factory = NativeFactory::default();
         let mut state = get_temp_state();
         state
             .set_code(&contract_addr, runtime_code.clone())
@@ -1192,7 +1428,6 @@ contract AbiTest {
             let _ = CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
-                &native_factory,
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1236,7 +1471,6 @@ contract AbiTest {
         let data = "552410770000000000000000000000000000000000000000000000000000000012345678"
             .from_hex()
             .unwrap();
-        let native_factory = NativeFactory::default();
 
         let mut state = get_temp_state();
         state
@@ -1268,7 +1502,6 @@ contract AbiTest {
             let res = CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
-                &native_factory,
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1317,7 +1550,6 @@ contract AbiTest {
         let data = "552410770000000000000000000000000000000000000000000000000000000012345678"
             .from_hex()
             .unwrap();
-        let native_factory = NativeFactory::default();
 
         let mut state = get_temp_state();
         state
@@ -1349,7 +1581,6 @@ contract AbiTest {
             let res = CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
-                &native_factory,
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1405,8 +1636,6 @@ contract FakePermissionManagement {
         let permission_addr =
             Address::from_str("33f4b16d67b112409ab4ac87274926382daacfac").unwrap();
 
-        let native_factory = NativeFactory::default();
-
         let mut state = get_temp_state();
         let (_, runtime_code) = solc("FakeAuth", fake_auth);
         state.set_code(&auth_addr, runtime_code.clone()).unwrap();
@@ -1446,7 +1675,6 @@ contract FakePermissionManagement {
             let res = CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
-                &native_factory,
                 &context,
                 EconomicalModel::Quota,
             )

@@ -53,23 +53,19 @@ impl Contract for CrossChainVerify {
         _context: &Context,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
-        if let Some(ref data) = params.data {
-            method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
-                sig if sig == *VERIFY_TRANSACTION_FUNC => {
-                    self.verify_transaction(params, data_provider)
-                }
-                sig if sig == *VERIFY_STATE_FUNC => self.verify_state(params, data_provider),
-                sig if sig == *VERIFY_BLOCK_HEADER_FUNC => {
-                    self.verify_block_header(params, data_provider)
-                }
-                sig if sig == *GET_EXPECTED_BLOCK_NUMBER_FUNC => {
-                    self.get_expected_block_number(params, data_provider)
-                }
-                _ => Err(NativeError::Internal("out of gas".to_string())),
-            })
-        } else {
-            Err(NativeError::Internal("out of gas".to_string()))
-        }
+        method_tools::extract_to_u32(&params.data[..]).and_then(|signature| match signature {
+            sig if sig == *VERIFY_TRANSACTION_FUNC => {
+                self.verify_transaction(params, data_provider)
+            }
+            sig if sig == *VERIFY_STATE_FUNC => self.verify_state(params, data_provider),
+            sig if sig == *VERIFY_BLOCK_HEADER_FUNC => {
+                self.verify_block_header(params, data_provider)
+            }
+            sig if sig == *GET_EXPECTED_BLOCK_NUMBER_FUNC => {
+                self.get_expected_block_number(params, data_provider)
+            }
+            _ => Err(NativeError::Internal("out of gas".to_string())),
+        })
     }
     fn create(&self) -> Box<Contract> {
         Box::new(CrossChainVerify::default())
@@ -92,17 +88,13 @@ impl CrossChainVerify {
         params: &VmExecParams,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
-        let gas_cost = U256::from(10000);
+        let gas_cost = 10000;
         if params.gas < gas_cost {
             return Err(NativeError::Internal("out of gas".to_string()));
         }
         let gas_left = params.gas - gas_cost;
 
-        if params.data.is_none() {
-            return Err(NativeError::Internal("no data".to_string()));
-        }
-
-        let data = params.data.to_owned().unwrap();
+        let data = params.data.clone();
         trace!("data = {:?}", data);
         let tokens = vec![
             ethabi::ParamType::Address,
@@ -160,7 +152,8 @@ impl CrossChainVerify {
         let relay_info = relay_info.unwrap();
         trace!("relay_info {:?}", proof_data);
 
-        let ret = ChainManagement::ext_chain_id(data_provider, &gas_left, &params.sender);
+        let ret =
+            ChainManagement::ext_chain_id(data_provider, &U256::from(gas_left), &params.sender);
         if ret.is_none() {
             return Err(NativeError::Internal("get chain id failed".to_owned()));
         }
@@ -311,17 +304,13 @@ impl CrossChainVerify {
         params: &VmExecParams,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
-        let gas_cost = U256::from(10000);
+        let gas_cost = 10000;
         if params.gas < gas_cost {
             return Err(NativeError::Internal("out of gas".to_string()));
         }
         let mut gas_left = params.gas - gas_cost;
 
-        if params.data.is_none() {
-            return Err(NativeError::Internal("no data".to_string()));
-        }
-
-        let data = params.data.to_owned().unwrap();
+        let data = params.data.clone();
         trace!("data = {:?}", data);
         let tokens = vec![ethabi::ParamType::Uint(32), ethabi::ParamType::Bytes];
 
@@ -346,11 +335,9 @@ impl CrossChainVerify {
         trace!("data = {:?}", block_header_curr_bytes);
         let block_header_curr = Header::from_bytes(&block_header_curr_bytes);
 
-        let block_header_prev_bytes: Vec<u8> = self.block_headers.get_bytes(
-            data_provider,
-            &params.code_address.unwrap(),
-            &chain_id,
-        )?;
+        let block_header_prev_bytes: Vec<u8> =
+            self.block_headers
+                .get_bytes(data_provider, &params.code_address, &chain_id)?;
 
         let verify_result = if block_header_prev_bytes.is_empty() {
             trace!("sync first block header");
@@ -360,7 +347,7 @@ impl CrossChainVerify {
 
             let ret = ChainManagement::ext_authorities(
                 data_provider,
-                &gas_left,
+                &U256::from(gas_left),
                 &params.sender,
                 chain_id,
             );
@@ -368,7 +355,7 @@ impl CrossChainVerify {
                 return Err(NativeError::Internal("get authorities failed".to_owned()));
             }
             let (gas_left_new, authorities) = ret.unwrap();
-            gas_left = gas_left_new;
+            gas_left = gas_left_new.as_u64();
 
             block_header_prev.verify_next(&block_header_curr, &authorities[..])
         };
@@ -377,7 +364,7 @@ impl CrossChainVerify {
             trace!("store the {} block header", block_header_curr.number());
             self.block_headers.set_bytes(
                 data_provider,
-                &params.code_address.unwrap(),
+                &params.code_address,
                 &chain_id,
                 &block_header_curr_bytes,
             )?;
@@ -388,7 +375,7 @@ impl CrossChainVerify {
             );
             self.state_roots.get_array(&chain_id).unwrap().set(
                 data_provider,
-                &params.code_address.unwrap(),
+                &params.code_address,
                 block_header_curr.number(),
                 &U256::from(block_header_curr.state_root()),
             )?;
@@ -401,7 +388,7 @@ impl CrossChainVerify {
         self.output = result;
         Ok(InterpreterResult::Normal(
             self.output.clone(),
-            gas_left.low_u64(),
+            gas_left,
             vec![],
         ))
     }
@@ -411,17 +398,13 @@ impl CrossChainVerify {
         params: &VmExecParams,
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
-        let gas_cost = U256::from(10000);
+        let gas_cost = 10000;
         if params.gas < gas_cost {
             return Err(NativeError::Internal("out of gas".to_string()));
         }
         let gas_left = params.gas - gas_cost;
 
-        if params.data.is_none() {
-            return Err(NativeError::Internal("no data".to_string()));
-        }
-
-        let data = params.data.to_owned().unwrap();
+        let data = params.data.clone();
         trace!("data = {:?}", data);
         let tokens = vec![ethabi::ParamType::Uint(32)];
 
@@ -439,11 +422,9 @@ impl CrossChainVerify {
         let chain_id = U256::from_big_endian(&result.unwrap());
         trace!("chain_id = {}", chain_id);
 
-        let block_header_bytes: Vec<u8> = self.block_headers.get_bytes(
-            data_provider,
-            &params.code_address.unwrap(),
-            &chain_id,
-        )?;
+        let block_header_bytes: Vec<u8> =
+            self.block_headers
+                .get_bytes(data_provider, &params.code_address, &chain_id)?;
 
         let block_number = if block_header_bytes.is_empty() {
             0
@@ -460,7 +441,7 @@ impl CrossChainVerify {
         self.output = result;
         Ok(InterpreterResult::Normal(
             self.output.clone(),
-            gas_left.low_u64(),
+            gas_left,
             vec![],
         ))
     }
