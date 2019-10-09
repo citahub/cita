@@ -1,213 +1,60 @@
-// Copyright 2015-2017 Parity Technologies (UK) Ltd.
-// This file is part of Parity.
-
-// This software is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Parity.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Receipt
 
-use cita_types::traits::LowerHex;
-use cita_types::{Address, H256, U256};
-use jsonrpc_types::rpctypes::Receipt as RpcReceipt;
-use libproto::executor::{
-    Receipt as ProtoReceipt, ReceiptError as ProtoReceiptError, ReceiptErrorWithOption, StateRoot,
-};
-use log_entry::{LocalizedLogEntry, LogBloom, LogEntry};
-use rlp::*;
+use super::Bytes;
 use std::str::FromStr;
-use util::{Bytes, HeapSizeOf};
-use BlockNumber;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy, Eq)]
-pub enum ReceiptError {
-    // ExecutionError
-    NotEnoughBaseGas,
-    BlockGasLimitReached,
-    AccountGasLimitReached,
-    InvalidNonce,
-    NotEnoughCash,
-    NoTransactionPermission,
-    NoContractPermission,
-    NoCallPermission,
-    ExecutionInternal,
-    TransactionMalformed,
-    // EVM error(chain/core/src/evm/evm.rs)
-    OutOfGas,
-    BadJumpDestination,
-    BadInstruction,
-    StackUnderflow,
-    OutOfStack,
-    Internal,
-    MutableCallInStaticContext,
-    OutOfBounds,
-    Reverted,
-}
+use crate::block_number::BlockNumber;
+use crate::errors::ReceiptError;
+use crate::log::{LocalizedLog, Log};
 
-impl ReceiptError {
-    /// Returns human-readable description
-    pub fn description(&self) -> String {
-        let desc = match *self {
-            ReceiptError::NotEnoughBaseGas => "Not enough base gas.",
-            ReceiptError::BlockGasLimitReached => "Block gas limit reached.",
-            ReceiptError::AccountGasLimitReached => "Account gas limit reached.",
-            ReceiptError::InvalidNonce => "Invalid transaction nonce.",
-            ReceiptError::NotEnoughCash => "Cost of transaction exceeds sender balance.",
-            ReceiptError::NoTransactionPermission => "No transaction permission.",
-            ReceiptError::NoContractPermission => "No contract permission.",
-            ReceiptError::NoCallPermission => "No Call contract permission.",
-            ReceiptError::ExecutionInternal => "Execution internal error.",
-            ReceiptError::TransactionMalformed => "Malformed transaction.",
-            ReceiptError::OutOfGas => "Out of gas.",
-            ReceiptError::BadJumpDestination => {
-                "Jump position wasn't marked with JUMPDEST instruction."
-            }
-            ReceiptError::BadInstruction => "Instruction is not supported.",
-            ReceiptError::StackUnderflow => "Not enough stack elements to execute instruction.",
-            ReceiptError::OutOfStack => "Execution would exceed defined Stack Limit.",
-            ReceiptError::Internal => "EVM internal error.",
-            ReceiptError::MutableCallInStaticContext => "Mutable call in static context.",
-            ReceiptError::OutOfBounds => "Out of bounds.",
-            ReceiptError::Reverted => "Reverted.",
-        };
-        desc.to_string()
-    }
+use cita_types::traits::LowerHex;
+use cita_types::{Address, Bloom as LogBloom, H256, U256};
+use jsonrpc_types::rpc_types::Receipt as RpcReceipt;
+use libproto::executor::{Receipt as ProtoReceipt, ReceiptErrorWithOption, StateRoot};
+use rlp::{Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
 
-    pub fn protobuf(&self) -> ProtoReceiptError {
-        match *self {
-            ReceiptError::NotEnoughBaseGas => ProtoReceiptError::NotEnoughBaseGas,
-            ReceiptError::BlockGasLimitReached => ProtoReceiptError::BlockGasLimitReached,
-            ReceiptError::AccountGasLimitReached => ProtoReceiptError::AccountGasLimitReached,
-            ReceiptError::InvalidNonce => ProtoReceiptError::InvalidTransactionNonce,
-            ReceiptError::NotEnoughCash => ProtoReceiptError::NotEnoughCash,
-            ReceiptError::NoTransactionPermission => ProtoReceiptError::NoTransactionPermission,
-            ReceiptError::NoContractPermission => ProtoReceiptError::NoContractPermission,
-            ReceiptError::NoCallPermission => ProtoReceiptError::NoCallPermission,
-            ReceiptError::ExecutionInternal => ProtoReceiptError::ExecutionInternal,
-            ReceiptError::TransactionMalformed => ProtoReceiptError::TransactionMalformed,
-            ReceiptError::OutOfGas => ProtoReceiptError::OutOfGas,
-            ReceiptError::BadJumpDestination => ProtoReceiptError::BadJumpDestination,
-            ReceiptError::BadInstruction => ProtoReceiptError::BadInstruction,
-            ReceiptError::StackUnderflow => ProtoReceiptError::StackUnderflow,
-            ReceiptError::OutOfStack => ProtoReceiptError::OutOfStack,
-            ReceiptError::Internal => ProtoReceiptError::Internal,
-            ReceiptError::MutableCallInStaticContext => {
-                ProtoReceiptError::MutableCallInStaticContext
-            }
-            ReceiptError::OutOfBounds => ProtoReceiptError::OutOfBounds,
-            ReceiptError::Reverted => ProtoReceiptError::Reverted,
-        }
-    }
-
-    fn from_proto(receipt_error: ProtoReceiptError) -> Self {
-        match receipt_error {
-            ProtoReceiptError::NotEnoughBaseGas => ReceiptError::NotEnoughBaseGas,
-            ProtoReceiptError::BlockGasLimitReached => ReceiptError::BlockGasLimitReached,
-            ProtoReceiptError::AccountGasLimitReached => ReceiptError::AccountGasLimitReached,
-            ProtoReceiptError::InvalidTransactionNonce => ReceiptError::InvalidNonce,
-            ProtoReceiptError::NotEnoughCash => ReceiptError::NotEnoughCash,
-            ProtoReceiptError::NoTransactionPermission => ReceiptError::NoTransactionPermission,
-            ProtoReceiptError::NoContractPermission => ReceiptError::NoContractPermission,
-            ProtoReceiptError::NoCallPermission => ReceiptError::NoCallPermission,
-            ProtoReceiptError::ExecutionInternal => ReceiptError::ExecutionInternal,
-            ProtoReceiptError::TransactionMalformed => ReceiptError::TransactionMalformed,
-            ProtoReceiptError::OutOfGas => ReceiptError::OutOfGas,
-            ProtoReceiptError::BadJumpDestination => ReceiptError::BadJumpDestination,
-            ProtoReceiptError::BadInstruction => ReceiptError::BadInstruction,
-            ProtoReceiptError::StackUnderflow => ReceiptError::StackUnderflow,
-            ProtoReceiptError::OutOfStack => ReceiptError::OutOfStack,
-            ProtoReceiptError::Internal => ReceiptError::Internal,
-            ProtoReceiptError::MutableCallInStaticContext => {
-                ReceiptError::MutableCallInStaticContext
-            }
-            ProtoReceiptError::OutOfBounds => ReceiptError::OutOfBounds,
-            ProtoReceiptError::Reverted => ReceiptError::Reverted,
-        }
-    }
-}
-
-impl Decodable for ReceiptError {
-    fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
-        match rlp.as_val::<u8>()? {
-            0 => Ok(ReceiptError::NotEnoughBaseGas),
-            1 => Ok(ReceiptError::BlockGasLimitReached),
-            2 => Ok(ReceiptError::AccountGasLimitReached),
-            3 => Ok(ReceiptError::InvalidNonce),
-            4 => Ok(ReceiptError::NotEnoughCash),
-            5 => Ok(ReceiptError::NoTransactionPermission),
-            6 => Ok(ReceiptError::NoContractPermission),
-            7 => Ok(ReceiptError::NoCallPermission),
-            8 => Ok(ReceiptError::ExecutionInternal),
-            9 => Ok(ReceiptError::TransactionMalformed),
-            10 => Ok(ReceiptError::OutOfGas),
-            11 => Ok(ReceiptError::BadJumpDestination),
-            12 => Ok(ReceiptError::BadInstruction),
-            13 => Ok(ReceiptError::StackUnderflow),
-            14 => Ok(ReceiptError::OutOfStack),
-            15 => Ok(ReceiptError::Internal),
-            16 => Ok(ReceiptError::MutableCallInStaticContext),
-            17 => Ok(ReceiptError::OutOfBounds),
-            18 => Ok(ReceiptError::Reverted),
-            _ => Err(DecoderError::Custom("Unknown Receipt error.")),
-        }
-    }
-}
-
-impl Encodable for ReceiptError {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        s.append(&(*self as u8));
-    }
-}
-
-/// Information describing execution of a transaction.
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
 pub struct Receipt {
-    /// The state root after executing the transaction. Optional since EIP98
     pub state_root: Option<H256>,
-    /// The total gas used in the block following execution of the transaction.
-    pub gas_used: U256,
-    /// The OR-wide combination of all logs' blooms for this transaction.
+    pub quota_used: U256,
     pub log_bloom: LogBloom,
-    /// The logs stemming from this transaction.
-    pub logs: Vec<LogEntry>,
-    /// Transaction transact error
+    pub logs: Vec<Log>,
     pub error: Option<ReceiptError>,
-    /// For calculating contract address
     pub account_nonce: U256,
-    /// Transaction hash.
     pub transaction_hash: H256,
 }
 
 impl Receipt {
-    /// Create a new receipt.
     pub fn new(
         state_root: Option<H256>,
-        gas_used: U256,
-        logs: Vec<LogEntry>,
+        quota_used: U256,
+        logs: Vec<Log>,
         error: Option<ReceiptError>,
         account_nonce: U256,
         transaction_hash: H256,
     ) -> Receipt {
         Receipt {
-            state_root: state_root,
-            gas_used: gas_used,
-            log_bloom: logs.iter().fold(LogBloom::default(), |mut b, l| {
-                b = &b | &l.bloom();
-                b
-            }), //TODO: use |= operator
-            logs: logs,
-            error: error,
-            account_nonce: account_nonce,
-            transaction_hash: transaction_hash,
+            state_root,
+            quota_used,
+            log_bloom: logs.iter().fold(LogBloom::default(), |b, l| b | l.bloom()),
+            logs,
+            error,
+            account_nonce,
+            transaction_hash,
         }
     }
 
@@ -226,7 +73,7 @@ impl Receipt {
             receipt_proto.set_error(receipt_error_with_option);
         }
 
-        receipt_proto.set_gas_used(self.gas_used.lower_hex());
+        receipt_proto.set_quota_used(self.quota_used.lower_hex());
         receipt_proto.set_log_bloom(self.log_bloom.to_vec());
         receipt_proto.logs = self
             .logs
@@ -242,33 +89,34 @@ impl Receipt {
 
 impl From<ProtoReceipt> for Receipt {
     fn from(receipt: ProtoReceipt) -> Self {
-        let mut state_root = None;
-        if receipt.state_root.is_some() {
-            state_root = Some(H256::from_slice(
+        let state_root = if receipt.state_root.is_some() {
+            Some(H256::from_slice(
                 receipt.clone().take_state_root().get_state_root(),
-            ));
-        }
+            ))
+        } else {
+            None
+        };
 
-        let gas_used: U256 = U256::from_str(receipt.get_gas_used()).unwrap();
+        let quota_used: U256 = U256::from_str(receipt.get_quota_used()).unwrap();
         let account_nonce: U256 = U256::from(receipt.get_account_nonce());
         let transaction_hash: H256 = H256::from_slice(receipt.get_transaction_hash());
         let mut error = None;
 
         let logs = receipt
             .get_logs()
-            .into_iter()
+            .iter()
             .map(|log_entry| {
                 let address: Address = Address::from_slice(log_entry.get_address());
                 let topics: Vec<H256> = log_entry
                     .get_topics()
-                    .into_iter()
+                    .iter()
                     .map(|topic| H256::from_slice(topic))
                     .collect();
                 let data: Bytes = Bytes::from(log_entry.get_data());
-                LogEntry {
-                    address: address,
-                    topics: topics,
-                    data: data,
+                Log {
+                    address,
+                    topics,
+                    data,
                 }
             })
             .collect();
@@ -281,7 +129,7 @@ impl From<ProtoReceipt> for Receipt {
 
         Receipt::new(
             state_root,
-            gas_used,
+            quota_used,
             logs,
             error,
             account_nonce,
@@ -298,7 +146,7 @@ impl Encodable for Receipt {
         } else {
             s.begin_list(6);
         }
-        s.append(&self.gas_used);
+        s.append(&self.quota_used);
         s.append(&self.log_bloom);
         s.append_list(&self.logs);
         s.append(&self.error);
@@ -312,7 +160,7 @@ impl Decodable for Receipt {
         if rlp.item_count()? == 6 {
             Ok(Receipt {
                 state_root: None,
-                gas_used: rlp.val_at(0)?,
+                quota_used: rlp.val_at(0)?,
                 log_bloom: rlp.val_at(1)?,
                 logs: rlp.list_at(2)?,
                 error: rlp.val_at(3)?,
@@ -322,7 +170,7 @@ impl Decodable for Receipt {
         } else {
             Ok(Receipt {
                 state_root: Some(rlp.val_at(0)?),
-                gas_used: rlp.val_at(1)?,
+                quota_used: rlp.val_at(1)?,
                 log_bloom: rlp.val_at(2)?,
                 logs: rlp.list_at(3)?,
                 error: rlp.val_at(4)?,
@@ -333,53 +181,35 @@ impl Decodable for Receipt {
     }
 }
 
-impl HeapSizeOf for Receipt {
-    fn heap_size_of_children(&self) -> usize {
-        self.logs.heap_size_of_children()
-    }
-}
-
-/// Receipt with additional info.
-#[derive(Debug, Clone, PartialEq)]
-pub struct LocalizedReceipt {
-    /// Transaction hash.
+#[derive(Debug, Clone)]
+pub struct RichReceipt {
     pub transaction_hash: H256,
-    /// Transaction index.
     pub transaction_index: usize,
-    /// Block hash.
     pub block_hash: H256,
-    /// Block number.
     pub block_number: BlockNumber,
-    /// The total gas used in the block following execution of the transaction.
-    pub cumulative_gas_used: U256,
-    /// The gas used in the execution of the transaction. Note the difference of meaning to `Receipt::gas_used`.
-    pub gas_used: U256,
-    /// Contract address.
+    pub cumulative_quota_used: U256,
+    pub quota_used: U256,
     pub contract_address: Option<Address>,
-    /// Logs
-    pub logs: Vec<LocalizedLogEntry>,
-    /// Logs bloom
+    pub logs: Vec<LocalizedLog>,
     pub log_bloom: LogBloom,
-    /// State root
     pub state_root: Option<H256>,
-    /// Receipt error
     pub error: Option<ReceiptError>,
 }
 
-impl Into<RpcReceipt> for LocalizedReceipt {
+impl Into<RpcReceipt> for RichReceipt {
     fn into(self) -> RpcReceipt {
         RpcReceipt {
             transaction_hash: Some(self.transaction_hash),
             transaction_index: Some(self.transaction_index.into()),
             block_hash: Some(self.block_hash),
             block_number: Some(self.block_number.into()),
-            cumulative_gas_used: self.cumulative_gas_used,
-            gas_used: Some(self.gas_used),
+            cumulative_quota_used: self.cumulative_quota_used,
+            quota_used: Some(self.quota_used),
             contract_address: self.contract_address.map(Into::into),
             logs: self.logs.into_iter().map(Into::into).collect(),
             state_root: self.state_root.map(Into::into),
             logs_bloom: self.log_bloom,
-            error_message: self.error.map(|error| error.description()),
+            error_message: self.error.map(ReceiptError::description),
         }
     }
 }
@@ -387,14 +217,14 @@ impl Into<RpcReceipt> for LocalizedReceipt {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use log_entry::LogEntry;
+    use crate::log::Log;
 
     #[test]
     fn test_no_state_root() {
         let r = Receipt::new(
             None,
             0x40cae.into(),
-            vec![LogEntry {
+            vec![Log {
                 address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
                 topics: vec![],
                 data: vec![0u8; 32],
@@ -415,7 +245,7 @@ mod tests {
         let r = Receipt::new(
             Some("2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into()),
             0x40cae.into(),
-            vec![LogEntry {
+            vec![Log {
                 address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
                 topics: vec![],
                 data: vec![0u8; 32],
@@ -435,7 +265,7 @@ mod tests {
         let r = Receipt::new(
             Some("2f697d671e9ae4ee24a43c4b0d7e15f1cb4ba6de1561120d43b9a4e8c4a8a6ee".into()),
             0x40cae.into(),
-            vec![LogEntry {
+            vec![Log {
                 address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
                 topics: vec![],
                 data: vec![0u8; 32],

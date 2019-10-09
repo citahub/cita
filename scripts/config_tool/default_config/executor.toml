@@ -1,0 +1,5 @@
+journaldb_type = "archive"
+prooftype = 2
+genesis_path = "./genesis.json"
+statedb_cache_size = 5242880
+eth_compatibility = false

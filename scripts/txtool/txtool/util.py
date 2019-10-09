@@ -16,7 +16,7 @@ def which(program):
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
-    fpath, fname = os.path.split(program)
+    fpath, _ = os.path.split(program)
     if fpath:
         if is_exe(program):
             return program
@@ -118,8 +118,8 @@ def solidity_file_dirname(solidity_filename):
                     full_path_name)
         else:
             logger.error(
-                "solidity file {} may be wrong format or not in folder 'solidity'".
-                format(solidity_filename))
+                "solidity file {} may be wrong format or not in folder 'solidity'"
+                .format(solidity_filename))
             return None
     else:
         return (os.path.basename(solidity_filename),

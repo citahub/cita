@@ -7,7 +7,6 @@ from jsonrpcclient.http_client import HTTPClient
 from url_util import endpoint
 
 
-
 def get_tx_count(params):
     try:
         url = endpoint()
@@ -27,7 +26,8 @@ def address_infile():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-a", "--address", help="20 bytes ethereum compatiable address.")
+    parser.add_argument(
+        "-a", "--address", help="20 bytes ethereum compatiable address.")
     parser.add_argument("number", help="integer block number(hex string)")
 
     args = parser.parse_args()

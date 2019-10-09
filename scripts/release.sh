@@ -1,18 +1,19 @@
 #!/bin/bash
 
-if [[ `uname` == 'Darwin' ]]
+if [[ $(uname) == 'Darwin' ]]
 then
-    SOURCE_DIR=$(realpath $(dirname $(realpath $0))/..)
+    SOURCE_DIR=$(realpath "$(dirname "$(realpath "$0")")"/..)
 else
-    SOURCE_DIR=$(readlink -f $(dirname $(realpath $0))/..)
+    SOURCE_DIR=$(readlink -f "$(dirname "$(realpath "$0")")"/..)
 fi
 
-cd ${SOURCE_DIR}
+cd "${SOURCE_DIR}" || exit
 
 if [ $# -ne 1 ] ; then
     echo "usage: $0 debug|release"
     exit 1
 fi
+
 type=$1
 
 # 0) setup
@@ -29,17 +30,20 @@ for binary in \
         cita-forever \
         cita-jsonrpc \
         cita-network \
-        create_key_addr \
+        create-key-addr \
+        create-genesis \
         cita-relayer-parser \
-        snapshot_tool \
+        snapshot-tool \
         consensus-mock \
+        chain-executor-mock \
+        box-executor \
         ; do
     cp -rf "target/${type}/${binary}" target/install/bin/
 done
 #strip                                     target/install/bin/*
 
 # 2) cita
-cp -rf  scripts/cita                       target/install/bin/
+cp -rf scripts/cita.sh                      target/install/bin/cita
 
 # 3) contract
 cp -rf scripts/contracts                   target/install/scripts/
@@ -50,7 +54,14 @@ cp -f   scripts/create_cita_config.py      target/install/scripts/
 
 # 5) txtool
 cp -rf scripts/txtool                      target/install/scripts/
+cp -rf scripts/upgrade                     target/install/scripts/
 
 # 6) docker env
-cp -f scripts/env.sh                       target/install/
-cp -f scripts/daemon.sh                    target/install/
+cp -f  env.sh                              target/install/bin/cita-env
+cp -f  scripts/cita_config.sh              target/install/bin/cita-config
+
+# 7) delete building container
+docker container stop cita_build_container > /dev/null 2>&1
+docker container rm cita_build_container > /dev/null 2>&1
+
+exit 0

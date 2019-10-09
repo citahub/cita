@@ -15,7 +15,9 @@ from log import logger
 # check openssl
 openssl_installed = which("openssl")
 if not openssl_installed:
-    sys.exit("Openssl not installed.Check txtool/README.md and prerequest_sudo.sh for more infomation.")
+    sys.exit(
+        "Openssl not installed.Check txtool/README.md and prerequest_sudo.sh for more infomation."
+    )
 
 accounts_path = Path("../output/accounts")
 if not accounts_path.is_dir():
@@ -73,14 +75,17 @@ def _generate_new(privkey=None):
 
     save_pubkey(binascii.b2a_hex(pk))
 
-    address = binascii.b2a_hex(pysodium.crypto_generichash_blake2b_salt_personal(pk, key = "CryptapeCryptape")[12:])
+    address = binascii.b2a_hex(
+        pysodium.crypto_generichash_blake2b_salt_personal(
+            pk, key="CryptapeCryptape")[12:])
     save_address(address)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--newcrypto', dest='newcrypto', action='store_true')
-    parser.add_argument('--no-newcrypto', dest='newcrypto', action='store_false')
+    parser.add_argument(
+        '--no-newcrypto', dest='newcrypto', action='store_false')
     parser.set_defaults(newcrypto=False)
     args = parser.parse_args()
     generate(None, args.newcrypto)

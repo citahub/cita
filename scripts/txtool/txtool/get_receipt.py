@@ -45,9 +45,11 @@ def get_receipt_by(tx_hash):
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--tx", help="Transaction hash with or without 0x prefix.")
     parser.add_argument(
-        "--forever", type=bool,
+        "--tx", help="Transaction hash with or without 0x prefix.")
+    parser.add_argument(
+        "--forever",
+        type=bool,
         help="Run get receipt again and again, until get return data.")
     opts = parser.parse_args()
 

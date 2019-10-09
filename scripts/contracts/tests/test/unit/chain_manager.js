@@ -1,94 +1,84 @@
-const assert = require('assert');
-const mocha = require('mocha');
+const chai = require('chai');
 const util = require('../helpers/util');
 const chainManager = require('../helpers/chain_manager');
 const config = require('../config');
 
-// util
-const { getTxReceipt, logger } = util;
-
+const { expect } = chai;
+const { logger, getTxReceipt } = util;
 const {
   newSideChain, enableSideChain, disableSideChain, getChainId, getParentChainId,
 } = chainManager;
 
-const { describe, it, before } = mocha;
-
 // TODO Add query interface and event of chain_manager.sol
-//= ===================
+// TODO Check the new sideChain
 
 // temp
 let chainId;
+let hash;
 
 describe('test side chain management contract', () => {
   describe('\ntest register new side chain\n', () => {
-    before('Query the parent chain id ', () => {
-      const res = getParentChainId.call();
+    // TODO fixit use getMetaData
+    before('Query the parent chain id ', async () => {
+      const res = await getParentChainId();
       logger.debug('\nThe parent chain id:\n', res);
-      assert.equal(res, 0);
+      expect(res).to.equal('0');
     });
 
-    before('Query the chain id ', () => {
-      const res = getChainId.call();
+    before('Query the chain id ', async () => {
+      const res = await getChainId();
       logger.debug('\nThe chain id:\n', res);
-      assert.equal(res, 1);
+      expect(res).to.equal('1');
     });
 
-    it('should send a newSideChain tx and get receipt', (done) => {
-      const res = newSideChain(100, config.testAddr);
-
-      getTxReceipt(res)
-        .then((receipt) => {
-          logger.debug('\nSend ok and get receipt:\n', receipt);
-          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-          done();
-        })
-        .catch((err) => {
-          logger.error('\n!!!!Get newSideChain receipt err:!!!!\n', err);
-          this.skip();
-        });
+    it('should send a tx: newSideChain', async () => {
+      const res = await newSideChain(2, config.testAddr);
+      logger.debug('\nSend tx ok:\n', JSON.stringify(res));
+      expect(res.status).to.equal('OK');
+      ({ hash } = res);
     });
 
-    // TODO Check the new sideChain
+    it('should get receipt: newSideChain ', async () => {
+      const res = await getTxReceipt(hash);
+      logger.debug('\nget receipt:\n', res);
+      expect(res.errorMessage).to.be.null;
+    });
   });
 
   describe('\ntest enable side chain\n', () => {
-    before('Query the side chain id ', () => {
-      chainId = getChainId.call();
+    before('Query the side chain id ', async () => {
+      chainId = await getChainId();
       logger.debug('\nThe side chain id:\n', chainId);
     });
 
-    it('should send a enableSideChain tx and get receipt', (done) => {
+    it('should send a tx: enableSideChain', async () => {
       // let res = enableSideChain(chainId);
-      const res = enableSideChain(2);
+      const res = await enableSideChain(2);
+      logger.debug('\nSend tx ok:\n', res);
+      expect(res.status).to.equal('OK');
+      ({ hash } = res);
+    });
 
-      getTxReceipt(res)
-        .then((receipt) => {
-          logger.debug('\nSend ok and get receipt:\n', receipt);
-          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-          done();
-        })
-        .catch((err) => {
-          logger.error('\n!!!!Get enableSideChain receipt err:!!!!\n', err);
-          this.skip();
-        });
+    it('should get receipt: enableSideChain', async () => {
+      const res = await getTxReceipt(hash);
+      logger.debug('\nGet receipt:\n', res);
+      expect(res.errorMessage).to.be.null;
     });
   });
 
   describe('\ntest disable side chain\n', () => {
-    it('should send a disableSideChain tx and get receipt', (done) => {
+    it('should send a tx: disableSideChain', async () => {
       // let res = disableSideChain(chainId);
-      const res = disableSideChain(2);
+      const res = await disableSideChain(2);
+      logger.debug('\nSend ok:\n', res);
+      expect(res.status).to.equal('OK');
+      ({ hash } = res);
+    });
 
-      getTxReceipt(res)
-        .then((receipt) => {
-          logger.debug('\nSend ok and get receipt:\n', receipt);
-          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-          done();
-        })
-        .catch((err) => {
-          logger.error('\n!!!!Get disableSideChain receipt err:!!!!\n', err);
-          this.skip();
-        });
+    it('should get receipt: disableSideChain ', async () => {
+      const res = await getTxReceipt(hash);
+      logger.debug('\nGet receipt:\n', res);
+      expect(res.errorMessage).to.be.null;
     });
   });
 });

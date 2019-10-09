@@ -1,0 +1,8 @@
+count_per_batch = 30
+buffer_duration = 30
+tx_verify_thread_num = 4
+tx_verify_cache_size = 100000
+tx_pool_limit = 0
+wal_enable = false
+prof_start = 0
+prof_duration = 0

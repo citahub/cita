@@ -1,73 +1,69 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
-const { web3, genTxParams } = util;
+const { genContract, genTxParams } = util;
 
-const sender = config.contract.authorization.superAdmin;
-const { gmABI, gmAddr } = config.contract.group_management;
+const { superAdmin } = config;
+const { groupManagement } = config.contract;
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/GroupManagement.abi'));
 
-// permission management
-const gManagement = web3.eth.contract(gmABI);
-const gManagementContractIns = gManagement.at(gmAddr);
+const contract = genContract(abi, groupManagement);
 
 // newPermission
-const newGroup = function newGroup(origin, name, accounts, _sender = sender) {
-  return gManagementContractIns.newGroup.sendTransaction(
+const newGroup = async (origin, name, accounts, _sender = superAdmin) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.newGroup(
     origin,
     name,
     accounts,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // deleteGroup
-const deleteGroup = function deleteGroup(origin, target, _sender = sender) {
-  return gManagementContractIns.deleteGroup.sendTransaction(
+const deleteGroup = async (origin, target, _sender = superAdmin) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.deleteGroup(
     origin,
     target,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // updateGroupName
-const updateGroupName = function updateGroupName(origin, target, name, _sender = sender) {
-  return gManagementContractIns.updateGroupName.sendTransaction(
+const updateGroupName = async (origin, target, name, _sender = superAdmin) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.updateGroupName(
     origin,
     target,
     name,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // addAccounts
-const addAccounts = function addAccounts(origin, target, accounts, _sender = sender) {
-  return gManagementContractIns.addAccounts.sendTransaction(
+const addAccounts = async (origin, target, accounts, _sender = superAdmin) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.addAccounts(
     origin,
     target,
     accounts,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // deleteAccounts
-const deleteAccounts = function deleteAccounts(origin, target, accounts, _sender = sender) {
-  return gManagementContractIns.deleteAccounts.sendTransaction(
+const deleteAccounts = async (origin, target, accounts, _sender = superAdmin) => {
+  const param = await genTxParams(_sender);
+  return contract.methods.deleteAccounts(
     origin,
     target,
     accounts,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // checkScope
-const checkScope = function checkScope(origin, target) {
-  return gManagementContractIns.checkScope.call(origin, target);
-};
+const checkScope = async (origin, target) => contract.methods.checkScope(origin, target).call('pending');
 
 // queryGroups
-const queryGroups = function queryGroups() {
-  return gManagementContractIns.queryGroups.call();
-};
+const queryGroups = () => contract.methods.queryGroups().call('pending');
 
 module.exports = {
   newGroup,

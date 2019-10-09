@@ -6,11 +6,15 @@ members = ["cita-auth"
 ,"cita-network"
 ,"cita-executor"
 ,"cita-forever"
-,"tools/create_key_addr"
-,"tools/snapshot_tool"
+,"tools/create-key-addr"
+,"tools/snapshot-tool"
+,"tools/create-genesis"
 ,"tools/relayer-parser"
 ,"tests/chain-executor-mock"
 ,"tests/consensus-mock"
+,"tests/chain-performance-by-mq"
+,"tests/box-executor"
+,"tests/json-test"
 ]
 
 [profile.bench]

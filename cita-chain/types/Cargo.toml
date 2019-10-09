@@ -3,23 +3,41 @@ name = "common-types"
 description = "Common types used throughout the codebase"
 version = "0.1.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
+license = "Apache-2.0"
+edition = "2018"
 
 [dependencies]
 rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc_types = { path = "../../jsonrpc_types" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 serde = "1.0"
 serde_derive = "1.0"
 bloomchain = "0.2"
+lazy_static = "0.2"
+time = "0.1"
+rustc-hex = "1.0"
+cita_trie = "2.0.0"
+cita-logger = "0.1.0"
+proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-database = "0.1"
+
+[dependencies.cita-vm]
+git = "https://github.com/cryptape/cita-vm.git"
+branch = "cita"
+default-features = false
+features = ["sha3hash"]
 
 [features]
 default = ["secp256k1", "sha3hash"]
-secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1", "jsonrpc_types/secp256k1"]
-ed25519 = ["cita-crypto/ed25519", "libproto/ed25519", "jsonrpc_types/ed25519"]
-sm2 = ["cita-crypto/sm2", "libproto/sm2", "jsonrpc_types/sm2"]
-sha3hash = ["util/sha3hash", "libproto/sha3hash", "jsonrpc_types/sha3hash"]
-blake2bhash = ["util/blake2bhash", "libproto/blake2bhash", "jsonrpc_types/blake2bhash"]
-sm3hash = ["util/sm3hash", "libproto/sm3hash", "jsonrpc_types/sm3hash"]
+secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1"]
+ed25519 = ["cita-crypto/ed25519", "libproto/ed25519"]
+sm2 = ["cita-crypto/sm2", "libproto/sm2"]
+sha3hash = ["hashable/sha3hash", "libproto/sha3hash"]
+blake2bhash = ["hashable/blake2bhash", "libproto/blake2bhash"]
+sm3hash = ["hashable/sm3hash", "libproto/sm3hash"]

@@ -1,53 +1,47 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
-const { web3, genTxParams } = util;
+const { genContract, genTxParams } = util;
 
-const sender = config.contract.authorization.superAdmin;
-const { abi, addr } = config.contract.chain_manager;
+const { superAdmin } = config;
+const { chainManager } = config.contract;
 
-const sidechain = web3.eth.contract(abi);
-const sContractInstance = sidechain.at(addr);
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/ChainManager.abi'));
+const contract = genContract(abi, chainManager);
+
+// tmp
+let param;
 
 // newSideChain
-const newSideChain = function newSideChain(id, address, _sender = sender) {
-  return sContractInstance.newSideChain.sendTransaction(
+const newSideChain = async (id, address, _sender = superAdmin) => {
+  param = await genTxParams(_sender);
+  return contract.methods.newSideChain(
     id,
     address,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // enableSideChain
-const enableSideChain = function enableSideChain(id, _sender = sender) {
-  return sContractInstance.enableSideChain.sendTransaction(
-    id,
-    genTxParams(_sender),
-  );
+const enableSideChain = async (id, _sender = superAdmin) => {
+  param = await genTxParams(_sender);
+  return contract.methods.enableSideChain(id).send(param);
 };
 
 // disableSideChain
-const disableSideChain = function disableSideChain(id, _sender = sender) {
-  return sContractInstance.disableSideChain.sendTransaction(
-    id,
-    genTxParams(_sender),
-  );
+const disableSideChain = async (id, _sender = superAdmin) => {
+  param = await genTxParams(_sender);
+  return contract.methods.disableSideChain(id).send(param);
 };
 
 // getChainId
-const getChainId = function getChainId() {
-  return sContractInstance.getChainId.call();
-};
+const getChainId = () => contract.methods.getChainId().call('pending');
 
 // getParentChainId
-const getParentChainId = function getParentChainId() {
-  return sContractInstance.getParentChainId.call();
-};
+const getParentChainId = () => contract.methods.getParentChainId().call('pending');
 
 // Get the nodes of side chain
-const getAuthorities = function getAuthoriti(id) {
-  return sContractInstance.getAuthoritirs.call(id);
-};
+const getAuthorities = id => contract.methods.getAuthoritirs(id).call('pending');
 
 module.exports = {
   newSideChain,

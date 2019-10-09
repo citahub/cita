@@ -1,41 +1,23 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-#![feature(try_from)]
-extern crate cita_crypto;
 #[macro_use]
 extern crate clap;
-extern crate ethabi;
-extern crate futures;
-extern crate hyper;
-extern crate parking_lot;
-extern crate rustc_hex;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
-extern crate tokio_core;
-
-extern crate cita_types;
-extern crate core;
-extern crate jsonrpc_types;
-extern crate libproto;
 #[macro_use]
-extern crate logger;
+extern crate cita_logger as logger;
 
 mod arguments;
 mod communication;
@@ -64,17 +46,23 @@ fn main() {
     // and relay the transaction to the to-chain.
     // The chain id of to-chain is in the tx proof.
     // Relay the transaction to each server in to-chain servers list, until succeed.
-    cfg.get_servers(args.chain_id)
-        .and_then(|servers| fetch_txproof(servers, args.tx_hash))
+    let _ = cfg
+        .get_servers(args.chain_id)
+        .and_then(|servers| fetch_txproof(&servers[..], args.tx_hash))
         .and_then(|tx_proof_rlp| {
-            deconstruct_txproof(&tx_proof_rlp).map(|relay_info| (tx_proof_rlp, relay_info))
+            deconstruct_txproof(&tx_proof_rlp[..]).map(|relay_info| (tx_proof_rlp, relay_info))
         })
         .and_then(|(tx_proof_rlp, relay_info)| {
             cfg.get_servers(relay_info.to_chain_id)
                 .map(|to_servers| (to_servers, tx_proof_rlp, relay_info))
         })
         .and_then(|(to_servers, tx_proof_rlp, relay_info)| {
-            relay_transaction(to_servers, &cfg.get_private_key(), tx_proof_rlp, relay_info)
+            relay_transaction(
+                &to_servers[..],
+                &cfg.get_private_key(),
+                &tx_proof_rlp[..],
+                &relay_info,
+            )
         })
         .map(|tx_hash| {
             println!("{:?}", tx_hash);
@@ -84,7 +72,7 @@ fn main() {
 }
 
 #[inline]
-fn fetch_txproof(servers: &Vec<UpStream>, tx_hash: H256) -> Option<Vec<u8>> {
+fn fetch_txproof(servers: &[UpStream], tx_hash: H256) -> Option<Vec<u8>> {
     let mut ret = None;
     for upstream in servers.iter() {
         if let Ok(tx_proof_rlp) = communication::cita_get_transaction_proof(upstream, tx_hash) {
@@ -111,13 +99,13 @@ fn deconstruct_txproof(tx_proof_rlp: &[u8]) -> Option<RelayInfo> {
 fn construct_transaction(
     upstream: &UpStream,
     pkey: &PrivKey,
-    tx_proof_rlp: Vec<u8>,
-    relay_info: RelayInfo,
+    tx_proof_rlp: &[u8],
+    relay_info: &RelayInfo,
 ) -> Option<UnverifiedTransaction> {
     communication::cita_get_metadata(upstream)
         .ok()
         .and_then(|metadata| {
-            if metadata.chain_id == relay_info.to_chain_id {
+            if metadata.chain_id_v1 == relay_info.to_chain_id.into() {
                 Some(relay_info.to_chain_id)
             } else {
                 error!(
@@ -132,11 +120,11 @@ fn construct_transaction(
                 .ok()
                 .map(|height| (chain_id, height))
         })
-        .and_then(|(chain_id, height)| {
+        .map(|(chain_id, height)| {
             transaction::construct_transaction(
                 pkey,
                 tx_proof_rlp,
-                &relay_info.dest_hasher,
+                relay_info.dest_hasher,
                 relay_info.dest_contract,
                 chain_id,
                 height,
@@ -146,16 +134,14 @@ fn construct_transaction(
 
 #[inline]
 fn relay_transaction(
-    servers: &Vec<UpStream>,
+    servers: &[UpStream],
     pkey: &PrivKey,
-    tx_proof_rlp: Vec<u8>,
-    relay_info: RelayInfo,
+    tx_proof_rlp: &[u8],
+    relay_info: &RelayInfo,
 ) -> Option<H256> {
     let mut ret = None;
     for upstream in servers.iter() {
-        if let Some(utx) =
-            construct_transaction(upstream, pkey, tx_proof_rlp.clone(), relay_info.clone())
-        {
+        if let Some(utx) = construct_transaction(upstream, pkey, tx_proof_rlp, relay_info) {
             if let Ok(hash) = communication::cita_send_transaction(upstream, &utx) {
                 ret = Some(hash);
                 break;

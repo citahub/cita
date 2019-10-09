@@ -1,19 +1,16 @@
-// CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
@@ -22,6 +19,7 @@ pub struct Config {
     pub tx_verify_thread_num: usize,
     pub tx_verify_cache_size: usize,
     pub tx_pool_limit: usize,
+    pub wal_enable: bool,
     pub prof_start: u64,
     pub prof_duration: u64,
 }
@@ -45,6 +43,7 @@ mod tests {
         tx_verify_thread_num = 4
         tx_verify_cache_size = 100000
         tx_pool_limit = 50000
+        wal_enable = true
         prof_start = 0
         prof_duration = 0
         "#;
@@ -59,6 +58,7 @@ mod tests {
         assert_eq!(4, value.tx_verify_thread_num);
         assert_eq!(100000, value.tx_verify_cache_size);
         assert_eq!(50000, value.tx_pool_limit);
+        assert_eq!(true, value.wal_enable);
         assert_eq!(0, value.prof_start);
         assert_eq!(0, value.prof_duration);
     }

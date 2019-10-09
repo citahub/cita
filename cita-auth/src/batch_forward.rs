@@ -1,24 +1,22 @@
-// CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::TryInto;
 use libproto::{BatchRequest, Message, Request};
-use std::convert::{Into, TryInto};
-use std::sync::mpsc::{Receiver, Sender};
+use pubsub::channel::{Receiver, Sender};
+use std::convert::Into;
 use std::thread;
 use std::time::Duration;
 use util::instrument::{unix_now, AsMillis};
@@ -45,7 +43,7 @@ impl BatchForward {
             batch_size,
             timeout,
             check_duration: 5,
-            last_timestamp: unix_now().as_millis(),
+            last_timestamp: AsMillis::as_millis(&unix_now()),
             request_buffer: Vec::new(),
             rx_request,
             tx_pub,
@@ -62,9 +60,11 @@ impl BatchForward {
                     self.batch_forward();
                 }
             } else {
-                thread::sleep(Duration::new(0, self.check_duration * 1000000));
-                let now = unix_now().as_millis();
-                if (now - self.last_timestamp) > self.timeout && self.request_buffer.len() != 0 {
+                thread::sleep(Duration::new(0, self.check_duration * 1_000_000));
+                let now = AsMillis::as_millis(&unix_now());
+                if now.saturating_sub(self.last_timestamp) > self.timeout
+                    && !self.request_buffer.is_empty()
+                {
                     self.batch_forward();
                 }
             }
@@ -92,7 +92,7 @@ impl BatchForward {
             ))
             .unwrap();
 
-        self.last_timestamp = unix_now().as_millis();
+        self.last_timestamp = AsMillis::as_millis(&unix_now());
         self.request_buffer.clear();
     }
 }

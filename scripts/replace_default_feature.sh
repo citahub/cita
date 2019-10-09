@@ -10,13 +10,16 @@ function replace_default_feature () {
         return
     fi
     local before_feature='[ \t]*default[ \t]*=[ \t]*\[.*\"'
+    local before_feature2='[ \t]*features[ \t]*=[ \t]*\[.*\"'
+    local all_feature='[ \t]*\(features\|default\)[ \t]*=[ \t]*\[.*\"'
     local after_feature='\".*'
-    find "${workspacedir}" -mindepth 2 -name "Cargo.toml" \
-            | xargs grep -l "^${before_feature}${old_feature}${after_feature}" \
-            | while read cargotoml; do
+    find "${workspacedir}" -mindepth 2 -name "Cargo.toml" -print0 \
+            | xargs -0 grep -l "^${all_feature}${old_feature}${after_feature}" \
+            | while read -r cargotoml; do
         if [ -f "${cargotoml}" ]; then
             echo "[Info ] Replace [${old_feature}] by [${new_feature}] for [${cargotoml}] ..."
             sed -i "s/\(${before_feature}\)${old_feature}\(${after_feature}\)\$/\1${new_feature}\2/" "${cargotoml}"
+            sed -i "s/\(${before_feature2}\)${old_feature}\(${after_feature}\)\$/\1${new_feature}\2/" "${cargotoml}"
         else
             echo "[Error] [${cargotoml}] is not a file."
         fi

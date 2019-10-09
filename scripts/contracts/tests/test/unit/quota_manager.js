@@ -1,126 +1,142 @@
-const assert = require('assert');
-const mocha = require('mocha');
+const chai = require('chai');
 const util = require('../helpers/util');
 const quota = require('../helpers/quota');
 const config = require('../config');
 
+const { expect } = chai;
 const { getTxReceipt, logger } = util;
-
-const { admin } = config.contract.quota;
-
+const { superAdmin } = config;
 const {
-  getDefaultAQL, getAQL, getBQL, getQuotas, getAccounts, isAdmin, setAQL,
-  setDefaultAQL, setBQL, addAdmin,
+  getDefaultAQL, getAQL, getBQL, getQuotas, getAccounts, setAQL,
+  setDefaultAQL, setBQL,
 } = quota;
 
-const value = 2 ** 29;
+// temp
+let hash;
+let lenOfAccounts;
+let lenOfQuotas;
 
-const { describe, it } = mocha;
-
-// =======================
+// test data
+const value = '536870912';
+const value2 = '536870911';
+const admin = superAdmin;
+const addr = config.testAddr[0];
 
 describe('test quota manager', () => {
-  describe('\ntest add admin\n', () => {
-    it('should send an addAdmin tx', (done) => {
-      const res = addAdmin(config.testAddr[0], admin);
-
-      getTxReceipt(res)
-        .then((receipt) => {
-          logger.debug('\nSend ok and get receipt:\n', receipt);
-          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-          done();
-        })
-        .catch((err) => {
-          logger.error('\n!!!!Get addAdmin receipt err:!!!!\n', err);
-          this.skip();
-        });
-    });
-
-    it('should have new admin', () => {
-      const res = isAdmin(config.testAddr[0]);
-      logger.debug('\nthe account is an admin:\n', res);
-      assert.equal(res, true);
-    });
-  });
-
   describe('\ntest set block quota limit\n', () => {
-    it('should send setBQL tx', (done) => {
-      const res = setBQL(value, admin);
-
-      getTxReceipt(res)
-        .then((receipt) => {
-          logger.debug('\nSend ok and get receipt:\n', receipt);
-          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-          done();
-        })
-        .catch((err) => {
-          logger.error('\n!!!!Get setBQL receipt err:!!!!\n', err);
-          this.skip();
-        });
+    it('should send a tx: setBQL ', async () => {
+      const res = await setBQL(value, admin);
+      logger.debug('\nSend tx ok:\n', JSON.stringify(res));
+      expect(res.status).to.equal('OK');
+      ({ hash } = res);
     });
 
-    it('should have new block quota limit', () => {
-      const res = getBQL();
+    it('should get receipt: setBQL', async () => {
+      const res = await getTxReceipt(hash);
+      logger.debug('\nget receipt:\n', res);
+      expect(res.errorMessage).to.be.null;
+    });
+
+    it('should have new block quota limit', async () => {
+      const res = await getBQL();
       logger.debug('\nthe block quota limit:\n', res);
-      assert.equal(res, value);
+      expect(res).to.equal(value);
     });
   });
 
   describe('\ntest set default account quota limit\n', () => {
-    it('should send setDefaultAQL tx', (done) => {
-      const res = setDefaultAQL(value, admin);
-
-      getTxReceipt(res)
-        .then((receipt) => {
-          logger.debug('\nSend ok and get receipt:\n', receipt);
-          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-          done();
-        })
-        .catch((err) => {
-          logger.error('\n!!!!Get setDefaultAQL receipt err:!!!!\n', err);
-          this.skip();
-        });
+    it('should send a tx: setDefaultAQL ', async () => {
+      const res = await setDefaultAQL(value, admin);
+      logger.debug('\nSend tx ok:\n', JSON.stringify(res));
+      expect(res.status).to.equal('OK');
+      ({ hash } = res);
     });
 
-    it('should have new default account quota limit', () => {
-      const res = getDefaultAQL();
+    it('should get receipt: setDefaultAQL', async () => {
+      const res = await getTxReceipt(hash);
+      logger.debug('\nget receipt:\n', res);
+      expect(res.errorMessage).to.be.null;
+    });
+
+    it('should have new default account quota limit', async () => {
+      const res = await getDefaultAQL();
       logger.debug('\nthe default account quota limit:\n', res);
-      assert.equal(res, value);
+      expect(res).to.equal(value);
     });
   });
 
   describe('\ntest set account\'s quota limit\n', () => {
-    it('should send setAQL tx', (done) => {
-      const res = setAQL(config.testAddr[0], value - 1, admin);
-
-      getTxReceipt(res)
-        .then((receipt) => {
-          logger.debug('\nSend ok and get receipt:\n', receipt);
-          assert.equal(receipt.errorMessage, null, JSON.stringify(receipt.errorMessage));
-          done();
-        })
-        .catch((err) => {
-          logger.error('\n!!!!Get setDefaultAQL receipt err:!!!!\n', err);
-          this.skip();
-        });
+    it('should send a tx: setAQL ', async () => {
+      const res = await setAQL(addr, value2, admin);
+      logger.debug('\nSend tx ok:\n', JSON.stringify(res));
+      expect(res.status).to.equal('OK');
+      ({ hash } = res);
     });
 
-    it('should have new account quota limit', () => {
-      const res = getAQL(config.testAddr[0]);
+    it('should get receipt: setAQL', async () => {
+      const res = await getTxReceipt(hash);
+      logger.debug('\nget receipt:\n', res);
+      expect(res.errorMessage).to.be.null;
+    });
+
+    it('should have new account quota limit', async () => {
+      const res = await getAQL(addr);
       logger.debug('\nthe default account quota limit:\n', res);
-      assert.equal(res, value - 1);
+      expect(res).to.equal(value2);
     });
 
-    it('should have new special account', () => {
-      const res = getAccounts();
+    it('should have new special account', async () => {
+      const res = await getAccounts();
       logger.debug('\nthe special accounts:\n', res);
-      assert.equal(res[res.length - 1], config.testAddr[0]);
+      expect(addr).to.be.oneOf(res);
     });
 
-    it('should have new quotas of special accounts', () => {
-      const res = getQuotas();
+    it('should have new quotas of special accounts', async () => {
+      const res = await getQuotas();
       logger.debug('\nthe quotas of the special accounts:\n', res);
-      assert.equal(res[res.length - 1], value - 1);
+      expect(value2).to.be.oneOf(res);
+    });
+  });
+
+  describe('\ntest set duplicate account\'s quota limit\n', () => {
+    before('set duplicate AQL', async () => {
+      let res = await getAccounts();
+      logger.debug('\nthe special accounts:\n', res);
+      lenOfAccounts = res.length;
+      res = await getQuotas();
+      logger.debug('\nthe special accounts\' quotas:\n', res);
+      lenOfQuotas = res.length;
+    });
+
+    it('should send a tx: setAQL ', async () => {
+      const res = await setAQL(addr, value, admin);
+      logger.debug('\nSend tx ok:\n', JSON.stringify(res));
+      expect(res.status).to.equal('OK');
+      ({ hash } = res);
+    });
+
+    it('should get receipt: setAQL', async () => {
+      const res = await getTxReceipt(hash);
+      logger.debug('\nget receipt:\n', res);
+      expect(res.errorMessage).to.be.null;
+    });
+
+    it('should have new account quota limit', async () => {
+      const res = await getAQL(addr);
+      logger.debug('\nthe default account quota limit:\n', res);
+      expect(res).to.equal(value);
+    });
+
+    it('should have equal length of special account', async () => {
+      const res = await getAccounts();
+      logger.debug('\nthe special accounts:\n', res);
+      expect(res).to.have.lengthOf(lenOfAccounts);
+    });
+
+    it('should have equla lengtho of quotas', async () => {
+      const res = await getQuotas();
+      logger.debug('\nthe quotas of the special accounts:\n', res);
+      expect(res).to.have.lengthOf(lenOfQuotas);
     });
   });
 });

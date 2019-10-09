@@ -1,30 +1,38 @@
-use error::ErrorCode;
-use futures::future::{Either, Future};
-use futures::stream::FuturesOrdered;
-use futures::sync::oneshot;
-use futures::{self, Stream};
-use helper::{select_topic, ReqSender, RpcMap, TransferType};
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use futures::future::{self as future, Future};
 use hyper::header::{
-    AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin,
-    AccessControlMaxAge, ContentType, Headers,
+    HeaderMap as Headers, HeaderName, HeaderValue, ACCEPT, ACCESS_CONTROL_ALLOW_HEADERS,
+    ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_MAX_AGE,
+    CONTENT_TYPE, ORIGIN, USER_AGENT,
 };
-use hyper::server::{Http, NewService, Request, Response, Service};
-use hyper::{self, Method, StatusCode};
-use jsonrpc_types::request::{PartialRequest, Request as FullRequest, RpcRequest};
-use jsonrpc_types::response::RpcFailure;
-use jsonrpc_types::Error;
+use hyper::service::{MakeService, Service};
+use hyper::{Body, Method, Request, Response, StatusCode};
+use jsonrpc_types::{rpc_request::RpcRequest as JsonrpcRequest, rpc_types::Id as RpcId};
 use libproto::request::Request as ProtoRequest;
-use net2;
-use response::{BatchFutureResponse, SingleFutureResponse};
-use serde_json;
-use std::io;
-use std::net::SocketAddr;
-use std::sync::{mpsc, Arc};
+use pubsub::channel::Sender;
+use std::net::{SocketAddr, TcpListener};
+use std::sync::Arc;
 use std::time::Duration;
-use tokio_core::net::TcpListener;
-use tokio_core::reactor::{Core, Handle, Timeout};
-use unicase::Ascii;
 use util::Mutex;
+
+use crate::extractor::FutExtractor;
+use crate::helper::{ReqSender, RpcMap};
+use crate::http_header::{Origin, CONTENT_TYPE_JSON_STR, CONTENT_TYPE_PLAIN_TEXT_STR};
+use crate::mq_publisher::{AccessLog as MQAccessLog, MQRequest, Publisher, TimeoutPublisher};
+use crate::response::{HyperResponseExt, IntoResponse};
 
 const TCP_BACKLOG: i32 = 1024;
 const CORS_CACHE: u32 = 86_400u32;
@@ -33,383 +41,270 @@ struct Inner {
     pub tx: ReqSender,
     pub responses: RpcMap,
     pub timeout: Duration,
-    pub reactor_handle: Handle,
     pub http_headers: Headers,
 }
 
-pub struct Server {
+pub struct Jsonrpc {
     inner: Arc<Inner>,
 }
 
-pub struct NewServer {
+pub struct JsonrpcMakeService {
     inner: Arc<Inner>,
 }
 
-impl NewService for NewServer {
-    type Request = Request;
-    type Response = Response;
+impl<Ctx> MakeService<Ctx> for JsonrpcMakeService {
+    type ReqBody = Body;
+    type ResBody = Body;
     type Error = hyper::Error;
-    type Instance = Server;
+    type Service = Jsonrpc;
+    type Future = Box<dyn Future<Item = Self::Service, Error = Self::Error> + Send>;
+    type MakeError = hyper::Error;
 
-    fn new_service(&self) -> io::Result<Self::Instance> {
-        Ok(Server {
+    fn make_service(&mut self, _: Ctx) -> Self::Future {
+        Box::new(future::ok(Jsonrpc {
             inner: Arc::clone(&self.inner),
-        })
+        }))
     }
 }
 
-impl Service for Server {
-    type Request = Request;
-    type Response = Response;
-    type Error = hyper::Error;
-    type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
+struct AccessLog {
+    user_agent: String,
+    http_method: Method,
+    http_path: String,
+    rpc_info: Option<RpcAccessLog>,
+}
 
-    fn call(&self, req: Request) -> Self::Future {
+enum RpcAccessLog {
+    Single(SingleRpcAccessLog),
+    Batch(BatchRpcAccessLog),
+}
+
+struct SingleRpcAccessLog {
+    id: RpcId,
+    method: Option<String>,
+}
+
+struct BatchRpcAccessLog {
+    count: Option<usize>,
+}
+
+impl From<MQAccessLog> for RpcAccessLog {
+    fn from(mq_log: MQAccessLog) -> Self {
+        match mq_log {
+            MQAccessLog::Single { id, method } => {
+                RpcAccessLog::Single(SingleRpcAccessLog { id, method })
+            }
+            MQAccessLog::Batch { count } => RpcAccessLog::Batch(BatchRpcAccessLog { count }),
+        }
+    }
+}
+
+impl AccessLog {
+    pub fn new(http_method: &Method, http_path: &str, http_headers: &Headers) -> Self {
+        let user_agent = http_headers
+            .get(USER_AGENT)
+            .and_then(|u| u.to_str().ok())
+            .unwrap_or_else(|| "unknown")
+            .to_owned();
+
+        Self {
+            user_agent,
+            http_method: http_method.clone(),
+            http_path: http_path.to_owned(),
+            rpc_info: None,
+        }
+    }
+
+    pub fn set_rpc_info(&mut self, rpc_acc_log: RpcAccessLog) {
+        self.rpc_info = Some(rpc_acc_log);
+    }
+}
+
+impl ::std::fmt::Display for AccessLog {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        write!(f, "user-agent={}", self.user_agent)?;
+        write!(f, ", http-method={}", self.http_method)?;
+        write!(f, ", http-path={}", self.http_path)?;
+        match self.rpc_info {
+            Some(RpcAccessLog::Single(ref sl)) => {
+                write!(f, ", rpc-type=single")?;
+                write!(f, ", rpc-id={:?}", sl.id)?;
+                if let Some(ref m) = sl.method {
+                    write!(f, ", rpc-method={}", m)
+                } else {
+                    write!(f, ", rpc-method=unknown")
+                }
+            }
+            Some(RpcAccessLog::Batch(ref bl)) => {
+                write!(f, ", rpc-type=batch")?;
+                if let Some(c) = bl.count {
+                    write!(f, ", rpc-count={}", c)
+                } else {
+                    write!(f, ", rpc-count=-1")
+                }
+            }
+            None => write!(f, ", rpc-type=unknown"),
+        }
+    }
+}
+
+impl Service for Jsonrpc {
+    type ReqBody = Body;
+    type ResBody = Body;
+    type Error = hyper::Error;
+    type Future = Box<Future<Item = Response<Self::ResBody>, Error = Self::Error> + Send>;
+
+    fn call(&mut self, http_req: Request<Self::ReqBody>) -> Self::Future {
         let sender = { self.inner.tx.lock().clone() };
         let responses = Arc::clone(&self.inner.responses);
-        let timeout_responses = Arc::clone(&self.inner.responses);
         let timeout = self.inner.timeout;
-        let reactor_handle = self.inner.reactor_handle.clone();
         let http_headers = self.inner.http_headers.clone();
 
-        match (req.method(), req.path()) {
-            (&Method::Post, "/") => {
-                let mapping = req.body().concat2().and_then(move |chunk| {
-                    if let Ok(rpc) = serde_json::from_slice::<RpcRequest>(&chunk) {
-                        match rpc {
-                            RpcRequest::Single(part_req) => match read_single(
-                                part_req,
-                                &http_headers,
-                            ) {
-                                Ok((full_req, req)) => {
-                                    if let Ok(timeout) = Timeout::new(timeout, &reactor_handle) {
-                                        let req_info = full_req.get_info();
-                                        let request_id = req.request_id.clone();
-                                        let mq_resp = handle_single(
-                                            full_req,
-                                            req,
-                                            &responses,
-                                            &sender,
-                                            &http_headers,
-                                        );
+        let http_path = http_req.uri().path().to_owned();
+        let mut access_log = AccessLog::new(http_req.method(), &http_path, &http_headers);
 
-                                        let resp =
-                                            mq_resp.select2(timeout).then(move |res| match res {
-                                                Ok(Either::A((got, _timeout))) => Ok(got),
-                                                Ok(Either::B((_timeout_error, _get))) => {
-                                                    {
-                                                        timeout_responses
-                                                            .lock()
-                                                            .remove(&request_id);
-                                                    }
-                                                    let failure = RpcFailure::from_options(
-                                                        req_info,
-                                                        Error::server_error(
-                                                            ErrorCode::time_out_error(),
-                                                            "system time out, please resend",
-                                                        ),
-                                                    );
-                                                    let resp_body = serde_json::to_string(&failure)
-                                                        .expect(
-                                                            "should be serialize by serde_json",
-                                                        );
-                                                    Ok(Response::new()
-                                                        .with_headers(http_headers)
-                                                        .with_body(resp_body))
-                                                }
-                                                Err(Either::A((get_error, _timeout))) => {
-                                                    Err(get_error)
-                                                }
-                                                Err(Either::B((timeout_error, _get))) => {
-                                                    Err(From::from(timeout_error))
-                                                }
-                                            });
+        match (http_req.method(), http_path.as_ref()) {
+            (&Method::POST, "/") => {
+                let fut_resp = FutExtractor::<JsonrpcRequest>::extract_from(http_req)
+                    .and_then(FutExtractor::<MQRequest>::extract_from)
+                    .and_then({
+                        let headers = http_headers.clone();
 
-                                        Either::A(Either::A(resp))
-                                    } else {
-                                        Either::B(futures::future::ok(
-                                            Response::new()
-                                                .with_headers(http_headers)
-                                                .with_status(StatusCode::InternalServerError),
-                                        ))
-                                    }
-                                }
-                                Err(resp) => Either::B(futures::future::ok(resp)),
-                            },
-                            RpcRequest::Batch(part_reqs) => {
-                                match read_batch(part_reqs, &http_headers) {
-                                    Ok(reqs) => {
-                                        let request_ids: Vec<Vec<u8>> = reqs.iter()
-                                        .map(|&(_, ref req)| req.request_id.clone())
-                                        .collect();
+                        move |mq_req| {
+                            // logging
+                            access_log.set_rpc_info(RpcAccessLog::from(mq_req.access_log()));
+                            info!("{}", access_log);
 
-                                        let mq_resp =
-                                            handle_batch(reqs, &responses, &sender, &http_headers);
+                            let timeout_responses = Arc::clone(&responses);
+                            let pulibsher = Publisher::new(responses, sender, headers);
+                            let pulibsher =
+                                TimeoutPublisher::new(pulibsher, timeout, timeout_responses);
 
-                                        if let Ok(timeout) = Timeout::new(timeout, &reactor_handle)
-                                        {
-                                            let resp = mq_resp.select2(timeout).then(move |res| {
-                                                match res {
-                                                    Ok(Either::A((got, _timeout))) => Ok(got),
-                                                    Ok(Either::B((_timeout_error, _get))) => {
-                                                        {
-                                                            let mut guard =
-                                                                timeout_responses.lock();
-                                                            for request_id in request_ids {
-                                                                guard.remove(&request_id);
-                                                            }
-                                                        }
-                                                        let failure =
-                                                            RpcFailure::from(Error::server_error(
-                                                                ErrorCode::time_out_error(),
-                                                                "system time out, please resend",
-                                                            ));
-                                                        let resp_body =
-                                                            serde_json::to_string(&failure).expect(
-                                                                "should be serialize by serde_json",
-                                                            );
-                                                        Ok(Response::new()
-                                                            .with_headers(http_headers)
-                                                            .with_body(resp_body))
-                                                    }
-                                                    Err(Either::A((get_error, _timeout))) => {
-                                                        Err(get_error)
-                                                    }
-                                                    Err(Either::B((timeout_error, _get))) => {
-                                                        Err(From::from(timeout_error))
-                                                    }
-                                                }
-                                            });
-
-                                            Either::A(Either::B(resp))
-                                        } else {
-                                            Either::B(futures::future::ok(
-                                                Response::new()
-                                                    .with_headers(http_headers)
-                                                    .with_status(StatusCode::InternalServerError),
-                                            ))
-                                        }
-                                    }
-                                    Err(resp) => Either::B(futures::future::ok(resp)),
-                                }
-                            }
+                            pulibsher.publish(mq_req)
                         }
-                    } else {
-                        Either::B(futures::future::ok(
-                            Response::new()
-                                .with_headers(http_headers)
-                                .with_status(StatusCode::BadRequest),
-                        ))
-                    }
-                });
-                let resp: Box<Future<Error = hyper::Error, Item = hyper::Response>> =
-                    Box::new(mapping);
-                resp
+                    })
+                    .then(move |resp| match resp {
+                        Ok(resp) => Ok(resp),
+                        Err(err) => Ok(err.into_response(http_headers.clone())),
+                    });
+
+                Box::new(fut_resp)
             }
-            (&Method::Options, "/") => handle_preflighted(http_headers),
-            _ => Box::new(futures::future::ok(
-                Response::new()
+            (&Method::OPTIONS, "/") => {
+                info!("{}", access_log);
+                let resp = Response::default().with_headers(handle_preflighted(http_headers));
+
+                Box::new(future::ok(resp))
+            }
+            _ => {
+                info!("{}", access_log);
+                let resp = Response::default()
                     .with_headers(http_headers)
-                    .with_status(StatusCode::NotFound),
-            )),
-        }
-    }
-}
+                    .with_status(StatusCode::NOT_FOUND);
 
-fn handle_preflighted(mut headers: Headers) -> Box<Future<Item = Response, Error = hyper::Error>> {
-    headers.set(ContentType::plaintext());
-    headers.set(AccessControlAllowMethods(vec![
-        Method::Post,
-        Method::Options,
-    ]));
-
-    headers.set(AccessControlAllowHeaders(vec![
-        Ascii::new("Origin".to_owned()),
-        Ascii::new("Content-Type".to_owned()),
-        Ascii::new("X-Requested-With".to_owned()),
-        Ascii::new("Accept".to_owned()),
-    ]));
-    headers.set(AccessControlMaxAge(CORS_CACHE));
-    Box::new(futures::future::ok(Response::new().with_headers(headers)))
-}
-
-fn read_single(
-    part_req: PartialRequest,
-    headers: &Headers,
-) -> Result<(FullRequest, ProtoRequest), Response> {
-    let req_info = part_req.get_info();
-    part_req.complete_and_into_proto().map_err(|err| {
-        let resp_body = serde_json::to_vec(&RpcFailure::from_options(req_info, err))
-            .expect("should be serialize by serde_json");
-        Response::new()
-            .with_headers(headers.clone())
-            .with_body(resp_body)
-    })
-}
-
-fn handle_single(
-    full_req: FullRequest,
-    req: ProtoRequest,
-    responses: &RpcMap,
-    sender: &mpsc::Sender<(String, ProtoRequest)>,
-    headers: &Headers,
-) -> SingleFutureResponse {
-    let request_id = req.request_id.clone();
-    let (tx, rx) = oneshot::channel();
-    let topic = select_topic(full_req.get_method());
-    {
-        responses
-            .lock()
-            .insert(request_id, TransferType::HTTP((full_req.get_info(), tx)));
-    }
-    let _ = sender.send((topic, req));
-    let headers = headers.clone();
-
-    SingleFutureResponse::new(rx, headers)
-}
-
-fn read_batch(
-    part_reqs: Vec<PartialRequest>,
-    headers: &Headers,
-) -> Result<Vec<(FullRequest, ProtoRequest)>, Response> {
-    let mut reqs = Vec::with_capacity(part_reqs.len());
-    for part_req in part_reqs {
-        match part_req.complete_and_into_proto() {
-            Ok(ret) => {
-                reqs.push(ret);
-            }
-            Err(_) => {
-                return Err(Response::new()
-                    .with_headers(headers.clone())
-                    .with_status(StatusCode::BadRequest))
+                Box::new(future::ok(resp))
             }
         }
     }
-    Ok(reqs)
 }
 
-fn handle_batch(
-    reqs: Vec<(FullRequest, ProtoRequest)>,
-    responses: &RpcMap,
-    sender: &mpsc::Sender<(String, ProtoRequest)>,
-    headers: &Headers,
-) -> BatchFutureResponse {
-    use std::iter::FromIterator;
-    let mut rxs = Vec::with_capacity(reqs.len());
-    for (full_req, req) in reqs {
-        let request_id = req.request_id.clone();
-        let topic = select_topic(full_req.get_method());
-        let (tx, rx) = oneshot::channel();
-        {
-            responses
-                .lock()
-                .insert(request_id, TransferType::HTTP((full_req.get_info(), tx)));
-        }
-        let _ = sender.send((topic, req));
-        rxs.push(rx);
-    }
-    let headers = headers.clone();
+fn handle_preflighted(mut headers: Headers) -> Headers {
+    use crate::http_header::{HeaderMapExt, X_REQUESTED_WITH_STR};
 
-    BatchFutureResponse::new(FuturesOrdered::from_iter(rxs).collect(), headers)
+    let x_requested_with = HeaderName::from_static(X_REQUESTED_WITH_STR);
+    let plain_text = HeaderValue::from_static(CONTENT_TYPE_PLAIN_TEXT_STR);
+    let cors_cache = HeaderValue::from(CORS_CACHE);
+    let allow_methods = vec![Method::POST, Method::OPTIONS];
+    let allow_headers = vec![ORIGIN, CONTENT_TYPE, x_requested_with, USER_AGENT, ACCEPT];
+
+    headers.insert(CONTENT_TYPE, plain_text);
+    headers.insert_vec(ACCESS_CONTROL_ALLOW_METHODS, allow_methods);
+    headers.insert_vec(ACCESS_CONTROL_ALLOW_HEADERS, allow_headers);
+    headers.insert(ACCESS_CONTROL_MAX_AGE, cors_cache);
+
+    headers
+}
+
+pub type JsonrpcServer = hyper::Server<hyper::server::conn::AddrIncoming, JsonrpcMakeService>;
+pub struct Server {
+    addr: SocketAddr,
+    jsonrpc: JsonrpcServer,
 }
 
 impl Server {
-    pub fn start(
-        core: Core,
-        listener: TcpListener,
-        tx: mpsc::Sender<(String, ProtoRequest)>,
+    pub fn create(
+        addr: &SocketAddr,
+        tx: Sender<(String, ProtoRequest)>,
         responses: RpcMap,
-        timeout: Duration,
+        timeout: u64,
         allow_origin: &Option<String>,
-    ) {
-        let mut headers = Headers::new();
-        let origin = parse_origin(allow_origin);
-        headers.set(ContentType::json());
-        headers.set(origin);
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let listener = listener_from_socket_addr(&addr)?;
+        let addr = listener.local_addr()?;
+        let timeout = Duration::from_secs(timeout);
+        let json = HeaderValue::from_static(CONTENT_TYPE_JSON_STR);
+        let allow_origin = Origin::from_config(allow_origin)?;
 
-        let new_service = NewServer {
+        let mut http_headers = Headers::new();
+        http_headers.insert(CONTENT_TYPE, json);
+        http_headers.insert(ACCESS_CONTROL_ALLOW_ORIGIN, allow_origin);
+
+        let make_jsonrpc_svc = JsonrpcMakeService {
             inner: Arc::new(Inner {
                 tx: Mutex::new(tx),
-                responses: responses,
-                timeout: timeout,
-                reactor_handle: core.handle(),
-                http_headers: headers,
+                responses,
+                timeout,
+                http_headers,
             }),
         };
-        let server = Http::new()
-            .sleep_on_errors(Some(Duration::from_millis(50)))
-            .keep_alive(true)
-            .bind_listener(core, listener, new_service)
-            .unwrap();
-        server.run().unwrap();
+
+        // NOTE: sleep_on_errors is turned on by default
+        hyper::Server::from_tcp(listener)
+            .map(|builder| builder.http1_keepalive(true).serve(make_jsonrpc_svc))
+            .map(|jsonrpc| Self { addr, jsonrpc })
+            .map_err(Box::from)
+    }
+
+    // used in test code
+    #[allow(dead_code)]
+    pub fn local_addr(&self) -> SocketAddr {
+        self.addr
+    }
+
+    pub fn jsonrpc(self) -> JsonrpcServer {
+        self.jsonrpc
     }
 }
 
-fn parse_origin(origin: &Option<String>) -> AccessControlAllowOrigin {
-    match origin.as_ref().map(|s| s.trim().as_ref()) {
-        Some("*") => AccessControlAllowOrigin::Any,
-        None | Some("") | Some("null") => AccessControlAllowOrigin::Null,
-        Some(origin) => AccessControlAllowOrigin::Value(origin.to_string()),
-    }
-}
+pub fn listener_from_socket_addr(addr: &SocketAddr) -> std::io::Result<TcpListener> {
+    use net2::unix::UnixTcpBuilderExt;
 
-pub fn listener(addr: &SocketAddr, handle: &Handle) -> io::Result<TcpListener> {
     let listener = match *addr {
         SocketAddr::V4(_) => net2::TcpBuilder::new_v4()?,
         SocketAddr::V6(_) => net2::TcpBuilder::new_v6()?,
     };
-    configure_tcp(&listener)?;
+    listener.reuse_port(true)?;
     listener.reuse_address(true)?;
     listener.bind(addr)?;
-    listener
-        .listen(TCP_BACKLOG)
-        .and_then(|l| TcpListener::from_listener(l, addr, handle))
-}
-
-fn configure_tcp(tcp: &net2::TcpBuilder) -> io::Result<()> {
-    use net2::unix::*;
-    tcp.reuse_port(true)?;
-    Ok(())
-}
-
-#[cfg(test)]
-mod test {
-    use super::{parse_origin, AccessControlAllowOrigin};
-
-    #[test]
-    fn test_parse_origin() {
-        vec![
-            (
-                Some("abc".to_owned()),
-                AccessControlAllowOrigin::Value("abc".to_owned()),
-            ),
-            (
-                Some(" xyz ".to_owned()),
-                AccessControlAllowOrigin::Value("xyz".to_owned()),
-            ),
-            (Some("*".to_owned()), AccessControlAllowOrigin::Any),
-            (Some(" * ".to_owned()), AccessControlAllowOrigin::Any),
-            (None, AccessControlAllowOrigin::Null),
-        ].into_iter()
-            .for_each(|(origin, result)| {
-                assert_eq!(parse_origin(&origin), result);
-            });
-    }
+    listener.listen(TCP_BACKLOG)
 }
 
 #[cfg(test)]
 mod integration_test {
+    use super::*;
+    use crate::helper::TransferType;
+    use futures::{sync::oneshot, Stream};
+    use jsonrpc_proto::response::OutputExt;
+    use jsonrpc_types;
+    use jsonrpc_types::rpc_response::Output;
+    use libproto::protos;
+    use pubsub::channel::{self, Sender};
+    use serde_json;
     use std::collections::HashMap;
     use std::str::FromStr;
-    use std::sync::mpsc::channel;
     use std::thread;
-
+    use tokio_core::reactor::Core;
     use uuid::Uuid;
-
-    use super::*;
-    use jsonrpc_types;
-    use jsonrpc_types::response::Output;
-    use libproto::protos;
 
     struct Serve {
         pub addr: SocketAddr,
@@ -426,46 +321,38 @@ mod integration_test {
 
     fn start_server(
         responses: RpcMap,
-        tx: mpsc::Sender<(String, ProtoRequest)>,
+        tx: Sender<(String, ProtoRequest)>,
         timeout: u64,
-        allow_origin: Option<&str>,
+        allow_origin: Option<String>,
     ) -> Serve {
         let addr = "127.0.0.1:0".parse().unwrap();
         let tx = tx.clone();
 
-        let timeout = Duration::from_secs(timeout);
-        let allow_origin = allow_origin.map(|s| s.to_owned());
-        let (addr_tx, addr_rx) = ::std::sync::mpsc::channel();
+        let (addr_tx, addr_rx) = channel::unbounded();
         let thread_handle = thread::Builder::new()
             .name(format!("test-server-{}", Uuid::new_v4()))
             .spawn(move || {
-                let core = Core::new().unwrap();
-                let handle = core.handle();
-                let listener = listener(&addr, &handle).unwrap();
-                let addr = listener.local_addr().unwrap().clone();
                 let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
+                let server = Server::create(&addr, tx, responses, timeout, &allow_origin).unwrap();
+
+                let addr = server.local_addr();
                 addr_tx.send((addr, shutdown_tx)).unwrap();
 
-                // Server::start(core, listener, tx, responses, timeout, &allow_origin);
-                let mut headers = Headers::new();
-                let origin = parse_origin(&allow_origin);
-                headers.set(ContentType::json());
-                headers.set(origin);
-                let new_service = NewServer {
-                    inner: Arc::new(Inner {
-                        tx: Mutex::new(tx),
-                        responses: responses,
-                        timeout: timeout,
-                        reactor_handle: core.handle(),
-                        http_headers: headers,
-                    }),
-                };
-                let server = Http::new()
-                    .keep_alive(true)
-                    .sleep_on_errors(Some(Duration::from_millis(10)))
-                    .bind_listener(core, listener, new_service)
+                let jsonrpc_server = server
+                    .jsonrpc()
+                    .with_graceful_shutdown(shutdown_rx)
+                    .map_err(|err| eprintln!("server err {}", err));
+
+                let mut rt = tokio::runtime::Builder::new()
+                    .core_threads(2)
+                    .build()
                     .unwrap();
-                server.run_until(shutdown_rx.then(|_| Ok(()))).unwrap();
+                rt.spawn(jsonrpc_server);
+
+                tokio_executor::enter()
+                    .unwrap()
+                    .block_on(rt.shutdown_on_idle())
+                    .unwrap();
             })
             .unwrap();
         let (addr, shutdown_tx) = addr_rx.recv().unwrap();
@@ -478,16 +365,17 @@ mod integration_test {
 
     #[test]
     fn test_server() {
+        use crate::http_header::{HeaderValueExt, X_REQUESTED_WITH_STR};
         use std::io::Write;
 
         // For message forwarding
-        let (tx_relay, rx_relay) = channel();
+        let (tx_relay, rx_relay) = channel::unbounded();
         let backlog_capacity = 256;
         let responses = Arc::new(Mutex::new(HashMap::with_capacity(backlog_capacity)));
-        let serve = start_server(responses.clone(), tx_relay, 3, Some("*"));
+        let serve = start_server(responses.clone(), tx_relay, 3, Some(String::from("*")));
 
         let http_responses = responses.clone();
-        let (tx_quit, rx_quit) = channel();
+        let (tx_quit, rx_quit) = channel::unbounded();
         let receiver = thread::spawn(move || loop {
             if let Ok((_topic, req)) = rx_relay.try_recv() {
                 let value = { http_responses.lock().remove(&req.request_id) };
@@ -506,11 +394,12 @@ mod integration_test {
                 if let Some(val) = value {
                     match val {
                         TransferType::HTTP((req_info, sender)) => {
-                            let _ = sender.send(Output::from(content, req_info));
+                            let _ = sender.send(Output::from_res_info(content, req_info));
                         }
                         TransferType::WEBSOCKET((req_info, sender)) => {
                             let _ = sender.send(
-                                serde_json::to_string(&Output::from(content, req_info)).unwrap(),
+                                serde_json::to_string(&Output::from_res_info(content, req_info))
+                                    .unwrap(),
                             );
                         }
                     }
@@ -525,48 +414,45 @@ mod integration_test {
             }
         });
 
-        let mut core = Core::new().unwrap();
-        let handle = core.handle();
-        let client = hyper::Client::configure().keep_alive(true).build(&handle);
+        let client = hyper::Client::builder().keep_alive(true).build_http();
 
         let mut works: Vec<Box<Future<Item = (), Error = _>>> = vec![];
         let uri = hyper::Uri::from_str(
             format!("http://{}:{}/", serve.addr.ip(), serve.addr.port()).as_str(),
-        ).unwrap();
+        )
+        .unwrap();
 
-        let req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());
+        let req = hyper::Request::post(uri.clone())
+            .body(hyper::Body::empty())
+            .unwrap();
         let work_empty = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 400);
             Ok(())
         });
 
-        let req = hyper::Request::<hyper::Body>::new(Method::Options, uri.clone());
+        let req = hyper::Request::options(uri.clone())
+            .body(hyper::Body::empty())
+            .unwrap();
         let work_options = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 200);
             let headers = resp.headers().clone();
             assert_eq!(
-                headers.get::<ContentType>(),
-                Some(&ContentType::plaintext())
+                headers.get(CONTENT_TYPE),
+                Some(&HeaderValue::from_static(CONTENT_TYPE_PLAIN_TEXT_STR))
             );
             assert_eq!(
-                headers.get::<AccessControlAllowMethods>(),
-                Some(&AccessControlAllowMethods(vec![
-                    Method::Post,
-                    Method::Options,
-                ]))
+                headers.get(ACCESS_CONTROL_ALLOW_METHODS),
+                Some(&HeaderValue::from_vec(vec![Method::POST, Method::OPTIONS]))
+            );
+            let x_requested_with = HeaderName::from_static(X_REQUESTED_WITH_STR);
+            let expect_headers = vec![ORIGIN, CONTENT_TYPE, x_requested_with, USER_AGENT, ACCEPT];
+            assert_eq!(
+                headers.get(ACCESS_CONTROL_ALLOW_HEADERS),
+                Some(&HeaderValue::from_vec(expect_headers))
             );
             assert_eq!(
-                headers.get::<AccessControlAllowHeaders>(),
-                Some(&AccessControlAllowHeaders(vec![
-                    Ascii::new("Origin".to_owned()),
-                    Ascii::new("Content-Type".to_owned()),
-                    Ascii::new("X-Requested-With".to_owned()),
-                    Ascii::new("Accept".to_owned()),
-                ]))
-            );
-            assert_eq!(
-                headers.get::<AccessControlMaxAge>(),
-                Some(&AccessControlMaxAge(CORS_CACHE))
+                headers.get(ACCESS_CONTROL_MAX_AGE),
+                Some(&HeaderValue::from(CORS_CACHE))
             );
             Ok(())
         });
@@ -577,13 +463,15 @@ mod integration_test {
             "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"]
         }"#;
         let rpcreq =
-            serde_json::from_str::<jsonrpc_types::request::PartialRequest>(request_str).unwrap();
-        let data = serde_json::to_string(&RpcRequest::Single(rpcreq)).unwrap();
-        let mut req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());
-        req.set_body(data);
+            serde_json::from_str::<jsonrpc_types::rpc_request::PartialRequest>(request_str)
+                .unwrap();
+        let data = serde_json::to_string(&JsonrpcRequest::Single(rpcreq)).unwrap();
+        let req = hyper::Request::post(uri.clone())
+            .body(hyper::Body::from(data))
+            .unwrap();
         let work_method_not_found = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 200);
-            resp.body()
+            resp.into_body()
                 .fold(vec![], |mut buf, chunk| {
                     buf.write(chunk.as_ref()).unwrap();
                     futures::future::ok(buf).map_err(|e: hyper::Error| e)
@@ -611,11 +499,12 @@ mod integration_test {
             "{}",
             json!({"jsonrpc":"2.0","method":"peerCount","params":[],"id":74})
         );
-        let mut req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());
-        req.set_body(data);
+        let req = hyper::Request::post(uri.clone())
+            .body(hyper::Body::from(data))
+            .unwrap();
         let work_peercount = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 200);
-            resp.body()
+            resp.into_body()
                 .fold(vec![], |mut buf, chunk| {
                     buf.write(chunk.as_ref()).unwrap();
                     futures::future::ok(buf).map_err(|e: hyper::Error| e)
@@ -635,11 +524,12 @@ mod integration_test {
                 {"jsonrpc":"2.0","method":"peerCount","params":[],"id":75}
             ])
         );
-        let mut req = hyper::Request::<hyper::Body>::new(Method::Post, uri.clone());
-        req.set_body(data);
+        let req = hyper::Request::post(uri.clone())
+            .body(hyper::Body::from(data))
+            .unwrap();
         let work_peercount_batch = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 200);
-            resp.body()
+            resp.into_body()
                 .fold(vec![], |mut buf, chunk| {
                     buf.write(chunk.as_ref()).unwrap();
                     futures::future::ok(buf).map_err(|e: hyper::Error| e)
@@ -669,9 +559,17 @@ mod integration_test {
         works.push(Box::new(work_method_not_found));
         works.push(Box::new(work_peercount));
         works.push(Box::new(work_peercount_batch));
+
+        let mut core = Core::new().unwrap();
         core.run(futures::future::join_all(works)).unwrap();
 
         tx_quit.send(()).unwrap();
+        // explicitly drop Hyper::Client before shutdown test server,
+        // otherwise graceful shutdown maybe blocked then cause deadlock
+        // when we join that server's thread.
+        //
+        // Reference: https://github.com/hyperium/hyper/issues/1668
+        drop(client);
         receiver.join().unwrap();
     }
 }

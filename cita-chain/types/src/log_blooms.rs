@@ -1,29 +1,22 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-//! Bridge between bloomchain crate types and cita LogBloom.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use bloomchain::group::BloomGroup;
 use bloomchain::Bloom;
-use log_entry::LogBloom;
-use rlp::*;
-use util::HeapSizeOf;
+use cita_types::Bloom as LogBloom;
+use rlp::{Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};
 
-/// Represents group of X consecutive blooms.
 #[derive(Debug, Clone)]
 pub struct LogBloomGroup {
     blooms: Vec<LogBloom>,
@@ -36,7 +29,7 @@ impl From<BloomGroup> for LogBloomGroup {
             .into_iter()
             .map(|x| LogBloom::from(Into::<[u8; 256]>::into(x)))
             .collect();
-        LogBloomGroup { blooms: blooms }
+        LogBloomGroup { blooms }
     }
 }
 
@@ -47,14 +40,14 @@ impl Into<BloomGroup> for LogBloomGroup {
             .into_iter()
             .map(|x| Bloom::from(Into::<[u8; 256]>::into(x)))
             .collect();
-        BloomGroup { blooms: blooms }
+        BloomGroup { blooms }
     }
 }
 
 impl Decodable for LogBloomGroup {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         let blooms = rlp.as_list()?;
-        let group = LogBloomGroup { blooms: blooms };
+        let group = LogBloomGroup { blooms };
         Ok(group)
     }
 }
@@ -62,11 +55,5 @@ impl Decodable for LogBloomGroup {
 impl Encodable for LogBloomGroup {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.append_list(&self.blooms);
-    }
-}
-
-impl HeapSizeOf for LogBloomGroup {
-    fn heap_size_of_children(&self) -> usize {
-        0
     }
 }

@@ -1,95 +1,85 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
-const { web3, genTxParams } = util;
+const { genContract, genTxParams } = util;
 
-const sender = config.contract.authorization.superAdmin;
-const { pManagementABI, pManagementAddr } = config.contract.permission_management;
+const sender = config.superAdmin;
+const { permissionManagement } = config.contract;
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/PermissionManagement.abi'));
 
-// permission management
-const pManagement = web3.eth.contract(pManagementABI);
-const pManagementContractIns = pManagement.at(pManagementAddr);
+const contract = genContract(abi, permissionManagement);
+
+// tmp
+let param;
 
 // newPermission
-const newPermission = function newPermission(name, addrs, funcs, _sender = sender) {
-  return pManagementContractIns.newPermission.sendTransaction(
+const newPermission = async (name, addrs, funcs, _sender = sender) => {
+  param = await genTxParams(_sender);
+  return contract.methods.newPermission(
     name,
     addrs,
     funcs,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // updatePermissionName
-const updatePermissionName = function updatePermissionName(perm, name, _sender = sender) {
-  return pManagementContractIns.updatePermissionName.sendTransaction(
+const updatePermissionName = async (perm, name, _sender = sender) => {
+  param = await genTxParams(_sender);
+  return contract.methods.updatePermissionName(
     perm,
     name,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // addResources
-const addResources = function addResources(perm, addrs, funcs, _sender = sender) {
-  return pManagementContractIns.addResources.sendTransaction(
+const addResources = async (perm, addrs, funcs, _sender = sender) => {
+  param = await genTxParams(_sender);
+  return contract.methods.addResources(
     perm,
     addrs,
     funcs,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // deleteResources
-const deleteResources = function deleteResources(perm, addrs, funcs, _sender = sender) {
-  return pManagementContractIns.deleteResources.sendTransaction(
+const deleteResources = async (perm, addrs, funcs, _sender = sender) => {
+  param = await genTxParams(_sender);
+  return contract.methods.deleteResources(
     perm,
     addrs,
     funcs,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // clearAuthorization
-const clearAuthorization = function clearAuthorization(account, _sender = sender) {
-  return pManagementContractIns.clearAuthorization.sendTransaction(
-    account,
-    genTxParams(_sender),
-  );
+const clearAuthorization = async (account, _sender = sender) => {
+  param = await genTxParams(_sender);
+  return contract.methods.clearAuthorization(account).send(param);
 };
 
 // setAuthorization
-const setAuthorization = function setAuthorization(account, perm, _sender = sender) {
-  return pManagementContractIns.setAuthorization.sendTransaction(
-    account,
-    perm,
-    genTxParams(_sender),
-  );
+const setAuthorization = async (account, perm, _sender = sender) => {
+  param = await genTxParams(_sender);
+  return contract.methods.setAuthorization(account, perm).send(param);
 };
 
 // cancelAuthorization
-const cancelAuthorization = function cancelAuthorization(account, perm, _sender = sender) {
-  return pManagementContractIns.cancelAuthorization.sendTransaction(
-    account,
-    perm,
-    genTxParams(_sender),
-  );
+const cancelAuthorization = async (account, perm, _sender = sender) => {
+  param = await genTxParams(_sender);
+  return contract.methods.cancelAuthorization(account, perm).send(param);
 };
 
 // deletePermission
-const deletePermission = function deletePermission(name, _sender = sender) {
-  return pManagementContractIns.deletePermission.sendTransaction(
-    name,
-    genTxParams(_sender),
-  );
+const deletePermission = async (perm, _sender = sender) => {
+  param = await genTxParams(_sender);
+  return contract.methods.deletePermission(perm).send(param);
 };
 
 // setAuthorizations
-const setAuthorizations = function setAuthorizations(account, perms, _sender = sender) {
-  return pManagementContractIns.setAuthorizations.sendTransaction(
-    account,
-    perms,
-    genTxParams(_sender),
-  );
+const setAuthorizations = async (account, perms, _sender = sender) => {
+  param = await genTxParams(_sender);
+  return contract.methods.setAuthorizations(account, perms).send(param);
 };
 
 module.exports = {

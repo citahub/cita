@@ -1,52 +1,47 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use ethabi;
-use rustc_hex::FromHex;
 
 use cita_crypto::PrivKey;
-use cita_types::traits::LowerHex;
-use cita_types::{H160, U256};
+use cita_types::{H160, H256, U256};
 use libproto::blockchain::{Transaction, UnverifiedTransaction};
 
 pub fn construct_transaction(
     pkey: &PrivKey,
-    tx_proof_rlp: Vec<u8>,
-    dest_hasher: &str,
+    tx_proof_rlp: &[u8],
+    dest_hasher: [u8; 4],
     dest_contract: H160,
-    chain_id: u32,
+    chain_id: U256,
     height: U256,
-) -> Option<UnverifiedTransaction> {
-    encode(dest_hasher, tx_proof_rlp).map(|code| sign(pkey, dest_contract, code, chain_id, height))
+) -> UnverifiedTransaction {
+    let code = encode(dest_hasher, tx_proof_rlp);
+    sign(pkey, dest_contract, code, chain_id, height)
 }
 
 #[inline]
-fn encode(dest_hasher: &str, tx_proof_rlp: Vec<u8>) -> Option<Vec<u8>> {
-    FromHex::from_hex(dest_hasher)
-        .map(|hasher| {
-            trace!("encode dest_hasher {:?}", hasher);
-            trace!("encode proof_len {:?}", tx_proof_rlp.len());
-            trace!("encode proof_data {:?}", tx_proof_rlp);
-            let encoded = ethabi::encode(&[ethabi::Token::Bytes(tx_proof_rlp)]);
-            let ret = hasher.into_iter().chain(encoded.into_iter()).collect();
-            trace!("encode result {:?}", ret);
-            ret
-        })
-        .ok()
+fn encode(dest_hasher: [u8; 4], tx_proof_rlp: &[u8]) -> Vec<u8> {
+    trace!("encode dest_hasher {:?}", dest_hasher);
+    trace!("encode proof_len {:?}", tx_proof_rlp.len());
+    trace!("encode proof_data {:?}", tx_proof_rlp);
+    let encoded = ethabi::encode(&[ethabi::Token::Bytes(tx_proof_rlp.to_vec())]);
+    let ret = Vec::from(&dest_hasher[..])
+        .into_iter()
+        .chain(encoded.into_iter())
+        .collect();
+    trace!("encode result {:?}", ret);
+    ret
 }
 
 #[inline]
@@ -54,14 +49,16 @@ fn sign(
     pkey: &PrivKey,
     addr: H160,
     code: Vec<u8>,
-    chain_id: u32,
+    chain_id: U256,
     height: U256,
 ) -> UnverifiedTransaction {
     let mut tx = Transaction::new();
     tx.set_data(code);
-    tx.set_to(addr.lower_hex());
+    tx.set_to_v1(addr.to_vec());
     tx.set_valid_until_block(height.low_u64() + 100);
-    tx.set_quota(1000000);
-    tx.set_chain_id(chain_id);
+    tx.set_quota(1_000_000);
+    tx.set_chain_id_v1(H256::from(chain_id).to_vec());
+    tx.set_version(2);
+    tx.set_value(vec![0u8; 32]);
     tx.sign(*pkey).take_transaction_with_sig()
 }

@@ -1,28 +1,27 @@
-// CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-use helper::{select_topic, RpcMap, TransferType};
-use jsonrpc_types::request::{PartialRequest, RequestInfo};
-use jsonrpc_types::response::RpcFailure;
+use crate::helper::{select_topic, RpcMap, TransferType};
+use jsonrpc_proto::complete::CompleteInto;
+use jsonrpc_types::rpc_request::{PartialRequest, RequestInfo};
+use jsonrpc_types::rpc_response::RpcFailure;
 use jsonrpc_types::Error;
 use libproto::request::Request as ProtoRequest;
 use num_cpus;
+use pubsub::channel::Sender;
 use serde_json;
-use std::sync::{mpsc, Arc};
+use std::sync::Arc;
 use threadpool::ThreadPool;
 use ws::{self as ws, CloseCode, Factory, Handler};
 
@@ -30,13 +29,13 @@ pub struct WsFactory {
     //TODO 定时清理工作
     responses: RpcMap,
     thread_pool: ThreadPool,
-    tx: mpsc::Sender<(String, ProtoRequest)>,
+    tx: Sender<(String, ProtoRequest)>,
 }
 
 impl WsFactory {
     pub fn new(
         responses: RpcMap,
-        tx: mpsc::Sender<(String, ProtoRequest)>,
+        tx: Sender<(String, ProtoRequest)>,
         thread_num: usize,
     ) -> WsFactory {
         let thread_number = if thread_num == 0 {
@@ -46,9 +45,9 @@ impl WsFactory {
         };
         let thread_pool = ThreadPool::with_name("ws_thread_pool".to_string(), thread_number);
         WsFactory {
-            responses: responses,
-            thread_pool: thread_pool,
-            tx: tx,
+            responses,
+            thread_pool,
+            tx,
         }
     }
 }
@@ -68,7 +67,6 @@ impl Factory for WsFactory {
 impl Handler for WsHandler {
     fn on_message(&mut self, msg: ws::Message) -> ws::Result<()> {
         trace!("Server got message '{}'  post thread_pool deal task ", msg);
-        // let this = self.clone();
         let tx = self.tx.clone();
         let response = Arc::clone(&self.responses);
         let sender = self.sender.clone();
@@ -77,7 +75,7 @@ impl Handler for WsHandler {
             let mut req_info = RequestInfo::null();
 
             let _ = serde_json::from_str::<PartialRequest>(&msg.into_text().unwrap())
-                .map_err(|err_msg| Error::from(err_msg))
+                .map_err(Error::from)
                 .and_then(|part_req| {
                     req_info = part_req.get_info();
                     part_req.complete_and_into_proto().map(|(full_req, req)| {
@@ -118,5 +116,5 @@ pub struct WsHandler {
     responses: RpcMap,
     thread_pool: ThreadPool,
     sender: ws::Sender,
-    tx: mpsc::Sender<(String, ProtoRequest)>,
+    tx: Sender<(String, ProtoRequest)>,
 }

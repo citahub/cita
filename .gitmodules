@@ -9,3 +9,20 @@
 [submodule "scripts/txtool/txtool/proto"]
 	path = scripts/txtool/txtool/proto
 	url = https://github.com/cryptape/cita-proto.git
+	branch = master
+[submodule "tests/contracts"]
+	path = tests/contracts
+	url = https://github.com/cryptape/test-contracts.git
+	branch = master
+[submodule "scripts/contracts/interaction"]
+	path = scripts/contracts/interaction
+	url = https://github.com/cryptape/cita-sys-interaction.git
+	branch = master
+[submodule "scripts/config_tool/genesis"]
+	path = scripts/config_tool/genesis
+	url = https://github.com/cryptape/genesis.git
+	branch = master
+[submodule "tests/jsondata"]
+	path = tests/jsondata
+	url = https://github.com/cryptape/cita-testdata.git
+	branch = master

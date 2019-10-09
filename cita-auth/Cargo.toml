@@ -1,44 +1,49 @@
 [package]
 name = "cita-auth"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Cryptape Technologies <contact@cryptape.com>"]
+license = "Apache-2.0"
+edition = "2018"
 
 [dependencies]
 clap = "2"
-dotenv = "0.10.0"
+dotenv = "0.13.0"
 cpuprofiler = "0.0.3"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+cita-logger = "0.1.1"
 cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-logger = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 tx_pool = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-core = { path = "../cita-chain/core" }
-uuid = { version = "0.4", features = ["v4"] }
-jsonrpc_types = { path = "../jsonrpc_types"}
+jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+uuid = { version = "0.7", features = ["v4"] }
 lru = "0.1"
-rayon = "1.0"
+rayon = "1.2"
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-database = "0.1"
 
 [dev-dependencies]
 tempfile = "2"
+tempdir = "0.3.7"
+quickcheck = "0.7.2"
 
 [build-dependencies]
 util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
 secp256k1 = ["cita-crypto/secp256k1", "libproto/secp256k1", "tx_pool/secp256k1"]
 ed25519 = ["cita-crypto/ed25519", "libproto/ed25519", "tx_pool/ed25519"]
 sm2 = ["cita-crypto/sm2", "libproto/sm2", "tx_pool/sm2"]
-sha3hash = ["util/sha3hash", "libproto/sha3hash", "tx_pool/sha3hash"]
-blake2bhash = ["util/blake2bhash", "libproto/blake2bhash", "tx_pool/blake2bhash"]
-sm3hash = ["util/sm3hash", "libproto/sm3hash", "tx_pool/sm3hash"]
+sha3hash = ["libproto/sha3hash", "tx_pool/sha3hash"]
+blake2bhash = ["libproto/blake2bhash", "tx_pool/blake2bhash"]
+sm3hash = ["libproto/sm3hash", "tx_pool/sm3hash"]
 rabbitmq = ["pubsub/rabbitmq"]
 zeromq = ["pubsub/zeromq"]
 kafka = ["pubsub/kafka"]

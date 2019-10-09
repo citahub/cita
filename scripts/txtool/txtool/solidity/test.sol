@@ -4,12 +4,12 @@ contract SimpleStorage {
     uint storedData;
     event Init(address, uint);
     event Set(address, uint);
-    
+
     function SimpleStorage() {
         storedData = 100;
         Init(msg.sender, 100);
     }
-    
+
     event Stored(uint);
 
     function set(uint x)  {

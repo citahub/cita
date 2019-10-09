@@ -1,35 +1,39 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+use cita_types::{H256, U256};
 use clap;
 use std::str::FromStr;
 
-use cita_types::H256;
-
 pub struct AppArgs {
     pub cfg_file: String,
-    pub chain_id: u32,
+    pub chain_id: U256,
     pub tx_hash: H256,
 }
 
 impl<'a> From<&'a clap::ArgMatches<'a>> for AppArgs {
     fn from(matches: &'a clap::ArgMatches) -> Self {
         let cfg_file = matches.value_of("ConfigFile").unwrap();
-        let chain_id = value_t!(matches, "ChainId", u32).unwrap();
+        let chain_id_str = matches.value_of("ChainId").unwrap();
+        let chain_id_str = if chain_id_str.starts_with("0x") {
+            &chain_id_str[2..]
+        } else {
+            chain_id_str
+        };
+
+        let chain_id = U256::from_str(chain_id_str).unwrap();
+
         let tx_hash_str = matches.value_of("TxHash").unwrap();
         let tx_hash_str = if tx_hash_str.starts_with("0x") {
             &tx_hash_str[2..]
@@ -40,7 +44,7 @@ impl<'a> From<&'a clap::ArgMatches<'a>> for AppArgs {
         AppArgs {
             cfg_file: cfg_file.to_owned(),
             chain_id: chain_id.to_owned(),
-            tx_hash: tx_hash,
+            tx_hash,
         }
     }
 }

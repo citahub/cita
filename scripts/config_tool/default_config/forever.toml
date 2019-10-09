@@ -1,0 +1,46 @@
+name="cita-forever"
+command = "cita-forever"
+pidfile = ".cita-forever.pid"
+
+[[process]]
+name = "cita-auth"
+command = "cita-auth"
+args = ["-c","auth.toml"]
+pidfile = ".cita-auth.pid"
+respawn = 3
+
+[[process]]
+name = "cita-network"
+command = "cita-network"
+args = ["-c","network.toml"]
+pidfile = ".cita-network.pid"
+respawn = 3
+
+[[process]]
+name = "cita-bft"
+command = "cita-bft"
+args = ["-c","consensus.toml","-p","privkey"]
+pidfile = ".cita-bft.pid"
+respawn = 3
+
+[[process]]
+name = "cita-jsonrpc"
+command = "cita-jsonrpc"
+args = ["-c","jsonrpc.toml"]
+pidfile = ".cita-jsonrpc.pid"
+respawn = 3
+
+
+[[process]]
+name = "cita-chain"
+command = "cita-chain"
+args = ["-c","chain.toml"]
+pidfile = ".cita-chain.pid"
+respawn = 3
+
+[[process]]
+name = "cita-executor"
+command = "cita-executor"
+args = ["-c","executor.toml"]
+pidfile = ".cita-executor.pid"
+respawn = 3

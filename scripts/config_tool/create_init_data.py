@@ -8,49 +8,48 @@ import yaml
 
 DEFAULT_CONFIG = '''
 Contracts:
-- SysConfig:
-  - delayBlockNumber: 1
-  - checkPermission: false
-  - checkQuota: false
-  - chainName: test-chain
-  - chainId: 1
-  - operator: test-operator
-  - website: https://www.example.com
-  - blockInterval: 3000
-  - economicalModel: 0
-  - name: Nervos
-  - symbol: NOS
-  - avatar: https://avatars1.githubusercontent.com/u/35361817
-- QuotaManager:
-  - admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
-- NodeManager:
-  - nodes:
-    - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
-  - admins:
-    - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
-  - stakes:
-    - 0
-- ChainManager:
-  - parentChainId: 0
-  - parentChainAuthorities: []
-- Authorization:
-  - superAdmin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
-- Group:
-  - parent: '0x0000000000000000000000000000000000000000'
-  - name: rootGroup
-  - accounts:
-    - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
+  SysConfig:
+    delayBlockNumber: 1
+    checkCallPermission: false
+    checkSendTxPermission: false
+    checkCreateContractPermission: false
+    checkQuota: false
+    checkFeeBackPlatform: false
+    chainOwner: '0x0000000000000000000000000000000000000000'
+    chainName: test-chain
+    chainId: 1
+    operator: test-operator
+    website: https://www.example.com
+    blockInterval: 3000
+    economicalModel: 0
+    name: CITA Test Token
+    symbol: CTT
+    avatar: https://cdn.cryptape.com/icon_cita.png
+    autoExec: false
+  QuotaManager:
+    admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
+  NodeManager:
+    nodes:
+      - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
+    stakes:
+      - 0
+  ChainManager:
+    parentChainId: 0
+    parentChainAuthorities: []
+  Authorization:
+    superAdmin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
+  Group:
+    parent: '0x0000000000000000000000000000000000000000'
+    name: rootGroup
+    accounts:
+      - '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
+  Admin:
+    admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
+  VersionManager:
+    version: 2
+  PriceManager:
+    quotaPrice: 1000000
 '''
-
-
-def dictlist_to_ordereddict(dictlist):
-    """Convert a list of dict to an ordered dict."""
-    odd = collections.OrderedDict()
-    for dic in dictlist:
-        for key, val in dic.items():
-            odd[key] = val
-    return odd
-
 
 def ordereddict_to_dictlist(ordereddict):
     """Convert an ordered dict to a list of dict."""
@@ -89,11 +88,8 @@ class InitializationData(object):
 
     @classmethod
     def load_from_string(cls, cfg):
-        data = yaml.load(cfg)
-        contracts_cfgs = dictlist_to_ordereddict(data['Contracts'])
-        for name, arguments in contracts_cfgs.items():
-            contracts_cfgs[name] = dictlist_to_ordereddict(arguments)
-        return cls(contracts_cfgs=contracts_cfgs)
+        data = yaml.safe_load(cfg)
+        return cls(contracts_cfgs=data['Contracts'])
 
     def update_by_kkv_dict(self, kkv_dict):
         if not kkv_dict:
@@ -117,17 +113,15 @@ class InitializationData(object):
     def set_super_admin(self, super_admin):
         if not super_admin:
             return
-        self.contracts_cfgs['NodeManager']['admins'] = [super_admin]
         self.contracts_cfgs['QuotaManager']['admin'] = super_admin
         self.contracts_cfgs['Authorization']['superAdmin'] = super_admin
         self.contracts_cfgs['Group']['accounts'] = [super_admin]
+        self.contracts_cfgs['Admin']['admin'] = super_admin
 
     def save_to_file(self, filepath):
         data = dict()
         contracts_cfgs = self.contracts_cfgs
-        for name, arguments in contracts_cfgs.items():
-            contracts_cfgs[name] = ordereddict_to_dictlist(arguments)
-        data['Contracts'] = ordereddict_to_dictlist(contracts_cfgs)
+        data['Contracts'] = self.contracts_cfgs
         with open(filepath, 'w') as stream:
             yaml.dump(data, stream, default_flow_style=False)
 

@@ -1,19 +1,16 @@
-// CITA
-// Copyright 2016-2018 Cryptape Technologies LLC.
-
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Define all Reserved Addresses.
 // # Builtin
@@ -83,10 +80,6 @@ pub const EDRECOVER_ADDRESS: &str = "0000000000000000000000000000000000ff0001";
 pub const STORE_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010000";
 pub const ABI_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010001";
 pub const AMEND_ADDRESS: &str = "ffffffffffffffffffffffffffffffffff010002";
-// Go Action Address
-pub const GO_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff018000";
-pub const GO_CONTRACT_MIN: &str = "ffffffffffffffffffffffffffffffffff018001";
-pub const GO_CONTRACT_MAX: &str = "ffffffffffffffffffffffffffffffffff018fff";
 // Normal System Contracts
 pub const SYS_CONFIG: &str = "ffffffffffffffffffffffffffffffffff020000";
 pub const NODE_MANAGER: &str = "ffffffffffffffffffffffffffffffffff020001";
@@ -100,6 +93,14 @@ pub const ROLE_CREATOR: &str = "ffffffffffffffffffffffffffffffffff020008";
 pub const GROUP: &str = "ffffffffffffffffffffffffffffffffff020009";
 pub const GROUP_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff02000a";
 pub const GROUP_CREATOR: &str = "ffffffffffffffffffffffffffffffffff02000b";
+pub const ADMIN: &str = "ffffffffffffffffffffffffffffffffff02000c";
+pub const ROLE_AUTH: &str = "ffffffffffffffffffffffffffffffffff02000d";
+pub const BATCH_TX: &str = "ffffffffffffffffffffffffffffffffff02000e";
+pub const EMERGENCY_INTERVENTION: &str = "ffffffffffffffffffffffffffffffffff02000f";
+pub const PRICE_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020010";
+pub const VERSION_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020011";
+pub const ALL_GROUPS: &str = "ffffffffffffffffffffffffffffffffff020012";
+pub const AUTO_EXEC: &str = "ffffffffffffffffffffffffffffffffff020013";
 // Permission System Contracts
 pub const PERMISSION_SEND_TX: &str = "ffffffffffffffffffffffffffffffffff021000";
 pub const PERMISSION_CREATE_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff021001";
@@ -116,6 +117,16 @@ pub const PERMISSION_CANCEL_ROLE: &str = "ffffffffffffffffffffffffffffffffff0210
 pub const PERMISSION_NEW_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101a";
 pub const PERMISSION_DELETE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101b";
 pub const PERMISSION_UPDATE_GROUP: &str = "ffffffffffffffffffffffffffffffffff02101c";
+pub const PERMISSION_NEW_NODE: &str = "ffffffffffffffffffffffffffffffffff021020";
+pub const PERMISSION_DELETE_NODE: &str = "ffffffffffffffffffffffffffffffffff021021";
+pub const PERMISSION_UPDATE_NODE: &str = "ffffffffffffffffffffffffffffffffff021022";
+pub const PERMISSION_ACCOUNT_QUOTA: &str = "ffffffffffffffffffffffffffffffffff021023";
+pub const PERMISSION_BLOCK_QUOTA: &str = "ffffffffffffffffffffffffffffffffff021024";
+pub const PERMISSION_BATCH_TX: &str = "ffffffffffffffffffffffffffffffffff021025";
+pub const PERMISSION_EMERGENCY_INTERVENTION: &str = "ffffffffffffffffffffffffffffffffff021026";
+pub const PERMISSION_QUOTA_PRICE: &str = "ffffffffffffffffffffffffffffffffff021027";
+pub const PERMISSION_VERSION: &str = "ffffffffffffffffffffffffffffffffff021028";
+
 // Native Contracts
 pub const NATIVE_SIMPLE_STORAGE: &str = "ffffffffffffffffffffffffffffffffff030000";
 pub const NATIVE_ZK_PRIVACY: &str = "ffffffffffffffffffffffffffffffffff030001";

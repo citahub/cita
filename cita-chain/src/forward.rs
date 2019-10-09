@@ -1,60 +1,43 @@
-// CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-#![allow(unused_must_use)]
-
-use cita_types::H256;
-use core::filters::eth_filter::EthFilter;
-use core::libchain::block::Block;
-use core::libchain::chain::{BlockInQueue, Chain};
-use error::ErrorCode;
-use jsonrpc_types::rpctypes::{
-    self as rpctypes, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter, Log as RpcLog,
-    Receipt as RpcReceipt, RpcBlock,
-};
-use libproto::router::{MsgType, RoutingKey, SubModules};
-use libproto::snapshot::{Cmd, Resp, SnapshotReq, SnapshotResp};
-use libproto::{
-    request, response, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq, BlockWithProof,
-    ExecutedResult, Message, OperateType, Proof, ProofType, Request_oneof_req as Request,
-    SyncRequest, SyncResponse,
-};
-use proof::TendermintProof;
-use serde_json;
-use std::convert::{Into, TryFrom, TryInto};
+use std::convert::Into;
 use std::mem;
 use std::sync::atomic::Ordering;
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
-use types::filter::Filter;
-use types::ids::BlockId;
 
-use core::db;
-use std::fs::File;
-use std::path::Path;
-use util::datapath::DataPath;
-use util::kvdb::DatabaseConfig;
+use cita_types::H256;
+use core::filters::rpc_filter::RpcFilter as FilterMethod;
+use core::libchain::chain::{BlockInQueue, Chain};
+use error::ErrorCode;
+use jsonrpc_types::rpc_types::{
+    BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
+    Log as RpcLog, Receipt as RpcReceipt, RpcBlock,
+};
+use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::{
+    request, response, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq, BlockWithProof,
+    ExecutedResult, Message, OperateType, ProofType, Request_oneof_req as Request, SyncRequest,
+    SyncResponse, TryFrom, TryInto,
+};
+use proof::BftProof;
+use pubsub::channel::Sender;
+use serde_json;
 
-use core::snapshot;
-use core::snapshot::io::{PackedReader, PackedWriter, SnapshotReader};
-use core::snapshot::service::{Service as SnapshotService, ServiceParams as SnapServiceParams};
-use core::snapshot::Progress;
+use crate::types::block::OpenBlock;
+use crate::types::block_number::BlockTag;
+use crate::types::filter::Filter;
 
 /// Message forwarding and query data
 #[derive(Clone)]
@@ -72,9 +55,9 @@ impl Forward {
         write_sender: Sender<ExecutedResult>,
     ) -> Forward {
         Forward {
-            chain: chain,
-            ctx_pub: ctx_pub,
-            write_sender: write_sender,
+            chain,
+            ctx_pub,
+            write_sender,
         }
     }
 
@@ -92,6 +75,15 @@ impl Forward {
             routing_key!(Executor >> ExecutedResult) => {
                 let info = msg.take_executed_result().unwrap();
                 self.write_sender.send(info).unwrap();
+            }
+
+            routing_key!(Executor >> StateSignal) => {
+                if let Some(state_signal) = msg.take_state_signal() {
+                    let specified_height = state_signal.get_height();
+                    let missing_blocks =
+                        (specified_height + 1..=self.chain.get_current_height()).collect();
+                    self.reply_local_syn_req(missing_blocks);
+                }
             }
 
             routing_key!(Consensus >> BlockWithProof) => {
@@ -112,11 +104,6 @@ impl Forward {
             routing_key!(Auth >> BlockTxHashesReq) => {
                 let block_tx_hashes_req = msg.take_block_tx_hashes_req().unwrap();
                 self.deal_block_tx_req(&block_tx_hashes_req);
-            }
-
-            routing_key!(Snapshot >> SnapshotReq) => {
-                let snapshot_req = msg.take_snapshot_req().unwrap();
-                self.deal_snapshot_req(&snapshot_req);
             }
 
             _ => {
@@ -147,7 +134,7 @@ impl Forward {
                                     include_txs,
                                     block.protobuf().try_into().unwrap(),
                                 );
-                                serde_json::to_string(&rpc_block)
+                                let _ = serde_json::to_string(&rpc_block)
                                     .map(|data| response.set_block(data))
                                     .map_err(|err| {
                                         response.set_code(ErrorCode::query_error());
@@ -171,11 +158,11 @@ impl Forward {
                 match self.chain.block(block_height.block_id.into()) {
                     Some(block) => {
                         let rpc_block = RpcBlock::new(
-                            block.hash().to_vec(),
+                            block.hash().unwrap().to_vec(),
                             include_txs,
                             block.protobuf().try_into().unwrap(),
                         );
-                        serde_json::to_string(&rpc_block)
+                        let _ = serde_json::to_string(&rpc_block)
                             .map(|data| response.set_block(data))
                             .map_err(|err| {
                                 response.set_code(ErrorCode::query_error());
@@ -212,7 +199,7 @@ impl Forward {
 
             Request::transaction_receipt(hash) => {
                 let tx_hash = H256::from_slice(&hash);
-                let receipt = self.chain.localized_receipt(tx_hash);
+                let receipt = self.chain.get_rich_receipt(tx_hash);
                 if let Some(receipt) = receipt {
                     let rpc_receipt: RpcReceipt = receipt.into();
                     let serialized = serde_json::to_string(&rpc_receipt).unwrap();
@@ -224,17 +211,15 @@ impl Forward {
 
             Request::filter(encoded) => {
                 trace!("filter: {:?}", encoded);
-                serde_json::from_str::<RpcFilter>(&encoded)
-                    .map_err(|err| {
-                        response.set_code(ErrorCode::query_error());
-                        response.set_error_msg(format!("{:?}", err));
-                    })
-                    .map(|rpc_filter| {
-                        let filter: Filter = rpc_filter.into();
-                        let logs = self.chain.get_logs(filter);
-                        let rpc_logs: Vec<RpcLog> = logs.into_iter().map(|x| x.into()).collect();
-                        response.set_logs(serde_json::to_string(&rpc_logs).unwrap());
-                    });
+                if let Ok(rpc_filter) = serde_json::from_str::<RpcFilter>(&encoded).map_err(|err| {
+                    response.set_code(ErrorCode::query_error());
+                    response.set_error_msg(format!("{:?}", err));
+                }) {
+                    let filter: Filter = rpc_filter.into();
+                    let logs = self.chain.get_logs(&filter);
+                    let rpc_logs: Vec<RpcLog> = logs.into_iter().map(Into::into).collect();
+                    response.set_logs(serde_json::to_string(&rpc_logs).unwrap());
+                };
             }
 
             Request::call(call) => {
@@ -300,28 +285,62 @@ impl Forward {
 
             Request::uninstall_filter(filter_id) => {
                 trace!("uninstall_filter's id is {:?}", filter_id);
-                let index = rpctypes::Index(filter_id as usize);
-                let b = self.chain.uninstall_filter(index);
+                let b = self.chain.uninstall_filter(filter_id as usize);
                 response.set_uninstall_filter(b);
             }
 
             Request::filter_changes(filter_id) => {
                 trace!("filter_changes's id is {:?}", filter_id);
-                let index = rpctypes::Index(filter_id as usize);
-                let log = self.chain.filter_changes(index).unwrap();
+                let log = self.chain.get_filter_changes(filter_id as usize).unwrap();
                 trace!("Log is: {:?}", log);
                 response.set_filter_changes(serde_json::to_string(&log).unwrap());
             }
 
             Request::filter_logs(filter_id) => {
                 trace!("filter_log's id is {:?}", filter_id);
-                let index = rpctypes::Index(filter_id as usize);
-                let log = self.chain.filter_logs(index).unwrap_or_default();
+                let log = self
+                    .chain
+                    .get_filter_logs(filter_id as usize)
+                    .unwrap_or_default();
                 trace!("Log is: {:?}", log);
                 response.set_filter_logs(serde_json::to_string(&log).unwrap());
             }
+
+            Request::state_proof(state_info) => {
+                trace!("state_proof info is {:?}", state_info);
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
+                return;
+            }
+
+            Request::block_header_height(block_height) => {
+                let block_height: RpcBlockNumber =
+                    serde_json::from_str(&block_height).expect("Invalid param");
+                match self.chain.get_block_header_bytes(block_height.into()) {
+                    Some(block_header_bytes) => {
+                        response.set_block_header(block_header_bytes);
+                    }
+                    None => {
+                        response.set_none(true);
+                    }
+                }
+            }
+
+            Request::height(_) | Request::batch_req(_) => {
+                error!("Get messages which should not handle by this function!");
+            }
+
+            Request::storage_key(skey) => {
+                trace!("storage key info is {:?}", skey);
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
+                return;
+            }
+
             _ => {
-                error!("match error Request_oneof_req msg!!!!");
+                error!("Get messages which should sent to other micro services!");
             }
         };
         let msg: Message = response.into();
@@ -337,29 +356,35 @@ impl Forward {
     fn consensus_block_enqueue(&self, proof_blk: BlockWithProof) {
         let current_height = self.chain.get_current_height() as usize;
         let mut proof_blk = proof_blk;
-        let block = proof_blk.take_blk();
+        let proto_block = proof_blk.take_blk();
         let proof = proof_blk.take_proof();
-        let blk_height = block.get_header().get_height() as usize;
+        let blk_height = proto_block.get_header().get_height() as usize;
+
         trace!(
-            "Received consensus block: block_number:{:?} current_height: {:?}",
+            "Received consensus block: block_number:{:?} current_height: {:?} ",
             blk_height,
             current_height
         );
-        let rblock = Block::from(block);
+
+        let block = OpenBlock::from(proto_block);
+        debug!(
+            "consensus block {} txs_root {:?} txs_len {} block_version {}",
+            block.number(),
+            block.transactions_root(),
+            block.body().transactions().len(),
+            block.version()
+        );
         if blk_height == (current_height + 1) {
             {
                 self.chain.block_map.write().insert(
                     blk_height as u64,
-                    BlockInQueue::ConsensusBlock(rblock.clone(), proof.clone()),
+                    BlockInQueue::ConsensusBlock(block.clone(), proof.clone()),
                 );
             };
             self.chain.set_proof_with_height(blk_height as u64, &proof);
             self.chain.save_current_block_poof(&proof);
-            self.chain.set_block_body(blk_height as u64, &rblock);
+            self.chain.set_block_body(blk_height as u64, &block);
             self.chain.set_max_store_height(blk_height as u64);
-            let tx_hashes = rblock.body().transaction_hashes();
-            self.chain
-                .delivery_block_tx_hashes(blk_height as u64, tx_hashes, &self.ctx_pub);
         }
     }
 
@@ -371,9 +396,54 @@ impl Forward {
             origin, heights
         );
 
+        let res_vec = self.sync_response(heights);
+
+        debug!(
+            "sync: reply node = {}, response blocks len = {}",
+            origin,
+            res_vec.get_blocks().len()
+        );
+        if !res_vec.get_blocks().is_empty() {
+            let msg = Message::init(OperateType::Single, origin, res_vec.into());
+            trace!(
+                "sync: origin {:?}, chain.blk: OperateType {:?}",
+                origin,
+                OperateType::Single
+            );
+            self.ctx_pub
+                .send((
+                    routing_key!(Chain >> SyncResponse).into(),
+                    msg.try_into().unwrap(),
+                ))
+                .unwrap();
+        }
+    }
+
+    fn reply_local_syn_req(&self, heights: Vec<u64>) {
+        let res_vec = self.sync_response(heights);
+        if !res_vec.get_blocks().is_empty() {
+            let msg = Message::init(OperateType::Single, 0, res_vec.into());
+            trace!(
+                "local_sync: chain.blk: OperateType {:?}",
+                OperateType::Single
+            );
+            self.ctx_pub
+                .send((
+                    routing_key!(Chain >> LocalSync).into(),
+                    msg.try_into().unwrap(),
+                ))
+                .unwrap();
+        }
+    }
+
+    #[inline]
+    fn sync_response(&self, heights: Vec<u64>) -> SyncResponse {
         let mut res_vec = SyncResponse::new();
-        for height in heights {
-            if let Some(block) = self.chain.block(BlockId::Number(height)) {
+        for height in heights
+            .into_iter()
+            .filter(|height| *height <= self.chain.get_current_height())
+        {
+            if let Some(block) = self.chain.block(BlockTag::Height(height)) {
                 res_vec.mut_blocks().push(block.protobuf());
                 //push double
                 if height == self.chain.get_current_height() {
@@ -391,26 +461,7 @@ impl Forward {
                 }
             }
         }
-
-        debug!(
-            "sync: reply node = {}, response blocks len = {}",
-            origin,
-            res_vec.get_blocks().len()
-        );
-        if res_vec.mut_blocks().len() > 0 {
-            let msg = Message::init(OperateType::Single, origin, res_vec.into());
-            trace!(
-                "sync: origin {:?}, chain.blk: OperateType {:?}",
-                origin,
-                OperateType::Single
-            );
-            self.ctx_pub
-                .send((
-                    routing_key!(Chain >> SyncResponse).into(),
-                    msg.try_into().unwrap(),
-                ))
-                .unwrap();
-        }
+        res_vec
     }
 
     fn deal_sync_blocks(&self, mut sync_res: SyncResponse) {
@@ -432,12 +483,12 @@ impl Forward {
                 break;
             }
 
-            self.add_sync_block(Block::from(block));
+            self.add_sync_block(OpenBlock::from(block));
         }
     }
 
     // Check block group from remote and enqueue
-    fn add_sync_block(&self, block: Block) {
+    fn add_sync_block(&self, block: OpenBlock) {
         let block_proof_type = block.proof_type();
         let chain_proof_type = self.chain.get_chain_prooftype();
         let blk_height = block.number() as usize;
@@ -452,8 +503,8 @@ impl Forward {
             return;
         }
         match block_proof_type {
-            Some(ProofType::Tendermint) => {
-                let proof = TendermintProof::from(block.proof().clone());
+            Some(ProofType::Bft) => {
+                let proof = BftProof::from(block.proof().clone());
                 let proof_height = if proof.height == ::std::usize::MAX {
                     0
                 } else {
@@ -472,8 +523,7 @@ impl Forward {
                         if let Some(prev_block_in_queue) =
                             self.chain.block_map.write().get_mut(&proof_height)
                         {
-                            if let &mut BlockInQueue::SyncBlock(ref mut value) = prev_block_in_queue
-                            {
+                            if let BlockInQueue::SyncBlock(ref mut value) = *prev_block_in_queue {
                                 if value.1.is_none() {
                                     debug!("sync: set prev sync block proof {}", value.0.number());
                                     mem::swap(&mut value.1, &mut Some(block.proof().clone()));
@@ -506,7 +556,7 @@ impl Forward {
                     if let Some(block_in_queue) =
                         self.chain.block_map.write().get_mut(&proof_height)
                     {
-                        if let &mut BlockInQueue::SyncBlock(ref mut value) = block_in_queue {
+                        if let BlockInQueue::SyncBlock(ref mut value) = *block_in_queue {
                             if value.1.is_none() {
                                 debug!("sync: insert block proof {} in map", proof_height);
                                 mem::swap(&mut value.1, &mut Some(block.proof().clone()));
@@ -527,151 +577,33 @@ impl Forward {
 
     fn deal_block_tx_req(&self, block_tx_hashes_req: &BlockTxHashesReq) {
         let block_height = block_tx_hashes_req.get_height();
-        let tx_hashes: Vec<H256>;
-        let mut need_insert: bool = false;
+
+        if let Some(tx_hashes) = self
+            .chain
+            .transaction_hashes(BlockTag::Height(block_height))
         {
-            if let Some(hashes) = self.chain.tx_hashes_cache.write().get_mut(&block_height) {
-                info!(
-                    "get tx_hashes at height {} in chain.tx_hashes",
-                    block_height
-                );
-                tx_hashes = hashes.clone();
-            } else if let Some(hashes) =
-                self.chain.transaction_hashes(BlockId::Number(block_height))
-            {
-                tx_hashes = hashes;
-                need_insert = true;
-            } else {
-                warn!("get block's tx hashes for height:{} error", block_height);
-                return;
+            //prepare and send the block tx hashes to auth
+            let mut block_tx_hashes = BlockTxHashes::new();
+            block_tx_hashes.set_height(block_height);
+            let mut tx_hashes_in_u8 = Vec::new();
+            for tx_hash_in_h256 in &tx_hashes {
+                tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
             }
+            block_tx_hashes.set_tx_hashes(tx_hashes_in_u8.into());
+            block_tx_hashes
+                .set_block_quota_limit(self.chain.block_quota_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes.set_account_quota_limit(self.chain.account_quota_limit.read().clone());
+            let msg: Message = block_tx_hashes.into();
+            self.ctx_pub
+                .send((
+                    routing_key!(Chain >> BlockTxHashes).into(),
+                    msg.try_into().unwrap(),
+                ))
+                .unwrap();
+
+            trace!("response block's tx hashes for height:{}", block_height);
+        } else {
+            warn!("get block's tx hashes for height:{} error", block_height);
         }
-        {
-            if need_insert {
-                self.chain
-                    .tx_hashes_cache
-                    .write()
-                    .insert(block_height, tx_hashes.clone());
-            }
-        }
-
-        //prepare and send the block tx hashes to auth
-        let mut block_tx_hashes = BlockTxHashes::new();
-        block_tx_hashes.set_height(block_height);
-        let mut tx_hashes_in_u8 = Vec::new();
-        for tx_hash_in_h256 in &tx_hashes {
-            tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
-        }
-        block_tx_hashes.set_tx_hashes(tx_hashes_in_u8.into());
-        block_tx_hashes
-            .set_block_gas_limit(self.chain.block_gas_limit.load(Ordering::SeqCst) as u64);
-        block_tx_hashes.set_account_gas_limit(self.chain.account_gas_limit.read().clone().into());
-        let msg: Message = block_tx_hashes.into();
-        self.ctx_pub
-            .send((
-                routing_key!(Chain >> BlockTxHashes).into(),
-                msg.try_into().unwrap(),
-            ))
-            .unwrap();
-
-        trace!("response block's tx hashes for height:{}", block_height);
-    }
-
-    fn deal_snapshot_req(&self, snapshot_req: &SnapshotReq) {
-        let mut resp = SnapshotResp::new();
-        match snapshot_req.cmd {
-            Cmd::Snapshot => {
-                info!("[snapshot] receive cmd: {:?}", snapshot_req);
-                self.take_snapshot(snapshot_req);
-
-                //resp SnapshotAck to snapshot_tool
-                resp.set_resp(Resp::SnapshotAck);
-                let msg: Message = resp.into();
-                self.ctx_pub
-                    .send((
-                        routing_key!(Chain >> SnapshotResp).into(),
-                        msg.try_into().unwrap(),
-                    ))
-                    .unwrap();
-            }
-            Cmd::Restore => {
-                info!("[snapshot] receive cmd: {:?}", snapshot_req);
-                let proof = self.restore_snapshot(snapshot_req).unwrap();
-
-                //resp RestoreAck to snapshot_tool
-                resp.set_resp(Resp::RestoreAck);
-                resp.set_proof(proof);
-                resp.set_height(self.chain.get_current_height());
-                let msg: Message = resp.into();
-                self.ctx_pub
-                    .send((
-                        routing_key!(Chain >> SnapshotResp).into(),
-                        msg.try_into().unwrap(),
-                    ))
-                    .unwrap();
-            }
-            Cmd::End => {
-                let chain = self.chain.clone();
-                let ctx_pub = self.ctx_pub.clone();
-                thread::spawn(move || {
-                    thread::sleep(Duration::new(3, 0));
-                    // broadcast status and rich-status.
-                    chain.broadcast_current_status(&ctx_pub);
-                });
-            }
-            _ => {
-                warn!("[snapshot] receive other cmd: {:?}", snapshot_req);
-            }
-        }
-    }
-
-    fn take_snapshot(&self, snapshot_req: &SnapshotReq) {
-        // use given path
-        let file_name = snapshot_req.file.clone() + "_chain.rlp";
-        let writer = PackedWriter {
-            file: File::create(file_name).unwrap(), //TODO:use given path
-            block_hashes: Vec::new(),
-            cur_len: 0,
-        };
-
-        // use given height: ancient block, or latest
-        let mut block_at = snapshot_req.get_end_height();
-        let current_height = self.chain.get_current_height();
-        if block_at == 0 || block_at > current_height {
-            warn!(
-                "block height is equal to 0 or bigger than current height, \
-                 and be set to current height!"
-            );
-            block_at = current_height;
-        }
-
-        let progress = Arc::new(Progress::default());
-
-        snapshot::take_snapshot(&self.chain, block_at, writer, &*progress).unwrap();
-    }
-
-    fn restore_snapshot(&self, snapshot_req: &SnapshotReq) -> Result<Proof, String> {
-        let file_name = snapshot_req.file.clone() + "_chain.rlp";
-        let reader = PackedReader::new(Path::new(&file_name))
-            .map_err(|e| format!("Couldn't open snapshot file: {}", e))
-            .and_then(|x| x.ok_or_else(|| "Snapshot file has invalid format.".into()));
-        let reader = reader?;
-
-        let db_config = DatabaseConfig::with_columns(db::NUM_COLUMNS);
-        let snap_path = DataPath::root_node_path() + "/snapshot_chain";
-        let snapshot_params = SnapServiceParams {
-            db_config: db_config.clone(),
-            snapshot_root: snap_path.into(),
-            db_restore: self.chain.clone(),
-            chain: self.chain.clone(),
-        };
-
-        let snapshot = SnapshotService::new(snapshot_params).unwrap();
-        let snapshot = Arc::new(snapshot);
-        snapshot::restore_using(Arc::clone(&snapshot), &reader, true);
-
-        // return proof
-        let proof = reader.manifest().last_proof.clone();
-        Ok(proof)
     }
 }

@@ -1,43 +1,31 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
-const { web3 } = util;
+const { genContract } = util;
 
-const {
-  aABI, aAddr,
-} = config.contract.authorization;
-
-// authorization
-const auth = web3.eth.contract(aABI);
-const aContractInstance = auth.at(aAddr);
+const { authorization } = config.contract;
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/Authorization.abi'));
+const contract = genContract(abi, authorization);
 
 // queryPermissions
-const queryPermissions = function queryPermissions(account) {
-  return aContractInstance.queryPermissions.call(account);
-};
+const queryPermissions = account => contract.methods.queryPermissions(account).call('pending');
 
 // queryAccounts
-const queryAccounts = function queryAccounts(perm) {
-  return aContractInstance.queryAccounts.call(perm);
-};
+const queryAccounts = perm => contract.methods.queryAccounts(perm).call('pending');
 
-// checkResource
-const checkResource = function checkResource(account, addr, func) {
-  return aContractInstance.checkResource.call(
-    account,
-    addr,
-    func,
-  );
-};
+// checkPermission
+const checkPermission = (account, permission) => contract.methods.checkPermission(
+  account,
+  permission,
+).call('pending');
 
 // queryAllAccounts
-const queryAllAccounts = function queryAllAccounts() {
-  return aContractInstance.queryAllAccounts.call();
-};
+const queryAllAccounts = () => contract.methods.queryAllAccounts().call('pending');
 
 module.exports = {
   queryPermissions,
   queryAccounts,
-  checkResource,
+  checkPermission,
   queryAllAccounts,
 };

@@ -1,3 +1,17 @@
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! ## Summary
 //! One of cita's main core components is to execute transaction,
 //! create contracts, maintain world state trees, and send executed
@@ -7,16 +21,18 @@
 //!
 //! 1. Subscribe channel
 //!
-//!     | Queue    | PubModule | Message Type       |
-//!     | -------- | --------- | ------------------ |
-//!     | executor | Chain     | Request            |
-//!     | executor | Chain     | Richstatus         |
-//!     | executor | Consensus | BlockWithProof     |
-//!     | executor | Consensus | SignedProposal     |
-//!     | executor | Consensus | MiscellaneousReq   |
-//!     | executor | Net       | SyncResponse       |
-//!     | executor | Net       | SignedProposal     |
-//!     | executor | Snapshot  | SnapshotReq        |
+//!     | Queue    | PubModule | Message Type               |
+//!     | -------- | --------- | ------------------         |
+//!     | executor | Chain     | Request                    |
+//!     | executor | Chain     | Richstatus                 |
+//!     | executor | Chain     | StateSignal                |
+//!     | executor | Chain     | LocalSync                  |
+//!     | executor | Consensus | BlockWithProof             |
+//!     | executor | Consensus | SignedProposal             |
+//!     | executor | Consensus | MiscellaneousReq           |
+//!     | executor | Net       | SyncResponse               |
+//!     | executor | Net       | SignedProposal             |
+//!     | executor | Snapshot  | SnapshotReq                |
 //!
 //! 2. Publish channel
 //!
@@ -27,12 +43,13 @@
 //!     | executor | Executor  | Chain     | ExecutedResult |
 //!     | executor | Executor  | Auth      | Miscellaneous  |
 //!     | executor | Executor  | Auth      | BlackList      |
+//!     | executor | Executor  | Chain     | StateSignal    |
 //!
 //! ### Key behavior
 //!
 //! key struct:
 //!
-//! - `ExecutorInstance`: `executor_instance::ExecutorInstance`
+//! - `Postman`: `postman::Postman`
 //! - [`Executor`]
 //! - [`GlobalSysConfig`]
 //! - [`Genesis`]
@@ -61,124 +78,171 @@
 //! [`StateDB`]: ../core_executor/state_db/struct.StateDB.html
 //!
 
-#![feature(custom_attribute)]
-#![allow(deprecated, unused_must_use, unused_mut, unused_assignments)]
-#![feature(refcell_replace_swap)]
-#![feature(try_from)]
-extern crate cita_types;
-extern crate clap;
+#[cfg(test)]
+extern crate cita_crypto;
 extern crate common_types as types;
 extern crate core_executor as core;
-extern crate dotenv;
-extern crate error;
-extern crate grpc;
-extern crate jsonrpc_types;
+#[macro_use]
+extern crate crossbeam_channel;
+extern crate cita_database as cita_db;
+#[cfg(test)]
+extern crate hashable;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
-extern crate logger;
-extern crate proof;
-extern crate pubsub;
-extern crate serde_json;
+extern crate cita_logger as logger;
+#[macro_use]
+extern crate serde_derive;
 #[macro_use]
 extern crate util;
 
-mod executor_instance;
-
+use crate::core::libexecutor::executor::Executor;
+use crate::postman::Postman;
+use cita_directories::DataPath;
 use clap::App;
-use core::libexecutor::{vm_grpc_server, ServiceMap};
-use executor_instance::ExecutorInstance;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use pubsub::channel;
 use pubsub::start_pubsub;
-use std::sync::mpsc::channel;
-use std::sync::Arc;
 use std::thread;
-use std::time::Duration;
 use util::set_panic_handler;
+
+mod backlogs;
+mod postman;
+#[cfg(test)]
+mod tests;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
-fn main() {
-    micro_service_init!("cita-executor", "CITA:executor");
-    info!("Version: {}", get_build_info_str(true));
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct Options {
+    prooftype: u8,
+    journaldb_type: String,
+    genesis_path: String,
+    statedb_cache_size: usize,
+    eth_compatibility: bool,
+}
 
+impl Options {
+    pub fn default() -> Self {
+        Options {
+            prooftype: 2,
+            journaldb_type: String::from("archive"),
+            genesis_path: String::from("genesis.json"),
+            statedb_cache_size: 5 * 1024 * 1024,
+            eth_compatibility: false,
+        }
+    }
+
+    pub fn load(path: &str) -> Self {
+        parse_config!(Options, path)
+    }
+}
+
+fn main() {
     let matches = App::new("executor")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA Block Chain Node powered by Rust")
-        .arg_from_usage("-g, --genesis=[FILE] 'Sets a genesis config file")
-        .arg_from_usage("-c, --config=[FILE] 'Sets a switch config file'")
+        .args_from_usage(
+            "-c, --config=[FILE] 'Sets a switch config file'
+                          -s, --stdout 'Log to console'",
+        )
         .get_matches();
 
-    let genesis_path = matches.value_of("genesis").unwrap_or("genesis.json");
+    let stdout = matches.is_present("stdout");
+    micro_service_init!("cita-executor", "CITA:executor", stdout);
 
     let config_path = matches.value_of("config").unwrap_or("executor.toml");
+    let options = Options::load(config_path);
+    info!("Version: {}", get_build_info_str(true));
+    info!("Config: {:?}", options);
 
-    let (tx, rx) = channel();
-    let (ctx_pub, crx_pub) = channel();
-    let (write_sender, write_receiver) = channel();
+    // start pubsub thread
+    let (forward_req_sender, forward_req_receiver) = channel::unbounded();
+    let (forward_resp_sender, forward_resp_receiver) = channel::unbounded();
+    let (mq_req_sender, mq_req_receiver) = crossbeam_channel::unbounded();
+    let (mq_resp_sender, mq_resp_receiver) = crossbeam_channel::unbounded();
+    let (fsm_req_sender, fsm_req_receiver) = crossbeam_channel::unbounded();
+    let (fsm_resp_sender, fsm_resp_receiver) = crossbeam_channel::unbounded();
+    let (command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
+    let (command_resp_sender, command_resp_receiver) = crossbeam_channel::bounded(0);
     start_pubsub(
         "executor",
         routing_key!([
             Chain >> Request,
             Chain >> RichStatus,
+            Chain >> StateSignal,
+            Chain >> LocalSync,
             Consensus >> BlockWithProof,
             Consensus >> SignedProposal,
             Net >> SyncResponse,
-            Net >> SignedProposal,
             Snapshot >> SnapshotReq,
             Auth >> MiscellaneousReq,
         ]),
-        tx,
-        crx_pub,
+        forward_req_sender,
+        forward_resp_receiver,
     );
 
-    let service_map = Arc::new(ServiceMap::new());
-    let mut ext_instance = ExecutorInstance::new(
-        ctx_pub.clone(),
-        write_sender,
-        config_path,
-        genesis_path,
-        Arc::clone(&service_map),
-    );
-    let mut distribute_ext = ext_instance.clone();
-
+    // start threads to forward messages between mpsc::channel and crosebeam::channel
     thread::spawn(move || loop {
-        if let Ok((key, msg)) = rx.recv() {
-            distribute_ext.distribute_msg(&key, &msg);
-        }
+        match forward_req_receiver.recv() {
+            Ok(message) => {
+                let _ = mq_req_sender.send(message);
+            }
+            Err(_) => return,
+        };
     });
-    let mut server: Option<::grpc::Server> = None;
-    let grpc_ext = ext_instance.clone();
     thread::spawn(move || loop {
-        if server.is_none() {
-            server = vm_grpc_server(
-                grpc_ext.grpc_port,
-                Arc::clone(&service_map),
-                Arc::clone(&grpc_ext.ext),
-            );
-        } else {
-            thread::sleep(Duration::new(8, 0));
+        match mq_resp_receiver.recv() {
+            Ok(message) => {
+                forward_resp_sender.send(message).unwrap();
+            }
+            Err(_) => return,
         }
     });
 
-    let mut timeout_factor = 0u8;
     loop {
-        if let Ok(number) =
-            write_receiver.recv_timeout(Duration::new(18 * (2u64.pow(timeout_factor as u32)), 0))
-        {
-            ext_instance.execute_block(number);
-            timeout_factor = 0;
-        } else {
-            for height in ext_instance.ext.executed_result.read().keys() {
-                ext_instance
-                    .ext
-                    .send_executed_info_to_chain(*height, &ctx_pub);
-            }
-            if timeout_factor < 6 {
-                timeout_factor += 1
-            }
-        }
+        // start executor thread
+        // TODO consider to store `data_path` within executor.toml
+        let data_path = DataPath::root_node_path();
+        let mut executor = Executor::init(
+            &options.genesis_path,
+            data_path,
+            fsm_req_receiver.clone(),
+            fsm_resp_sender.clone(),
+            command_req_receiver.clone(),
+            command_resp_sender.clone(),
+            options.eth_compatibility,
+        );
+        let current_height = executor.get_current_height();
+        let current_hash = executor.get_current_hash();
+        let handle = thread::spawn(move || {
+            executor.do_loop();
+        });
+
+        // start postman thread
+        let mut postman = Postman::new(
+            current_height,
+            current_hash,
+            mq_req_receiver.clone(),
+            mq_resp_sender.clone(),
+            fsm_req_sender.clone(),
+            fsm_resp_receiver.clone(),
+            command_req_sender.clone(),
+            command_resp_receiver.clone(),
+        );
+        postman.do_loop();
+
+        handle.join().expect(
+            "
+            Executor exit cause Command::Exit was sent by postman inside.
+
+            When postman roll back the whole cita-chain to an old height,
+            it would tell executor thread to reset the `CURRNENT_HASH` to the
+            target height, and then exit, both with postman. Main thread would
+            re-run postman and executor inside this loop statement.
+        ",
+        );
     }
 }

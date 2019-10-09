@@ -1,36 +1,32 @@
-// CITA
-// Copyright 2016-2017 Cryptape Technologies LLC.
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// This program is free software: you can redistribute it
-// and/or modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any
-// later version.
-
-// This program is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+use super::Bytes;
+use crate::block_number::BlockNumber;
+use crate::crypto::{
+    pubkey_to_address, PubKey, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN,
+};
+use crate::reserved_addresses::{ABI_ADDRESS, AMEND_ADDRESS, STORE_ADDRESS};
 use cita_types::traits::LowerHex;
 use cita_types::{clean_0x, Address, H256, U256};
-use crypto::{
-    pubkey_to_address, PubKey, Public, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN,
-    SIGNATURE_BYTES_LEN,
-};
 use libproto::blockchain::{
     Crypto as ProtoCrypto, SignedTransaction as ProtoSignedTransaction,
     Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction,
 };
-use reserved_addresses::{ABI_ADDRESS, AMEND_ADDRESS, GO_CONTRACT, STORE_ADDRESS};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use util::{Bytes, HeapSizeOf};
-use BlockNumber;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Error {
@@ -52,8 +48,6 @@ pub enum Action {
     Call(Address),
     /// Store the contract ABI
     AbiStore,
-    /// Create creates new contract for grpc.
-    GoCreate,
     /// amend data in state
     AmendData,
 }
@@ -71,15 +65,12 @@ impl Decodable for Action {
         } else {
             let store_addr: Address = STORE_ADDRESS.into();
             let abi_addr: Address = ABI_ADDRESS.into();
-            let go_addr: Address = GO_CONTRACT.into();
             let amend_addr: Address = AMEND_ADDRESS.into();
             let addr: Address = rlp.as_val()?;
             if addr == store_addr {
                 Ok(Action::Store)
             } else if addr == abi_addr {
                 Ok(Action::AbiStore)
-            } else if addr == go_addr {
-                Ok(Action::GoCreate)
             } else if addr == amend_addr {
                 Ok(Action::AmendData)
             } else {
@@ -93,14 +84,12 @@ impl Encodable for Action {
     fn rlp_append(&self, s: &mut RlpStream) {
         let store_addr: Address = STORE_ADDRESS.into();
         let abi_addr: Address = ABI_ADDRESS.into();
-        let go_addr: Address = GO_CONTRACT.into();
         let amend_addr: Address = AMEND_ADDRESS.into();
         match *self {
             Action::Create => s.append_internal(&""),
             Action::Call(ref addr) => s.append_internal(addr),
             Action::Store => s.append_internal(&store_addr),
             Action::AbiStore => s.append_internal(&abi_addr),
-            Action::GoCreate => s.append_internal(&go_addr),
             Action::AmendData => s.append_internal(&amend_addr),
         };
     }
@@ -109,21 +98,21 @@ impl Encodable for Action {
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// crypto type.
 pub enum CryptoType {
-    SECP,
-    SM2,
+    DEFAULT,
+    RESERVED,
 }
 
 impl Default for CryptoType {
     fn default() -> CryptoType {
-        CryptoType::SECP
+        CryptoType::DEFAULT
     }
 }
 
 impl Decodable for CryptoType {
     fn decode(rlp: &UntrustedRlp) -> Result<Self, DecoderError> {
         match rlp.as_val::<u8>()? {
-            0 => Ok(CryptoType::SECP),
-            1 => Ok(CryptoType::SM2),
+            0 => Ok(CryptoType::DEFAULT),
+            1 => Ok(CryptoType::RESERVED),
             _ => Err(DecoderError::Custom("Unknown Type.")),
         }
     }
@@ -132,8 +121,8 @@ impl Decodable for CryptoType {
 impl Encodable for CryptoType {
     fn rlp_append(&self, s: &mut RlpStream) {
         match *self {
-            CryptoType::SECP => s.append_internal(&(0 as u8)),
-            CryptoType::SM2 => s.append_internal(&(1 as u8)),
+            CryptoType::DEFAULT => s.append_internal(&(0u8)),
+            CryptoType::RESERVED => s.append_internal(&(1u8)),
         };
     }
 }
@@ -141,8 +130,8 @@ impl Encodable for CryptoType {
 impl From<ProtoCrypto> for CryptoType {
     fn from(c: ProtoCrypto) -> CryptoType {
         match c {
-            ProtoCrypto::SECP => CryptoType::SECP,
-            ProtoCrypto::SM2 => CryptoType::SM2,
+            ProtoCrypto::DEFAULT => CryptoType::DEFAULT,
+            ProtoCrypto::RESERVED => CryptoType::RESERVED,
         }
     }
 }
@@ -166,15 +155,10 @@ pub struct Transaction {
     /// valid before this block number
     pub block_limit: BlockNumber,
     /// Unique chain_id
-    pub chain_id: u32,
+    // Before it's u32
+    pub chain_id: U256,
     /// transaction version
     pub version: u32,
-}
-
-impl HeapSizeOf for Transaction {
-    fn heap_size_of_children(&self) -> usize {
-        self.data.heap_size_of_children()
-    }
 }
 
 impl Decodable for Transaction {
@@ -182,6 +166,8 @@ impl Decodable for Transaction {
         if d.item_count()? != 9 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
+        let version = d.val_at(8)?;
+
         Ok(Transaction {
             nonce: d.val_at(0)?,
             gas_price: d.val_at(1)?,
@@ -190,8 +176,12 @@ impl Decodable for Transaction {
             value: d.val_at(4)?,
             data: d.val_at(5)?,
             block_limit: d.val_at(6)?,
-            chain_id: d.val_at(7)?,
-            version: d.val_at(8)?,
+            chain_id: if version == 0 {
+                d.val_at::<u32>(7)?.into()
+            } else {
+                d.val_at::<U256>(7)?
+            },
+            version,
         })
     }
 }
@@ -203,34 +193,51 @@ impl Encodable for Transaction {
 }
 
 impl Transaction {
-    pub fn new(plain_transaction: &ProtoTransaction) -> Result<Self, Error> {
+    // Should never return Error
+    pub fn create(plain_transaction: &ProtoTransaction) -> Result<Self, Error> {
         if plain_transaction.get_value().len() > 32 {
             return Err(Error::ParseError);
         }
+
+        let version = plain_transaction.get_version();
         Ok(Transaction {
             nonce: plain_transaction.get_nonce().to_owned(),
             gas_price: U256::default(),
             gas: U256::from(plain_transaction.get_quota()),
             action: {
-                let to = plain_transaction.get_to();
-                match to.is_empty() {
-                    true => Action::Create,
-                    false => match to {
+                if version == 0 {
+                    let to = clean_0x(plain_transaction.get_to());
+                    match to {
+                        "" => Action::Create,
                         STORE_ADDRESS => Action::Store,
                         ABI_ADDRESS => Action::AbiStore,
-                        GO_CONTRACT => Action::GoCreate,
                         AMEND_ADDRESS => Action::AmendData,
-                        _ => Action::Call(
-                            Address::from_str(clean_0x(to)).map_err(|_| Error::ParseError)?
-                        ),
-                    },
+                        _ => Action::Call(Address::from_str(to).map_err(|_| Error::ParseError)?),
+                    }
+                } else {
+                    let to = plain_transaction.get_to_v1();
+                    if to.is_empty() {
+                        Action::Create
+                    } else {
+                        let to_addr = Address::from(to);
+                        match to_addr.lower_hex().as_str() {
+                            STORE_ADDRESS => Action::Store,
+                            ABI_ADDRESS => Action::AbiStore,
+                            AMEND_ADDRESS => Action::AmendData,
+                            _ => Action::Call(to_addr),
+                        }
+                    }
                 }
             },
             value: U256::from(plain_transaction.get_value()),
             data: Bytes::from(plain_transaction.get_data()),
             block_limit: plain_transaction.get_valid_until_block(),
-            chain_id: plain_transaction.get_chain_id(),
-            version: plain_transaction.get_version(),
+            chain_id: if version == 0 {
+                plain_transaction.get_chain_id().into()
+            } else {
+                plain_transaction.get_chain_id_v1().into()
+            },
+            version,
         })
     }
 
@@ -243,7 +250,7 @@ impl Transaction {
     }
 
     pub fn gas_price(&self) -> U256 {
-        U256::from(1)
+        self.gas_price
     }
 
     // Specify the sender; this won't survive the serialize/deserialize process, but can be cloned.
@@ -252,12 +259,12 @@ impl Transaction {
         SignedTransaction {
             transaction: UnverifiedTransaction {
                 unsigned: self,
-                signature: signature,
+                signature,
                 hash: 0.into(),
                 crypto_type: CryptoType::default(),
             },
             sender: from,
-            public: Public::default(),
+            public: PubKey::default(),
         }
     }
 
@@ -271,7 +278,11 @@ impl Transaction {
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
-        s.append(&self.chain_id);
+        if self.version == 0u32 {
+            s.append::<u32>(&self.chain_id.low_u32());
+        } else {
+            s.append::<U256>(&self.chain_id);
+        }
         s.append(&self.version);
     }
 
@@ -283,15 +294,31 @@ impl Transaction {
         pt.set_data(self.data.clone());
         pt.set_quota(self.gas.as_u64());
         pt.set_value(<[u8; 32]>::from(self.value).to_vec());
-        pt.set_chain_id(self.chain_id);
+        if self.version == 0 {
+            pt.set_chain_id(self.chain_id.low_u32());
+        } else {
+            pt.set_chain_id_v1(<[u8; 32]>::from(self.chain_id).to_vec());
+        }
         pt.set_version(self.version);
-        match self.action {
-            Action::Create => pt.clear_to(),
-            Action::Call(ref to) => pt.set_to(to.lower_hex()),
-            Action::Store => pt.set_to(STORE_ADDRESS.into()),
-            Action::AbiStore => pt.set_to(ABI_ADDRESS.into()),
-            Action::GoCreate => pt.set_to(GO_CONTRACT.into()),
-            Action::AmendData => pt.set_to(AMEND_ADDRESS.into()),
+
+        if self.version == 0 {
+            match self.action {
+                Action::Create => pt.clear_to(),
+                Action::Call(ref to) => pt.set_to(to.lower_hex()),
+                Action::Store => pt.set_to(STORE_ADDRESS.into()),
+                Action::AbiStore => pt.set_to(ABI_ADDRESS.into()),
+                Action::AmendData => pt.set_to(AMEND_ADDRESS.into()),
+            }
+        } else {
+            match self.action {
+                Action::Create => pt.clear_to(),
+                Action::Call(ref to) => pt.set_to_v1(to.to_vec()),
+                Action::Store => pt.set_to_v1(Address::from_str(STORE_ADDRESS).unwrap().to_vec()),
+                Action::AbiStore => pt.set_to_v1(Address::from_str(ABI_ADDRESS).unwrap().to_vec()),
+                Action::AmendData => {
+                    pt.set_to_v1(Address::from_str(AMEND_ADDRESS).unwrap().to_vec())
+                }
+            }
         }
         pt
     }
@@ -345,16 +372,16 @@ impl Encodable for UnverifiedTransaction {
 }
 
 impl UnverifiedTransaction {
-    fn new(utx: &ProtoUnverifiedTransaction, hash: H256) -> Result<Self, Error> {
+    fn create(utx: &ProtoUnverifiedTransaction, hash: H256) -> Result<Self, Error> {
         if utx.get_signature().len() != SIGNATURE_BYTES_LEN {
             return Err(Error::InvalidSignature);
         }
 
         Ok(UnverifiedTransaction {
-            unsigned: Transaction::new(utx.get_transaction())?,
+            unsigned: Transaction::create(utx.get_transaction())?,
             signature: Signature::from(utx.get_signature()),
             crypto_type: CryptoType::from(utx.get_crypto()),
-            hash: hash,
+            hash,
         })
     }
 
@@ -385,8 +412,8 @@ impl UnverifiedTransaction {
         untx.set_signature(self.signature.to_vec());
 
         match self.crypto_type {
-            CryptoType::SECP => untx.set_crypto(ProtoCrypto::SECP),
-            CryptoType::SM2 => untx.set_crypto(ProtoCrypto::SM2),
+            CryptoType::DEFAULT => untx.set_crypto(ProtoCrypto::DEFAULT),
+            CryptoType::RESERVED => untx.set_crypto(ProtoCrypto::RESERVED),
         }
         untx
     }
@@ -397,7 +424,7 @@ impl UnverifiedTransaction {
 pub struct SignedTransaction {
     transaction: UnverifiedTransaction,
     sender: Address,
-    public: Public,
+    public: PubKey,
 }
 
 /// RLP dose not support struct nesting well
@@ -408,6 +435,7 @@ impl Decodable for SignedTransaction {
         }
 
         let public: PubKey = d.val_at(12)?;
+        let version = d.val_at(8)?;
 
         Ok(SignedTransaction {
             transaction: UnverifiedTransaction {
@@ -419,15 +447,19 @@ impl Decodable for SignedTransaction {
                     value: d.val_at(4)?,
                     data: d.val_at(5)?,
                     block_limit: d.val_at(6)?,
-                    chain_id: d.val_at(7)?,
-                    version: d.val_at(8)?,
+                    chain_id: if version == 0u32 {
+                        d.val_at::<u32>(7)?.into()
+                    } else {
+                        d.val_at(7)?
+                    },
+                    version,
                 },
                 signature: d.val_at(9)?,
                 crypto_type: d.val_at(10)?,
                 hash: d.val_at(11)?,
             },
             sender: pubkey_to_address(&public),
-            public: public,
+            public,
         })
     }
 }
@@ -444,7 +476,11 @@ impl Encodable for SignedTransaction {
         s.append(&self.value);
         s.append(&self.data);
         s.append(&self.block_limit);
-        s.append(&self.chain_id);
+        if self.version == 0u32 {
+            s.append::<u32>(&self.chain_id.low_u32());
+        } else {
+            s.append::<U256>(&self.chain_id);
+        }
         s.append(&self.version);
 
         s.append(&self.signature);
@@ -452,12 +488,6 @@ impl Encodable for SignedTransaction {
         s.append(&self.hash);
         //TODO: remove it
         s.append(&self.public);
-    }
-}
-
-impl HeapSizeOf for SignedTransaction {
-    fn heap_size_of_children(&self) -> usize {
-        self.transaction.heap_size_of_children()
     }
 }
 
@@ -476,7 +506,7 @@ impl DerefMut for SignedTransaction {
 
 impl SignedTransaction {
     /// Try to verify transaction and recover sender.
-    pub fn new(stx: &ProtoSignedTransaction) -> Result<Self, Error> {
+    pub fn create(stx: &ProtoSignedTransaction) -> Result<Self, Error> {
         if stx.get_tx_hash().len() != HASH_BYTES_LEN {
             return Err(Error::InvalidHash);
         }
@@ -489,9 +519,9 @@ impl SignedTransaction {
         let public = PubKey::from_slice(stx.get_signer());
         let sender = pubkey_to_address(&public);
         Ok(SignedTransaction {
-            transaction: UnverifiedTransaction::new(stx.get_transaction_with_sig(), tx_hash)?,
-            sender: sender,
-            public: public,
+            transaction: UnverifiedTransaction::create(stx.get_transaction_with_sig(), tx_hash)?,
+            sender,
+            public,
         })
     }
 
@@ -511,7 +541,7 @@ impl SignedTransaction {
     }
 
     /// Returns a public key of the sender.
-    pub fn public_key(&self) -> &Public {
+    pub fn public_key(&self) -> &PubKey {
         &self.public
     }
 
@@ -548,7 +578,7 @@ mod tests {
         stx.gas = U256::from(u64::max_value() / 100000);
         let stx_rlp = rlp::encode(&stx);
         let stx_proto = stx.protobuf();
-        let stx = SignedTransaction::new(&stx_proto).unwrap();
+        let stx = SignedTransaction::create(&stx_proto).unwrap();
         let stx_encoded = rlp::encode(&stx).into_vec();
         let stx: SignedTransaction = rlp::decode(&stx_encoded);
         let stx_encoded = rlp::encode(&stx).into_vec();
@@ -561,7 +591,7 @@ mod tests {
         let mut plain_transaction = ProtoTransaction::new();
         plain_transaction.set_value(vec![0; 100]);
 
-        let res = Transaction::new(&plain_transaction);
+        let res = Transaction::create(&plain_transaction);
 
         assert!(res.is_err());
     }

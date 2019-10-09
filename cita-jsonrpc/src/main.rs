@@ -1,3 +1,17 @@
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! ## Summary
 //!
 //! One of CITA's core components, the only external module that provides jsonrpc,
@@ -21,6 +35,7 @@
 //!     | jsonrpc | Jsonrpc   | Auth      | RequestNewTxBatch |
 //!     | jsonrpc | Jsonrpc   | Chain     | Request           |
 //!     | jsonrpc | Jsonrpc   | Net       | RequestNet        |
+//!     | jsonrpc | jsonrpc   | Net       | RequestPeersInfo  |
 //!
 //! ### Key behavior
 //!
@@ -35,87 +50,70 @@
 //! uuid number and `TransferType`.
 //!
 
-#![feature(try_from)]
-extern crate bytes;
-extern crate clap;
-extern crate cpuprofiler;
-extern crate dotenv;
-extern crate error;
-extern crate futures;
-extern crate http;
-extern crate httparse;
-extern crate hyper;
-extern crate jsonrpc_types;
-extern crate libc;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
-extern crate logger;
-extern crate net2;
-extern crate num_cpus;
-extern crate pubsub;
-extern crate serde;
+extern crate cita_logger as logger;
 #[macro_use]
 extern crate serde_derive;
-#[cfg(not(test))]
+#[cfg_attr(test, macro_use)]
 extern crate serde_json;
-#[cfg(test)]
-#[macro_use]
-extern crate serde_json;
-extern crate threadpool;
-extern crate time;
-extern crate tokio_core;
-extern crate tokio_io;
-extern crate unicase;
 #[macro_use]
 extern crate util;
-extern crate uuid;
-extern crate ws;
 
 mod config;
+mod extractor;
 mod fdlimit;
 mod helper;
+mod http_header;
 mod http_server;
 mod mq_handler;
+mod mq_publisher;
 mod response;
+mod service_error;
+mod soliloquy;
 mod ws_handler;
 
+use crate::config::{NewTxFlowConfig, ProfileConfig};
+use crate::fdlimit::set_fd_limit;
+use crate::http_server::Server;
+use crate::soliloquy::Soliloquy;
+use crate::ws_handler::WsFactory;
 use clap::App;
-use config::{NewTxFlowConfig, ProfileConfig};
 use cpuprofiler::PROFILER;
-use fdlimit::set_fd_limit;
-use http_server::Server;
+use futures::Future;
 use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
+use libproto::TryInto;
+use pubsub::channel::{self, Sender};
 use pubsub::start_pubsub;
 use std::collections::HashMap;
-use std::convert::TryInto;
-use std::sync::mpsc::{channel, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};
-use tokio_core::reactor::Core;
 use util::{set_panic_handler, Mutex};
 use uuid::Uuid;
-use ws_handler::WsFactory;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
 fn main() {
-    micro_service_init!("cita-jsonrpc", "CITA:jsonrpc");
-    info!("Version: {}", get_build_info_str(true));
-
-    // todo load config
     let matches = App::new("JsonRpc")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))
         .author("Cryptape")
         .about("CITA JSON-RPC by Rust")
-        .args_from_usage("-c, --config=[FILE] 'Sets a custom config file'")
+        .args_from_usage(
+            "-c, --config=[FILE] 'Sets a custom config file'
+                          -s, --stdout 'Log to console'",
+        )
         .get_matches();
 
-    let config_path = matches.value_of("config").unwrap_or("./jsonrpc.toml");
+    let stdout = matches.is_present("stdout");
+    micro_service_init!("cita-jsonrpc", "CITA:jsonrpc", stdout);
+    info!("Version: {}", get_build_info_str(true));
+
+    let config_path = matches.value_of("config").unwrap_or("jsonrpc.toml");
 
     let config = config::Config::new(config_path);
     info!("CITA:jsonrpc config \n {:?}", config);
@@ -123,7 +121,7 @@ fn main() {
     //enable HTTP or WebSocket server!
     if !config.ws_config.enable && !config.http_config.enable {
         error!("Please at least enable one of HTTP and WebSocket server!");
-        std::process::exit(-1);
+        std::process::exit(2);
     }
 
     start_profile(&config.profile_config);
@@ -132,10 +130,14 @@ fn main() {
     set_fd_limit();
 
     // init pubsub
-    let (tx_sub, rx_sub) = channel();
-    let (tx_pub, rx_pub) = channel();
+    let (tx_sub, rx_sub) = channel::unbounded();
+    let (tx_pub, rx_pub) = channel::unbounded();
     //used for buffer message
-    let (tx_relay, rx_relay) = channel();
+    let (tx_relay, rx_relay) = channel::unbounded();
+    // used for deal with RequestRpc
+    let (tx, rx) = channel::unbounded();
+    let soli_resp_tx = tx_sub.clone();
+
     start_pubsub(
         "jsonrpc",
         routing_key!([
@@ -164,19 +166,43 @@ fn main() {
         loop {
             if let Ok(res) = rx_relay.try_recv() {
                 let (topic, req): (String, reqlib::Request) = res;
-                forward_service(
-                    topic,
-                    req,
-                    &mut new_tx_request_buffer,
-                    &mut time_stamp,
-                    &tx_pub,
-                    &tx_flow_config,
-                );
+                match RoutingKey::from(&topic) {
+                    routing_key!(Jsonrpc >> RequestRpc) => {
+                        let data: Message = req.into();
+                        tx.send((topic, data.try_into().unwrap())).unwrap();
+                    }
+                    _ => {
+                        forward_service(
+                            topic,
+                            req,
+                            &mut new_tx_request_buffer,
+                            &mut time_stamp,
+                            &tx_pub,
+                            &tx_flow_config,
+                        );
+                    }
+                }
             } else {
                 if !new_tx_request_buffer.is_empty() {
                     batch_forward_new_tx(&mut new_tx_request_buffer, &mut time_stamp, &tx_pub);
                 }
                 thread::sleep(Duration::new(0, tx_flow_config.buffer_duration));
+            }
+        }
+    });
+
+    // response RequestRpc
+    let soli_config = config.clone();
+    thread::spawn(move || {
+        let soliloquy = Soliloquy::new(soli_config);
+
+        loop {
+            if let Ok((_, msg_bytes)) = rx.recv() {
+                let resp_msg = soliloquy.handle(&msg_bytes);
+                let _ = soli_resp_tx.send((
+                    routing_key!(Jsonrpc >> Response).into(),
+                    resp_msg.try_into().unwrap(),
+                ));
             }
         }
     });
@@ -209,28 +235,36 @@ fn main() {
             .thread_number
             .unwrap_or_else(num_cpus::get);
 
-        for i in 0..threads {
-            let addr = addr.clone().parse().unwrap();
-            let tx = tx_relay.clone();
-            let timeout = http_config.timeout;
-            let http_responses = Arc::clone(&http_responses);
-            let allow_origin = http_config.allow_origin.clone();
-            let _ = thread::Builder::new()
-                .name(format!("worker{}", i))
-                .spawn(move || {
-                    let core = Core::new().unwrap();
-                    let handle = core.handle();
-                    let timeout = Duration::from_secs(timeout);
-                    let listener = http_server::listener(&addr, &handle).unwrap();
-                    Server::start(core, listener, tx, http_responses, timeout, &allow_origin);
-                })
-                .unwrap();
-        }
+        let addr = addr.parse().unwrap();
+        let timeout = http_config.timeout;
+        let allow_origin = http_config.allow_origin;
+        let _ = thread::Builder::new()
+            .name(String::from("http worker"))
+            .spawn(move || {
+                let server =
+                    Server::create(&addr, tx_relay, http_responses, timeout, &allow_origin)
+                        .unwrap();
+                let jsonrpc_server = server
+                    .jsonrpc()
+                    .map_err(|err| eprintln!("server err {}", err));
+
+                let mut rt = tokio::runtime::Builder::new()
+                    .core_threads(threads)
+                    .build()
+                    .unwrap();
+                rt.spawn(jsonrpc_server);
+
+                tokio_executor::enter()
+                    .unwrap()
+                    .block_on(rt.shutdown_on_idle())
+                    .unwrap();
+            })
+            .unwrap();
     }
 
     loop {
         let (key, msg) = rx_sub.recv().unwrap();
-        mq_handle.handle(&key, &msg);
+        let _ = mq_handle.handle(&key, &msg);
     }
 }
 

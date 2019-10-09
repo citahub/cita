@@ -1,98 +1,92 @@
+const fs = require('fs');
 const util = require('./util');
 const config = require('../config');
 
-const { web3, genTxParams } = util;
+const { genContract, genTxParams } = util;
 
-const sender = config.contract.authorization.superAdmin;
-const { rmABI, rmAddr } = config.contract.role_management;
+const { superAdmin } = config;
+const { roleManagement } = config.contract;
+const abi = JSON.parse(fs.readFileSync('../interaction/abi/RoleManagement.abi'));
 
-const roleManagement = web3.eth.contract(rmABI);
-const rmContractInstance = roleManagement.at(rmAddr);
+const contract = genContract(abi, roleManagement);
+
+// tmp
+let param;
 
 // newRole
-const newRole = function newRole(name, permissions, _sender = sender) {
-  return rmContractInstance.newRole.sendTransaction(
+const newRole = async (name, permissions, _sender = superAdmin) => {
+  param = await genTxParams(_sender);
+  return contract.methods.newRole(
     name,
     permissions,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // updateRoleName
-const updateRoleName = function updateRoleName(role, name, _sender = sender) {
-  return rmContractInstance.updateRoleName.sendTransaction(
+const updateRoleName = async (role, name, _sender = superAdmin) => {
+  param = await genTxParams(_sender);
+  return contract.methods.updateRoleName(
     role,
     name,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // addPermissions
-const addPermissions = function addPermissions(role, permissions, _sender = sender) {
-  return rmContractInstance.addPermissions.sendTransaction(
+const addPermissions = async (role, permissions, _sender = superAdmin) => {
+  param = await genTxParams(_sender);
+  return contract.methods.addPermissions(
     role,
     permissions,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // deletePermissions
-const deletePermissions = function deletePermissions(role, permissions, _sender = sender) {
-  return rmContractInstance.deletePermissions.sendTransaction(
+const deletePermissions = async (role, permissions, _sender = superAdmin) => {
+  param = await genTxParams(_sender);
+  return contract.methods.deletePermissions(
     role,
     permissions,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // setRole
-const setRole = function setRole(account, role, _sender = sender) {
-  return rmContractInstance.setRole.sendTransaction(
+const setRole = async (account, role, _sender = superAdmin) => {
+  param = await genTxParams(_sender);
+  return contract.methods.setRole(
     account,
     role,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // cancelRole
-const cancelRole = function cancelRole(account, role, _sender = sender) {
-  return rmContractInstance.cancelRole.sendTransaction(
+const cancelRole = async (account, role, _sender = superAdmin) => {
+  param = await genTxParams(_sender);
+  return contract.methods.cancelRole(
     account,
     role,
-    genTxParams(_sender),
-  );
+  ).send(param);
 };
 
 // clearRole
-const clearRole = function clearRole(account, role, _sender = sender) {
-  return rmContractInstance.clearRole.sendTransaction(
-    account,
-    genTxParams(_sender),
-  );
+const clearRole = async (account, role, _sender = superAdmin) => {
+  param = await genTxParams(_sender);
+  return contract.methods.clearRole(account).send(param);
 };
 
 // deleteRole
-const deleteRole = function deleteRole(account, role, _sender = sender) {
-  return rmContractInstance.deleteRole.sendTransaction(
-    account,
-    genTxParams(_sender),
-  );
+const deleteRole = async (account, role, _sender = superAdmin) => {
+  param = await genTxParams(_sender);
+  return contract.methods.deleteRole(account).send(param);
 };
 
 // queryRoles
-const queryRoles = function queryRoles(account) {
-  return rmContractInstance.queryRoles.call(account);
-};
+const queryRoles = account => contract.methods.queryRoles(account).call('pending');
 
 // queryAccounts
-const queryAccounts = function queryAccounts(account) {
-  return rmContractInstance.queryAccounts.call(account);
-};
+const queryAccounts = account => contract.methods.queryAccounts(account).call('pending');
 
 // queryPermissions
-const queryPermissions = function queryPermissions(role) {
-  return rmContractInstance.queryPermissions.call(role);
-};
+const queryPermissions = role => contract.methods.queryPermissions(role).call('pending');
 
 module.exports = {
   newRole,

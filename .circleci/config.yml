@@ -1,168 +1,510 @@
+alias:
+
+  - &restore-source-codes-cache
+    key: codes-{{ .Environment.CIRCLE_SHA1 }}
+
+  - &save-source-codes-cache
+    <<: *restore-source-codes-cache
+    paths: ~/cita-build
+
+  - &restore-dependencies-cache
+    key: deps-{{ checksum "Cargo.lock" }}
+
+  - &save-dependencies-cache
+    <<: *restore-dependencies-cache
+    paths:
+      - /opt/.cargo/git
+      - /opt/.cargo/registry
+
+  - &restore-clippy-cache
+    key: clippy-{{ .Environment.CIRCLE_BRANCH }}-{{ checksum "~/build-cache.key" }}
+    keys:
+      - clippy-{{ .Environment.CIRCLE_BRANCH }}-{{ checksum "~/build-cache.key" }}
+      - clippy-{{ .Environment.CIRCLE_BRANCH }}-
+      - clippy-
+      - build-
+
+  - &save-clippy-cache
+    <<: *restore-clippy-cache
+    paths: ~/cita-build/target
+
+  - &restore-security-audit-cache
+    key: audit-{{ checksum "/opt/.cargo/cargo-audit.version" }}
+
+  - &save-security-audit-cache
+    <<: *restore-security-audit-cache
+    paths:
+      - /opt/.cargo/bin/cargo-audit
+
+  - &before-restore-security-audit-cache
+    name: Before Restore Security Audit Cache
+    command: |
+        ver=$(cargo search cargo-audit | grep "^cargo-audit = " | awk '{ print $3 }' | tr -d '"')
+        date +"${ver}~%Y-%U" | tee /opt/.cargo/cargo-audit.version
+
+  - &restore-release-cache
+    key: release-{{ .Environment.CIRCLE_SHA1 }}
+
+  - &save-release-cache
+    <<: *restore-release-cache
+    paths: ~/cita-build/target/release-cache
+
+  - &before-save-release-cache
+    name: Before Save Release Cache
+    command: |
+        rm -rf target/release-cache
+        mv -vf target/install target/release-cache
+
+  - &after-restore-release-cache
+    name: After Restore Release Cache
+    command: |
+        rm -rf target/install
+        mv -vf target/release-cache target/install
+
+  - &restore-build-cache
+    key: build-{{ .Environment.CIRCLE_BRANCH }}-{{ checksum "~/build-cache.key" }}
+    keys:
+      - build-{{ .Environment.CIRCLE_BRANCH }}-{{ checksum "~/build-cache.key" }}
+      - build-{{ .Environment.CIRCLE_BRANCH }}-
+      - build-
+
+  - &save-build-cache
+    <<: *restore-build-cache
+    paths: ~/cita-build/target
+
+  - &before-restore-build-cache
+    name: Before Restore Build Cache
+    command: date +"%Y-%U" | tee ~/build-cache.key
+
+  - &before-save-build-cache
+    name: Before Save Build Cache
+    command: rm -rf target/install target/release-cache
+
+  - &restore-tarpaulin-cache
+    key: tarpaulin-{{ checksum "/opt/.cargo/cargo-tarpaulin.version" }}
+
+  - &save-tarpaulin-cache
+    <<: *restore-tarpaulin-cache
+    paths:
+    - /opt/.cargo/bin/cargo-tarpaulin
+
+  - &before-restore-tarpaulin-cache
+    name: Before Restore Tarpaulin Cache
+    command: |
+      ver=$(cargo search cargo-tarpaulin | grep "^cargo-tarpaulin = " | awk '{ print $3 }' | tr -d '"')
+      date +"${ver}~%Y-%U" | tee /opt/.cargo/cargo-tarpaulin.version
+
+  - &clean-build-cache-if-too-large
+    name: Clean Cache If Too Large
+    command: |
+        target_mb=$(du -sm ~/cita-build/target/ | awk '{ print $1 }')
+        if [ ${target_mb} -gt 2048 ]; then
+            echo "[Info ] The target has ${target_mb} MiBytes data, CLEAN them."
+            cargo clean
+        else
+            echo "[Info ] The target has ${target_mb} MiBytes data, SKIP them."
+        fi
+
+  - &job-default
+    docker:
+      - image: cita/cita-build:ubuntu-18.04-20190515
+    working_directory: ~/cita-build
+    resource_class: xlarge
+
+  - &job-unit-test
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-dependencies-cache
+      - run: *before-restore-build-cache
+      - restore_cache: *restore-build-cache
+      - run:
+          name: Replace Algorithms
+          command: |
+              ./scripts/replace_default_feature.sh ./ sha3hash ${HASH_ALGO}
+              ./scripts/replace_default_feature.sh ./ secp256k1 ${CRYPTO_ALGO}
+      - run:
+          name: Test Release
+          command: make test-release
+
 version: 2
 jobs:
-  build_sha3:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
-    working_directory: ~/cita-build
-    resource_class: large
+
+  "Check Basic":
+    <<: *job-default
     steps:
       - checkout
       - run:
-          name: checkout_submodule
-          command: 'git submodule update --init'
+          name: Checkout SubModules
+          command: git submodule update --init
       - run:
-          name: format
-          command: 'echo $CARGO_HOME; cargo fmt --all  -- --check'
+          name: Check Format
+          command: make fmt
+      - save_cache: *save-source-codes-cache
+      - run: *before-restore-security-audit-cache
+      - restore_cache: *restore-security-audit-cache
       - run:
-          name: build
-          command: 'RUSTFLAGS="-F warnings" cargo build --all'
+          name: Check Security Audit
+          command: make security_audit
+      - save_cache: *save-security-audit-cache
+
+  "Check Contracts":
+    docker:
+      - image: circleci/node:8.9.1
+    steps:
+      - checkout
+      - run:
+          name: Test system contracts
+          command: |
+            sudo npm install -g solium
+            cd scripts/contracts/
+            solium -d src/
+
+  "Check Clippy":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-dependencies-cache
+      - run: *before-restore-build-cache
+      - restore_cache: *restore-clippy-cache
+      - run:
+          name: Check Clippy
+          command: make clippy
+      - run: *before-save-build-cache
+      - run: *clean-build-cache-if-too-large
+      - save_cache: *save-clippy-cache
+
+  "Release":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-dependencies-cache
+      - run: *before-restore-build-cache
+      - restore_cache: *restore-build-cache
+      - run:
+          name: Build Release
+          command: make release
           no_output_timeout: 20m
+      - save_cache: *save-dependencies-cache
+      - run: *before-save-release-cache
+      - save_cache: *save-release-cache
+      - run: *before-save-build-cache
+      - run: *clean-build-cache-if-too-large
+      - save_cache: *save-build-cache
       - run:
-          name: check_cargolock
-          command: '[ $(git status --short Cargo.lock | wc -l) -ne 0 ] && echo "[Error] Please update Cargo.lock BEFORE commit." && git diff Cargo.lock && exit 1 || true'
-      - run:
-          name: security_audit
-          command: 'make security_audit'
-      - save_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
-          paths:
-            - ~/cita-build
-      - save_cache:
-          key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
-          paths:
-            - /opt/.cargo
+          name: Check Cargo.lock
+          command: |
+              if [ $(git status --short Cargo.lock | wc -l) -ne 0 ]; then
+                  echo "[Error] Please update Cargo.lock BEFORE commit."
+                  git diff Cargo.lock
+                  exit 1
+              fi
 
-  basic_test_sha3:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
-    working_directory: ~/cita-build
-    resource_class: large
+  "Unit Test (sha3 & secp256k1)":
+    <<: *job-unit-test
+    environment:
+      HASH_ALGO: sha3hash
+      CRYPTO_ALGO: secp256k1
+
+  "Unit Test (blake2b & ed25519)":
+    <<: *job-unit-test
+    environment:
+      HASH_ALGO: blake2bhash
+      CRYPTO_ALGO: ed25519
+
+  "Unit Test (sm3 & sm2)":
+    <<: *job-unit-test
+    environment:
+      HASH_ALGO: sm3hash
+      CRYPTO_ALGO: sm2
+
+  "Basic Test":
+    <<: *job-default
     steps:
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
-      - restore_cache:
-          key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
-          name: test
-          command: 'RUSTFLAGS="-F warnings" cargo test --tests'
+          name: Basic Test
+          command: ./tests/integrate_test/cita_basic.sh
 
-  basic_test_blake2b:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
-    working_directory: ~/cita-build
-    resource_class: large
+  "Basic Tls Test":
+    <<: *job-default
     steps:
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
-      - restore_cache:
-          key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
-          name: replace_hash
-          command: ./scripts/replace_default_feature.sh ./ sha3hash blake2bhash
-      - run:
-          name: replace_crypt
-          command: ./scripts/replace_default_feature.sh ./ secp256k1 ed25519
-      - run:
-          name: test
-          command: 'RUSTFLAGS="-F warnings" cargo test --tests'
+          name: Basic Tls Test
+          command: ./tests/integrate_test/cita_basic.sh --enable_tls
 
-  # basic_test_coverage_sha3:
-  #   docker:
-  #     - image: cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
-  #   working_directory: ~/cita-build
-  #   resource_class: large
+  # "JSON-RPC Mock Test in Charge Mode":
+  #   <<: *job-default
   #   steps:
-  #     - restore_cache:
-  #         key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
-  #     - restore_cache:
-  #         key: v2-deps-{{ checksum "Cargo.lock" }}-sha3
+  #     - restore_cache: *restore-source-codes-cache
+  #     - restore_cache: *restore-release-cache
+  #     - run: *after-restore-release-cache
   #     - run:
-  #         name: test-coverage
+  #         name: JSON-RPC Mock Test in Quota Mode
+  #         command: ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota
+  #     - run:
+  #         name: (Skip & TODO) JSON-RPC Mock Test in Charge Mode
   #         command: |
-  #           bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
-  #           cargo tarpaulin \
-  #             --packages cita-auth \
-  #             --packages cita-jsonrpc \
-  #             --packages cita-chain \
-  #             --packages core \
-  #             --packages common-types \
-  #             --packages cita-bft \
-  #             --packages cita-network \
-  #             --packages cita-executor \
-  #             --packages core-executor \
-  #             --packages cita-forever \
-  #             --packages jsonrpc_types \
-  #             --skip-clean --coveralls ${COVERALLS_TOKEN}
+  #             echo "We should add it back later."
+              # ./tests/integrate_test/cita_jsonrpc_schema_mock.sh charge
 
-  integrate_test_sha3:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
-    working_directory: ~/cita-build
-    resource_class: large
+  "JSON-RPC Mock Test in Quota Mode":
+    <<: *job-default
     steps:
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
-          name: config
-          command: './scripts/release.sh debug'
-      - run:
-          name: basic
-          command: './tests/integrate_test/cita_basic.sh'
-      - run:
-          # EconomicalModel == Quota
-          name: byzantine-quota
-          command: './tests/integrate_test/cita_byzantinetest.sh quota'
-      - run:
-          # EconomicalModel == Charge
-          name: byzantine-charge
-          command: './tests/integrate_test/cita_byzantinetest.sh charge'
-      - run:
-          # EconomicalModel == Quota
-          name: jsonrpc-mock-tests-quota
-          command: './tests/integrate_test/cita_jsonrpc_schema_mock.sh quota'
-      # TODO: We should add it back later
-      # - run:
-          # EconomicalModel == Charge
-          # name: jsonrpc-mock-tests-charge
-          # command: './tests/integrate_test/cita_jsonrpc_schema_mock.sh charge'
-      - run:
-          name: economical-mode-charge-transfer-value
-          command: './tests/integrate_test/cita_charge_mode.sh'
+          name: JSON-RPC Mock Test in Quota Mode
+          command: ./tests/integrate_test/cita_jsonrpc_schema_mock.sh quota
 
-  integrate_test_crosschain_sha3:
-    docker:
-      - image: cita/cita-build:ubuntu-18.04-20180703-solc-0.4.19
-    working_directory: ~/cita-build
-    resource_class: large
+  "Test Transfer Value in Charge Mode":
+    <<: *job-default
     steps:
-      - restore_cache:
-          key: v2-cita-build-{{ .Environment.CIRCLE_SHA1 }}-sha3
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
-          name: config
-          command: './scripts/release.sh debug'
+          name: Test Transfer Value in Charge Mode
+          command: ./tests/integrate_test/cita_charge_mode.sh
+
+  "Test System Features":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
       - run:
-          name: crosschain
-          command: './tests/integrate_test/cita_crosschain.sh'
+          name: Test System Features
+          command: ./tests/integrate_test/cita_features_test.sh
+
+  "Test Executor Process SignProposal/BlockWithProof":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Test Executor Process SignProposal/BlockWithProof
+          command: ./tests/integrate_test/box_executor_test.sh
+
+  "Test Snapshot Taking And Restoring":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Test Snapshot Taking And Restoring
+          command: ./tests/integrate_test/cita_snapshot_test.sh
+
+  "Test Amend":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Test Amend
+          command: ./tests/integrate_test/cita_amend_test.sh
+
+  "Test Executor Process Invalid Proof":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Test Executor Process Invalid Proof
+          command: ./tests/integrate_test/cita_bft_resend.sh
+
+  "Discovery Test for network":
+    <<: *job-default
+    steps:
+    - restore_cache: *restore-source-codes-cache
+    - restore_cache: *restore-release-cache
+    - run: *after-restore-release-cache
+    - run:
+        name: Discovery test for network
+        command: ./tests/integrate_test/cita_discovery.sh
+
+  "Byzantine Test in Quota Mode":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Byzantine Test in Quota Mode
+          command: ./tests/integrate_test/cita_byzantinetest.sh quota
+
+  "Byzantine Test in Charge Mode":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Byzantine Test in Charge Mode
+          command: ./tests/integrate_test/cita_byzantinetest.sh charge
+
+  "Crosschain Test":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Crosschain Test
+          command: ./tests/integrate_test/cita_crosschain.sh
+
+  "Robustness Test":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Robustness Test
+          command: ./tests/integrate_test/robustness_test.py
+
+  "Test Coverage":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - run: *before-restore-tarpaulin-cache
+      - restore_cache: *restore-tarpaulin-cache
+      - run:
+          name: Test Coverage
+          command: |
+            which cargo-tarpaulin \
+              || RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
+            echo "step 1. Auth Jsonrpc Bft Network Chain Executor"
+            cargo tarpaulin -v -p cita-auth cita-bft cita-network cita-jsonrpc cita-chain cita-executor --ignore-tests | grep -Ev "cita|tools"
+            echo "step 2. EVM Core Common-types Core-executor"
+            cargo tarpaulin -v -p core common-types core-executor evm --ignore-tests | grep -Ev "cita|tools"
+      - save_cache: *save-tarpaulin-cache
+
+  "Genesis Test":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Genesis Test
+          command: ./tests/compatibility/check_genesis.sh
+
+  "Passed":
+    docker:
+      - image: alpine:latest
+    steps:
+      - run:
+          name: Passed
+          command: exit 0
 
 workflows:
   version: 2
-  build-and-test:
+  "Build & Test":
     jobs:
-      - build_sha3
-      - basic_test_blake2b:
-          requires:
-            - basic_test_sha3
-            - integrate_test_sha3
-            - integrate_test_crosschain_sha3
-      - basic_test_sha3:
-          requires:
-            - build_sha3
-      # - basic_test_coverage_sha3:
+
+      - "Check Basic"
+
+      # - "Check Contracts"
+
+      # - "Test Coverage":
       #     requires:
-      #       - build_sha3
-      - integrate_test_sha3:
+      #     - "Check Basic"
+
+      - "Check Clippy":
           requires:
-            - build_sha3
-      - integrate_test_crosschain_sha3:
+            - "Check Basic"
+      - "Release":
           requires:
-            - build_sha3
+            - "Check Basic"
+
+      - "Basic Test":
+          requires:
+            - "Release"
+      - "Basic Tls Test":
+          requires:
+            - "Release"
+
+      # - "JSON-RPC Mock Test in Charge Mode":
+      #     requires:
+      #       - "Release"
+      - "JSON-RPC Mock Test in Quota Mode":
+          requires:
+            - "Release"
+      - "Test Transfer Value in Charge Mode":
+          requires:
+            - "Release"
+      - "Test System Features":
+          requires:
+            - "Release"
+      # - "Test Snapshot Taking And Restoring":
+      #     requires:
+      #       - "Release"
+      - "Test Amend":
+          requires:
+            - "Release"
+      - "Test Executor Process Invalid Proof":
+          requires:
+            - "Release"
+
+      - "Discovery Test for network":
+          requires:
+            - "Release"
+      - "Byzantine Test in Quota Mode":
+          requires:
+            - "Release"
+      - "Byzantine Test in Charge Mode":
+          requires:
+            - "Release"
+      # - "Crosschain Test":
+      #     requires:
+      #       - "Release"
+      - "Robustness Test":
+          requires:
+            - "Release"
+      - "Genesis Test":
+          requires:
+            - "Release"
+
+      - "Unit Test (sha3 & secp256k1)":
+          requires:
+            - "Release"
+      - "Unit Test (blake2b & ed25519)":
+          requires:
+            - "Unit Test (sha3 & secp256k1)"
+      - "Unit Test (sm3 & sm2)":
+          requires:
+            - "Unit Test (sha3 & secp256k1)"
+
+      - "Passed":
+          requires:
+              - "Check Basic"
+              - "Check Clippy"
+              - "Release"
+              - "Basic Test"
+              - "Basic Tls Test"
+              - "JSON-RPC Mock Test in Quota Mode"
+              - "Test Transfer Value in Charge Mode"
+              - "Test System Features"
+              - "Test Amend"
+              - "Test Executor Process Invalid Proof"
+              - "Discovery Test for network"
+              - "Byzantine Test in Quota Mode"
+              - "Byzantine Test in Charge Mode"
+              - "Robustness Test"
+              - "Genesis Test"
+              - "Unit Test (blake2b & ed25519)"
+              - "Unit Test (sm3 & sm2)"
+            # - "Crosschain Test"
+            # - "Test Snapshot Taking And Restoring"
+            # - "JSON-RPC Mock Test in Charge Mode"

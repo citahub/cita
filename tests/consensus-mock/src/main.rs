@@ -1,36 +1,44 @@
-#![feature(try_from)]
-extern crate bincode;
-extern crate chrono;
+// Copyright Cryptape Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 extern crate cita_crypto as crypto;
 #[macro_use]
 extern crate clap;
 #[macro_use]
 extern crate libproto;
 #[macro_use]
-extern crate logger;
-extern crate proof;
-extern crate pubsub;
+extern crate cita_logger as logger;
 #[macro_use]
 extern crate serde_derive;
 extern crate cita_types as types;
-extern crate serde_yaml;
-extern crate util;
 
+use crate::crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
+use crate::types::{Address, H256};
 use bincode::{serialize, Infinite};
 use clap::App;
-use crypto::{CreateKey, KeyPair, PrivKey, Sign, Signature};
+use hashable::Hashable;
 use libproto::blockchain::{Block, BlockBody, BlockTxs, BlockWithProof};
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
-use proof::TendermintProof;
+use libproto::{TryFrom, TryInto};
+use proof::BftProof;
+use pubsub::channel::{self, RecvTimeoutError, Sender};
 use pubsub::start_pubsub;
 use std::collections::HashMap;
-use std::convert::{Into, TryFrom, TryInto};
-use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
+use std::convert::Into;
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use types::{Address, H256};
-use util::Hashable;
 
 pub type PubType = (String, Vec<u8>);
 
@@ -42,9 +50,9 @@ pub enum Step {
     Commit,
 }
 
-fn build_proof(height: u64, sender: Address, privkey: &PrivKey) -> TendermintProof {
-    let mut proof = TendermintProof::default();
-    proof.height = (height - 1) as usize;
+fn build_proof(height: u64, sender: Address, privkey: &PrivKey) -> BftProof {
+    let mut proof = BftProof::default();
+    proof.height = height as usize;
     proof.round = 0;
     proof.proposal = H256::default();
 
@@ -54,14 +62,15 @@ fn build_proof(height: u64, sender: Address, privkey: &PrivKey) -> TendermintPro
             proof.height,
             proof.round,
             Step::Precommit,
-            sender.clone(),
-            Some(proof.proposal.clone()),
+            sender,
+            Some(proof.proposal),
         ),
         Infinite,
-    ).unwrap();
+    )
+    .unwrap();
 
-    let signature = Signature::sign(privkey, &message.crypt_hash().into()).unwrap();
-    commits.insert((*sender).into(), signature.into());
+    let signature = Signature::sign(privkey, &message.crypt_hash()).unwrap();
+    commits.insert((*sender).into(), signature);
     proof.commits = commits;
     proof
 }
@@ -74,16 +83,18 @@ fn build_block(
     privkey: &PrivKey,
     time_stamp: u64,
 ) -> (Vec<u8>, BlockWithProof) {
-    let sender = KeyPair::from_privkey(*privkey).unwrap().address().clone();
+    let sender = KeyPair::from_privkey(*privkey).unwrap().address();
     let mut block = Block::new();
     let proof = build_proof(height, sender, privkey);
     let transaction_root = body.transactions_root().to_vec();
     let mut proof_blk = BlockWithProof::new();
 
+    let mut previous_proof = proof.clone();
+    previous_proof.height = height as usize - 1;
     block.mut_header().set_timestamp(time_stamp);
     block.mut_header().set_height(height);
     block.mut_header().set_prevhash(pre_block_hash.0.to_vec());
-    block.mut_header().set_proof(proof.clone().into());
+    block.mut_header().set_proof(previous_proof.into());
     block.mut_header().set_transactions_root(transaction_root);
     block.set_body(body.clone());
 
@@ -97,7 +108,7 @@ fn build_block(
 fn send_block(
     pre_block_hash: H256,
     height: u64,
-    pub_sender: Sender<PubType>,
+    pub_sender: &Sender<PubType>,
     timestamp: u64,
     block_txs: &BlockTxs,
     privkey: &PrivKey,
@@ -119,7 +130,7 @@ fn send_block(
 }
 
 fn main() {
-    logger::init();
+    logger::init_config(&logger::LogFavour::File("consensus_mock"));
     info!("CITA: Consensus Mock");
 
     // set up the clap to receive info from CLI
@@ -138,13 +149,12 @@ fn main() {
         .get_matches();
 
     let default_interval = 3;
-    // get the mock data and parse it to serde_yaml format
     let interval = value_t!(matches, "interval", u64).unwrap_or(default_interval);
     let key_pair = KeyPair::gen_keypair();
     let pk_miner = key_pair.privkey();
 
-    let (tx_sub, rx_sub) = channel();
-    let (tx_pub, rx_pub) = channel();
+    let (tx_sub, rx_sub) = channel::unbounded();
+    let (tx_pub, rx_pub) = channel::unbounded();
 
     start_pubsub(
         "consensus",
@@ -199,7 +209,7 @@ fn main() {
                             send_block(
                                 H256::from_slice(&rich_status.hash),
                                 send_height,
-                                tx_pub.clone(),
+                                &tx_pub,
                                 timestamp,
                                 &block_txs,
                                 &pk_miner,

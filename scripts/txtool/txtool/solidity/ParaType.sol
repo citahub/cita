@@ -35,12 +35,12 @@ contract ParaType {
 
     event LogError(uint code, string message);
     event LogCreate(address contractAddr);
-    
+
     function ParaType(){
         _addr = msg.sender;
         LogCreate(this);
     }
-    
+
     function setUint(uint u, uint8 u8, uint16 u16, uint32 u32, uint256 u256){
         _u = u;
         _u8 = u8;
@@ -71,19 +71,19 @@ contract ParaType {
         _b=b;
         LogError(0, 'setBool');
     }
-    
+
     function setNotConstant(){
     _notConsB = _b;
     _constantStr = "NotConstant";
     LogError(0, 'setNotConstant');
     }
-    
+
     function getNotConstant() returns (bool b,string constantStr){
        _notConsB = false;
        _constantStr = "NotConstant function";
         return (_notConsB,_constantStr);
     }
-    
+
     function getConstant() constant returns (bool b,string constantStr){
         return (_notConsB,_constantStr);
     }

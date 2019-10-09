@@ -2,23 +2,24 @@
 # coding=utf-8
 
 from __future__ import print_function, absolute_import
+
 import argparse
 import binascii
+import pysodium
 import random
 import string
-from pathlib import Path
-from blockchain_pb2 import Transaction, SignedTransaction, UnverifiedTransaction, Crypto
-from util import hex2bytes, run_command, remove_hex_0x, recover_pub
-from secp256k1 import PrivateKey
-from ethereum.utils import sha3
-import pysodium
-from generate_account import generate
 from block_number import block_number
-from url_util import endpoint
-from log import logger
+from blockchain_pb2 import Transaction, UnverifiedTransaction, Crypto
+from ethereum.utils import sha3
+from generate_account import generate
 from jsonrpcclient.http_client import HTTPClient
+from log import logger
+from pathlib import Path
+from secp256k1 import PrivateKey
+from url_util import endpoint
+from util import hex2bytes, run_command, remove_hex_0x
 
-
+LATEST_VERSION = 2
 
 accounts_path = Path("../output/transaction")
 if not accounts_path.is_dir():
@@ -79,6 +80,25 @@ def get_chainid():
     return chainid
 
 
+def get_chainid_v1():
+    params = ['latest']
+    chainid = 1
+
+    try:
+        url = endpoint()
+        logger.debug(url)
+        response = HTTPClient(url).request("getMetaData", params)
+        chainid = response['chainIdV1']
+        logger.debug(response)
+    except:
+        chainid = "0x1"
+
+    # padding to 32 bytes
+    chainid = int(chainid, 16)
+    logger.info("final chainId is {}".format(chainid))
+    return chainid
+
+
 def generate_deploy_data(current_height,
                          bytecode,
                          value,
@@ -86,13 +106,15 @@ def generate_deploy_data(current_height,
                          privatekey,
                          receiver=None,
                          newcrypto=False,
-                         version=0):
+                         version=LATEST_VERSION):
     if newcrypto:
-        data = _blake2b_ed25519_deploy_data(current_height, bytecode, value, quota,
-                                            privatekey, version, receiver)
+        data = _blake2b_ed25519_deploy_data(current_height, bytecode, value,
+                                            quota, privatekey, version,
+                                            receiver)
     else:
-        data = _sha3_secp256k1_deploy_data(current_height, bytecode, value, quota,
-                                           privatekey, version, receiver)
+        data = _sha3_secp256k1_deploy_data(current_height, bytecode, value,
+                                           quota, privatekey, version,
+                                           receiver)
 
     return data
 
@@ -102,22 +124,36 @@ def _blake2b_ed25519_deploy_data(current_height,
                                  value,
                                  quota,
                                  privatekey,
-                                 version=0,
+                                 version,
                                  receiver=None):
     sender = get_sender(private_key, True)
     logger.debug(sender)
     nonce = get_nonce()
     logger.debug("nonce is {}".format(nonce))
-    chainid = get_chainid()
-    logger.debug("chainid is {}".format(chainid))
 
     tx = Transaction()
     tx.valid_until_block = current_height + 88
     tx.nonce = nonce
-    tx.chain_id = chainid
     tx.version = version
+    if version == 0:
+        chainid = get_chainid()
+        logger.info("version is {}".format(version))
+        logger.info("chainid is {}".format(chainid))
+        tx.chain_id = chainid
+    elif version < 3:
+        chainid = get_chainid_v1()
+        logger.info("version is {}".format(version))
+        logger.info("chainid_v1 is {}".format(chainid))
+        tx.chain_id_v1 = chainid.to_bytes(32, byteorder='big')
+    else:
+        logger.error("unexpected version {}".format(version))
     if receiver is not None:
-        tx.to = receiver
+        if version == 0:
+            tx.to = receiver
+        elif version < 3:
+            tx.to_v1 = hex2bytes(receiver)
+        else:
+            logger.error("unexpected version {}".format(version))
     tx.data = hex2bytes(bytecode)
     tx.value = value.to_bytes(32, byteorder='big')
     tx.quota = quota
@@ -135,7 +171,7 @@ def _blake2b_ed25519_deploy_data(current_height,
     unverify_tx = UnverifiedTransaction()
     unverify_tx.transaction.CopyFrom(tx)
     unverify_tx.signature = hex2bytes(signature)
-    unverify_tx.crypto = Crypto.Value('SECP')
+    unverify_tx.crypto = Crypto.Value('DEFAULT')
 
     logger.info("unverify_tx is {}".format(
         binascii.hexlify(unverify_tx.SerializeToString())))
@@ -147,7 +183,7 @@ def _sha3_secp256k1_deploy_data(current_height,
                                 value,
                                 quota,
                                 privatekey,
-                                version=0,
+                                version,
                                 receiver=None):
     sender = get_sender(privatekey, False)
     if privatekey is None:
@@ -159,16 +195,28 @@ def _sha3_secp256k1_deploy_data(current_height,
     logger.debug(sender)
     nonce = get_nonce()
     logger.debug("nonce is {}".format(nonce))
-    chainid = get_chainid()
-    logger.debug("chainid is {}".format(chainid))
 
     tx = Transaction()
     tx.valid_until_block = current_height + 88
     tx.nonce = nonce
-    tx.chain_id = chainid
     tx.version = version
+    if version == 0:
+        chainid = get_chainid()
+        logger.info("version-{}, chainid-{}".format(version, chainid))
+        tx.chain_id = chainid
+    elif version < 3:
+        chainid = get_chainid_v1()
+        logger.info("version-{}, chainid_v1-{}".format(version, chainid))
+        tx.chain_id_v1 = chainid.to_bytes(32, byteorder='big')
+    else:
+        logger.error("unexpected version {}".format(version))
     if receiver is not None:
-        tx.to = receiver
+        if version == 0:
+            tx.to = receiver
+        elif version < 3:
+            tx.to_v1 = hex2bytes(receiver)
+        else:
+            logger.error("unexpected version {}".format(version))
     tx.data = hex2bytes(bytecode)
     tx.value = value.to_bytes(32, byteorder='big')
     tx.quota = quota
@@ -185,7 +233,7 @@ def _sha3_secp256k1_deploy_data(current_height,
     unverify_tx = UnverifiedTransaction()
     unverify_tx.transaction.CopyFrom(tx)
     unverify_tx.signature = hex2bytes(signature)
-    unverify_tx.crypto = Crypto.Value('SECP')
+    unverify_tx.crypto = Crypto.Value('DEFAULT')
 
     logger.info("unverify_tx is {}".format(
         binascii.hexlify(unverify_tx.SerializeToString())))
@@ -195,8 +243,10 @@ def _sha3_secp256k1_deploy_data(current_height,
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--code", help="Compiled contract bytecode.")
-    parser.add_argument("--value", type=int, default=0, help="The value to send.")
-    parser.add_argument("--quota", type=int, default=1000000, help="The quota(gas limit).")
+    parser.add_argument(
+        "--value", type=int, default=0, help="The value to send.")
+    parser.add_argument(
+        "--quota", type=int, default=1000000, help="The quota(gas limit).")
     parser.add_argument(
         "--privkey", help="private key genearted by secp256k1 alogrithm.")
     parser.add_argument("--to", help="transaction to")
@@ -211,7 +261,7 @@ def parse_arguments():
         action='store_false',
         help="Use ecdsa and sha3.")
     parser.add_argument(
-        "--version", help="Tansaction version.", default=0, type=int)
+        "--version", help="Tansaction version.", default=2, type=int)
     parser.add_argument("--chain_id", default=0, type=int)
     parser.set_defaults(newcrypto=False)
 
@@ -245,9 +295,10 @@ def main():
     logger.debug(blake2b_ed25519)
     bytecode, value, quota, privkey, receiver, version = _params_or_default()
     current_height = int(block_number(), 16)
-    data = generate_deploy_data(
-        current_height, remove_hex_0x(bytecode), value, quota,
-        remove_hex_0x(privkey), remove_hex_0x(receiver), blake2b_ed25519, version)
+    data = generate_deploy_data(current_height, remove_hex_0x(bytecode), value,
+                                quota, remove_hex_0x(privkey),
+                                remove_hex_0x(receiver), blake2b_ed25519,
+                                version)
     logger.info("save deploy code to ../output/transaction/deploycode")
     save_deploy(data)
 

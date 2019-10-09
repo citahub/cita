@@ -1,0 +1,19 @@
+[package]
+name = "create-key-addr"
+version = "0.1.0"
+authors = ["Cryptape Technologies <contact@cryptape.com>"]
+license = "Apache-2.0"
+edition = "2018"
+
+[dependencies]
+cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+
+[features]
+default = ["secp256k1", "sha3hash"]
+secp256k1 = ["cita-crypto/secp256k1"]
+ed25519 = ["cita-crypto/ed25519"]
+sm2 = ["cita-crypto/sm2"]
+sha3hash = ["hashable/sha3hash"]
+blake2bhash = ["hashable/blake2bhash"]
+sm3hash = ["hashable/sm3hash"]
