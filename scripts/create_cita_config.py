@@ -14,6 +14,9 @@ import subprocess
 import time
 
 DEFAULT_PREVHASH = '0x{:064x}'.format(0)
+CITA_HOME = os.getenv('CITA_HOME', os.path.abspath(
+    os.path.join(os.path.dirname(__file__), os.pardir)))
+
 
 def update_search_paths(work_dir):
     """Add new path to the search path."""
@@ -240,10 +243,11 @@ class ChainInfo():
                             os.path.join(self.configs_dir, 'resource'), False)
 
         prevhash = DEFAULT_PREVHASH if not prevhash else str(prevhash)
-        timestamp = str(int(time.time() * 1000)) if not timestamp else str(timestamp)
+        timestamp = str(int(time.time() * 1000)
+                        ) if not timestamp else str(timestamp)
 
-        process = subprocess.Popen(["./bin/create-genesis",self.contracts_dir, self.contracts_docs_dir,
-        self.init_data_file, self.genesis_path, timestamp, init_token, prevhash])
+        process = subprocess.Popen([os.path.join(CITA_HOME, 'bin/create-genesis'), self.contracts_dir, self.contracts_docs_dir,
+                                    self.init_data_file, self.genesis_path, timestamp, init_token, prevhash])
         process.wait()
 
     def append_node(self, node):
@@ -326,8 +330,8 @@ class ChainInfo():
 def run_subcmd_create(args, work_dir):
     info = ChainInfo(args.chain_name, work_dir)
     info.template_create_from_arguments(
-        args, os.path.join(work_dir, 'scripts/contracts'),
-        os.path.join(work_dir, 'scripts/config_tool/default_config'))
+        args, os.path.join(CITA_HOME, 'scripts/contracts'),
+        os.path.join(CITA_HOME, 'scripts/config_tool/default_config'))
     info.create_init_data(args.super_admin, args.contract_arguments)
     info.create_genesis(args.timestamp, args.init_token, args.resource_dir)
     info.enable_tls = args.enable_tls
@@ -419,7 +423,7 @@ def parse_arguments():
 
     pcreate.add_argument(
         '--init_token',
-        type=lambda x: hex(int(x,16)),
+        type=lambda x: hex(int(x, 16)),
         default=hex(int("0xffffffffffffffffffffffffff", 16)),
         help='Init token for this chain, INIT_TOKEN is a hexadecimal number')
 
@@ -442,8 +446,7 @@ def parse_arguments():
 
     pappend.add_argument(
         '--address',
-        help=
-        'The address of new node. Will generate a new address (with privkey) if not set.'
+        help='The address of new node. Will generate a new address (with privkey) if not set.'
     )
 
     args = parser.parse_args()
@@ -501,17 +504,14 @@ def parse_arguments():
 
 def main():
     # All source files are relative path.
-    work_dir = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), os.pardir))
-
-    update_search_paths(work_dir)
+    update_search_paths(CITA_HOME)
 
     args = parse_arguments()
-
     funcs_router = {
         SUBCMD_CREATE: run_subcmd_create,
         SUBCMD_APPEND: run_subcmd_append,
     }
+    work_dir = os.path.abspath(os.curdir)
     funcs_router[args.subcmd](args, work_dir)
 
 
