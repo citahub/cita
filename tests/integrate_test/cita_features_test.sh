@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+# set -e
 
 if [[ $(uname) == 'Darwin' ]]
 then
@@ -65,7 +65,8 @@ main() {
 
     echo -e "6) Run block interval tests ...\n"
     test_change_block_interval 2
-    timeout=$(check_height_growth_normal 0 60) && (echo "FAILED"
+    timeout=$(check_height_growth_normal 0 15)
+    timeout=$(check_height_growth_normal 0 30) && (echo "FAILED"
                                                     echo "failed to change block interval"
                                                     exit 1)
     echo "Done"
