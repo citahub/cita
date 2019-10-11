@@ -7,8 +7,9 @@
 * 确定发版测试负责人
 
 ## 2. 冻结版本
+
 * 冻结代码至新建的 Release 分支，需提前一周以上冻结
-* 冻结分支应该有最新的版本号等，需为可发布版本如无BUG
+* 冻结分支应该有最新的版本号等，需为可发布版本
 
 ### 准备分支
 
@@ -52,7 +53,7 @@ git checkout origin/develop -b release-x.y.0
 从需要修订版本的 `tag`(`vx.y.0`) 创建新的分支 `release-x.y.1`，具体操作如下：
 
 ```shell
-git checkout tags/vx.y.0 -b release-x.y.1
+git checkout -b <New Branch Name> <TAG Name>
 ```
 
 #### 推送分支
@@ -67,12 +68,12 @@ git push origin release-x.y.z
 
 联系管理员对发布分支 `release-x.y.z` 设置分支保护。
 
-### 创建一个 RC Pull Request，标题加上[WIP]标记
+### 创建一个 RC Pull Request，标题加上`[WIP]`标记
 
 ## 3. 测试
 
 * 告知测试团队对发布分支进行测试
-* 告知工具链团队对新版本就行适配
+* 告知工具链团队对新版本进行适配
 * 测试过程中出现的 Bug 修复合并入发布分支 `release-x.y.z`
 * 测试通过后，测试负责人出具发版测试报告，内容包括但不限于：
 
@@ -113,7 +114,7 @@ git tag -a vx.y.z -m 'vx.y.z'
 3. 推送 `tag` 到代码仓库，具体操作如下：
 
 ```shell
-git push origin vx.y.z
+git push --tags
 ```
 
 ### 合并入 `develop` 分支
@@ -142,7 +143,7 @@ git push origin merge-master-into-develop
 
 4. 合并入 `develop`
 
-通过 `pull request` 把过渡分支 `merge-master-into-develop` 合并入 `develop` 分支。
+通过 https://github.com/cryptape/cita/compare/develop...master 提 pr。
 
 ## 6. 发布
 
@@ -191,12 +192,17 @@ git push --delete origin merge-master-into-develop
 * 内部邮件广播
     - 撰写新版本邮件并内部广播
 * CITAHub talk 发帖
-    - 在信息版发布新版本主题贴
+    - 在[信息版]发布新版本主题贴
 * CITAHub Docs 版本更新
-    - CITAHub Docs 延后三天进行版本更新，期间进行文档的测试和补充
+    - [CITAHub Docs] 延后三天进行版本更新，期间进行文档的测试和补充
 * 若发布之后，需要修改发版公告，交由 Release Master 操作
 
 ## 8. 其他 
 
 * 当天发布相应 CITA docker 镜像
 * 版本发布后1-2个星期内，由运维人员升级测试网
+
+
+[CITAhub Docs]: https://docs.citahub.com/zh-CN/welcome
+[Semantic Versioning]: https://semver.org/
+[信息版]: https://talk.citahub.com/c/9-category
