@@ -29,7 +29,7 @@ main() {
 
     echo "2) Start CITA components manually"
     bin/cita bebop setup "${CHAIN_NAME}"/0
-    bin/cita bebop start "${CHAIN_NAME}"/0
+    bin/cita bebop start "${CHAIN_NAME}"/0 trace
     sleep 3
     bin/cita bebop stop "${CHAIN_NAME}"/0
 
@@ -58,7 +58,7 @@ main() {
     echo "4) Restart CITA"
     kill ${auth_pid} ${bft_pid} ${jsonrpc_pid} ${network_pid}
 
-    bin/cita bebop start "${CHAIN_NAME}"/0
+    bin/cita bebop start "${CHAIN_NAME}"/0 trace
 
     wait_timeout=30
     timeout=$(check_height_growth_normal 0 $wait_timeout) || (echo "FAILED"
