@@ -38,7 +38,7 @@ fi
 # Expose parameter for docker needs something like "-p 1337:1337 -p 1338:1338", but not "-p 1337:1337 1338:1338"
 EXPOSE_PARAM=()
 for port in "${EXPOSE[@]}"; do
-    EXPOSE_PARAM+=(-p ${port})
+    EXPOSE_PARAM+=(-p "$port")
 done
 
 # Docker Arguments
