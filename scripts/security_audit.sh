@@ -5,7 +5,7 @@ if [[ "$(git log -n 1 --format="%s")" =~ \[skip\ audit\] ]]; then
     exit 0
 fi
 
-which cargo-audit
+command -v cargo-audit
 ret=$?
 if [ "${ret}" -ne 0 ]; then
     echo "[Info_] Install Security Audit."
