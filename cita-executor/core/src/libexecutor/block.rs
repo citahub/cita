@@ -195,12 +195,14 @@ impl ExecutedBlock {
                     _ => Some(ReceiptError::Internal),
                 });
 
-                let tx_quota_used =
-                    if receipt_error.is_some() && receipt_error != Some(ReceiptError::Internal) {
-                        t.gas
-                    } else {
-                        ret.quota_used
-                    };
+                let tx_quota_used = if receipt_error.is_some()
+                    && receipt_error != Some(ReceiptError::Internal)
+                    && receipt_error != Some(ReceiptError::Reverted)
+                {
+                    t.gas
+                } else {
+                    ret.quota_used
+                };
 
                 // Note: quota_used in Receipt is self.current_quota_used, this will be
                 // handled by get_rich_receipt() while getting a single transaction receipt.
