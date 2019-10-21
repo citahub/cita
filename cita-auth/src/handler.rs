@@ -938,17 +938,27 @@ impl MsgHandler {
         let block_hash = verify_block_req.get_block().crypt_hash();
         let tx_hashes = verify_block_req.get_block().get_body().transaction_hashes();
         let origin = msg.get_origin();
+        let block_height = verify_block_req.get_block().get_header().get_height();
 
         {
             if tx_hashes.is_empty() {
                 return;
             };
 
-            // Check tx hash in cache
+            // Check tx hash in previous cached block
             for tx_hash in tx_hashes.clone() {
-                if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
-                    // BadSig
-                    if option_pubkey.is_none() {
+                for (height, hashes) in &self.history_hashes {
+                    if *height >= block_height {
+                        continue;
+                    }
+
+                    if hashes.contains(&tx_hash) {
+                        trace!(
+                            "Tx with hash {:?} has already existed in height:{}",
+                            tx_hash,
+                            height
+                        );
+
                         let resp = verify_block_req.reply(Err(()));
                         let msg = Message::init(OperateType::Single, origin, resp.into());
                         self.tx_pub
@@ -967,6 +977,24 @@ impl MsgHandler {
         let missing_hashes = self.dispatcher.check_missing(tx_hashes.clone());
 
         if missing_hashes.is_empty() {
+            // Check tx hash in cache
+            for tx_hash in tx_hashes.clone() {
+                if let Some(option_pubkey) = self.get_ret_from_cache(&tx_hash) {
+                    // BadSig
+                    if option_pubkey.is_none() {
+                        let resp = verify_block_req.reply(Err(()));
+                        let msg = Message::init(OperateType::Single, origin, resp.into());
+                        self.tx_pub
+                            .send((
+                                routing_key!(Auth >> VerifyBlockResp).into(),
+                                (&msg).try_into().unwrap(),
+                            ))
+                            .unwrap();
+                        return;
+                    }
+                }
+            }
+
             // TODO: Refactor
             let transactions = self.dispatcher.get_txs(&tx_hashes);
 
