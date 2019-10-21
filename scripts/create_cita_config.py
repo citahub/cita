@@ -168,6 +168,8 @@ class ChainInfo():
                                              'authorities.list')
         self.nodes = NetworkAddressList()
         self.enable_tls = False
+        self.enable_version = False
+        self.stdout = False
         self.prefix_subj = '/C=CN/ST=ZJ/O=Cryptape, Inc./CN='
 
     def template_create_from_arguments(self, args, contracts_dir_src,
@@ -185,14 +187,6 @@ class ChainInfo():
         need_directory(self.contracts_docs_dir)
 
         shutil.copytree(configs_dir_src, self.configs_dir, False)
-        if args.stdout:
-            forever_config = os.path.join(self.configs_dir, 'forever.toml')
-            with open(forever_config, 'rt') as stream:
-                forever_data = toml.load(stream)
-                for process_data in forever_data['process']:
-                    process_data['args'].append('-s')
-            with open(forever_config, 'wt') as stream:
-                toml.dump(forever_data, stream)
 
         jsonrpc_config = os.path.join(self.configs_dir, 'jsonrpc.toml')
         with open(jsonrpc_config, 'rt') as stream:
@@ -201,13 +195,13 @@ class ChainInfo():
                 = str(args.jsonrpc_port)
             jsonrpc_data['ws_config']['listen_port'] \
                 = str(args.ws_port)
-            if args.enable_version:
-                jsonrpc_data['enable_version'] = True
         with open(jsonrpc_config, 'wt') as stream:
             toml.dump(jsonrpc_data, stream)
 
         network_config = os.path.join(self.configs_dir, 'network.toml')
         network_data = toml.loads('')
+        if args.enable_tls:
+            network_data['enable_tls'] = True
         network_data['peers'] = list()
         with open(network_config, 'wt') as stream:
             toml.dump(network_data, stream)
@@ -260,6 +254,18 @@ class ChainInfo():
         node_dir = os.path.join(self.output_root, '{}'.format(node_id))
 
         shutil.copytree(self.configs_dir, node_dir, False)
+
+        forever_config = os.path.join(node_dir, 'forever.toml')
+        with open(forever_config, 'rt') as stream:
+            forever_data = toml.load(stream)
+            for process_data in forever_data['process']:
+                if process_data['args'].count('-s') > 0:
+                    process_data['args'].remove('-s')
+                if self.stdout:
+                    process_data['args'].append('-s')
+        with open(forever_config, 'wt') as stream:
+            toml.dump(forever_data, stream)
+
         jsonrpc_config = os.path.join(node_dir, 'jsonrpc.toml')
         with open(jsonrpc_config, 'rt') as stream:
             jsonrpc_data = toml.load(stream)
@@ -269,6 +275,10 @@ class ChainInfo():
             jsonrpc_data['ws_config']['listen_port'] \
                 = str(int(
                     jsonrpc_data['ws_config']['listen_port']) + node_id)
+            if self.enable_version:
+                jsonrpc_data['enable_version'] = True
+            else:
+                jsonrpc_data['enable_version'] = False
         with open(jsonrpc_config, 'wt') as stream:
             toml.dump(jsonrpc_data, stream)
 
@@ -334,7 +344,8 @@ def run_subcmd_create(args, work_dir):
         os.path.join(CITA_HOME, 'scripts/config_tool/default_config'))
     info.create_init_data(args.super_admin, args.contract_arguments)
     info.create_genesis(args.timestamp, args.init_token, args.resource_dir)
-    info.enable_tls = args.enable_tls
+    info.enable_version = args.enable_version
+    info.stdout = args.stdout
     for node in args.nodes:
         info.append_node(node)
 
@@ -342,6 +353,9 @@ def run_subcmd_create(args, work_dir):
 def run_subcmd_append(args, work_dir):
     info = ChainInfo(args.chain_name, work_dir)
     info.template_load_from_existed()
+    info.enable_tls = args.enable_tls
+    info.enable_version = args.enable_version
+    info.stdout = args.stdout
     info.append_node(args.node)
 
 
@@ -448,6 +462,24 @@ def parse_arguments():
         '--address',
         help='The address of new node. Will generate a new address (with privkey) if not set.'
     )
+
+    # enable encrypted
+    pappend.add_argument(
+        '--enable_tls',
+        action='store_true',
+        help='The data is encrypted and transmitted on the network')
+
+    # enable get version
+    pappend.add_argument(
+        '--enable_version',
+        action='store_true',
+        help='Jsonrpc will return cita version')
+
+    # switch to stdout
+    pappend.add_argument(
+        '--stdout',
+        action='store_true',
+        help='Logs will output to stdout')
 
     args = parser.parse_args()
 
