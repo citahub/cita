@@ -28,7 +28,8 @@ jobs:
       name: Release for Integrate Test
       language: node_js
       node_js:
-        - lts/*
+        # - lts/*
+          - 8.10.0
       cache:
         directories:
           - $TRAVIS_BUILD_DIR/target/release-cache
@@ -48,7 +49,8 @@ jobs:
       name: Unit Group
       language: node_js
       node_js:
-        - lts/*
+        # - lts/*
+          - 8.10.0
       cache:
         directories:
           - $TRAVIS_BUILD_DIR/target/release-cache
