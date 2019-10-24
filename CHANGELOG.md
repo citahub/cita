@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+## [v0.24.2] - 2019-10-24
+
+- Fix the issue about EVM panic in cita-executor.
+Check the details at [#866]
+- Fix Executor's panic when vm memery offset greater then size 
+- Fix duplicate transaction hash in block.
+
 ## [v0.24.1] - 2019-06-14
 
 Fix the issue about memory leak in cita-executor.
@@ -792,6 +799,7 @@ Fixed a bug that Network could not process domain names.
 
 Release the first version of CITA.
 
+[#866]: https://github.com/cryptape/cita/issues/866
 [#201]: https://github.com/cryptape/cita/issues/201
 [#206]: https://github.com/cryptape/cita/issues/206
 [#588]: https://github.com/cryptape/cita/issues/588
@@ -816,7 +824,8 @@ Release the first version of CITA.
 [set quota price]: https://docs.citahub.com/zh-CN/cita/system/price
 [sidechain exit mechanism]: https://docs.nervos.org/cita/#/crosschain/crosschain_contract_example
 
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.24.1...HEAD
+[Unreleased]: https://github.com/cryptape/cita/compare/v0.24.2...HEAD
+[v0.24.2]: https://github.com/cryptape/cita/compare/v0.24.1...v0.24.2
 [v0.24.1]: https://github.com/cryptape/cita/compare/v0.24.0...v0.24.1
 [v0.24.0]: https://github.com/cryptape/cita/compare/v0.23.0...v0.24.0
 [v0.23.1]: https://github.com/cryptape/cita/compare/v0.23.0...v0.23.1
