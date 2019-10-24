@@ -489,6 +489,31 @@ impl Postman {
                     });
             }
 
+            Request::estimate_quota(call) => {
+                trace!("Estimate quota with params: {:?}", call);
+                let _ = serde_json::from_str::<BlockNumber>(&call.height)
+                    .map(|block_id| {
+                        let call_request = CallRequest::from(call);
+                        command::estimate_quota(
+                            &self.command_req_sender,
+                            &self.command_resp_receiver,
+                            call_request,
+                            block_id.into(),
+                        )
+                        .map(|ok| {
+                            response.set_call_result(ok);
+                        })
+                        .map_err(|err| {
+                            response.set_code(ErrorCode::query_error());
+                            response.set_error_msg(err);
+                        })
+                    })
+                    .map_err(|err| {
+                        response.set_code(ErrorCode::query_error());
+                        response.set_error_msg(format!("{:?}", err));
+                    });
+            }
+
             Request::transaction_count(tx_count) => {
                 trace!("transaction count request from jsonrpc {:?}", tx_count);
                 let _ = serde_json::from_str::<CountOrCode>(&tx_count)

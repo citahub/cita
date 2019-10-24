@@ -230,6 +230,14 @@ impl Forward {
                 return;
             }
 
+            Request::estimate_quota(call) => {
+                trace!("Estimate quota {:?}", call);
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
+                return;
+            }
+
             Request::transaction_count(tx_count) => {
                 trace!("transaction count request from jsonrpc {:?}", tx_count);
                 self.ctx_pub
