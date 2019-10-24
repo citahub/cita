@@ -4,6 +4,152 @@ All notable changes to this project will be documented in this file. And this pr
 
 ## [Unreleased]
 
+## [v1.0.1] - 2019-10-25
+
+### Framework
+
+- [Optimization] Support docker image release. [@leeyr338]
+
+### Executor
+
+- [Fix] Fix Executor's panic when vm memery offset greater then size. [@jerry-yu]
+
+### Auth
+
+- [Fix] Fix duplicate transaction hash in block. [@jerry-yu]
+
+## [v1.0.0] - 2019-09-06
+
+**NOTE**: The snapshot feature is not available in this version, sorry for any inconvenience it may caused.
+
+### Protocol
+
+- [Protocol] Switch project license from GPL 3.0 to Apache License 2.0. [@jerry-yu] [@leeyr338] [@kaikai1024] [@ouwenkg]
+
+### Framework
+
+- [VM] Using new [cita-vm](https://github.com/cryptape/cita-vm). [@jerry-yu] [@leeyr338]
+
+- [DB] Using new [cita-database](https://github.com/cryptape/cita-database). [@kaikai1024]
+
+### Executor
+
+- [Fix] Fix black list error. [@jerry-yu]
+
+- [Fix] Passed all compatible state tests. [@jerry-yu]
+
+- [Fix] Fix sync blocks error. [@jerry-yu]
+
+- [Fix] Fix rustc unexpected unwrap. [@ouwenkg]
+
+- [Fix] Fix transfer failed in charge. [@ouwenkg]
+
+- [Refactor] refactor errors in executor and chain. [@ouwenkg]
+
+- [Fix] Using buildin contracts in cita-vm and remove old parts in cita-executor. [@ouwenkg]
+
+- [Fix] Using `context.rs` to replace `env_info.rs`. [@ouwenkg]
+
+- [Fix] Remove useless vm feature. [@kaikai1024]
+
+- [Fix] Rewrite logic about vm in cita-executor. [@leeyr338]
+
+- [Fix] Rewrite logic about native contracts in cita_executor. [@ouwenkg]
+
+- [Fix] Remove grpc contracts. [@ouwenkg]
+
+- [Fix] Fix out of array error. [@jerry-yu]
+
+### Chain
+
+- [Fix] Fix get state proof empty. [@ouwenkg]
+
+- [Rewrite] Rewrite entire log filter. [@kaikai1024]
+
+- [Optimization] Remove useless HeapSizeOf trait. [@ouwenkg]
+
+- [Rewrite] Rewrite blooms. [@kaikai1024]
+
+- [Rewrite] Rewrite `db_index.rs` to replace `extra.rs`, `ids`. [@ouwenkg]
+
+- [Fix] Fix process exit in chain in certain situation. [@leeyr338]
+
+### Consensus
+
+- [Optimization] Remove unused NTP Service. [@jerry-yu]
+
+- [Optimization] Update cita-logger. [@kaikai1024]
+
+### Auth
+
+- [Refactor] Increase quota charged in data store. [@luqz]
+
+### Network
+
+- [Optimization] Using new p2p. [@jerry-yu]
+
+### CITA-common
+
+- [Optimization] Update docker image. [@kaikai1024]
+
+- [Optimization] Update ethereum types version. [@leeyr338]
+
+- [Optimization] Update sodiumoxide. [@leeyr338]
+
+- [Optimization] Clear useless files in util. [@kaikai1024]
+
+- [Optimization] Move util errors to cita. [@kaikai1024]
+
+- [Optimization] Remove unused rlp crate. [@leeyr]
+
+- [Fix] Remove grpc parts in libproto. [@ouwenkg]
+
+- [Rewrite] Rewrite semantic version. [@kaikai1024]
+
+- [Protocol] Switch license from GPL to Apache 2.0. [@leeyr338]
+
+### CITA-VM
+
+- [Fix] Add internal error type. [@ouwenkg]
+
+- [Fix] Ensure that vm compatibles with old vm. [@jerry-yu]
+
+- [Fix] Add get storage changes interface for genesis. [@ouwenkg]
+
+### Tools
+
+- [Fix] Fix amend system script. [@kaikai1024]
+
+- [Fix] Eliminate yaml warnings in txtool. [@ouwenkg]
+
+### Test
+
+- [CI] Add automatically license checker `fossa`. [@kaikai1024]
+
+- [contract] Update test contracts. [@kaikai1024]
+
+- [CI] Upgrade ubuntu version in docker image. [@leeyr338]
+
+- [Fix] Fix security dependencies in contracts tests. [@kaikai1024]
+
+- [CI] Fix ci tests before release. [@ouwenkg]
+
+### Doc
+
+- [Docs] Add block chain governmenta docs. [@nanmuxiusi]
+
+- [Docs] More descriptions about filter. [@kaikai1024]
+
+- [Docs] Fix chores in docs. [@nanmuxiusi]
+
+- [Docs] Remove Huawei Cloud Deploy documentation. [@nanmuxiusi]
+
+- [Docs] Fix link in getting-started page. [@nanmuxiusi]
+
+- [Docs] Fix typo and remove duplicate files. [@nanmuxiusi]
+
+- [Docs] More descriptions about cumulative quota used. [@kaikai1024]
+
 ## [v0.25.1] - 2019-07-31
 
 Fix the issue about showing the wrong version.
@@ -865,7 +1011,9 @@ Release the first version of CITA.
 [set quota price]: https://docs.citahub.com/zh-CN/cita/system/price
 [sidechain exit mechanism]: https://docs.nervos.org/cita/#/crosschain/crosschain_contract_example
 
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.25.1...HEAD
+[Unreleased]: https://github.com/cryptape/cita/compare/v1.0.1...HEAD
+[v1.0.1]: https://github.com/cryptape/cita/compare/v1.0.0...v1.0.1
+[v1.0.0]: https://github.com/cryptape/cita/compare/v0.25.1...v1.0.0
 [v0.25.1]: https://github.com/cryptape/cita/compare/v0.25.0...v0.25.1
 [v0.25.0]: https://github.com/cryptape/cita/compare/v0.24.1...v0.25.0
 [v0.24.1]: https://github.com/cryptape/cita/compare/v0.24.0...v0.24.1
