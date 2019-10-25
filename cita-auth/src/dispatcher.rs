@@ -141,7 +141,10 @@ impl Dispatcher {
         let txs_pool = &mut self.txs_pool.borrow_mut();
         let added: Vec<SignedTransaction> = txs
             .into_iter()
-            .filter(|tx| txs_pool.enqueue(tx.clone()))
+            .filter(|tx| {
+                trace!("add txs {} to pool", tx.get_tx_hash().lower_hex());
+                txs_pool.enqueue(tx.clone())
+            })
             .collect();
         if self.wal_enable {
             self.wal.write_batch(&added);
