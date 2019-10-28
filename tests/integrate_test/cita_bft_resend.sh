@@ -34,13 +34,13 @@ main() {
     bin/cita bebop stop "${CHAIN_NAME}"/0
 
     cd "${CHAIN_NAME}"/0
-    "${BINARY_DIR}"/bin/cita-auth -c auth.toml & auth_pid=$!
-    "${BINARY_DIR}"/bin/cita-bft -c consensus.toml -p privkey & bft_pid=$!
-    "${BINARY_DIR}"/bin/cita-chain -c chain.toml & chain_pid=$!
-    "${BINARY_DIR}"/bin/cita-executor -c executor.toml & executor_pid=$!
-    "${BINARY_DIR}"/bin/cita-jsonrpc -c jsonrpc.toml & jsonrpc_pid=$!
-    "${BINARY_DIR}"/bin/cita-network -c network.toml & network_pid=$!
-    wait_timeout=30
+    RUST_LOG=cita_auth=trace "${BINARY_DIR}"/bin/cita-auth -c auth.toml & auth_pid=$!
+    RUST_LOG=cita_bft=trace "${BINARY_DIR}"/bin/cita-bft -c consensus.toml -p privkey & bft_pid=$!
+    RUST_LOG=cita_chain=trace "${BINARY_DIR}"/bin/cita-chain -c chain.toml & chain_pid=$!
+    RUST_LOG=cita_executor=trace "${BINARY_DIR}"/bin/cita-executor -c executor.toml & executor_pid=$!
+    RUST_LOG=cita_jsonrpc=trace "${BINARY_DIR}"/bin/cita-jsonrpc -c jsonrpc.toml & jsonrpc_pid=$!
+    RUST_LOG=cita_network=trace "${BINARY_DIR}"/bin/cita-network -c network.toml & network_pid=$!
+    wait_timeout=200
     timeout=$(check_height_growth_normal 0 $wait_timeout) || (echo "FAILED"
                                                               echo "error msg: ${timeout}"
                                                               exit 1)
