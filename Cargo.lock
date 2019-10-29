@@ -207,7 +207,7 @@ dependencies = [
 [[package]]
 name = "bft-rs"
 version = "0.2.0-alpha"
-source = "git+https://github.com/cryptape/bft-rs.git?branch=bft_for_cita#489695db094d01a0c8dd0e2ed356afe2b12a7868"
+source = "git+https://github.com/cryptape/bft-rs.git?branch=bft_for_cita#8adbf0c9df72a2759ec3b87f7e3f0877ce9d7916"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
