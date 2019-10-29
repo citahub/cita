@@ -1,4 +1,4 @@
-# CITA Release flow
+# CITA Release Flow
 
 ## 1. 发版计划
 
