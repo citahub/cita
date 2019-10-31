@@ -27,6 +27,7 @@ use crate::trie_db::TrieDB;
 use crate::types::block_number::{BlockTag, Tag};
 use crate::types::context::Context;
 use crate::types::errors::CallError;
+use crate::types::errors::ExecutionError;
 use crate::types::transaction::{Action, SignedTransaction, Transaction};
 pub use byteorder::{BigEndian, ByteOrder};
 use cita_database::RocksDB;
@@ -282,10 +283,6 @@ impl Commander for Executor {
 
         let mut conf = self.sys_config.block_sys_config.clone();
         conf.exempt_checking();
-        let state = self
-            .state_at(id)
-            .ok_or_else(|| "Estimate Error CallError::StatePruned".to_owned())?;
-        let state = Arc::new(RefCell::new(state));
         let sender = *signed.sender();
 
         // Try different quota to run tx.
@@ -294,11 +291,18 @@ impl Commander for Executor {
             tx.gas = quota;
             let tx = tx.fake_sign(sender);
 
-            let clone_state = state.clone();
+            // The same transaction will get different result in different state.
+            // And the estimate action will change the state, so it should take the most primitive
+            // state for each estimate.
+            let state = self.state_at(id).ok_or_else(|| {
+                ExecutionError::Internal("Estimate Error CallError::StatePruned".to_owned())
+            })?;
+            let state = Arc::new(RefCell::new(state));
+
             let clone_conf = conf.clone();
             CitaExecutive::new(
                 block_data_provider.clone(),
-                clone_state,
+                state,
                 &context.clone(),
                 clone_conf.economical_model,
             )
