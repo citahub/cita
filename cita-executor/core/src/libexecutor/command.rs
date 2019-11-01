@@ -255,8 +255,8 @@ impl Commander for Executor {
     }
 
     fn estimate_quota(&self, request: CallRequest, id: BlockTag) -> Result<Bytes, String> {
-        // The estimated transaction cost cannot exceed (10 * BQL)
-        let max_quota = U256::from(self.sys_config.block_quota_limit * 10);
+        // The estimated transaction cost cannot exceed BQL
+        let max_quota = U256::from(self.sys_config.block_quota_limit);
         let precision = U256::from(1024);
 
         let signed = self.sign_call(request);
@@ -314,21 +314,13 @@ impl Commander for Executor {
             })
         };
 
-        let mut upper = U256::from(self.sys_config.block_quota_limit);
         // Try block_quota_limit first
-        let (run_ok, quota_used) = check_quota(upper);
+        let (run_ok, quota_used) = check_quota(max_quota);
         let lower = if !run_ok {
-            upper = max_quota;
-            // This means that the estimate_quota will higher than block_quota_limit.
-            // Try max_quota.
-            let (run_ok, quota_used_max) = check_quota(max_quota);
-            if !run_ok {
-                trace!("estimate_gas failed with {}.", max_quota);
-                return Err(
-                    format!("Requires quota higher than upper limit: {}", max_quota).to_owned(),
-                );
-            }
-            quota_used_max
+            trace!("estimate_gas failed with {}.", max_quota);
+            return Err(
+                format!("Requires quota higher than upper limit: {}", max_quota).to_owned(),
+            );
         } else {
             quota_used
         };
@@ -370,7 +362,7 @@ impl Commander for Executor {
             upper
         }
 
-        let quota_used = binary_search(lower, upper, check_quota, precision);
+        let quota_used = binary_search(lower, max_quota, check_quota, precision);
         quota_used.to_big_endian(estimate_quota);
         Ok(estimate_quota.to_vec())
     }
