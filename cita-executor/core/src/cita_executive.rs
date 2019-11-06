@@ -94,12 +94,14 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             (*conf).check_options.call_permission
         );
 
-        check_permission(
-            &conf.group_accounts,
-            &conf.account_permissions,
-            t,
-            conf.check_options,
-        )?;
+        if conf.super_admin_account.is_none() || sender != conf.super_admin_account.unwrap() {
+            check_permission(
+                &conf.group_accounts,
+                &conf.account_permissions,
+                t,
+                conf.check_options,
+            )?;
+        }
 
         let tx_gas_schedule = TxGasSchedule::default();
         let base_gas_required = match t.action {

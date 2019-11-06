@@ -34,14 +34,32 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
         _;
     }
 
+    modifier originAdmin() {
+            require(tx.origin == allAccounts[0], "require superAdmin");
+            _;
+        }
+
     /// @notice Initialize the superAdmin's auth
     constructor(address _superAdmin) public {
-        for (uint8 i;i < builtInPermissions.length; i++)
+        for (uint8 i;i < builtInPermissions.length; i++) {
             _setAuth(_superAdmin, builtInPermissions[i]);
-
+        }
         // rootGroup: basic permissions
         _setAuth(rootGroupAddr, sendTxAddr);
         _setAuth(rootGroupAddr, createContractAddr);
+        _setAuth(adminAddr, sendTxAddr);
+    }
+
+    function updateAdmin(address _newAdmin) public originAdmin {
+        address oldAdmin = allAccounts[0];
+        if (_newAdmin == oldAdmin) {
+           return;
+        }
+        allAccounts[0] = _newAdmin;
+        //clearAuth(oldAdmin);
+        for (uint8 i;i < builtInPermissions.length; i++) {
+            _setAuth(_newAdmin, builtInPermissions[i]);
+        }
     }
 
     /// @notice Set permission to the account
