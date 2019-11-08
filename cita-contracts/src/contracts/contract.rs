@@ -1,13 +1,13 @@
 pub trait Contract {
-    fn create() {
+    fn create(&self) {
         println!("This create a contract")
     }
 
-    fn execute() {
+    fn execute(&self) {
         println!("This execute a contract")
     }
 
-    fn commit() {
+    fn commit(&self) {
         println!("This commit a contract")
     }
 }

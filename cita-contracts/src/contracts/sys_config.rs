@@ -1,6 +1,7 @@
 use super::contract::Contract;
 use cita_types::Address;
 
+#[derive(Default)]
 pub struct Sysconfig {
     delay_block_number: usize,
     check_permission: bool,
@@ -14,7 +15,7 @@ pub struct Sysconfig {
     operator: String,
     website: String,
     blockInterval: usize,
-    economicalModel: EconomicalModel,
+    // economicalModel: EconomicalModel,
     tokenInfo: TokenInfo,
     chainIdV1: u64,
     autoExec: bool,
@@ -25,6 +26,7 @@ enum EconomicalModel {
     Charge,
 }
 
+#[derive(Default)]
 struct TokenInfo {
     name: String,
     symbol: String,
@@ -32,9 +34,9 @@ struct TokenInfo {
 }
 
 impl Contract for Sysconfig {
-    fn create() {}
+    fn create(&self) {}
 
-    fn execute() {
+    fn execute(&self) {
         //  method_tools::extract_to_u32(&params.data[..]).and_then(|signature| match signature {
         //     0 => self.init(params, data_provider),
         //     // Register function
@@ -43,11 +45,29 @@ impl Contract for Sysconfig {
         //     _ => Err(NativeError::Internal("out of gas".to_string())),
     }
 
-    fn commit() {}
+    fn commit(&self) {}
 }
 
-// impl Sysconfig {
-//     fn init() {}
+impl Sysconfig {
+    pub fn init() -> Self {
+        Sysconfig::default()
+    }
 
-//     fn setOperator() {}
-// }
+    pub fn setChainName() {}
+
+    pub fn setOperator() {}
+
+    pub fn setWebsite() {}
+
+    pub fn setBlockInterval() {}
+
+    pub fn getPermissionCheck() {}
+
+    pub fn getCreateContractPermissionCheck() {}
+
+    pub fn getQuotaCheck() {}
+
+    pub fn getFeeBackPlatformCheck() {}
+
+    pub fn getChainOwner() {}
+}
