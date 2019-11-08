@@ -294,6 +294,7 @@ mod tests {
             vec![
                 Address::from_str(DEFAULT_SUPER_ADEMIN).unwrap(),
                 Address::from_str(reserved_addresses::GROUP).unwrap(),
+                Address::from_str(reserved_addresses::ADMIN).unwrap(),
             ]
         );
 
