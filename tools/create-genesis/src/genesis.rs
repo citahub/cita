@@ -95,13 +95,23 @@ impl<'a> GenesisCreator<'a> {
 
     pub fn create(&mut self) {
         // 1. Check compile exit or not
-        if !Solc::compiler_version() {
-            panic!("solc compiler not exit");
-        }
-        // 2. Init normal contracts
-        self.init_normal_contracts();
-        // 3. Init permission contracts
-        self.init_permission_contracts();
+        // if !Solc::compiler_version() {
+        //     panic!("solc compiler not exit");
+        // }
+        // // 2. Init normal contracts
+        // self.init_normal_contracts();
+        // // 3. Init permission contracts
+        // self.init_permission_contracts();
+
+        // rockdb 里写入合约的所有内容
+        // 1. 写入所有的系统合约， VersionManager, Sysconfig 等
+        // 1. 写入所有的权限合约， sendTx，createContract， newPermission 等等
+
+        // 例如 ：
+        let mut contracts_factory = ContractsFactory::new();
+        // 1. 拿到 admin 参数
+        contracts_factory.works(params, context);
+
         // 4. Save super admin
         let super_admin = self.contract_args.contracts.admin.admin.clone();
         self.set_account_value(

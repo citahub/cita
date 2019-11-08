@@ -1,18 +1,12 @@
 #[derive(Debug, Copy, Clone)]
 pub enum DataCategory {
-    Admin,
-    Version,
-    Sysconfig,
-    QuotaPrice,
-    QuotaLimit,
-    Group,
-    Permissions,
+    Contracts,
 }
 
 #[derive(Debug)]
 pub enum DBError {
-    NotFound,
-    InvalidData,
+    A,
+    B,
     Internal(String),
 }
 

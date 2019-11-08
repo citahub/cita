@@ -563,6 +563,11 @@ pub fn create<B: DB + 'static>(
     let address = match create_kind {
         CreateKind::FromAddressAndNonce => {
             // Generate new address created from address, nonce
+            trace!(
+                "Create address from addess {:?} and nonce {:?}",
+                &request.sender,
+                &request.nonce
+            );
             create_address_from_address_and_nonce(&request.sender, &request.nonce)
         }
         CreateKind::FromSaltAndCodeHash => {
@@ -691,6 +696,14 @@ pub fn call<B: DB + 'static>(
                 Err(e.into())
             }
         }
+    } else if let Some(sys_contract) =
+        contracts_factory.get_contract(request.contract.code_address)
+    {
+        // rust system contracts
+        let _ = native_contract.works(
+            &VmExecParams::from(request.to_owned()),
+            &Context::from(context),
+        );
     } else {
         let r = call_pure(
             block_provider.clone(),
