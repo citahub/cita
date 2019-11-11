@@ -60,7 +60,7 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
             _setAuth(_newAdmin, builtInPermissions[i]);
             // keep send tx and create contract
             if (i != 13 && i!= 14)
-                _cancelAuth(_newAdmin, builtInPermissions[i]);
+                _cancelAuth(oldAdmin, builtInPermissions[i]);
         }
     }
 

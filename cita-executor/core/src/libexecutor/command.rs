@@ -318,7 +318,9 @@ impl Commander for Executor {
         let (run_ok, quota_used) = check_quota(max_quota);
         let lower = if !run_ok {
             trace!("estimate_gas failed with {}.", max_quota);
-            return Err(format!("Requires quota higher than upper limit: {}", max_quota).to_owned());
+            return Err(
+                format!("Requires quota higher than upper limit: {}", max_quota).to_owned(),
+            );
         } else {
             quota_used
         };
