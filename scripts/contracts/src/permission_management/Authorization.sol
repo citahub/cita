@@ -47,7 +47,6 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
         // rootGroup: basic permissions
         _setAuth(rootGroupAddr, sendTxAddr);
         _setAuth(rootGroupAddr, createContractAddr);
-        _setAuth(adminAddr, sendTxAddr);
     }
 
     function updateAdmin(address _newAdmin) public originAdmin {
@@ -56,9 +55,12 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
            return;
         }
         allAccounts[0] = _newAdmin;
-        //clearAuth(oldAdmin);
+        allAccounts.push(oldAdmin);
         for (uint8 i;i < builtInPermissions.length; i++) {
             _setAuth(_newAdmin, builtInPermissions[i]);
+            // keep send tx and create contract
+            if (i != 13 && i!= 14)
+                _cancelAuth(_newAdmin, builtInPermissions[i]);
         }
     }
 
@@ -204,6 +206,17 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
             allAccounts.push(_account);
 
         emit AuthSetted(_account, _permission);
+        return true;
+    }
+
+    /// @notice Private: delete the permission to the account
+    function _cancelAuth(address _account, address _permission)
+        private
+        returns (bool)
+    {
+        AddressArray.remove(_account, accounts[_permission]);
+        AddressArray.remove(_permission, permissions[_account]);
+        emit AuthCanceled(_account, _permission);
         return true;
     }
 }

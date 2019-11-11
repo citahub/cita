@@ -154,7 +154,6 @@ fn check_call_contract(
     func: &[u8],
 ) -> Result<(), AuthenticationError> {
     let has_permission = has_resource(group_accounts, account_permissions, account, cont, func);
-
     trace!("has call contract permission: {:?}", has_permission);
 
     if !has_permission {
