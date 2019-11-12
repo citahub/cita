@@ -14,12 +14,14 @@
 
 mod authentication;
 mod call;
+mod contract;
 mod execution;
 mod native;
 mod receipt;
 
 pub use authentication::AuthenticationError;
 pub use call::CallError;
+pub use contract::ContractError;
 pub use execution::ExecutionError;
 pub use native::NativeError;
 pub use receipt::ReceiptError;
@@ -31,6 +33,7 @@ pub enum Error {
     Call(CallError),
     Native(NativeError),
     Authentication(AuthenticationError),
+    Contract(ContractError),
 }
 
 impl std::fmt::Display for Error {
@@ -41,6 +44,7 @@ impl std::fmt::Display for Error {
             Error::Call(ref err) => format!("Call error {:?}", err),
             Error::Native(ref err) => format!("Native error {:?}", err),
             Error::Authentication(ref err) => format!("Authentication error {:?}", err),
+            Error::Contract(ref err) => format!("Contract error {:?}", err),
         };
         write!(f, "{}", err)
     }
@@ -70,5 +74,11 @@ impl From<NativeError> for Error {
 impl From<AuthenticationError> for Error {
     fn from(err: AuthenticationError) -> Error {
         Error::Authentication(err)
+    }
+}
+
+impl From<ContractError> for Error {
+    fn from(err: ContractError) -> Error {
+        Error::Contract(err)
     }
 }

@@ -534,19 +534,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cita-contracts"
-version = "1.0.0"
-dependencies = [
- "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "common-types 0.1.0",
- "core-executor 0.1.0",
- "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "rocksdb 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "cita-crypto"
 version = "0.1.0"
 source = "git+https://github.com/cryptape/cita-common.git?branch=develop#8ba178dde69ab06ded0dc1b65ea2ab6b2e4b21c1"
@@ -974,6 +961,7 @@ dependencies = [
  "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "rs-contracts 1.0.0",
  "rust-crypto 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3003,6 +2991,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "libc 0.2.46 (registry+https://github.com/rust-lang/crates.io-index)",
  "librocksdb-sys 6.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "rs-contracts"
+version = "1.0.0"
+dependencies = [
+ "byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "cita-vm 0.2.1 (git+https://github.com/cryptape/cita-vm.git?branch=cita)",
+ "common-types 0.1.0",
+ "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
+ "rocksdb 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

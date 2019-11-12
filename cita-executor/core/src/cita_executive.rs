@@ -42,6 +42,8 @@ use crate::types::log::Log;
 use crate::types::transaction::{Action, SignedTransaction};
 use ethbloom::{Bloom, Input as BloomInput};
 
+use rs_contracts::factory::ContractsFactory;
+
 ///amend the abi data
 const AMEND_ABI: u32 = 1;
 ///amend the account code
@@ -276,12 +278,13 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                     .kill_garbage(&store.borrow().inused.clone());
                 finalize_result.quota_used = gas_limit - U256::from(gas_left);
                 finalize_result.quota_left = U256::from(gas_left);
-                finalize_result.logs = transform_logs(logs);
+                finalize_result.logs = transform_logs(logs.clone());
                 finalize_result.logs_bloom = logs_to_bloom(&finalize_result.logs);
 
                 trace!(
-                    "Get data after executed the transaction [Normal]: {:?}",
-                    output
+                    "Get data after executed the transaction [Normal]: output {:?}, logs {:?}",
+                    output,
+                    logs
                 );
                 finalize_result.output = output;
             }
@@ -672,6 +675,7 @@ pub fn call<B: DB + 'static>(
     state_provider.borrow_mut().checkpoint();
     let store_son = Arc::new(RefCell::new(store.borrow_mut().clone()));
     let native_factory = NativeFactory::default();
+    let rs_contracts_factory = ContractsFactory::default();
     // Check and call Native Contract.
     if let Some(mut native_contract) = native_factory.new_contract(request.contract.code_address) {
         let mut vm_data_provider = DataProvider::new(
@@ -696,14 +700,22 @@ pub fn call<B: DB + 'static>(
                 Err(e.into())
             }
         }
-    } else if let Some(sys_contract) =
-        contracts_factory.get_contract(request.contract.code_address)
-    {
+    } else if rs_contracts_factory.is_rs_contract(&request.contract.code_address) {
+        let context = store.borrow().evm_context.clone();
         // rust system contracts
-        let _ = native_contract.works(
-            &VmExecParams::from(request.to_owned()),
-            &Context::from(context),
-        );
+        match rs_contracts_factory.works(&request.to_owned(), &Context::from(context)) {
+            Ok(ret) => {
+                trace!(
+                    "Contracts factory execute request {:?} successfully",
+                    request
+                );
+                Ok(ret)
+            }
+            Err(e) => {
+                trace!("Contracts factory execute request {:?} failed", request);
+                Err(e.into())
+            }
+        }
     } else {
         let r = call_pure(
             block_provider.clone(),

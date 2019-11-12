@@ -37,6 +37,7 @@ hasher = { version="0.1" }
 
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
+rs-contracts = { path = "../rs-contracts" }
 cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
