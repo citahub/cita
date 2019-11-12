@@ -62,7 +62,7 @@ describe('\n\nDeploy a contract\n\n', () => {
     const res = await getTxReceipt(hash);
     logger.debug('\nget receipt:\n', res);
     // now admin has all call contract permission
-    //expect(res.errorMessage).to.equal('No Call contract permission.');
+    // expect(res.errorMessage).to.equal('No Call contract permission.');
   });
 
   it('should send a tx: newPermission', async () => {
