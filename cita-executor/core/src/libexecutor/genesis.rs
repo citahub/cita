@@ -33,6 +33,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use rs_contracts::contracts::admin::Admin;
+use rs_contracts::factory::ContractsFactory;
+use rs_contracts::storage::db_contracts::ContractsDB;
 
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
@@ -104,7 +106,11 @@ impl Genesis {
         }
     }
 
-    pub fn lazy_execute(&mut self, state_db: Arc<CitaTrieDB>) -> Result<(), String> {
+    pub fn lazy_execute(
+        &mut self,
+        state_db: Arc<CitaTrieDB>,
+        contracts_factory: &mut ContractsFactory,
+    ) -> Result<(), String> {
         let mut state = CitaState::from_existing(
             Arc::<CitaTrieDB>::clone(&state_db),
             *self.block.state_root(),
@@ -125,8 +131,10 @@ impl Genesis {
                     if *key == "admin".to_string() {
                         let admin = Address::from_unaligned(value.as_str()).unwrap();
                         trace!("===> admin contract value {:?}", admin);
-                        let _contract = Admin::init(admin);
-                        contractFactory.init()
+                        let address = Address::from_unaligned(address.as_str()).unwrap();
+                        let contract_admin = Admin::init(admin);
+                        let str = serde_json::to_string(&contract_admin).unwrap();
+                        contracts_factory.register(address, str);
                     }
                 }
             } else {
@@ -155,17 +163,17 @@ impl Genesis {
         }
         state.commit().expect("state commit error");
         //query is store in chain
-        for (address, contract) in &self.spec.alloc {
-            let address = Address::from_unaligned(address.as_str()).unwrap();
-            for (key, values) in &contract.storage {
-                let result =
-                    state.get_storage(&address, &H256::from_unaligned(key.as_ref()).unwrap());
-                assert_eq!(
-                    H256::from_unaligned(values.as_ref()).unwrap(),
-                    result.expect("storage error")
-                );
-            }
-        }
+        // for (address, contract) in &self.spec.alloc {
+        //     let address = Address::from_unaligned(address.as_str()).unwrap();
+        //     for (key, values) in &contract.storage {
+        //         let result =
+        //             state.get_storage(&address, &H256::from_unaligned(key.as_ref()).unwrap());
+        //         assert_eq!(
+        //             H256::from_unaligned(values.as_ref()).unwrap(),
+        //             result.expect("storage error")
+        //         );
+        //     }
+        // }
 
         trace!("**** end **** \n");
         let root = state.root;

@@ -22,6 +22,8 @@ use hasher::Hasher;
 use std::cell::RefCell;
 use std::sync::Arc;
 
+use rs_contracts::storage::db_contracts::ContractsDB;
+
 /// BlockDataProvider provides functions to get block's hash from chain.
 ///
 /// Block data(only hash) are required to cita-vm from externalize database.
@@ -92,6 +94,7 @@ pub struct DataProvider<B> {
     pub block_provider: Arc<BlockDataProvider>,
     pub state_provider: Arc<RefCell<State<B>>>,
     pub store: Arc<RefCell<Store>>,
+    pub contracts_db: Arc<ContractsDB>,
 }
 
 impl<B: DB> DataProvider<B> {
@@ -100,11 +103,13 @@ impl<B: DB> DataProvider<B> {
         b: Arc<BlockDataProvider>,
         s: Arc<RefCell<State<B>>>,
         store: Arc<RefCell<Store>>,
+        c: Arc<ContractsDB>,
     ) -> Self {
         DataProvider {
             block_provider: b,
             state_provider: s,
             store,
+            contracts_db: c,
         }
     }
 }
@@ -264,6 +269,7 @@ impl<B: DB + 'static> evm::DataProvider for DataProvider<B> {
                     self.block_provider.clone(),
                     self.state_provider.clone(),
                     self.store.clone(),
+                    self.contracts_db.clone(),
                     &params,
                 );
                 debug!("ext.call.result = {:?}", r);
@@ -288,6 +294,7 @@ impl<B: DB + 'static> evm::DataProvider for DataProvider<B> {
                         self.block_provider.clone(),
                         self.state_provider.clone(),
                         self.store.clone(),
+                        self.contracts_db.clone(),
                         &request,
                         CreateKind::FromAddressAndNonce,
                     ),
@@ -295,6 +302,7 @@ impl<B: DB + 'static> evm::DataProvider for DataProvider<B> {
                         self.block_provider.clone(),
                         self.state_provider.clone(),
                         self.store.clone(),
+                        self.contracts_db.clone(),
                         &request,
                         CreateKind::FromSaltAndCodeHash,
                     ),

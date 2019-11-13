@@ -1,26 +1,24 @@
-use crate::storage::db_trait::{DBError, DataCategory, DataBase};
+use crate::storage::db_trait::{DBError, DataBase, DataCategory};
 use rocksdb::{ColumnFamily, Options, DB};
 use std::sync::Arc;
 
-pub struct RocksDB<'a> {
-    path: &'a str,
-    db: Arc<DB>,
+pub struct ContractsDB {
+    pub path: String,
+    pub db: Arc<DB>,
 }
 
-impl<'a> RocksDB<'a> {
-    pub fn new(path: &str) -> Result<RocksDB, DBError> {
+impl ContractsDB {
+    pub fn new(path: &str) -> Result<ContractsDB, DBError> {
         let mut db_opts = Options::default();
         db_opts.create_missing_column_families(true);
         db_opts.create_if_missing(true);
         db_opts.set_max_write_buffer_number(16);
 
-        let catagory = vec![
-            get_key_str(DataCategory::Contracts),
-        ];
+        let catagory = vec![get_key_str(DataCategory::Contracts)];
         let db = DB::open_cf(&db_opts, path, catagory.iter())
             .map_err(|e| DBError::Internal(e.to_string()))?;
-        Ok(RocksDB {
-            path,
+        Ok(ContractsDB {
+            path: path.to_string(),
             db: Arc::new(db),
         })
     }
@@ -31,11 +29,9 @@ impl<'a> RocksDB<'a> {
             .ok_or(DBError::NotFound)
     }
 
-     #[cfg(test)]
+    #[cfg(test)]
     pub fn clean(&self) {
-        let catagory = vec![
-            get_key_str(DataCategory::Contracts),
-        ];
+        let catagory = vec![get_key_str(DataCategory::Contracts)];
         for i in catagory.iter() {
             self.db.drop_cf(i).unwrap();
         }
@@ -43,7 +39,7 @@ impl<'a> RocksDB<'a> {
     }
 }
 
-impl<'a> DataBase for RocksDB<'a> {
+impl DataBase for ContractsDB {
     type error = DBError;
 
     fn insert(
@@ -115,13 +111,16 @@ pub fn map_rocks_error(err: rocksdb::Error) -> DBError {
 
 #[cfg(test)]
 mod tests {
-    use super::RocksDB;
-    use crate::storage::db_trait::{DataCategory, DataBase};
+    use super::ContractsDB;
+    use crate::storage::db_trait::{DataBase, DataCategory};
 
     #[test]
     fn test_get_should_return_ok() {
-        let db = RocksDB::new("rocksdb/test_get_should_return_ok").unwrap();
-        assert_eq!(db.get(DataCategory::Contracts, b"test".to_vec()).unwrap(), None);
+        let db = ContractsDB::new("rocksdb/test_get_should_return_ok").unwrap();
+        assert_eq!(
+            db.get(DataCategory::Contracts, b"test".to_vec()).unwrap(),
+            None
+        );
         let _ = db.insert(DataCategory::Contracts, b"test".to_vec(), b"value".to_vec());
         assert_eq!(
             db.get(DataCategory::Contracts, b"test".to_vec()).unwrap(),
@@ -132,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_insert_batch_should_return_ok() {
-        let db = RocksDB::new("rocksdb/test_insert_batch_should_return_ok").unwrap();
+        let db = ContractsDB::new("rocksdb/test_insert_batch_should_return_ok").unwrap();
         db.insert_batch(
             DataCategory::Contracts,
             vec![b"test1".to_vec(), b"test2".to_vec(), b"test3".to_vec()],
@@ -157,25 +156,32 @@ mod tests {
 
     #[test]
     fn test_contain_should_return_true() {
-        let db = RocksDB::new("rocksdb/test_contain_should_return_true").unwrap();
+        let db = ContractsDB::new("rocksdb/test_contain_should_return_true").unwrap();
         let _ = db.insert(DataCategory::Contracts, b"test".to_vec(), b"value".to_vec());
-        assert!(db.contain(DataCategory::Contracts, b"test".to_vec()).unwrap());
+        assert!(db
+            .contain(DataCategory::Contracts, b"test".to_vec())
+            .unwrap());
         db.clean();
     }
 
     #[test]
     fn test_remove_should_return_ok() {
-        let db = RocksDB::new("rocksdb/test_remove_should_return_ok").unwrap();
+        let db = ContractsDB::new("rocksdb/test_remove_should_return_ok").unwrap();
         let _ = db.insert(DataCategory::Contracts, b"test".to_vec(), b"value".to_vec());
-        assert!(db.contain(DataCategory::Contracts, b"test".to_vec()).unwrap());
-        db.remove(DataCategory::Contracts, b"test".to_vec()).unwrap();
-        assert!(!db.contain(DataCategory::Contracts, b"test".to_vec()).unwrap());
+        assert!(db
+            .contain(DataCategory::Contracts, b"test".to_vec())
+            .unwrap());
+        db.remove(DataCategory::Contracts, b"test".to_vec())
+            .unwrap();
+        assert!(!db
+            .contain(DataCategory::Contracts, b"test".to_vec())
+            .unwrap());
         db.clean();
     }
 
     #[test]
     fn test_remove_batch_should_return_ok() {
-        let db = RocksDB::new("rocksdb/test_remove_batch_should_return_ok").unwrap();
+        let db = ContractsDB::new("rocksdb/test_remove_batch_should_return_ok").unwrap();
         db.insert_batch(
             DataCategory::Contracts,
             vec![b"test1".to_vec(), b"test2".to_vec(), b"test3".to_vec()],
@@ -183,18 +189,30 @@ mod tests {
         )
         .unwrap();
 
-        assert!(db.contain(DataCategory::Contracts, b"test1".to_vec()).unwrap());
-        assert!(db.contain(DataCategory::Contracts, b"test2".to_vec()).unwrap());
-        assert!(db.contain(DataCategory::Contracts, b"test3".to_vec()).unwrap());
+        assert!(db
+            .contain(DataCategory::Contracts, b"test1".to_vec())
+            .unwrap());
+        assert!(db
+            .contain(DataCategory::Contracts, b"test2".to_vec())
+            .unwrap());
+        assert!(db
+            .contain(DataCategory::Contracts, b"test3".to_vec())
+            .unwrap());
 
         db.remove_batch(
             DataCategory::Contracts,
             vec![b"test1".to_vec(), b"test2".to_vec()],
         )
         .unwrap();
-        assert!(!db.contain(DataCategory::Contracts, b"test1".to_vec()).unwrap());
-        assert!(!db.contain(DataCategory::Contracts, b"test2".to_vec()).unwrap());
-        assert!(db.contain(DataCategory::Contracts, b"test3".to_vec()).unwrap());
+        assert!(!db
+            .contain(DataCategory::Contracts, b"test1".to_vec())
+            .unwrap());
+        assert!(!db
+            .contain(DataCategory::Contracts, b"test2".to_vec())
+            .unwrap());
+        assert!(db
+            .contain(DataCategory::Contracts, b"test3".to_vec())
+            .unwrap());
         db.clean();
     }
 }

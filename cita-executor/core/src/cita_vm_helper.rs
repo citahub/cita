@@ -23,11 +23,14 @@ use cita_vm::{
 use std::cell::RefCell;
 use std::sync::Arc;
 
+use rs_contracts::storage::db_contracts::ContractsDB;
+
 /// Function call_pure enters into the specific contract with no check or checkpoints.
 pub fn call_pure<B: DB + 'static>(
     block_provider: Arc<BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
     store: Arc<RefCell<VMSubState>>,
+    contracts_db: Arc<ContractsDB>,
     request: &InterpreterParams,
 ) -> Result<evm::InterpreterResult, VMError> {
     let evm_context = store.borrow().evm_context.clone();
@@ -37,6 +40,7 @@ pub fn call_pure<B: DB + 'static>(
         block_provider.clone(),
         state_provider.clone(),
         store.clone(),
+        contracts_db.clone(),
     );
     // Transfer value
     if !request.disable_transfer_value {

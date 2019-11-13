@@ -303,6 +303,7 @@ impl Commander for Executor {
             CitaExecutive::new(
                 block_data_provider.clone(),
                 state,
+                self.contracts_db.clone(),
                 &context.clone(),
                 clone_conf.economical_model,
             )
@@ -434,6 +435,7 @@ impl Commander for Executor {
         CitaExecutive::new(
             Arc::new(block_data_provider),
             state,
+            self.contracts_db.clone(),
             &context,
             conf.economical_model,
         )
@@ -603,6 +605,7 @@ impl Commander for Executor {
         let current_header = self.current_header.read().clone();
         let state_db = self.state_db.clone();
         let db = self.db.clone();
+        let contracts_db = self.contracts_db.clone();
         // let fake_parent_hash: H256 = Default::default();
         let sys_config = self.sys_config.clone();
         let fsm_req_receiver = self.fsm_req_receiver.clone();
@@ -614,6 +617,7 @@ impl Commander for Executor {
             current_header: RwLock::new(current_header),
             state_db,
             db,
+            contracts_db,
             sys_config,
             fsm_req_receiver,
             fsm_resp_sender,

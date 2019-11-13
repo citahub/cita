@@ -43,6 +43,8 @@ use hashable::Hashable;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use rlp::Encodable;
 
+use rs_contracts::storage::db_contracts::ContractsDB;
+
 lazy_static! {
     /// Block Reward
     /// HardFork if need to change block reward
@@ -53,6 +55,7 @@ pub struct ExecutedBlock {
     pub block: OpenBlock,
     pub receipts: Vec<Receipt>,
     pub state: Arc<RefCell<CitaState<CitaTrieDB>>>,
+    pub contracts_db: Arc<ContractsDB>,
     pub current_quota_used: U256,
     pub state_root: H256,
     last_hashes: Arc<LastHashes>,
@@ -81,6 +84,7 @@ impl ExecutedBlock {
         conf: &BlockSysConfig,
         block: OpenBlock,
         trie_db: Arc<CitaTrieDB>,
+        contracts_db: Arc<ContractsDB>,
         state_root: H256,
         last_hashes: Arc<LastHashes>,
         eth_compatibility: bool,
@@ -93,6 +97,7 @@ impl ExecutedBlock {
         let r = ExecutedBlock {
             block,
             state,
+            contracts_db,
             state_root,
             last_hashes,
             account_gas_limit: conf.account_quota_limit.common_quota_limit.into(),
@@ -161,6 +166,7 @@ impl ExecutedBlock {
         let tx_quota_used = match CitaExecutive::new(
             Arc::new(block_data_provider),
             self.state.clone(),
+            self.contracts_db.clone(),
             &context,
             conf.economical_model,
         )
@@ -342,7 +348,12 @@ impl ExecutedBlock {
         }
 
         if conf.auto_exec {
-            auto_exec(Arc::clone(&self.state), conf.auto_exec_quota_limit, context);
+            auto_exec(
+                Arc::clone(&self.state),
+                self.contracts_db,
+                conf.auto_exec_quota_limit,
+                context,
+            );
             self.state.borrow_mut().commit().expect("commit trie error");
         }
 

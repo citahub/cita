@@ -15,7 +15,7 @@ members = ["cita-auth"
 ,"tests/consensus-mock"
 ,"tests/chain-performance-by-mq"
 ,"tests/box-executor"
-,"tests/json-test"
+# ,"tests/json-test"
 ]
 
 [profile.bench]

@@ -36,8 +36,11 @@ lazy_static! {
     static ref AUTO_EXEC_HASH: Vec<u8> = method_tools::encode_to_vec(AUTO_EXEC);
 }
 
+use rs_contracts::storage::db_contracts::ContractsDB;
+
 pub fn auto_exec(
     state: Arc<RefCell<CitaState<CitaTrieDB>>>,
+    contracts_db: Arc<ContractsDB>,
     auto_exec_quota_limit: u64,
     context: Context,
 ) {
@@ -64,6 +67,7 @@ pub fn auto_exec(
         Arc::new(block_provider),
         state.clone(),
         sub_state.clone(),
+        contracts_db.clone(),
         &vm_exec_params.into(),
     ) {
         Ok(res) => match res {

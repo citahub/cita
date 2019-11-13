@@ -14,6 +14,10 @@ rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" 
 serde_json = "1.0.41"
 serde = { version = "1.0", features = ["derive"] }
 byteorder = { version = "1", default-features = false }
+cita-logger = "0.1.1"
+sha3 = { version="0.8", optional=true }
+tiny-keccak = "1.4.2"
+hex = "0.4.0"
 
 [dependencies.cita-vm]
 git = "https://github.com/cryptape/cita-vm.git"
