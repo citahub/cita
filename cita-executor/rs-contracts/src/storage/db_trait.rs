@@ -1,16 +1,16 @@
+#[derive(Debug)]
+pub enum DBError {
+    NotFound,
+    B,
+    Internal(String),
+}
+
 #[derive(Debug, Copy, Clone)]
 pub enum DataCategory {
     Contracts,
 }
 
-#[derive(Debug)]
-pub enum DBError {
-    A,
-    B,
-    Internal(String),
-}
-
-pub trait DB {
+pub trait DataBase {
     type error;
 
     fn insert(&self, column: DataCategory, key: Vec<u8>, value: Vec<u8>)
@@ -30,11 +30,4 @@ pub trait DB {
     fn contain(&self, column: DataCategory, key: Vec<u8>) -> Result<bool, Self::error>;
 
     fn get(&self, column: DataCategory, key: Vec<u8>) -> Result<Option<Vec<u8>>, Self::error>;
-}
-
-pub fn get_key_str(column: DataCategory) -> &'static str {
-    match column {
-        DataCategory::Block => "block",
-        DataCategory::Transaction => "transaction",
-    }
 }

@@ -1,4 +1,5 @@
 pub mod contracts;
+pub mod storage;
 // pub mod db;
 pub mod factory;
 

@@ -37,11 +37,12 @@ pub struct ContractsFactory {
 // }
 
 impl ContractsFactory {
-    // fn init(&self, sysconfig: SysConfig, admin: Admin) {
+    // fn init(&self, admin: Admin) {
     //     // factory.register(Address::from("0x1"), Box::new(Sysconfig::init()));
     //     factory.register(Address::from("0x1"), Box::new(Admin::init()));
 
     //     factory
+    //     self.db.insert();
     // }
 
     pub fn is_rs_contract(&self, param_address: &Address) -> bool {

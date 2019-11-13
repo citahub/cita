@@ -71,6 +71,8 @@ impl Executor {
         let rocks_db = RocksDB::open(&nosql_path, &config).unwrap();
         let db = Arc::new(rocks_db);
         let state_db = Arc::new(TrieDB::new(db.clone()));
+        let contracts_db_path = data_path + "/contractsdb";
+        // let contracts_db = ...;
 
         let current_header = match get_current_header(db.clone()) {
             Some(header) => header,

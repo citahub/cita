@@ -95,22 +95,13 @@ impl<'a> GenesisCreator<'a> {
 
     pub fn create(&mut self) {
         // 1. Check compile exit or not
-        // if !Solc::compiler_version() {
-        //     panic!("solc compiler not exit");
-        // }
-        // // 2. Init normal contracts
-        // self.init_normal_contracts();
-        // // 3. Init permission contracts
-        // self.init_permission_contracts();
-
-        // rockdb 里写入合约的所有内容
-        // 1. 写入所有的系统合约， VersionManager, Sysconfig 等
-        // 1. 写入所有的权限合约， sendTx，createContract， newPermission 等等
-
-        // 例如 ：
-        let mut contracts_factory = ContractsFactory::new();
-        // 1. 拿到 admin 参数
-        contracts_factory.works(params, context);
+        if !Solc::compiler_version() {
+            panic!("solc compiler not exit");
+        }
+        // 2. Init normal contracts
+        self.init_normal_contracts();
+        // 3. Init permission contracts
+        self.init_permission_contracts();
 
         // 4. Save super admin
         let super_admin = self.contract_args.contracts.admin.admin.clone();
@@ -135,9 +126,28 @@ impl<'a> GenesisCreator<'a> {
                 let params = normal_params
                     .get(*contract_name)
                     .map_or(Vec::new(), |p| (*p).clone());
+                println!(
+                    "Contract name {:?} address {:?} params is {:?}",
+                    contract_name, address, params
+                );
                 let bytes = constructor.encode_input(input_data, &params).unwrap();
-                if let Some(account) = Miner::mine(bytes) {
-                    self.accounts.insert((*address).clone(), account);
+                if *contract_name == "Admin" {
+                    let mut param = BTreeMap::new();
+                    param.insert(
+                        "admin".to_string(),
+                        "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523".to_string(),
+                    );
+                    let admin_contract = Account {
+                        nonce: U256::from(1),
+                        code: "".to_string(),
+                        storage: param,
+                        value: U256::from(0),
+                    };
+                    self.accounts.insert((*address).clone(), admin_contract);
+                } else {
+                    if let Some(account) = Miner::mine(bytes) {
+                        self.accounts.insert((*address).clone(), account);
+                    }
                 }
             } else if let Some(account) = Miner::mine(input_data) {
                 self.accounts.insert((*address).clone(), account);

@@ -55,7 +55,7 @@ impl Contract for Admin {
 }
 
 impl Admin {
-    fn init(admin: Address) -> Self {
+    pub fn init(admin: Address) -> Self {
         Admin { admin: admin }
     }
 

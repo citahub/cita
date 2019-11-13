@@ -32,6 +32,8 @@ use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
 
+use rs_contracts::contracts::admin::Admin;
+
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
 
@@ -117,26 +119,38 @@ impl Genesis {
         info!("This is the first time to init executor, and it will init contracts on height 0");
         trace!("**** begin **** \n");
         for (address, contract) in self.spec.alloc.clone() {
-            let address = Address::from_unaligned(address.as_str()).unwrap();
-            state.new_contract(&address, U256::from(0), U256::from(0), vec![]);
-            {
-                state
-                    .set_code(&address, clean_0x(&contract.code).from_hex().unwrap())
-                    .expect("init code fail");
-                if let Some(value) = contract.value {
-                    state
-                        .add_balance(&address, value)
-                        .expect("init balance fail");
+            if *address == "0xffffffffffffffffffffffffffffffffff02000c".to_string() {
+                for (key, value) in contract.storage.clone() {
+                    trace!("===> admin contract key {:?}", key);
+                    if *key == "admin".to_string() {
+                        let admin = Address::from_unaligned(value.as_str()).unwrap();
+                        trace!("===> admin contract value {:?}", admin);
+                        let _contract = Admin::init(admin);
+                        contractFactory.init()
+                    }
                 }
-            }
-            for (key, values) in contract.storage.clone() {
-                state
-                    .set_storage(
-                        &address,
-                        H256::from_unaligned(key.as_ref()).unwrap(),
-                        H256::from_unaligned(values.as_ref()).unwrap(),
-                    )
-                    .expect("init code set_storage fail");
+            } else {
+                let address = Address::from_unaligned(address.as_str()).unwrap();
+                state.new_contract(&address, U256::from(0), U256::from(0), vec![]);
+                {
+                    state
+                        .set_code(&address, clean_0x(&contract.code).from_hex().unwrap())
+                        .expect("init code fail");
+                    if let Some(value) = contract.value {
+                        state
+                            .add_balance(&address, value)
+                            .expect("init balance fail");
+                    }
+                }
+                for (key, values) in contract.storage.clone() {
+                    state
+                        .set_storage(
+                            &address,
+                            H256::from_unaligned(key.as_ref()).unwrap(),
+                            H256::from_unaligned(values.as_ref()).unwrap(),
+                        )
+                        .expect("init code set_storage fail");
+                }
             }
         }
         state.commit().expect("state commit error");
