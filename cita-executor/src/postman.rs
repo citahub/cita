@@ -16,7 +16,7 @@ use crate::core::contracts::solc::sys_config::ChainId;
 use crate::core::libexecutor::block::{ClosedBlock, OpenBlock};
 use crate::core::libexecutor::call_request::CallRequest;
 use crate::core::tx_gas_schedule::TxGasSchedule;
-use crate::types::block_number::BlockTag;
+use crate::types::block_number::{BlockTag, Tag};
 use crate::types::errors::ReceiptError;
 use cita_types::U256;
 use cita_types::{Address, H256};
@@ -122,6 +122,8 @@ impl Postman {
             routing_key!(Executor >> ExecutedResult).into(),
             msg.try_into().unwrap(),
         );
+
+        self.pub_init_black_list();
     }
 
     // make sure executor exit also
@@ -359,6 +361,21 @@ impl Postman {
         }
     }
 
+    /// First notify jsonrpc clear blacklist
+    fn pub_init_black_list(&self) {
+        let mut init_list = Vec::new();
+        init_list.push(Address::default());
+        let black_list = BlackList::new()
+            .set_black_list(init_list.clone())
+            .set_clear_list(init_list);
+
+        let black_list_bytes: Message = black_list.protobuf().into();
+        self.response_mq(
+            routing_key!(Executor >> BlackList).into(),
+            black_list_bytes.try_into().unwrap(),
+        );
+    }
+
     /// Find the public key of all senders that caused the specified error message, and then publish it
     // TODO: I think it is not necessary to distinguish economical_model, maybe remove
     //       this opinion in the future.
@@ -390,7 +407,7 @@ impl Postman {
                     &self.command_req_sender,
                     &self.command_resp_receiver,
                     **address,
-                    BlockTag::Height(close_block.block.header.number()),
+                    BlockTag::Tag(Tag::Latest),
                 )
                 .and_then(|x| Some(U256::from(x.as_slice()) >= U256::from(bm_value)))
                 .unwrap_or(false)
