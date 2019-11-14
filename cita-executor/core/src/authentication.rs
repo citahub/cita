@@ -154,7 +154,6 @@ fn check_call_contract(
     func: &[u8],
 ) -> Result<(), AuthenticationError> {
     let has_permission = has_resource(group_accounts, account_permissions, account, cont, func);
-
     trace!("has call contract permission: {:?}", has_permission);
 
     if !has_permission {
@@ -194,7 +193,6 @@ fn has_resource(
     func: &[u8],
 ) -> bool {
     let groups = get_groups(group_accounts, account);
-
     if !contains_resource(account_permissions, account, *cont, func) {
         for group in groups {
             if contains_resource(account_permissions, &group, *cont, func) {

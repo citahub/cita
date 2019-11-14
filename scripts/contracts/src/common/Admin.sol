@@ -33,9 +33,14 @@ contract Admin is Error {
         onlyAdmin
         returns (bool)
     {
+        if (_account == admin) {
+            return true;
+        }
         emit AdminUpdated(_account, admin, msg.sender);
         admin = _account;
-        return true;
+        address auth_addr = address(0xffffffffffffffffffffffffffffffffff020006);
+        bytes4 funcId = bytes4(keccak256("updateAdmin(address)"));
+        return auth_addr.call(funcId,_account);
     }
 
     /// @notice Check the account is admin
