@@ -4,16 +4,14 @@ use std::fmt;
 
 #[derive(Debug, PartialEq)]
 pub enum ContractError {
-    AdminError,
+    AdminError(String),
     Internal(String),
 }
 
 impl Into<VMError> for ContractError {
     fn into(self) -> VMError {
         match self {
-            ContractError::AdminError => {
-                VMError::Evm(EVMError::Internal("Admin sys contract error.".to_string()))
-            }
+            ContractError::AdminError(str) => VMError::Evm(EVMError::Internal(str)),
             ContractError::Internal(str) => VMError::Evm(EVMError::Internal(str)),
         }
     }
@@ -22,7 +20,7 @@ impl Into<VMError> for ContractError {
 impl fmt::Display for ContractError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let msg = match *self {
-            ContractError::AdminError => "Admin error happened!".into(),
+            ContractError::AdminError(ref e) => format!("Admin sys contract error {}", e),
             ContractError::Internal(ref e) => format!("interval error {}", e),
         };
 

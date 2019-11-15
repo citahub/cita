@@ -93,6 +93,8 @@ impl ContractsFactory {
                 .admin_contract
                 .execute(&params, context, self.contracts_db.clone());
         }
-        return Err(ContractError::AdminError);
+        return Err(ContractError::AdminError(String::from(
+            "not a valid address",
+        )));
     }
 }

@@ -11,8 +11,8 @@ use crate::storage::db_contracts::ContractsDB;
 use crate::storage::db_trait::DataBase;
 use crate::storage::db_trait::DataCategory;
 
-use std::sync::Arc;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AdminContract {
@@ -170,15 +170,18 @@ impl Admin {
         changed: &mut bool,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - Admin - update");
-        // TODO, only admin can invoke
-        let param_address = Address::from_slice(&params.input[16..36]);
-        self.admin = param_address;
-        *changed = true;
-        return Ok(InterpreterResult::Normal(
-            H256::from(1).0.to_vec(),
-            params.gas_limit,
-            vec![],
-        ));
+        // only admin can invoke
+        if self.only_admin(params.sender) {
+            let param_address = Address::from_slice(&params.input[16..36]);
+            self.admin = param_address;
+            *changed = true;
+            return Ok(InterpreterResult::Normal(
+                H256::from(1).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
+        }
+        Err(ContractError::AdminError("Not admin".to_string()))
     }
 
     fn is_admin(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
@@ -197,6 +200,13 @@ impl Admin {
                 vec![],
             ));
         }
+    }
+
+    fn only_admin(&self, sender: Address) -> bool {
+        if sender.to_vec() == self.admin.to_vec() {
+            return true;
+        }
+        false
     }
 }
 
