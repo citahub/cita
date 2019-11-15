@@ -29,11 +29,11 @@ pub fn get_latest_key(target: u64, keys: Vec<&u64>) -> u64 {
     }
 
     let keys = [0, 4];
-    for i in 0..keys.len()  {
+    for i in 0..keys.len() {
         if keys[i] >= target {
-            return keys[i - 1]
+            return keys[i - 1];
         } else if i == keys.len() - 1 {
-            return keys[i]
+            return keys[i];
         }
         continue;
     }
