@@ -27,15 +27,15 @@ pub struct VmExecParams {
     pub disable_transfer_value: bool,
 }
 
-#[derive(Clone, Debug)]
-pub struct Log(pub Address, pub Vec<H256>, pub Vec<u8>);
+// #[derive(Clone, Debug)]
+// pub struct Log(pub Address, pub Vec<H256>, pub Vec<u8>);
 
-#[derive(Clone, Debug)]
-pub enum InterpreterResult {
-    // Return data, remain gas, logs.
-    Normal(Vec<u8>, u64, Vec<Log>),
-    // Return data, remain gas
-    Revert(Vec<u8>, u64),
-    // Return data, remain gas, logs, contract address
-    Create(Vec<u8>, u64, Vec<Log>, Address),
-}
+// #[derive(Clone, Debug)]
+// pub enum InterpreterResult {
+//     // Return data, remain gas, logs.
+//     Normal(Vec<u8>, u64, Vec<Log>),
+//     // Return data, remain gas
+//     Revert(Vec<u8>, u64),
+//     // Return data, remain gas, logs, contract address
+//     Create(Vec<u8>, u64, Vec<Log>, Address),
+// }

@@ -2,7 +2,7 @@ use super::contract::Contract;
 use super::utils::{extract_to_u32, get_latest_key};
 
 use cita_types::{Address, H256};
-use cita_vm::evm::{InterpreterParams, InterpreterResult};
+use cita_vm::evm::{InterpreterParams, InterpreterResult, Log};
 use common_types::context::Context;
 use common_types::errors::ContractError;
 use serde::{Deserialize, Serialize};
@@ -13,6 +13,7 @@ use crate::storage::db_trait::DataCategory;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use tiny_keccak::keccak256;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AdminContract {
@@ -170,9 +171,9 @@ impl Admin {
         changed: &mut bool,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - Admin - update");
+        let param_address = Address::from_slice(&params.input[16..36]);
         // only admin can invoke
         if self.only_admin(params.sender) {
-            let param_address = Address::from_slice(&params.input[16..36]);
             self.admin = param_address;
             *changed = true;
             return Ok(InterpreterResult::Normal(
@@ -181,7 +182,20 @@ impl Admin {
                 vec![],
             ));
         }
-        Err(ContractError::AdminError("Not admin".to_string()))
+
+        // Err(ContractError::AdminError("Not admin".to_string()))
+        // log 的第一项为全 0
+        let mut topics = Vec::new();
+        let signature = "AdminUpdated(address,address,address)".as_bytes();
+
+        topics.push(H256::from(keccak256(signature)));
+        topics.push(H256::from(param_address));
+        topics.push(H256::from(self.admin));
+        topics.push(H256::from(params.sender));
+        let mut logs = Vec::new();
+        let log = Log(param_address, topics, vec![]);
+        logs.push(log);
+        Ok(InterpreterResult::Normal(vec![], params.gas_limit, logs))
     }
 
     fn is_admin(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {

@@ -1,5 +1,7 @@
 // use super::cons_error::ContractError;
 use byteorder::{BigEndian, ByteOrder};
+use cita_types::{Address, H256};
+use cita_vm::evm::Log;
 use common_types::errors::ContractError;
 use tiny_keccak::keccak256;
 
