@@ -1,5 +1,5 @@
 use super::utils::{encode_to_vec, extract_to_u32};
-use cita_types::{Address, H256};
+use cita_types::{Address, H256, U256};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -37,5 +37,15 @@ mod test {
 
         // let v2 = encode_to_vec(b"admin()");
         // assert_eq!(v2, v);
+        let v = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 132, 128];
+        // let a = U256::from_big_endian(&v);
+        // assert_eq!(a, U256::from(2000000));
+
+        let b = H256::from(U256::from(2000000));
+        let v1 = b.to_vec();
+        // b.to_little_endian(&mut v1);
+        assert_eq!(v1, v);
+
+
     }
 }

@@ -33,6 +33,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use rs_contracts::contracts::admin::Admin;
+use rs_contracts::contracts::price::Price;
 use rs_contracts::factory::ContractsFactory;
 use rs_contracts::storage::db_contracts::ContractsDB;
 
@@ -134,6 +135,18 @@ impl Genesis {
                         let address = Address::from_unaligned(address.as_str()).unwrap();
                         let contract_admin = Admin::init(admin);
                         let str = serde_json::to_string(&contract_admin).unwrap();
+                        contracts_factory.register(address, str);
+                    }
+                }
+            } else if *address == "0xffffffffffffffffffffffffffffffffff020010".to_string() {
+                for (key, value) in contract.storage.clone() {
+                    trace!("===> price contract key {:?}", key);
+                    if *key == "quota_price".to_string() {
+                        let price = U256::from_dec_str(&value).unwrap();
+                        trace!("===> price contract value {:?}", price);
+                        let address = Address::from_unaligned(address.as_str()).unwrap();
+                        let contract_price = Price::new(price);
+                        let str = serde_json::to_string(&contract_price).unwrap();
                         contracts_factory.register(address, str);
                     }
                 }

@@ -91,7 +91,6 @@ impl Contract for AdminContract {
                 .or(contract_map.admin_contract.get(&latest_key))
                 .expect("get contract according to height error");
 
-            // let bin = if contract_map.admin_contract.get(&(current_height as u64)).or()
             latest_admin = serde_json::from_str(&(*bin).clone().unwrap()).unwrap();
             trace!("System contracts latest admin {:?}", latest_admin);
         }

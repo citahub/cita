@@ -12,14 +12,17 @@ use cita_types::Address;
 use common_types::context::Context;
 use std::collections::HashMap;
 
-use crate::contracts::admin::AdminContract;
 use crate::storage::db_contracts::ContractsDB;
 use std::sync::Arc;
+
+use crate::contracts::admin::AdminContract;
+use crate::contracts::price::PriceContract;
 
 pub struct ContractsFactory {
     // contracts: HashMap<Address, Box<Contract>>,
     contracts_db: Arc<ContractsDB>,
     admin_contract: AdminContract,
+    price_contract: PriceContract,
 }
 
 impl ContractsFactory {
@@ -33,17 +36,24 @@ impl ContractsFactory {
 
     pub fn register(&mut self, address: Address, contract: String) {
         trace!(
-            "System contracts registe address {:?} contract {:?}",
+            "System contracts register address {:?} contract {:?}",
             address,
             contract
         );
         let admin_address = Address::from(reserved_addresses::ADMIN);
-        match address {
-            admin_address => self
-                .admin_contract
-                .init(contract, self.contracts_db.clone()),
-            _ => println!("other contract"),
+        let price_address = Address::from(reserved_addresses::PRICE_MANAGEMENT);
+        if address.to_vec() == admin_address.to_vec() {
+            return self.admin_contract.init(contract, self.contracts_db.clone());
+        } else if address.to_vec() == price_address.to_vec() {
+            return self.price_contract.init(contract, self.contracts_db.clone());
         }
+
+        // 匹配不了
+        // match address {
+        //     admin_address => self.admin_contract.init(contract, self.contracts_db.clone());
+        //     price_address => self.price_contract.init(contract, self.contracts_db.clone());
+        //     _ => println!("other contract"),
+        // }
     }
 
     // pub fn unregister(&mut self, address: Address) {
@@ -54,19 +64,21 @@ impl ContractsFactory {
 impl ContractsFactory {
     pub fn new(db: Arc<ContractsDB>) -> Self {
         ContractsFactory {
-            admin_contract: AdminContract::default(),
             contracts_db: db,
+            admin_contract: AdminContract::default(),
+            price_contract: PriceContract::default(),
         }
     }
 
     pub fn is_rs_contract(&self, param_address: &Address) -> bool {
         let admin_address = Address::from(reserved_addresses::ADMIN);
-        trace!("===> lalala admin_address is {:?}", admin_address);
+        let price_address = Address::from(reserved_addresses::PRICE_MANAGEMENT);
+        // trace!("===> lalala admin_address is {:?}", admin_address);
         // match param_address {
         //     admin_address => return true,
         //     _ => return false,
         // }
-        if param_address.to_vec() == admin_address.to_vec() {
+        if param_address.to_vec() == admin_address.to_vec() || param_address.to_vec() == price_address.to_vec() {
             return true;
         }
         false
@@ -78,6 +90,7 @@ impl ContractsFactory {
         context: &Context,
     ) -> Result<InterpreterResult, ContractError> {
         let admin_address = Address::from(reserved_addresses::ADMIN);
+        let price_address = Address::from(reserved_addresses::PRICE_MANAGEMENT);
         // match params.contract.code_address {
         //     // SYS_CONFIG => self.sysconfig.execute(params, self.db, context),
         //     admin_address => {
@@ -89,9 +102,9 @@ impl ContractsFactory {
         // }
 
         if params.contract.code_address.to_vec() == admin_address.to_vec() {
-            return self
-                .admin_contract
-                .execute(&params, context, self.contracts_db.clone());
+            return self.admin_contract.execute(&params, context, self.contracts_db.clone());
+        } else if params.contract.code_address.to_vec() == price_address.to_vec() {
+            return self.price_contract.execute(&params, context, self.contracts_db.clone());
         }
         return Err(ContractError::AdminError(String::from(
             "not a valid address",

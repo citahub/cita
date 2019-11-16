@@ -144,7 +144,19 @@ impl<'a> GenesisCreator<'a> {
                         value: U256::from(0),
                     };
                     self.accounts.insert((*address).clone(), admin_contract);
-                } else {
+                } else if *contract_name == "PriceManager" {
+                    let mut param = BTreeMap::new();
+                    param.insert("quota_price".to_string(), "1000000".to_string());
+                    let price_contract = Account {
+                        nonce: U256::from(1),
+                        code: "".to_string(),
+                        storage: param,
+                        value: U256::from(0),
+                    };
+                    self.accounts.insert((*address).clone(), price_contract);
+
+                }
+                else {
                     if let Some(account) = Miner::mine(bytes) {
                         self.accounts.insert((*address).clone(), account);
                     }
