@@ -26,6 +26,7 @@ use crate::solc::Solc;
 
 use cita_types::{clean_0x, U256};
 use ethabi::Contract;
+use ethabi::Token;
 use json;
 use serde::{Deserialize, Serialize};
 
@@ -123,20 +124,21 @@ impl<'a> GenesisCreator<'a> {
 
             self.write_docs(contract_name, data);
             if let Some(constructor) = self.load_contract(contract_name.to_string()).constructor() {
-                let params = normal_params
-                    .get(*contract_name)
-                    .map_or(Vec::new(), |p| (*p).clone());
+                let params = normal_params.get(*contract_name).map_or(Vec::new(), |p| (*p).clone());
                 println!(
                     "Contract name {:?} address {:?} params is {:?}",
                     contract_name, address, params
                 );
                 let bytes = constructor.encode_input(input_data, &params).unwrap();
+
+
                 if *contract_name == "Admin" {
                     let mut param = BTreeMap::new();
-                    param.insert(
-                        "admin".to_string(),
-                        "0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523".to_string(),
-                    );
+                    let addr = match params.get(0) {
+                        Some(Token::Address(addr)) => addr,
+                        _ => unimplemented!(),
+                    };
+                    param.insert("admin".to_string(), addr.hex());
                     let admin_contract = Account {
                         nonce: U256::from(1),
                         code: "".to_string(),
@@ -146,7 +148,11 @@ impl<'a> GenesisCreator<'a> {
                     self.accounts.insert((*address).clone(), admin_contract);
                 } else if *contract_name == "PriceManager" {
                     let mut param = BTreeMap::new();
-                    param.insert("quota_price".to_string(), "1000000".to_string());
+                    let quota_price = match params.get(0) {
+                        Some(Token::Uint(price)) => price,
+                        _ => unimplemented!(),
+                    };
+                    param.insert("quota_price".to_string(), quota_price.to_string());
                     let price_contract = Account {
                         nonce: U256::from(1),
                         code: "".to_string(),
@@ -154,7 +160,6 @@ impl<'a> GenesisCreator<'a> {
                         value: U256::from(0),
                     };
                     self.accounts.insert((*address).clone(), price_contract);
-
                 }
                 else {
                     if let Some(account) = Miner::mine(bytes) {

@@ -8,6 +8,7 @@ use common_types::context::Context;
 // use rocksdb::DB;
 use crate::storage::db_contracts::ContractsDB;
 use std::sync::Arc;
+use serde::{Deserialize, Serialize};
 
 pub trait Contract {
     fn execute(

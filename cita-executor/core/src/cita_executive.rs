@@ -711,19 +711,13 @@ pub fn call<B: DB + 'static>(
             }
         }
     } else if rs_contracts_factory.is_rs_contract(&request.contract.code_address) {
-        trace!(
-            "===> enter rust contracts, address {:?}",
-            request.contract.code_address
-        );
+        trace!("===> enter rust contracts, address {:?}", request.contract.code_address);
         let context = store.borrow().evm_context.clone();
         // rust system contracts
         match rs_contracts_factory.works(&request.to_owned(), &Context::from(context)) {
             Ok(ret) => {
                 state_provider.borrow_mut().discard_checkpoint();
-                trace!(
-                    "Contracts factory execute request {:?} successfully",
-                    request
-                );
+                trace!("Contracts factory execute request {:?} successfully", request);
                 Ok(ret)
             }
             Err(e) => {

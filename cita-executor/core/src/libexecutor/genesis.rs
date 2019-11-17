@@ -16,6 +16,7 @@ use crate::libexecutor::block::Block;
 use crate::libexecutor::executor::{CitaDB, CitaTrieDB};
 use crate::types::db_indexes;
 use crate::types::db_indexes::DBIndex;
+use crate::types::reserved_addresses;
 use cita_database::{DataCategory, Database};
 use cita_types::traits::ConvertType;
 use cita_types::{clean_0x, Address, H256, U256};
@@ -35,7 +36,6 @@ use std::sync::Arc;
 use rs_contracts::contracts::admin::Admin;
 use rs_contracts::contracts::price::Price;
 use rs_contracts::factory::ContractsFactory;
-use rs_contracts::storage::db_contracts::ContractsDB;
 
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
@@ -126,32 +126,32 @@ impl Genesis {
         info!("This is the first time to init executor, and it will init contracts on height 0");
         trace!("**** begin **** \n");
         for (address, contract) in self.spec.alloc.clone() {
-            if *address == "0xffffffffffffffffffffffffffffffffff02000c".to_string() {
+            let address = Address::from_unaligned(address.as_str()).unwrap();
+            if address == Address::from(reserved_addresses::ADMIN) {
+                // admin contract
                 for (key, value) in contract.storage.clone() {
                     trace!("===> admin contract key {:?}", key);
                     if *key == "admin".to_string() {
                         let admin = Address::from_unaligned(value.as_str()).unwrap();
                         trace!("===> admin contract value {:?}", admin);
-                        let address = Address::from_unaligned(address.as_str()).unwrap();
                         let contract_admin = Admin::init(admin);
                         let str = serde_json::to_string(&contract_admin).unwrap();
                         contracts_factory.register(address, str);
                     }
                 }
-            } else if *address == "0xffffffffffffffffffffffffffffffffff020010".to_string() {
+            } else if address == Address::from(reserved_addresses::PRICE_MANAGEMENT) {
+                // price contract
                 for (key, value) in contract.storage.clone() {
                     trace!("===> price contract key {:?}", key);
                     if *key == "quota_price".to_string() {
                         let price = U256::from_dec_str(&value).unwrap();
                         trace!("===> price contract value {:?}", price);
-                        let address = Address::from_unaligned(address.as_str()).unwrap();
                         let contract_price = Price::new(price);
                         let str = serde_json::to_string(&contract_price).unwrap();
                         contracts_factory.register(address, str);
                     }
                 }
             } else {
-                let address = Address::from_unaligned(address.as_str()).unwrap();
                 state.new_contract(&address, U256::from(0), U256::from(0), vec![]);
                 {
                     state

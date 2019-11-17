@@ -35,25 +35,12 @@ impl ContractsFactory {
     // }
 
     pub fn register(&mut self, address: Address, contract: String) {
-        trace!(
-            "System contracts register address {:?} contract {:?}",
-            address,
-            contract
-        );
-        let admin_address = Address::from(reserved_addresses::ADMIN);
-        let price_address = Address::from(reserved_addresses::PRICE_MANAGEMENT);
-        if address.to_vec() == admin_address.to_vec() {
+        trace!("Register system contract address {:?} contract {:?}", address, contract);
+        if address == Address::from(reserved_addresses::ADMIN) {
             return self.admin_contract.init(contract, self.contracts_db.clone());
-        } else if address.to_vec() == price_address.to_vec() {
+        } else if address == Address::from(reserved_addresses::PRICE_MANAGEMENT) {
             return self.price_contract.init(contract, self.contracts_db.clone());
         }
-
-        // 匹配不了
-        // match address {
-        //     admin_address => self.admin_contract.init(contract, self.contracts_db.clone());
-        //     price_address => self.price_contract.init(contract, self.contracts_db.clone());
-        //     _ => println!("other contract"),
-        // }
     }
 
     // pub fn unregister(&mut self, address: Address) {
@@ -70,15 +57,9 @@ impl ContractsFactory {
         }
     }
 
-    pub fn is_rs_contract(&self, param_address: &Address) -> bool {
-        let admin_address = Address::from(reserved_addresses::ADMIN);
-        let price_address = Address::from(reserved_addresses::PRICE_MANAGEMENT);
-        // trace!("===> lalala admin_address is {:?}", admin_address);
-        // match param_address {
-        //     admin_address => return true,
-        //     _ => return false,
-        // }
-        if param_address.to_vec() == admin_address.to_vec() || param_address.to_vec() == price_address.to_vec() {
+    pub fn is_rs_contract(&self, addr: &Address) -> bool {
+        if *addr == Address::from(reserved_addresses::ADMIN) ||
+            *addr == Address::from(reserved_addresses::PRICE_MANAGEMENT) {
             return true;
         }
         false
@@ -89,21 +70,9 @@ impl ContractsFactory {
         params: &InterpreterParams,
         context: &Context,
     ) -> Result<InterpreterResult, ContractError> {
-        let admin_address = Address::from(reserved_addresses::ADMIN);
-        let price_address = Address::from(reserved_addresses::PRICE_MANAGEMENT);
-        // match params.contract.code_address {
-        //     // SYS_CONFIG => self.sysconfig.execute(params, self.db, context),
-        //     admin_address => {
-        //         // let contract = self.get_contract(&address).unwrap();
-        //         self.admin_contract
-        //             .execute(&params, context, self.contracts_db.clone())
-        //         // contract.execute(&params, context, self.contracts_db.clone())
-        //     }
-        // }
-
-        if params.contract.code_address.to_vec() == admin_address.to_vec() {
+        if params.contract.code_address == Address::from(reserved_addresses::ADMIN) {
             return self.admin_contract.execute(&params, context, self.contracts_db.clone());
-        } else if params.contract.code_address.to_vec() == price_address.to_vec() {
+        } else if params.contract.code_address == Address::from(reserved_addresses::PRICE_MANAGEMENT) {
             return self.price_contract.execute(&params, context, self.contracts_db.clone());
         }
         return Err(ContractError::AdminError(String::from(
