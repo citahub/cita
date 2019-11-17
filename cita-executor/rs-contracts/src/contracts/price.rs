@@ -1,5 +1,5 @@
 use super::contract::Contract;
-use super::utils::{extract_to_u32, get_latest_key};
+use super::utils::{extract_to_u32, get_latest_key, only_admin};
 
 use cita_types::{Address, H256, U256};
 use cita_vm::evm::{InterpreterParams, InterpreterResult, Log};
@@ -51,6 +51,8 @@ impl PriceContract {
         let a: PriceContract = serde_json::from_str(&str).unwrap();
         a
     }
+
+
 }
 
 impl Contract for PriceContract {
@@ -91,7 +93,7 @@ impl Contract for PriceContract {
         let mut updated = false;
         let result = extract_to_u32(&params.input[..]).and_then(|signature| match signature {
             0x6bacc53fu32 => latest_price.get_quota_price(),
-            0x52da800au32 => latest_price.set_quota_price(params, &mut updated),
+            0x52da800au32 => latest_price.set_quota_price(params, &mut updated, context, contracts_db.clone()),
             _ => panic!("Invalid function signature".to_owned()),
         });
 
@@ -122,13 +124,30 @@ impl Price {
         Price { quota_price }
     }
 
-    pub fn set_quota_price(&mut self, params: &InterpreterParams, changed: &mut bool)-> Result<InterpreterResult, ContractError> {
+    pub fn set_quota_price(&mut self,
+            params: &InterpreterParams, changed: &mut bool,
+            context: &Context, contracts_db: Arc<ContractsDB>)-> Result<InterpreterResult, ContractError> {
         trace!("System contract - Price - set_quota_price");
         let param_quota_price = U256::from(&params.input[16..36]);
         // TODO: only admin can operate quota price
-        self.quota_price = param_quota_price;
-        *changed = true;
-        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+        if only_admin(params, context, contracts_db.clone()).expect("only admin can invoke price setting") && param_quota_price > U256::zero() {
+            self.quota_price = param_quota_price;
+            *changed = true;
+
+            let mut topics = Vec::new();
+            let signature = "SetQuotaPrice(uint)".as_bytes();
+            topics.push(H256::from(keccak256(signature)));
+            topics.push(H256::from(self.quota_price));
+            topics.push(H256::default());
+            topics.push(H256::default());
+            let mut logs = Vec::new();
+            let log = Log(params.contract.code_address, topics, vec![]);
+            logs.push(log);
+
+            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, logs));
+        }
+
+        Err(ContractError::Internal("Only admin can do".to_owned()))
     }
 
     pub fn get_quota_price(&self) -> Result<InterpreterResult, ContractError> {

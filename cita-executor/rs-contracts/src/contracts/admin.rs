@@ -17,7 +17,7 @@ use tiny_keccak::keccak256;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AdminContract {
-    admin_contract: BTreeMap<u64, Option<String>>,
+    pub admin_contract: BTreeMap<u64, Option<String>>,
 }
 
 impl Default for AdminContract {
@@ -215,7 +215,7 @@ impl Admin {
         }
     }
 
-    fn only_admin(&self, sender: Address) -> bool {
+    pub fn only_admin(&self, sender: Address) -> bool {
         if sender.to_vec() == self.admin.to_vec() {
             return true;
         }
