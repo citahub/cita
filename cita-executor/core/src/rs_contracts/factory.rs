@@ -1,6 +1,5 @@
-// use crate::contracts::cons_error::ContractError;
 use common_types::errors::ContractError;
-// use crate::contracts::object::VmExecParams;
+use common_types::reserved_addresses;
 use cita_vm::evm::InterpreterParams;
 use cita_vm::evm::InterpreterResult;
 // use crate::contracts::Sysconfig;
@@ -12,7 +11,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::rs_contracts::storage::db_contracts::ContractsDB;
-use crate::rs_contracts::contracts::reserved_addresses;
 use crate::rs_contracts::contracts::contract::Contract;
 use crate::rs_contracts::contracts::admin::Admin;
 use crate::rs_contracts::contracts::admin::AdminContract;

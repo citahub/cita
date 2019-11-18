@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use cita_trie::DB;
 use std::cell::RefCell;
 
-
 pub trait Contract<B>
 where
     B: DB

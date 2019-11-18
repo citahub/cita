@@ -1,6 +1,6 @@
 pub mod contract;
-pub mod object;
-pub mod reserved_addresses;
+// pub mod object;
+// pub mod reserved_addresses;
 pub mod utils;
 pub mod check;
 
