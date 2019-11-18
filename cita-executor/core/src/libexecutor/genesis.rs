@@ -32,10 +32,12 @@ use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
+use std::cell::RefCell;
 
 use crate::rs_contracts::contracts::admin::Admin;
 use crate::rs_contracts::contracts::price::Price;
 use crate::rs_contracts::factory::ContractsFactory;
+use crate::rs_contracts::storage::db_contracts::ContractsDB;
 
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
@@ -110,13 +112,16 @@ impl Genesis {
     pub fn lazy_execute(
         &mut self,
         state_db: Arc<CitaTrieDB>,
-        contracts_factory: &mut ContractsFactory,
+        contracts_db: Arc<ContractsDB>,
     ) -> Result<(), String> {
-        let mut state = CitaState::from_existing(
+
+        let state = CitaState::from_existing(
             Arc::<CitaTrieDB>::clone(&state_db),
             *self.block.state_root(),
-        )
-        .expect("Can not get state from db!");
+        ).expect("Can not get state from db!");
+
+        let state = Arc::new(RefCell::new(state));
+        let mut contracts_factory = ContractsFactory::new(state.clone(), contracts_db.clone());
 
         self.block.set_version(0);
         self.block.set_parent_hash(self.spec.prevhash);
@@ -152,19 +157,22 @@ impl Genesis {
                     }
                 }
             } else {
-                state.new_contract(&address, U256::from(0), U256::from(0), vec![]);
+                state.borrow_mut().new_contract(&address, U256::from(0), U256::from(0), vec![]);
                 {
                     state
+                        .borrow_mut()
                         .set_code(&address, clean_0x(&contract.code).from_hex().unwrap())
                         .expect("init code fail");
                     if let Some(value) = contract.value {
                         state
+                            .borrow_mut()
                             .add_balance(&address, value)
                             .expect("init balance fail");
                     }
                 }
                 for (key, values) in contract.storage.clone() {
                     state
+                        .borrow_mut()
                         .set_storage(
                             &address,
                             H256::from_unaligned(key.as_ref()).unwrap(),
@@ -174,7 +182,7 @@ impl Genesis {
                 }
             }
         }
-        state.commit().expect("state commit error");
+        state.borrow_mut().commit().expect("state commit error");
         //query is store in chain
         // for (address, contract) in &self.spec.alloc {
         //     let address = Address::from_unaligned(address.as_str()).unwrap();
@@ -189,7 +197,7 @@ impl Genesis {
         // }
 
         trace!("**** end **** \n");
-        let root = state.root;
+        let root = state.borrow().root;
         trace!("root {:?}", root);
         self.block.set_state_root(root);
         self.block.rehash();

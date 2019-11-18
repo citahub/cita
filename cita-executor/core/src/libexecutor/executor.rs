@@ -78,7 +78,6 @@ impl Executor {
 
         let contracts_db_path = data_path + "/contractsdb";
         let contracts_db = Arc::new(ContractsDB::new(&contracts_db_path).unwrap());
-        let mut contracts_factory = ContractsFactory::new(contracts_db.clone());
 
         let current_header = match get_current_header(db.clone()) {
             Some(header) => header,
@@ -86,7 +85,7 @@ impl Executor {
                 warn!("Not found exist block within database. Loading genesis block...");
                 genesis
                     // FIXME
-                    .lazy_execute(state_db.clone(), &mut contracts_factory)
+                    .lazy_execute(state_db.clone(), contracts_db.clone())
                     .expect("failed to load genesis");
                 genesis.block.header().clone()
             }

@@ -686,7 +686,7 @@ pub fn call<B: DB + 'static>(
     state_provider.borrow_mut().checkpoint();
     let store_son = Arc::new(RefCell::new(store.borrow_mut().clone()));
     let native_factory = NativeFactory::default();
-    let rs_contracts_factory = ContractsFactory::new(contracts_db.clone());
+    let rs_contracts_factory = ContractsFactory::new(state_provider.clone(), contracts_db.clone());
     // Check and call Native Contract.
     if let Some(mut native_contract) = native_factory.new_contract(request.contract.code_address) {
         let mut vm_data_provider = DataProvider::new(

@@ -14,6 +14,9 @@ use crate::rs_contracts::storage::db_trait::DataCategory;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tiny_keccak::keccak256;
+use std::cell::RefCell;
+use cita_vm::state::State;
+use cita_trie::DB;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AdminContract {
@@ -29,26 +32,19 @@ impl Default for AdminContract {
 }
 
 impl AdminContract {
-    pub fn init(&self, str: String, contracts_db: Arc<ContractsDB>) {
+    pub fn init(&self, str: String, contracts_db: Arc<ContractsDB>) -> [u8; 32] {
         let mut a = AdminContract::default();
         a.contracts.insert(0, Some(str));
         let s = serde_json::to_string(&a).unwrap();
-        let _ = contracts_db.insert(
-            DataCategory::Contracts,
-            b"admin-contract".to_vec(),
-            s.as_bytes().to_vec(),
-        );
-
-        // 对序列化后的这个字符串做 hash， 然后把这个 hash 更新到 state， 新建 contract account, storage key = height, value = hash(map)
-
+        let _ = contracts_db.insert(DataCategory::Contracts, b"admin-contract".to_vec(), s.as_bytes().to_vec());
 
         // debug information
-        let bin_map = contracts_db
-            .get(DataCategory::Contracts, b"admin-contract".to_vec())
-            .unwrap();
+        let bin_map = contracts_db.get(DataCategory::Contracts, b"admin-contract".to_vec()).unwrap();
         let str = String::from_utf8(bin_map.unwrap()).unwrap();
         let contracts: AdminContract = serde_json::from_str(&str).unwrap();
         trace!("System contract admin {:?} after init.", contracts);
+
+        keccak256(&s.as_bytes().to_vec())
     }
 
     pub fn get_latest_item(&self, current_height: u64, contracts_db: Arc<ContractsDB>) -> (Option<AdminContract>, Option<Admin>) {
@@ -80,12 +76,13 @@ impl AdminContract {
     }
 }
 
-impl Contract for AdminContract {
+impl<B: DB> Contract<B> for AdminContract {
     fn execute(
         &self,
         params: &InterpreterParams,
         context: &Context,
         contracts_db: Arc<ContractsDB>,
+        state: Arc<RefCell<State<B>>>,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - Admin - enter execute");
         let (contract_map, latest_admin) = self.get_latest_item(context.block_number, contracts_db.clone());
@@ -105,10 +102,9 @@ impl Contract for AdminContract {
                 if result.is_ok() && updated {
                     let new_admin = latest_admin;
                     let str = serde_json::to_string(&new_admin).unwrap();
-                    contract_map
-                        .contracts
-                        .insert(context.block_number, Some(str));
+                    contract_map.contracts.insert(context.block_number, Some(str));
                     let str = serde_json::to_string(&contract_map).unwrap();
+                    let updated_hash = keccak256(&str.as_bytes().to_vec());
                     let _ = contracts_db.insert(
                         DataCategory::Contracts,
                         b"admin-contract".to_vec(),
@@ -122,6 +118,10 @@ impl Contract for AdminContract {
                     let str = String::from_utf8(bin_map.unwrap()).unwrap();
                     let contracts: AdminContract = serde_json::from_str(&str).unwrap();
                     trace!("System contract admin {:?} after update.", contracts);
+
+                    // update state
+                    let _ = state.borrow_mut().set_storage(&params.contract.code_address,
+                            H256::from(context.block_number), H256::from(updated_hash)).expect("state set storage error");
                 }
                 return result;
             },

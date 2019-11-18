@@ -15,6 +15,9 @@ use crate::rs_contracts::storage::db_trait::DataCategory;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tiny_keccak::keccak256;
+use std::cell::RefCell;
+use cita_vm::state::State;
+use cita_trie::DB;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PriceContract {
@@ -31,7 +34,7 @@ impl Default for PriceContract {
 }
 
 impl PriceContract {
-    pub fn init(&self, str: String, contracts_db: Arc<ContractsDB>) {
+    pub fn init(&self, str: String, contracts_db: Arc<ContractsDB>) -> [u8; 32] {
         let mut a = PriceContract::default();
         a.contracts.insert(0, Some(str));
         let s = serde_json::to_string(&a).unwrap();
@@ -42,6 +45,8 @@ impl PriceContract {
         let str = String::from_utf8(bin_map.unwrap()).unwrap();
         let contracts: PriceContract = serde_json::from_str(&str).unwrap();
         trace!("System contract price {:?} after init.", contracts);
+
+        keccak256(&s.as_bytes().to_vec())
     }
 
     pub fn get_latest_item(&self, current_height: u64, contracts_db: Arc<ContractsDB>) -> (Option<PriceContract>, Option<Price>) {
@@ -71,12 +76,13 @@ impl PriceContract {
     }
 }
 
-impl Contract for PriceContract {
+impl<B: DB> Contract<B> for PriceContract {
     fn execute(
         &self,
         params: &InterpreterParams,
         context: &Context,
         contracts_db: Arc<ContractsDB>,
+        state: Arc<RefCell<State<B>>>,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - price - enter execute");
         let (contract_map, latest_price) = self.get_latest_item(context.block_number, contracts_db.clone());
@@ -95,13 +101,18 @@ impl Contract for PriceContract {
                     let str = serde_json::to_string(&new_price).unwrap();
                     contract_map.contracts.insert(context.block_number, Some(str));
                     let str = serde_json::to_string(&contract_map).unwrap();
+                    let updated_hash = keccak256(&str.as_bytes().to_vec());
                     let _ = contracts_db.insert(DataCategory::Contracts, b"price-contract".to_vec(), str.as_bytes().to_vec());
 
-                    // debug information
+                    // debug information, can be ommited
                     let bin_map = contracts_db.get(DataCategory::Contracts, b"price-contract".to_vec()).unwrap();
                     let str = String::from_utf8(bin_map.unwrap()).unwrap();
                     let contracts: PriceContract = serde_json::from_str(&str).unwrap();
                     trace!("System contract price {:?} after update.", contracts);
+
+                    // update state
+                    let _ = state.borrow_mut().set_storage(&params.contract.code_address,
+                        H256::from(context.block_number), H256::from(updated_hash)).expect("state set storage error");
                 }
                 return result;
             },
