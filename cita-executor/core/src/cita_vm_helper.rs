@@ -23,7 +23,7 @@ use cita_vm::{
 use std::cell::RefCell;
 use std::sync::Arc;
 
-use rs_contracts::storage::db_contracts::ContractsDB;
+use crate::rs_contracts::storage::db_contracts::ContractsDB;
 
 /// Function call_pure enters into the specific contract with no check or checkpoints.
 pub fn call_pure<B: DB + 'static>(

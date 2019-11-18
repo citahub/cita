@@ -3,11 +3,11 @@ use common_types::context::Context;
 use common_types::errors::ContractError;
 use std::sync::Arc;
 
-use crate::contracts::admin::{AdminContract, Admin};
-use crate::storage::db_contracts::ContractsDB;
-use crate::storage::db_trait::DataBase;
-use crate::storage::db_trait::DataCategory;
-use crate::contracts::utils::get_latest_key;
+use crate::rs_contracts::contracts::admin::{AdminContract, Admin};
+use crate::rs_contracts::storage::db_contracts::ContractsDB;
+use crate::rs_contracts::storage::db_trait::DataBase;
+use crate::rs_contracts::storage::db_trait::DataCategory;
+use crate::rs_contracts::contracts::utils::get_latest_key;
 
 pub fn only_admin(params: &InterpreterParams, context: &Context, contracts_db: Arc<ContractsDB>) -> Result<bool, ContractError> {
     let current_height = context.block_number;

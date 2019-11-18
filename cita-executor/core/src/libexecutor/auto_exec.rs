@@ -36,7 +36,7 @@ lazy_static! {
     static ref AUTO_EXEC_HASH: Vec<u8> = method_tools::encode_to_vec(AUTO_EXEC);
 }
 
-use rs_contracts::storage::db_contracts::ContractsDB;
+use crate::rs_contracts::storage::db_contracts::ContractsDB;
 
 pub fn auto_exec(
     state: Arc<RefCell<CitaState<CitaTrieDB>>>,

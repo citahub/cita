@@ -1,9 +1,6 @@
-use crate::contracts::admin::Admin;
 // use crate::contracts::cons_error::ContractError;
-use crate::contracts::contract::Contract;
 use common_types::errors::ContractError;
 // use crate::contracts::object::VmExecParams;
-use crate::contracts::reserved_addresses;
 use cita_vm::evm::InterpreterParams;
 use cita_vm::evm::InterpreterResult;
 // use crate::contracts::Sysconfig;
@@ -12,15 +9,22 @@ use cita_types::Address;
 use common_types::context::Context;
 use std::collections::HashMap;
 
-use crate::storage::db_contracts::ContractsDB;
 use std::sync::Arc;
 
-use crate::contracts::admin::AdminContract;
-use crate::contracts::price::PriceContract;
+use crate::rs_contracts::storage::db_contracts::ContractsDB;
+use crate::rs_contracts::contracts::reserved_addresses;
+use crate::rs_contracts::contracts::contract::Contract;
+use crate::rs_contracts::contracts::admin::Admin;
+use crate::rs_contracts::contracts::admin::AdminContract;
+use crate::rs_contracts::contracts::price::PriceContract;
+
+// use core_executor::libexecutor::executor::CitaTrieDB;
+use cita_vm::state::State;
 
 pub struct ContractsFactory {
     // contracts: HashMap<Address, Box<Contract>>,
     contracts_db: Arc<ContractsDB>,
+    // state_db: Arc<CitaTrieDB>,
     admin_contract: AdminContract,
     price_contract: PriceContract,
 }

@@ -43,6 +43,7 @@ pub mod data_provider;
 pub mod libexecutor;
 pub mod storage;
 pub mod tx_gas_schedule;
+pub mod rs_contracts;
 
 mod authentication;
 mod exception;

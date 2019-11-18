@@ -34,10 +34,11 @@ sha3 = { version="0.8", optional=true }
 tiny-keccak = { version="1.4", optional=true }
 hashbrown = { version = "0.3", features = ["rayon"] }
 hasher = { version="0.1" }
+rocksdb = "0.12.2"
 
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
-rs-contracts = { path = "../rs-contracts" }
+# rs-contracts = { path = "./rs-contracts" }
 cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
 hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }

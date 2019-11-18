@@ -961,7 +961,7 @@ dependencies = [
  "proof 0.6.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
  "rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "rs-contracts 1.0.0",
+ "rocksdb 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust-crypto 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hex 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1640,11 +1640,6 @@ dependencies = [
 [[package]]
 name = "hex"
 version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "hex"
-version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -2999,24 +2994,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rs-contracts"
-version = "1.0.0"
-dependencies = [
- "byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "cita-types 0.1.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "cita-vm 0.2.1 (git+https://github.com/cryptape/cita-vm.git?branch=cita)",
- "common-types 0.1.0",
- "hex 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rlp 0.2.0 (git+https://github.com/cryptape/cita-common.git?branch=develop)",
- "rocksdb 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
- "sha3 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "tiny-keccak 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "rust-crypto"
 version = "0.2.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4271,7 +4248,6 @@ dependencies = [
 "checksum hasher 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "10e8846de73a692b8012bcb5b52e76c33087da83da9b36edded3b1af60efd71a"
 "checksum heapsize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1679e6ea370dee694f91f1dc469bf94cf8f52051d147aec3e1f9497c6fc22461"
 "checksum hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
-"checksum hex 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "023b39be39e3a2da62a94feb433e91e8bcd37676fbc8bea371daf52b7a769a3e"
 "checksum hmac 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7a13f4163aa0c5ca1be584aace0e2212b2e41be5478218d4f657f5f778b2ae2a"
 "checksum hmac 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f127a908633569f208325f86f71255d3363c79721d7f9fe31cd5569908819771"
 "checksum hmac-drbg 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "4fe727d41d2eec0a6574d887914347e5ff96a3b87177817e2a9820c5c87fecc2"

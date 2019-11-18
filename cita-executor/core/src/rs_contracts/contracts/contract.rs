@@ -6,7 +6,7 @@ use common_types::errors::ContractError;
 
 use common_types::context::Context;
 // use rocksdb::DB;
-use crate::storage::db_contracts::ContractsDB;
+use crate::rs_contracts::storage::db_contracts::ContractsDB;
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 

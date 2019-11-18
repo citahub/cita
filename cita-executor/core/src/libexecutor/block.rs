@@ -43,7 +43,7 @@ use hashable::Hashable;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use rlp::Encodable;
 
-use rs_contracts::storage::db_contracts::ContractsDB;
+use crate::rs_contracts::storage::db_contracts::ContractsDB;
 
 lazy_static! {
     /// Block Reward

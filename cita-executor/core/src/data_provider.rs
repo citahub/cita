@@ -22,7 +22,7 @@ use hasher::Hasher;
 use std::cell::RefCell;
 use std::sync::Arc;
 
-use rs_contracts::storage::db_contracts::ContractsDB;
+use crate::rs_contracts::storage::db_contracts::ContractsDB;
 
 /// BlockDataProvider provides functions to get block's hash from chain.
 ///

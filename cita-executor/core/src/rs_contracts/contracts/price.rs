@@ -1,4 +1,3 @@
-use super::contract::Contract;
 use super::check;
 use super::utils::{extract_to_u32, get_latest_key};
 
@@ -8,9 +7,10 @@ use common_types::context::Context;
 use common_types::errors::ContractError;
 use serde::{Deserialize, Serialize};
 
-use crate::storage::db_contracts::ContractsDB;
-use crate::storage::db_trait::DataBase;
-use crate::storage::db_trait::DataCategory;
+use super::contract::Contract;
+use crate::rs_contracts::storage::db_contracts::ContractsDB;
+use crate::rs_contracts::storage::db_trait::DataBase;
+use crate::rs_contracts::storage::db_trait::DataCategory;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;

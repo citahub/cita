@@ -7,9 +7,9 @@ use common_types::context::Context;
 use common_types::errors::ContractError;
 use serde::{Deserialize, Serialize};
 
-use crate::storage::db_contracts::ContractsDB;
-use crate::storage::db_trait::DataBase;
-use crate::storage::db_trait::DataCategory;
+use crate::rs_contracts::storage::db_contracts::ContractsDB;
+use crate::rs_contracts::storage::db_trait::DataBase;
+use crate::rs_contracts::storage::db_trait::DataCategory;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -38,6 +38,9 @@ impl AdminContract {
             b"admin-contract".to_vec(),
             s.as_bytes().to_vec(),
         );
+
+        // 对序列化后的这个字符串做 hash， 然后把这个 hash 更新到 state， 新建 contract account, storage key = height, value = hash(map)
+
 
         // debug information
         let bin_map = contracts_db
@@ -182,7 +185,7 @@ impl Admin {
                 logs,
             ));
         }
-        
+
         Err(ContractError::Internal("Only admin can do".to_owned()))
     }
 

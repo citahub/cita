@@ -33,9 +33,9 @@ use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
 
-use rs_contracts::contracts::admin::Admin;
-use rs_contracts::contracts::price::Price;
-use rs_contracts::factory::ContractsFactory;
+use crate::rs_contracts::contracts::admin::Admin;
+use crate::rs_contracts::contracts::price::Price;
+use crate::rs_contracts::factory::ContractsFactory;
 
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;

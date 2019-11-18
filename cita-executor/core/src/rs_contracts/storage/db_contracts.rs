@@ -1,4 +1,4 @@
-use crate::storage::db_trait::{DBError, DataBase, DataCategory};
+use crate::rs_contracts::storage::db_trait::{DBError, DataBase, DataCategory};
 use rocksdb::{ColumnFamily, Options, DB};
 use std::sync::Arc;
 
