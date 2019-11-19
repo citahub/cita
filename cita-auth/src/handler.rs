@@ -601,8 +601,13 @@ impl MsgHandler {
             .get_clear_list()
             .iter()
             .for_each(|clear_list: &Vec<u8>| {
-                self.black_list_cache
-                    .remove(&Address::from_slice(clear_list.as_slice()));
+                let address = Address::from_slice(clear_list.as_slice());
+                if address == Address::default() {
+                    debug!("Clean blacklist when cita-executor restarts ");
+                    self.black_list_cache.clear();
+                    return;
+                }
+                self.black_list_cache.remove(&address);
             });
 
         black_list
