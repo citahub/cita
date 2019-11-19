@@ -1,4 +1,4 @@
-xpragma solidity 0.4.24;
+pragma solidity 0.4.24;
 
 import "../common/ReservedAddrPublic.sol";
 import "../../interaction/interface/IPermission.sol";
@@ -94,6 +94,7 @@ contract Permission is IPermission, ReservedAddrPublic {
     /// @param cont The contract address of the resource
     /// @param func The function signature of the resource
     /// @return true if in permission, otherwise false
+    // useless function
     function inPermission(address cont, bytes4 func)
         public
         view
@@ -109,6 +110,7 @@ contract Permission is IPermission, ReservedAddrPublic {
 
     /// @notice Query the information of the permission
     /// @return The information of permission: name and resources
+    // useless function
     function queryInfo()
         public
         view

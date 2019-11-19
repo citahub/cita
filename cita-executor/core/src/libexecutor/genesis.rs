@@ -35,9 +35,12 @@ use std::sync::Arc;
 use std::cell::RefCell;
 
 use crate::rs_contracts::contracts::admin::Admin;
+use crate::rs_contracts::contracts::perm::Permission;
 use crate::rs_contracts::contracts::price::Price;
 use crate::rs_contracts::factory::ContractsFactory;
 use crate::rs_contracts::storage::db_contracts::ContractsDB;
+use tiny_keccak::keccak256;
+use std::collections::BTreeMap;
 
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
@@ -130,6 +133,9 @@ impl Genesis {
 
         info!("This is the first time to init executor, and it will init contracts on height 0");
         trace!("**** begin **** \n");
+        let mut permission_contracts = BTreeMap::new();
+        let mut admin = Address::default();
+
         for (address, contract) in self.spec.alloc.clone() {
             let address = Address::from_unaligned(address.as_str()).unwrap();
             if address == Address::from(reserved_addresses::ADMIN) {
@@ -144,6 +150,23 @@ impl Genesis {
                         contracts_factory.register(address, str);
                     }
                 }
+            } else if address == Address::from(reserved_addresses::AUTHORIZATION) {
+                // Authorization contract
+                // TODO: delete this contract address and use permission management
+                // Remove this contract and get admin from db directly
+                for (key, value) in contract.storage.clone() {
+                    trace!("===> admin contract key {:?}", key);
+                    if *key == "admin".to_string() {
+                        let param_address = Address::from_unaligned(value.as_str()).unwrap();
+                        trace!("===> admin contract value {:?}", param_address);
+                        // let contract_admin = Admin::init(admin);
+                        // let str = serde_json::to_string(&contract_admin).unwrap();
+                        // contracts_factory.register(address, str);
+                        // contracts_factory.set_admin_permission(admin);
+                        admin = param_address;
+                        trace!("Change admin to {:?}", admin);
+                    }
+                }
             } else if address == Address::from(reserved_addresses::PRICE_MANAGEMENT) {
                 // price contract
                 for (key, value) in contract.storage.clone() {
@@ -156,6 +179,27 @@ impl Genesis {
                         contracts_factory.register(address, str);
                     }
                 }
+            } else if is_permssion_contract(address) {
+                let mut perm_name = String::default();
+                let mut conts = Vec::new();
+                let mut funcs = Vec::new();
+
+                for (key, value) in contract.storage.clone() {
+                    trace!("===> permission contract key {:?}", key);
+                    if *key == "perm_name".to_string() {
+                        perm_name = value;
+                    } else {
+                        let addr = Address::from_unaligned(value.as_str()).unwrap();
+                        conts.push(addr);
+                        let hash_key = keccak256(key.as_bytes()).to_vec()[0..4].to_vec();
+                        funcs.push(hash_key);
+                    }
+                }
+
+                let permission = Permission::new(perm_name, conts, funcs);
+                let str = serde_json::to_string(&permission).unwrap();
+                permission_contracts.insert(address, str);
+                // contracts_factory.register(address, str);
             } else {
                 state.borrow_mut().new_contract(&address, U256::from(0), U256::from(0), vec![]);
                 {
@@ -182,6 +226,7 @@ impl Genesis {
                 }
             }
         }
+        contracts_factory.register_perms(admin, permission_contracts);
         state.borrow_mut().commit().expect("state commit error");
         //query is store in chain
         // for (address, contract) in &self.spec.alloc {
@@ -239,6 +284,36 @@ impl Genesis {
 
         Ok(())
     }
+}
+
+pub fn is_permssion_contract(addr: Address) -> bool {
+    if addr == Address::from(reserved_addresses::PERMISSION_SEND_TX) ||
+    addr == Address::from(reserved_addresses::PERMISSION_CREATE_CONTRACT) ||
+    addr == Address::from(reserved_addresses::PERMISSION_NEW_PERMISSION) ||
+    addr == Address::from(reserved_addresses::PERMISSION_DELETE_PERMISSION) ||
+    addr == Address::from(reserved_addresses::PERMISSION_UPDATE_PERMISSION) ||
+    addr == Address::from(reserved_addresses::PERMISSION_SET_AUTH) ||
+    addr == Address::from(reserved_addresses::PERMISSION_CANCEL_AUTH) ||
+    addr == Address::from(reserved_addresses::PERMISSION_NEW_ROLE) ||
+    addr == Address::from(reserved_addresses::PERMISSION_DELETE_ROLE) ||
+    addr == Address::from(reserved_addresses::PERMISSION_UPDATE_ROLE) ||
+    addr == Address::from(reserved_addresses::PERMISSION_SET_ROLE) ||
+    addr == Address::from(reserved_addresses::PERMISSION_CANCEL_ROLE) ||
+    addr == Address::from(reserved_addresses::PERMISSION_NEW_GROUP) ||
+    addr == Address::from(reserved_addresses::PERMISSION_DELETE_GROUP) ||
+    addr == Address::from(reserved_addresses::PERMISSION_UPDATE_GROUP) ||
+    addr == Address::from(reserved_addresses::PERMISSION_NEW_NODE) ||
+    addr == Address::from(reserved_addresses::PERMISSION_DELETE_NODE) ||
+    addr == Address::from(reserved_addresses::PERMISSION_UPDATE_NODE) ||
+    addr == Address::from(reserved_addresses::PERMISSION_ACCOUNT_QUOTA) ||
+    addr == Address::from(reserved_addresses::PERMISSION_BLOCK_QUOTA) ||
+    addr == Address::from(reserved_addresses::PERMISSION_BATCH_TX) ||
+    addr == Address::from(reserved_addresses::PERMISSION_EMERGENCY_INTERVENTION) ||
+    addr == Address::from(reserved_addresses::PERMISSION_QUOTA_PRICE) ||
+    addr == Address::from(reserved_addresses::PERMISSION_VERSION) {
+        return true;
+    }
+    false
 }
 
 #[cfg(test)]

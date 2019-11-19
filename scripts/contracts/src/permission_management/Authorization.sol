@@ -29,7 +29,7 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
         _;
     }
 
-    modifier notSuperAdmin(address x) {
+    modifier notSuperAdmin(address _account) {
         require(_account != allAccounts[0], "not superAdmin");
         _;
     }
@@ -122,6 +122,7 @@ contract Authorization is IAuthorization, ReservedAddrPublic {
     /// @notice Query the permission's accounts
     /// @param _permission The permission to be queried
     /// @return The accounts of permission
+    // Useless function
     function queryAccounts(address _permission)
         public
         view

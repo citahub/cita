@@ -276,15 +276,17 @@ impl Contracts {
         contracts
     }
 
-    pub fn as_params(&self, normal_contracts: &NormalContracts, name: &str) -> Vec<Token> {
-        let mut tokens = Vec::new();
+    pub fn as_params(&self, normal_contracts: &NormalContracts, name: &str) -> BTreeMap<String, String> {
+        let mut params = BTreeMap::new();
         if let Some(info) = self.list().get(name) {
-            tokens.push(Token::FixedBytes(String::from(name).into_bytes()));
             let (conts, funcs) = info.get_contract_info(normal_contracts);
-            tokens.push(Token::Array(conts));
-            tokens.push(Token::Array(funcs));
+            println!("===> conts {:?} funcs {:?}", conts, funcs);
+            for i in 0..conts.len() {
+                params.insert(funcs.get(i).unwrap().to_string(), conts.get(i).unwrap().to_string());
+            }
+            params.insert("perm_name".to_string(), name.to_string());
         }
-        tokens
+        params
     }
 }
 
@@ -299,20 +301,22 @@ impl ContractsInfo {
     pub fn get_contract_info(
         &self,
         normal_contracts: &NormalContracts,
-    ) -> (Vec<Token>, Vec<Token>) {
+    ) -> (Vec<String>, Vec<String>) {
         let mut conts = Vec::new();
+        let mut funcs = Vec::new();
         let reference = normal_contracts.list();
-        for a in self.contracts.iter() {
-            let contract_info = &reference[a.as_str()];
-            let address = Address::from_str(clean_0x(&contract_info.address)).unwrap();
-            conts.push(Token::Address(address));
+        for i in 0..self.contracts.len() {
+            let contract_info = &reference[self.contracts.get(i).unwrap().as_str()];
+            let address = clean_0x(&contract_info.address);
+
+            conts.push(address.to_string());
+            funcs.push(self.functions.get(i).unwrap().to_string());
         }
 
-        let mut funcs = Vec::new();
-        for f in self.functions.iter() {
-            let func = keccak256(f.as_bytes()).to_vec();
-            funcs.push(Token::FixedBytes(func[0..4].to_vec()));
-        }
+        // for f in self.functions.iter() {
+        //     let func = keccak256(f.as_bytes()).to_vec();
+        //     funcs.push(Token::FixedBytes(func[0..4].to_vec()));
+        // }
         (conts, funcs)
     }
 }

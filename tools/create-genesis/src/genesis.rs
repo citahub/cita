@@ -160,6 +160,20 @@ impl<'a> GenesisCreator<'a> {
                         value: U256::from(0),
                     };
                     self.accounts.insert((*address).clone(), price_contract);
+                } else if *contract_name == "Authorization" {
+                    let mut param = BTreeMap::new();
+                    let addr = match params.get(0) {
+                        Some(Token::Address(addr)) => addr,
+                        _ => unimplemented!(),
+                    };
+                    param.insert("admin".to_string(), addr.hex());
+                    let admin_contract = Account {
+                        nonce: U256::from(1),
+                        code: "".to_string(),
+                        storage: param,
+                        value: U256::from(0),
+                    };
+                    self.accounts.insert((*address).clone(), admin_contract);
                 }
                 else {
                     if let Some(account) = Miner::mine(bytes) {
@@ -181,7 +195,7 @@ impl<'a> GenesisCreator<'a> {
         let input_data = string_2_bytes(data["bin"].clone());
 
         self.write_docs(&contract_name, data);
-        if let Some(constructor) = self.load_contract(contract_name).constructor() {
+        if let Some(constructor) = self.load_contract(contract_name.clone()).constructor() {
             for (name, info) in perm_contracts.basic.list().iter() {
                 let address = &info.address;
                 let params = self
@@ -189,14 +203,27 @@ impl<'a> GenesisCreator<'a> {
                     .permission_contracts
                     .basic
                     .as_params(name);
+                println!("Contract name {:?} name {:?} params is {:?}", contract_name, name, params);
 
-                let bytes = constructor
-                    .encode_input(input_data.clone(), &params)
-                    .unwrap();
-                if let Some(account) = Miner::mine(bytes) {
-                    self.accounts.insert(address.clone(), account);
-                    println!("Permission contracts: {:?} {:?} is ok!", name, address);
-                }
+                // let bytes = constructor
+                //     .encode_input(input_data.clone(), &params)
+                //     .unwrap();
+                // if let Some(account) = Miner::mine(bytes) {
+                //     self.accounts.insert(address.clone(), account);
+                //     println!("Permission contracts: {:?} {:?} is ok!", name, address);
+                // }
+                let address = &info.address;
+                let mut params = BTreeMap::new();
+                params.insert("".to_string(), info.address.clone());
+                params.insert("perm_name".to_string(), name.to_string());
+
+                let account = Account {
+                    nonce: U256::from(1),
+                    code: "".to_string(),
+                    storage: params,
+                    value: U256::from(0),
+                };
+                self.accounts.insert(address.clone(), account);
             }
 
             for (name, info) in perm_contracts.contracts.list().iter() {
@@ -206,14 +233,29 @@ impl<'a> GenesisCreator<'a> {
                     .permission_contracts
                     .contracts
                     .as_params(&normal_contracts, name);
+                //     println!("Contract name {:?} name {:?} params is {:?}", contract_name, name,  params);
 
-                let bytes = constructor
-                    .encode_input(input_data.clone(), &params)
-                    .unwrap();
-                if let Some(account) = Miner::mine(bytes) {
-                    self.accounts.insert((*perm_address).clone(), account);
-                    println!("Permission contracts: {:?} {:?} is ok!", name, perm_address);
-                }
+                // let bytes = constructor
+                //     .encode_input(input_data.clone(), &params)
+                //     .unwrap();
+                // if let Some(account) = Miner::mine(bytes) {
+                //     self.accounts.insert((*perm_address).clone(), account);
+                //     println!("Permission contracts: {:?} {:?} is ok!", name, perm_address);
+                // }
+                // let perm_address = &info.address;
+                // let mut params = BTreeMap::new();
+                // for i in 0..info.contracts.len() {
+                //     params.insert(info.contracts.get(i).unwrap().to_string(), info.functions.get(i).unwrap().to_string());
+                // }
+                // params.insert("name".to_string(), name.to_string());
+
+                let account = Account {
+                    nonce: U256::from(1),
+                    code: "".to_string(),
+                    storage: params,
+                    value: U256::from(0),
+                };
+                self.accounts.insert((*perm_address).clone(), account);
             }
         }
     }
