@@ -138,8 +138,9 @@ impl<B: DB> Contract<B> for PermStore {
                     0xde6afd60 => latest_permission_manager.check_resource(params),
                     0x945a2555 => latest_permission_manager.query_permssions(params),
                     0xd28d4e0c => latest_permission_manager.query_all_accounts(params),
-                    0x53f4a519 => latest_permission_manager.query_resource(params),
-                    0x379725ee => latest_permission_manager.query_name(params),
+                    0xe286599b => latest_permission_manager.query_resource(params),
+                    0xdff7eafe => latest_permission_manager.query_name(params),
+                    0x9795e7e0 => latest_permission_manager.in_permission(params),
                     _ => panic!("Invalid function signature {} ", signature),
                 });
 
@@ -309,7 +310,7 @@ impl PermManager {
 
     pub fn query_resource(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - query_resource");
-        let perm_address = params.contract.code_address;
+        let perm_address = Address::from(&params.input[16..36]);
         if let Some(p) = self.perm_collection.get(&perm_address) {
             let mut tokens = Vec::new();
             let (conts, funcs) = p.query_resource();
@@ -330,7 +331,7 @@ impl PermManager {
 
     pub fn query_name(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - query_name");
-        let perm_address = params.contract.code_address;
+        let perm_address = Address::from(&params.input[16..36]);
         if let Some(p) = self.perm_collection.get(&perm_address) {
             let name = p.query_name();
             let mut res = H256::from(0);
@@ -338,6 +339,22 @@ impl PermManager {
             return Ok(InterpreterResult::Normal(res.to_vec(), params.gas_limit, vec![]));
         }
         return Ok(InterpreterResult::Normal(vec![], params.gas_limit, vec![]));
+    }
+
+    pub fn in_permission(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
+        trace!("System contract - permission  - in_permission");
+        let perm_address = Address::from(&params.input[16..36]);
+        let resource_cont = Address::from(&params.input[48..68]);
+        let resource_func = &params.input[68..72];
+        trace!("Check_resource, perm_address: {:?}, resource_cont: {:?}, resource_func {:?}", perm_address, resource_cont, resource_func);
+
+        if let Some(perm) = self.perm_collection.get(&perm_address) {
+            if perm.in_permission(resource_cont, resource_func.to_vec()) {
+                return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+            }
+        }
+
+        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn check_resource(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
