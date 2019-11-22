@@ -199,82 +199,158 @@ impl PermManager {
 
     pub fn new_permission(&mut self,
         params: &InterpreterParams, changed: &mut bool,
-        context: &Context, contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - new permission");
+            let perm_name = String::from("aaa");
+            let perm_conts = Vec::new();
+            let perm_funcs = Vec::new();
 
-        return Ok(InterpreterResult::Normal(vec![], 0, vec![]));
+            let perm = Permission::new(perm_name, perm_conts, perm_funcs);
+            let perm_address = Address::from(0);
+            self.perm_collection.insert(perm_address, perm);
+
+            *changed = true;
+        return Ok(InterpreterResult::Normal(H256::from(perm_address).0.to_vec(), 0, vec![]));
     }
 
     pub fn del_permission(&mut self,
         params: &InterpreterParams, changed: &mut bool,
-        context: &Context, contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+            trace!("System contract - permission  - del permission");
+            let perm_address = Address::from(&params.input[16..36]);
+            self.perm_collection.remove(&perm_address);
 
-        trace!("System contract - permission  - del permission");
-        return Ok(InterpreterResult::Normal(vec![], 0, vec![]));
+            // update accounts permissions
+            for (account, perms) in self.account_own_perms.iter_mut() {
+                perms.retain(|&k| k != perm_address);
+            }
+
+            *changed = true;
+         return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn update_permission_name(&mut self,
         params: &InterpreterParams, changed: &mut bool,
-        context: &Context, contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
-        trace!("System contract - permission  - update permission");
+        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        trace!("System contract - permission  - update permission name");
+        let perm_address = Address::from(&params.input[16..36]);
+        let perm_name = String::from("bbb");
+        if let Some(perm) = self.perm_collection.get_mut(&perm_address) {
+            perm.update_name(&perm_name);
+        }
 
-        return Ok(InterpreterResult::Normal(vec![], 0, vec![]));
+        *changed = true;
+        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn add_permission_resources(&mut self,
         params: &InterpreterParams, changed: &mut bool,
-        context: &Context, contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - add_permission_resource");
+        let perm_address = Address::from(&params.input[16..36]);
+        let perm_conts = Vec::new();
+        let perm_funcs = Vec::new();
 
-        return Ok(InterpreterResult::Normal(vec![], 0, vec![]));
+        if let Some(p) = self.perm_collection.get_mut(&perm_address) {
+            p.add_resources(perm_conts, perm_funcs);
+        }
+
+        *changed = true;
+        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn del_permission_resources(&mut self,
         params: &InterpreterParams, changed: &mut bool,
-        context: &Context, contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - del_permission_resource");
+        let perm_address = Address::from(&params.input[16..36]);
+        let perm_conts = Vec::new();
+        let perm_funcs = Vec::new();
 
-        return Ok(InterpreterResult::Normal(vec![], 0, vec![]));
+        if let Some(p) = self.perm_collection.get_mut(&perm_address) {
+            p.delete_resources(perm_conts, perm_funcs);
+        }
+
+        *changed = true;
+
+        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn set_authorizations(&mut self,
         params: &InterpreterParams, changed: &mut bool,
-        context: &Context, contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - set_authorizations");
+        let account = Address::from(&params.input[16..36]);
+        let permissions = Vec::new();
 
-        return Ok(InterpreterResult::Normal(vec![], 0, vec![]));
+        for p in permissions.iter() {
+            if let Some(perms) = self.account_own_perms.get_mut(&account) {
+                perms.insert(*p);
+            }
+        }
+        *changed = true;
+        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn set_authorization(&mut self,
         params: &InterpreterParams, changed: &mut bool,
-        context: &Context, contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - set_authorization");
+        let account = Address::from(&params.input[16..36]);
+        let permission = Address::from(&params.input[48..68]);
 
-        return Ok(InterpreterResult::Normal(vec![], 0, vec![]));
+        if let Some(perms) = self.account_own_perms.get_mut(&account) {
+            perms.insert(permission);
+        }
+        *changed = true;
+
+        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn cancel_authorizations(&mut self,
         params: &InterpreterParams, changed: &mut bool,
-        context: &Context, contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - cancel_authorizations");
+        let account = Address::from(&params.input[16..36]);
+        let permissions = Vec::new();
 
-        return Ok(InterpreterResult::Normal(vec![], 0, vec![]));
+        if let Some(perms) = self.account_own_perms.get_mut(&account) {
+            for p in permissions {
+                perms.remove(p);
+            }
+            *changed = true;
+            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+        }
+
+        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn cancel_authorization(&mut self,
         params: &InterpreterParams, changed: &mut bool,
-        context: &Context, contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - cancel_authorization");
+        let account = Address::from(&params.input[16..36]);
+        let permission = Address::from(&params.input[48..68]);
 
-        return Ok(InterpreterResult::Normal(vec![], 0, vec![]));
+        if let Some(perms) = self.account_own_perms.get_mut(&account) {
+            perms.remove(&permission);
+            *changed = true;
+            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+        }
+        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn clear_authorization(&mut self,
         params: &InterpreterParams, changed: &mut bool,
-        context: &Context, contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - clear_authorization");
-
-        return Ok(InterpreterResult::Normal(vec![], 0, vec![]));
+        let account = Address::from(&params.input[16..36]);
+        if let Some(perms) = self.account_own_perms.get_mut(&account) {
+           perms.clear();
+           *changed = true;
+           return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+        }
+        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn query_permssions(&mut self,
