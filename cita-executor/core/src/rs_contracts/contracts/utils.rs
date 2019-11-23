@@ -1,10 +1,8 @@
 use byteorder::{BigEndian, ByteOrder};
-use cita_types::{Address, H256};
+use cita_types::{Address, H256, U256};
 use common_types::errors::ContractError;
-
-
-
 use tiny_keccak::keccak256;
+use rlp::RlpStream;
 
 pub fn extract_to_u32(data: &[u8]) -> Result<u32, ContractError> {
     if let Some(ref bytes4) = data.get(0..4) {

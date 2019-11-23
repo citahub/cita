@@ -6,23 +6,19 @@ use cita_vm::evm::InterpreterResult;
 
 use cita_types::{Address, U256, H256};
 use common_types::context::Context;
-use std::collections::HashMap;
 
 use std::sync::Arc;
 
 use crate::rs_contracts::storage::db_contracts::ContractsDB;
 use crate::rs_contracts::contracts::contract::Contract;
-use crate::rs_contracts::contracts::admin::Admin;
 use crate::rs_contracts::contracts::admin::AdminContract;
 use crate::rs_contracts::contracts::price::PriceContract;
 use crate::rs_contracts::contracts::perm_manager::PermStore;
 
 
-use crate::libexecutor::executor::CitaTrieDB;
 use cita_vm::state::State;
 use std::cell::RefCell;
 use cita_trie::DB;
-use tiny_keccak::keccak256;
 use std::collections::BTreeMap;
 
 pub struct ContractsFactory<B> {

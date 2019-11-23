@@ -23,6 +23,10 @@ use cita_trie::DB;
 use std::collections::HashSet;
 use ethabi::encode;
 use ethabi::Token;
+use ethabi::param_type::ParamType;
+
+use crate::cita_executive::create_address_from_address_and_nonce;
+use common_types::reserved_addresses;
 
 pub type FuncSig = [u8; 4];
 
@@ -155,7 +159,7 @@ impl<B: DB> Contract<B> for PermStore {
                     // debug information, can be ommited
                     let bin_map = contracts_db.get(DataCategory::Contracts, b"permission-contract".to_vec()).unwrap();
                     let str = String::from_utf8(bin_map.unwrap()).unwrap();
-                    let contracts: PermManager = serde_json::from_str(&str).unwrap();
+                    let contracts: PermStore = serde_json::from_str(&str).unwrap();
                     trace!("System contract permission {:?} after update.", contracts);
 
                     // update state
@@ -201,16 +205,49 @@ impl PermManager {
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - new permission");
-            let perm_name = String::from("aaa");
-            let perm_conts = Vec::new();
-            let perm_funcs = Vec::new();
 
-            let perm = Permission::new(perm_name, perm_conts, perm_funcs);
-            let perm_address = Address::from(0);
-            self.perm_collection.insert(perm_address, perm);
+        let tokens = vec![
+            ParamType::FixedBytes(32),
+            ParamType::Array(Box::new(ParamType::Address)),
+            ParamType::Array(Box::new(ParamType::FixedBytes(4)))
+        ];
+        if let Ok(params) = ethabi::decode(&tokens, &params.input[4..]) {
+            match (&params[0], &params[1], &params[2]) {
+                (Token::FixedBytes(name), Token::Array(addrs), Token::Array(funcs)) => {
+                    let perm_name = H256::from_slice(name);
+                    let perm_addrs = addrs.iter().map(|i| match i {
+                        Token::Address(x) => Address::from_slice(x),
+                        _ => unreachable!(),
+                    }).collect::<Vec<Address>>();
+                    let perm_funcs = funcs.iter().map(|i| match i {
+                        Token::FixedBytes(x) => x.clone(),
+                        _ => unreachable!(),
+                    }).collect::<Vec<_>>();
+                    trace!("perm_name {:?}", perm_name);
+                    trace!("perm_addrs {:?}", perm_addrs);
+                    trace!("perm_funcs {:?}", perm_funcs);
 
-            *changed = true;
-        return Ok(InterpreterResult::Normal(H256::from(perm_address).0.to_vec(), 0, vec![]));
+                    let perm = Permission::new(perm_name.to_string(), perm_addrs, perm_funcs);
+                    let perm_address = create_address_from_address_and_nonce(
+                        &Address::from(reserved_addresses::PERMISSION_CREATOR), &U256::zero());
+                    trace!("perm address created in new_permission {:?}", perm_address);
+                    self.perm_collection.insert(perm_address, perm);
+
+                    let mut logs = Vec::new();
+                    let mut topics = Vec::new();
+                    let signature = "newPermission(bytes32,address[],bytes4[])".as_bytes();
+                    topics.push(H256::from(keccak256(signature)));
+                    topics.push(H256::from(perm_address));
+                    let log = Log(perm_address, topics, vec![]);
+                    logs.push(log);
+
+                    *changed = true;
+                    return Ok(InterpreterResult::Normal(H256::from(perm_address).0.to_vec(), 0, logs));
+                }
+                _ => unimplemented!(),
+            }
+        }
+        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn del_permission(&mut self,
@@ -221,7 +258,7 @@ impl PermManager {
             self.perm_collection.remove(&perm_address);
 
             // update accounts permissions
-            for (account, perms) in self.account_own_perms.iter_mut() {
+            for (_account, perms) in self.account_own_perms.iter_mut() {
                 perms.retain(|&k| k != perm_address);
             }
 
@@ -233,6 +270,7 @@ impl PermManager {
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - update permission name");
+        // 解析两个参数
         let perm_address = Address::from(&params.input[16..36]);
         let perm_name = String::from("bbb");
         if let Some(perm) = self.perm_collection.get_mut(&perm_address) {
@@ -247,6 +285,7 @@ impl PermManager {
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - add_permission_resource");
+        // 解析一个address, 两个数组
         let perm_address = Address::from(&params.input[16..36]);
         let perm_conts = Vec::new();
         let perm_funcs = Vec::new();
@@ -266,6 +305,7 @@ impl PermManager {
         let perm_address = Address::from(&params.input[16..36]);
         let perm_conts = Vec::new();
         let perm_funcs = Vec::new();
+         // 解析一个address, 两个数组
 
         if let Some(p) = self.perm_collection.get_mut(&perm_address) {
             p.delete_resources(perm_conts, perm_funcs);
@@ -282,6 +322,7 @@ impl PermManager {
         trace!("System contract - permission  - set_authorizations");
         let account = Address::from(&params.input[16..36]);
         let permissions = Vec::new();
+        // 解析一个address, 一个数组
 
         for p in permissions.iter() {
             if let Some(perms) = self.account_own_perms.get_mut(&account) {
@@ -313,6 +354,7 @@ impl PermManager {
         trace!("System contract - permission  - cancel_authorizations");
         let account = Address::from(&params.input[16..36]);
         let permissions = Vec::new();
+         // 解析一个address, 一个数组
 
         if let Some(perms) = self.account_own_perms.get_mut(&account) {
             for p in permissions {
@@ -467,10 +509,3 @@ impl PermManager {
         return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
     }
 }
-
-
-
-
-
-
-

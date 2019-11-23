@@ -191,7 +191,12 @@ impl Genesis {
                     } else {
                         let addr = Address::from_unaligned(value.as_str()).unwrap();
                         conts.push(addr);
-                        let hash_key = keccak256(key.as_bytes()).to_vec()[0..4].to_vec();
+                        let mut hash_key = Vec::new();
+                        if addr == Address::from(reserved_addresses::PERMISSION_SEND_TX) || addr == Address::from(reserved_addresses::PERMISSION_CREATE_CONTRACT) {
+                            hash_key = [0; 4].to_vec();
+                        } else {
+                            hash_key = keccak256(key.as_bytes()).to_vec()[0..4].to_vec();
+                        }
                         funcs.push(hash_key);
                     }
                 }
