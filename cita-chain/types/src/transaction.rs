@@ -14,15 +14,13 @@
 
 use super::Bytes;
 use crate::block_number::BlockNumber;
-use crate::crypto::{
-    pubkey_to_address, PubKey, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN,
-};
+use crate::crypto::{pubkey_to_address, PubKey, Signature, HASH_BYTES_LEN, PUBKEY_BYTES_LEN, SIGNATURE_BYTES_LEN};
 use crate::reserved_addresses::{ABI_ADDRESS, AMEND_ADDRESS, STORE_ADDRESS};
 use cita_types::traits::LowerHex;
 use cita_types::{clean_0x, Address, H256, U256};
 use libproto::blockchain::{
-    Crypto as ProtoCrypto, SignedTransaction as ProtoSignedTransaction,
-    Transaction as ProtoTransaction, UnverifiedTransaction as ProtoUnverifiedTransaction,
+    Crypto as ProtoCrypto, SignedTransaction as ProtoSignedTransaction, Transaction as ProtoTransaction,
+    UnverifiedTransaction as ProtoUnverifiedTransaction,
 };
 use rlp::*;
 use std::ops::{Deref, DerefMut};
@@ -315,9 +313,7 @@ impl Transaction {
                 Action::Call(ref to) => pt.set_to_v1(to.to_vec()),
                 Action::Store => pt.set_to_v1(Address::from_str(STORE_ADDRESS).unwrap().to_vec()),
                 Action::AbiStore => pt.set_to_v1(Address::from_str(ABI_ADDRESS).unwrap().to_vec()),
-                Action::AmendData => {
-                    pt.set_to_v1(Address::from_str(AMEND_ADDRESS).unwrap().to_vec())
-                }
+                Action::AmendData => pt.set_to_v1(Address::from_str(AMEND_ADDRESS).unwrap().to_vec()),
             }
         }
         pt

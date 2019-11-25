@@ -45,13 +45,7 @@ impl AsMillis for Duration {
 pub struct Generateblock;
 
 impl Generateblock {
-    pub fn generate_tx(
-        code: &str,
-        address: String,
-        quota: u64,
-        flag_multi_sender: i32,
-        kp: PrivKey,
-    ) -> SignedTransaction {
+    pub fn generate_tx(code: &str, address: String, quota: u64, flag_multi_sender: i32, kp: PrivKey) -> SignedTransaction {
         let pv: PrivKey;
         pv = if flag_multi_sender > 0 {
             let keypair = KeyPair::gen_keypair();
@@ -71,20 +65,14 @@ impl Generateblock {
         tx.sign(pv)
     }
 
-    pub fn build_block_with_proof(
-        txs: Vec<SignedTransaction>,
-        pre_hash: H256,
-        h: u64,
-    ) -> (Vec<u8>, BlockWithProof) {
+    pub fn build_block_with_proof(txs: Vec<SignedTransaction>, pre_hash: H256, h: u64) -> (Vec<u8>, BlockWithProof) {
         let keypair = KeyPair::gen_keypair();
         let pv = keypair.privkey();
         let sender = keypair.address();
 
         let mut block = Block::new();
         let block_time = Self::unix_now();
-        block
-            .mut_header()
-            .set_timestamp(AsMillis::as_millis(&block_time));
+        block.mut_header().set_timestamp(AsMillis::as_millis(&block_time));
         block.mut_header().set_height(h);
         block.mut_header().set_prevhash(pre_hash.0.to_vec());
         block.mut_body().set_transactions(txs.into());
@@ -94,13 +82,7 @@ impl Generateblock {
         proof.proposal = H256::default();
         let mut commits = HashMap::new();
         let msg = serialize(
-            &(
-                proof.height,
-                proof.round,
-                Step::Precommit,
-                sender,
-                Some(proof.proposal),
-            ),
+            &(proof.height, proof.round, Step::Precommit, sender, Some(proof.proposal)),
             Infinite,
         )
         .unwrap();
@@ -109,9 +91,7 @@ impl Generateblock {
         proof.commits = commits;
         block.mut_header().set_proof(proof.clone().into());
         let transactions_root = block.get_body().transactions_root();
-        block
-            .mut_header()
-            .set_transactions_root(transactions_root.to_vec());
+        block.mut_header().set_transactions_root(transactions_root.to_vec());
         let mut proof_blk = BlockWithProof::new();
         proof_blk.set_blk(block);
         proof_blk.set_proof(proof.into());

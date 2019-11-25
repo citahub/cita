@@ -42,26 +42,10 @@ fn main() {
                 .help("Path of the file for initialization data of contracts.")
                 .required(true),
         )
-        .arg(
-            Arg::with_name("genesis_path")
-                .help("Set created genesis path")
-                .required(true),
-        )
-        .arg(
-            Arg::with_name("timestamp")
-                .help("Specify a timestamp to use.")
-                .required(true),
-        )
-        .arg(
-            Arg::with_name("init_token")
-                .help("Init token for this chain")
-                .required(true),
-        )
-        .arg(
-            Arg::with_name("prevhash")
-                .help("Prevhash of genesis.")
-                .required(true),
-        )
+        .arg(Arg::with_name("genesis_path").help("Set created genesis path").required(true))
+        .arg(Arg::with_name("timestamp").help("Specify a timestamp to use.").required(true))
+        .arg(Arg::with_name("init_token").help("Init token for this chain").required(true))
+        .arg(Arg::with_name("prevhash").help("Prevhash of genesis.").required(true))
         .get_matches();
 
     let contract_dir = matches.value_of("contract_dir").unwrap();

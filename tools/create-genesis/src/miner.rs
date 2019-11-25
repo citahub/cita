@@ -28,8 +28,7 @@ impl Miner {
         let state = cita_vm::state::State::new(db.clone()).expect("New state failed.");
 
         let state_data_provider = Arc::new(RefCell::new(state));
-        let block_data_provider: Arc<cita_vm::BlockDataProvider> =
-            Arc::new(cita_vm::BlockDataProviderMock::default());
+        let block_data_provider: Arc<cita_vm::BlockDataProvider> = Arc::new(cita_vm::BlockDataProviderMock::default());
         let context = cita_vm::evm::Context::default();
         let config = cita_vm::Config::default();
         let sender = Address::from("0xd6c8454425135d0cfdb7c1fcba0f8a08a5880bf6");
@@ -54,8 +53,7 @@ impl Miner {
         .expect("Create genesis exec error.");
 
         // Cal contract address
-        let contract_address =
-            cita_vm::create_address_from_address_and_nonce(&sender, &U256::from(0));
+        let contract_address = cita_vm::create_address_from_address_and_nonce(&sender, &U256::from(0));
 
         if let Some(account) = state_data_provider
             .borrow()

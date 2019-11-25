@@ -121,16 +121,8 @@ pub fn to_resource_vec(output: &[u8]) -> Option<Vec<Resource>> {
             }
             Some((decoded.remove(0), decoded.remove(0)))
         })
-        .and_then(|(cont_bytes, func_bytes)| {
-            cont_bytes
-                .to_array()
-                .map(|cont_array| (cont_array, func_bytes))
-        })
-        .and_then(|(cont_array, func_bytes)| {
-            func_bytes
-                .to_array()
-                .map(|func_array| (cont_array, func_array))
-        })
+        .and_then(|(cont_bytes, func_bytes)| cont_bytes.to_array().map(|cont_array| (cont_array, func_bytes)))
+        .and_then(|(cont_array, func_bytes)| func_bytes.to_array().map(|func_array| (cont_array, func_array)))
         .and_then(|(cont_array, func_array)| {
             let mut v = Vec::new();
             for x in cont_array {

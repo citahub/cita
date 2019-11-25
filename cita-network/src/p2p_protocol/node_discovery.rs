@@ -21,9 +21,7 @@ use tentacle::{
     utils::{multiaddr_to_socketaddr, socketaddr_to_multiaddr},
     ProtocolId, SessionId,
 };
-use tentacle_discovery::{
-    AddressManager, Discovery, DiscoveryProtocol, MisbehaveResult, Misbehavior,
-};
+use tentacle_discovery::{AddressManager, Discovery, DiscoveryProtocol, MisbehaveResult, Misbehavior};
 
 pub const DISCOVERY_PROTOCOL_ID: ProtocolId = ProtocolId::new(0);
 pub const DISCOVERY_TIMEOUT_SECS: u64 = 150;
@@ -67,10 +65,7 @@ impl AddressManager for NodesAddressManager {
 
         let ret = rx.recv().unwrap();
 
-        info!(
-            "[NodeDiscovery] Get random address : {:?} from nodes manager.",
-            ret
-        );
+        info!("[NodeDiscovery] Get random address : {:?} from nodes manager.", ret);
 
         ret.into_iter().map(socketaddr_to_multiaddr).collect()
     }

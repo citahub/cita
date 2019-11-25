@@ -74,12 +74,7 @@ where
                     .map(ToOwned::to_owned)
                     .collect::<Vec<V>>();
             });
-            if self
-                .cache_by_key
-                .get(key)
-                .map(Vec::is_empty)
-                .unwrap_or(false)
-            {
+            if self.cache_by_key.get(key).map(Vec::is_empty).unwrap_or(false) {
                 self.cache_by_key.remove(key);
             }
         });
@@ -149,15 +144,9 @@ mod tests {
         assert_eq!(cache.lru(), Vec::new());
 
         cache.extend(&vec![Address::from([4; 20]), Address::from([5; 20])], 5);
-        assert_eq!(
-            cache.lru(),
-            vec![Address::from([2; 20]), Address::from([3; 20])]
-        );
+        assert_eq!(cache.lru(), vec![Address::from([2; 20]), Address::from([3; 20])]);
 
         cache.extend(&vec![Address::from([4; 20]), Address::from([5; 20])], 5);
-        assert_eq!(
-            cache.lru(),
-            vec![Address::from([4; 20]), Address::from([5; 20])]
-        );
+        assert_eq!(cache.lru(), vec![Address::from([4; 20]), Address::from([5; 20])]);
     }
 }

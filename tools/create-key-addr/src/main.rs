@@ -27,11 +27,7 @@ fn to_hex_string(data: &[u8]) -> String {
 
 fn write_to_file(path: String, data: &str, append: bool) {
     let mut file = if append {
-        OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(path)
-            .unwrap()
+        OpenOptions::new().create(true).append(true).open(path).unwrap()
     } else {
         File::create(path).unwrap()
     };

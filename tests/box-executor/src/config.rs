@@ -29,10 +29,7 @@ impl Config {
     // Initialize Config from given command line options
     pub fn init(path: &str) -> Self {
         let mut yaml_str = String::new();
-        let _ = fs::File::open(path)
-            .unwrap()
-            .read_to_string(&mut yaml_str)
-            .unwrap();
+        let _ = fs::File::open(path).unwrap().read_to_string(&mut yaml_str).unwrap();
         let mut yaml: serde_yaml::Value = serde_yaml::from_str(yaml_str.as_str()).unwrap();
 
         let blocks = {
@@ -50,10 +47,7 @@ impl Config {
             PrivKey::from_str(val).unwrap()
         };
 
-        Config {
-            private_key,
-            blocks,
-        }
+        Config { private_key, blocks }
     }
 
     fn detect_missing_blocks(blocks: &HashMap<u64, serde_yaml::Value>) {

@@ -38,8 +38,7 @@ impl BlockProcessor {
     }
 
     pub fn reset_max_store_height(&self) {
-        self.chain
-            .set_max_store_height(self.chain.get_current_height());
+        self.chain.set_max_store_height(self.chain.get_current_height());
     }
 
     pub fn signal_to_executor(&self) {

@@ -202,10 +202,7 @@ mod tests {
         headers.insert(HOST, HeaderValue::from_static("cryptape.com"));
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
-        ext_headers.insert_vec(
-            ACCESS_CONTROL_ALLOW_METHODS,
-            vec![Method::POST, Method::OPTIONS],
-        );
+        ext_headers.insert_vec(ACCESS_CONTROL_ALLOW_METHODS, vec![Method::POST, Method::OPTIONS]);
         ext_headers.insert(CONTENT_TYPE, HeaderValue::from_static("text/plain"));
 
         resp = resp.with_headers(headers.clone());

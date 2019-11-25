@@ -55,9 +55,7 @@ impl ReceiptError {
             ReceiptError::ExecutionInternal => "Execution internal error.",
             ReceiptError::TransactionMalformed => "Malformed transaction.",
             ReceiptError::OutOfQuota => "Out of quota.",
-            ReceiptError::BadJumpDestination => {
-                "Jump position wasn't marked with JUMPDEST instruction."
-            }
+            ReceiptError::BadJumpDestination => "Jump position wasn't marked with JUMPDEST instruction.",
             ReceiptError::BadInstruction => "Instruction is not supported.",
             ReceiptError::StackUnderflow => "Not enough stack elements to execute instruction.",
             ReceiptError::OutOfStack => "Execution would exceed defined Stack Limit.",
@@ -87,9 +85,7 @@ impl ReceiptError {
             ReceiptError::StackUnderflow => ProtoReceiptError::StackUnderflow,
             ReceiptError::OutOfStack => ProtoReceiptError::OutOfStack,
             ReceiptError::Internal => ProtoReceiptError::Internal,
-            ReceiptError::MutableCallInStaticContext => {
-                ProtoReceiptError::MutableCallInStaticContext
-            }
+            ReceiptError::MutableCallInStaticContext => ProtoReceiptError::MutableCallInStaticContext,
             ReceiptError::OutOfBounds => ProtoReceiptError::OutOfBounds,
             ReceiptError::Reverted => ProtoReceiptError::Reverted,
         }
@@ -113,9 +109,7 @@ impl ReceiptError {
             ProtoReceiptError::StackUnderflow => ReceiptError::StackUnderflow,
             ProtoReceiptError::OutOfStack => ReceiptError::OutOfStack,
             ProtoReceiptError::Internal => ReceiptError::Internal,
-            ProtoReceiptError::MutableCallInStaticContext => {
-                ReceiptError::MutableCallInStaticContext
-            }
+            ProtoReceiptError::MutableCallInStaticContext => ReceiptError::MutableCallInStaticContext,
             ProtoReceiptError::OutOfBounds => ReceiptError::OutOfBounds,
             ProtoReceiptError::Reverted => ReceiptError::Reverted,
         }

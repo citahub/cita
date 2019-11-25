@@ -66,12 +66,7 @@ impl Dispatcher {
 
     /// package a block with new transactions,
     /// send to cita-bft
-    pub fn proposal_tx_list(
-        &mut self,
-        height: usize,
-        mq_pub: &Sender<(String, Vec<u8>)>,
-        config_info: &SysConfigInfo,
-    ) {
+    pub fn proposal_tx_list(&mut self, height: usize, mq_pub: &Sender<(String, Vec<u8>)>, config_info: &SysConfigInfo) {
         let mut block_txs = BlockTxs::new();
         let mut body = BlockBody::new();
 
@@ -83,11 +78,7 @@ impl Dispatcher {
             &config_info.admin_address,
             config_info.version.unwrap(),
         );
-        info!(
-            "public block txs height {} with {:?} transactions",
-            height,
-            out_txs.len()
-        );
+        info!("public block txs height {} with {:?} transactions", height, out_txs.len());
 
         if !out_txs.is_empty() {
             body.set_transactions(out_txs.into());
@@ -97,10 +88,7 @@ impl Dispatcher {
         trace!("deal_txs send height {}", height);
         let msg: Message = block_txs.into();
         mq_pub
-            .send((
-                routing_key!(Auth >> BlockTxs).into(),
-                msg.try_into().unwrap(),
-            ))
+            .send((routing_key!(Auth >> BlockTxs).into(), msg.try_into().unwrap()))
             .unwrap();
     }
 
@@ -112,10 +100,7 @@ impl Dispatcher {
         trace!("proposal empty block height {}", height);
         let msg: Message = block_txs.into();
         mq_pub
-            .send((
-                routing_key!(Auth >> BlockTxs).into(),
-                msg.try_into().unwrap(),
-            ))
+            .send((routing_key!(Auth >> BlockTxs).into(), msg.try_into().unwrap()))
             .unwrap();
     }
 
@@ -127,10 +112,7 @@ impl Dispatcher {
             if success {
                 self.wal.write(tx);
             } else {
-                warn!(
-                    "the transaction {} is already exist",
-                    tx.get_tx_hash().lower_hex()
-                );
+                warn!("the transaction {} is already exist", tx.get_tx_hash().lower_hex());
             }
         }
         success
@@ -158,9 +140,7 @@ impl Dispatcher {
 
     pub fn check_missing(&self, ids: Vec<H256>) -> Vec<H256> {
         let pool = self.txs_pool.borrow();
-        ids.into_iter()
-            .filter(|id| pool.get(id).is_none())
-            .collect()
+        ids.into_iter().filter(|id| pool.get(id).is_none()).collect()
     }
 
     pub fn take_txs_from_pool(

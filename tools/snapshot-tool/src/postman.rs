@@ -73,11 +73,7 @@ impl Postman {
     }
 
     pub fn clear_message_bus(&self) {
-        while self
-            .mq_req_receiver
-            .recv_timeout(Duration::new(2, 0))
-            .is_ok()
-        {}
+        while self.mq_req_receiver.recv_timeout(Duration::new(2, 0)).is_ok() {}
     }
 
     pub fn serve(&mut self) -> Result<(), String> {
@@ -93,9 +89,7 @@ impl Postman {
     }
 
     fn recv(&self) -> (String, Vec<u8>) {
-        self.mq_req_receiver
-            .recv()
-            .expect("listen message from message-bus")
+        self.mq_req_receiver.recv().expect("listen message from message-bus")
     }
 
     // Sends specifc request and wait expected responses from all sub-modules
@@ -170,11 +164,8 @@ impl Postman {
     }
 
     fn enough(&self) -> bool {
-        let expeted = Ack::Chain as usize
-            * Ack::Executor as usize
-            * Ack::Auth as usize
-            * Ack::Consensus as usize
-            * Ack::Net as usize;
+        let expeted =
+            Ack::Chain as usize * Ack::Executor as usize * Ack::Auth as usize * Ack::Consensus as usize * Ack::Net as usize;
         expeted == self.arrived
     }
 
@@ -182,10 +173,7 @@ impl Postman {
         info!("send Snapshot::{:?}", req.cmd);
         let message: Message = req.into();
         self.mq_resp_sender
-            .send((
-                routing_key!(Snapshot >> SnapshotReq).into(),
-                (&message).try_into().unwrap(),
-            ))
+            .send((routing_key!(Snapshot >> SnapshotReq).into(), (&message).try_into().unwrap()))
             .unwrap();
     }
 }

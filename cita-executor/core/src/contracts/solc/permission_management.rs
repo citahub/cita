@@ -77,9 +77,7 @@ impl<'a> PermissionManagement<'a> {
 
     pub fn load_account_permissions(&self, block_tag: BlockTag) -> HashMap<Address, Vec<Resource>> {
         let mut account_permissions = HashMap::new();
-        let accounts = self
-            .all_accounts(block_tag)
-            .unwrap_or_else(Self::default_all_accounts);
+        let accounts = self.all_accounts(block_tag).unwrap_or_else(Self::default_all_accounts);
         trace!("ALl accounts: {:?}", accounts);
         for account in accounts {
             let permissions = self
@@ -103,12 +101,7 @@ impl<'a> PermissionManagement<'a> {
     /// Account array
     pub fn all_accounts(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.executor
-            .call_method(
-                &*CONTRACT_ADDRESS,
-                &*ALLACCOUNTS_HASH.as_slice(),
-                None,
-                block_tag,
-            )
+            .call_method(&*CONTRACT_ADDRESS, &*ALLACCOUNTS_HASH.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
@@ -119,8 +112,7 @@ impl<'a> PermissionManagement<'a> {
     }
 
     pub fn get_super_admin_account(&self, block_tag: BlockTag) -> Option<Address> {
-        self.all_accounts(block_tag)
-            .and_then(|accounts| accounts.first().cloned())
+        self.all_accounts(block_tag).and_then(|accounts| accounts.first().cloned())
         // 修改成直接读 db
     }
 
@@ -137,9 +129,7 @@ impl<'a> PermissionManagement<'a> {
 
     pub fn permission_addresses(&self, block_tag: BlockTag) -> Vec<Address> {
         let mut res: Vec<Address> = Vec::new();
-        let accounts = self
-            .all_accounts(block_tag)
-            .unwrap_or_else(Self::default_all_accounts);
+        let accounts = self.all_accounts(block_tag).unwrap_or_else(Self::default_all_accounts);
         for account in accounts {
             let permissions = self
                 .permissions(&(H256::from(account)), block_tag)
@@ -291,9 +281,7 @@ mod tests {
 
         // Test all_accounts
         let permission_management = PermissionManagement::new(&executor);
-        let all_accounts: Vec<Address> = permission_management
-            .all_accounts(BlockTag::Tag(Tag::Pending))
-            .unwrap();
+        let all_accounts: Vec<Address> = permission_management.all_accounts(BlockTag::Tag(Tag::Pending)).unwrap();
 
         assert_eq!(
             all_accounts,
@@ -307,10 +295,7 @@ mod tests {
         let super_admin_address = Address::from_str(DEFAULT_SUPER_ADEMIN).unwrap();
 
         let mut permissions: Vec<Address> = permission_management
-            .permissions(
-                &(H256::from(super_admin_address)),
-                BlockTag::Tag(Tag::Pending),
-            )
+            .permissions(&(H256::from(super_admin_address)), BlockTag::Tag(Tag::Pending))
             .unwrap();
         permissions.sort();
 

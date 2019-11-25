@@ -36,9 +36,7 @@ use crate::types::errors::{AuthenticationError, ExecutionError};
 use crate::types::transaction::SignedTransaction;
 use cita_merklehash;
 use cita_types::{Address, Bloom as LogBloom, H256, U256};
-use cita_vm::{
-    evm::Error as EVMError, state::State as CitaState, state::StateObjectInfo, Error as VMError,
-};
+use cita_vm::{evm::Error as EVMError, state::State as CitaState, state::StateObjectInfo, Error as VMError};
 use hashable::Hashable;
 use libproto::executor::{ExecutedInfo, ReceiptWithOption};
 use rlp::Encodable;
@@ -89,8 +87,8 @@ impl ExecutedBlock {
         last_hashes: Arc<LastHashes>,
         eth_compatibility: bool,
     ) -> Result<Self, Error> {
-        let state = CitaState::from_existing(Arc::<CitaTrieDB>::clone(&trie_db), state_root)
-            .expect("Get state from trie db");
+        let state =
+            CitaState::from_existing(Arc::<CitaTrieDB>::clone(&trie_db), state_root).expect("Get state from trie db");
 
         // Need only one state reference for the whole block transaction.
         let state = Arc::new(RefCell::new(state));
@@ -144,9 +142,7 @@ impl ExecutedBlock {
         trace!("block quota limit is {:?}", context.block_quota_limit);
 
         let conf = sys_config.block_sys_config.clone();
-        self.account_gas
-            .entry(*t.sender())
-            .or_insert(self.account_gas_limit);
+        self.account_gas.entry(*t.sender()).or_insert(self.account_gas_limit);
 
         //FIXME: set coin_base according to conf.
         context.account_quota_limit = *self
@@ -176,27 +172,17 @@ impl ExecutedBlock {
                 // Note: ret.quota_used was a current transaction quota used.
                 // FIXME: hasn't handle some errors
                 let receipt_error = ret.exception.and_then(|error| match error {
-                    ExecutedException::VM(VMError::Evm(EVMError::OutOfGas)) => {
-                        Some(ReceiptError::OutOfQuota)
-                    }
+                    ExecutedException::VM(VMError::Evm(EVMError::OutOfGas)) => Some(ReceiptError::OutOfQuota),
                     ExecutedException::VM(VMError::Evm(EVMError::InvalidJumpDestination)) => {
                         Some(ReceiptError::BadJumpDestination)
                     }
-                    ExecutedException::VM(VMError::Evm(EVMError::InvalidOpcode)) => {
-                        Some(ReceiptError::BadInstruction)
-                    }
-                    ExecutedException::VM(VMError::Evm(EVMError::OutOfStack)) => {
-                        Some(ReceiptError::OutOfStack)
-                    }
+                    ExecutedException::VM(VMError::Evm(EVMError::InvalidOpcode)) => Some(ReceiptError::BadInstruction),
+                    ExecutedException::VM(VMError::Evm(EVMError::OutOfStack)) => Some(ReceiptError::OutOfStack),
                     ExecutedException::VM(VMError::Evm(EVMError::MutableCallInStaticContext)) => {
                         Some(ReceiptError::MutableCallInStaticContext)
                     }
-                    ExecutedException::VM(VMError::Evm(EVMError::StackUnderflow)) => {
-                        Some(ReceiptError::StackUnderflow)
-                    }
-                    ExecutedException::VM(VMError::Evm(EVMError::OutOfBounds)) => {
-                        Some(ReceiptError::OutOfBounds)
-                    }
+                    ExecutedException::VM(VMError::Evm(EVMError::StackUnderflow)) => Some(ReceiptError::StackUnderflow),
+                    ExecutedException::VM(VMError::Evm(EVMError::OutOfBounds)) => Some(ReceiptError::OutOfBounds),
                     ExecutedException::Reverted => Some(ReceiptError::Reverted),
                     _ => Some(ReceiptError::Internal),
                 });
@@ -230,17 +216,13 @@ impl ExecutedBlock {
                 let receipt_error = match err {
                     ExecutionError::NotEnoughBaseGas => Some(ReceiptError::NotEnoughBaseQuota),
                     // FIXME: need to handle this two situation.
-                    ExecutionError::BlockQuotaLimitReached => {
-                        Some(ReceiptError::BlockQuotaLimitReached)
-                    }
-                    ExecutionError::AccountQuotaLimitReached => {
-                        Some(ReceiptError::AccountQuotaLimitReached)
-                    }
+                    ExecutionError::BlockQuotaLimitReached => Some(ReceiptError::BlockQuotaLimitReached),
+                    ExecutionError::AccountQuotaLimitReached => Some(ReceiptError::AccountQuotaLimitReached),
                     ExecutionError::InvalidNonce => Some(ReceiptError::InvalidNonce),
                     ExecutionError::NotEnoughBalance => Some(ReceiptError::NotEnoughCash),
-                    ExecutionError::Authentication(
-                        AuthenticationError::NoTransactionPermission,
-                    ) => Some(ReceiptError::NoTransactionPermission),
+                    ExecutionError::Authentication(AuthenticationError::NoTransactionPermission) => {
+                        Some(ReceiptError::NoTransactionPermission)
+                    }
                     ExecutionError::Authentication(AuthenticationError::NoContractPermission) => {
                         Some(ReceiptError::NoContractPermission)
                     }
@@ -257,22 +239,14 @@ impl ExecutedBlock {
                 let tx_quota_used = match err {
                     ExecutionError::Internal(_) => t.gas,
                     _ => cmp::min(
-                        self.state
-                            .borrow_mut()
-                            .balance(t.sender())
-                            .unwrap_or_else(|_| U256::from(0)),
+                        self.state.borrow_mut().balance(t.sender()).unwrap_or_else(|_| U256::from(0)),
                         U256::from(schedule.tx_gas),
                     ),
                 };
 
                 if conf.economical_model == EconomicalModel::Charge {
                     // When charge model, set the min(account.balance,gas_used)
-                    let _ = self.deal_err_quota_cost(
-                        t.sender(),
-                        &context.coin_base,
-                        tx_quota_used,
-                        t.gas_price(),
-                    );
+                    let _ = self.deal_err_quota_cost(t.sender(), &context.coin_base, tx_quota_used, t.gas_price());
                 }
 
                 let cumulative_quota_used = context.quota_used + tx_quota_used;
@@ -304,13 +278,7 @@ impl ExecutedBlock {
         }
     }
 
-    fn deal_err_quota_cost(
-        &self,
-        sender: &Address,
-        coin_base: &Address,
-        quota: U256,
-        quota_price: U256,
-    ) -> U256 {
+    fn deal_err_quota_cost(&self, sender: &Address, coin_base: &Address, quota: U256, quota_price: U256) -> U256 {
         if quota_price == U256::zero() {
             return quota;
         }
@@ -319,12 +287,7 @@ impl ExecutedBlock {
         trace!("fee -{:?}, sender balance-{:?}", tx_fee, sender_balance);
         let real_fee = cmp::min(sender_balance, tx_fee);
 
-        if self
-            .state
-            .borrow_mut()
-            .sub_balance(sender, real_fee)
-            .is_err()
-        {
+        if self.state.borrow_mut().sub_balance(sender, real_fee).is_err() {
             error!("Sub balance failed. tx_fee: {:?}", real_fee);
         } else {
             let _ = self.state.borrow_mut().add_balance(&coin_base, real_fee);
@@ -376,24 +339,18 @@ impl ExecutedBlock {
         block.set_quota_used(self.current_quota_used);
 
         // blocks blooms
-        let log_bloom = self
-            .receipts
-            .clone()
-            .into_iter()
-            .fold(LogBloom::zero(), |mut b, r| {
-                b = b | r.log_bloom;
-                b
-            });
+        let log_bloom = self.receipts.clone().into_iter().fold(LogBloom::zero(), |mut b, r| {
+            b = b | r.log_bloom;
+            b
+        });
 
         block.set_log_bloom(log_bloom);
         block.rehash();
 
         // Note: It is ok to new a state, because no cache and checkpoint used.
-        let mut state = CitaState::from_existing(
-            Arc::<CitaTrieDB>::clone(&self.state.borrow().db),
-            self.state.borrow().root,
-        )
-        .expect("Get state from trie db");
+        let mut state =
+            CitaState::from_existing(Arc::<CitaTrieDB>::clone(&self.state.borrow().db), self.state.borrow().root)
+                .expect("Get state from trie db");
 
         state.cache = RefCell::new(self.state.borrow_mut().cache.to_owned().into_inner());
 
@@ -419,29 +376,17 @@ impl ClosedBlock {
     pub fn protobuf(&self) -> ExecutedInfo {
         let mut executed_info = ExecutedInfo::new();
 
-        executed_info
-            .mut_header()
-            .set_prevhash(self.parent_hash().to_vec());
+        executed_info.mut_header().set_prevhash(self.parent_hash().to_vec());
         executed_info.mut_header().set_timestamp(self.timestamp());
         executed_info.mut_header().set_height(self.number());
-        executed_info
-            .mut_header()
-            .set_state_root(self.state_root().to_vec());
+        executed_info.mut_header().set_state_root(self.state_root().to_vec());
         executed_info
             .mut_header()
             .set_transactions_root(self.transactions_root().to_vec());
-        executed_info
-            .mut_header()
-            .set_receipts_root(self.receipts_root().to_vec());
-        executed_info
-            .mut_header()
-            .set_log_bloom(self.log_bloom().to_vec());
-        executed_info
-            .mut_header()
-            .set_quota_used(u64::from(*self.quota_used()));
-        executed_info
-            .mut_header()
-            .set_quota_limit(self.quota_limit().low_u64());
+        executed_info.mut_header().set_receipts_root(self.receipts_root().to_vec());
+        executed_info.mut_header().set_log_bloom(self.log_bloom().to_vec());
+        executed_info.mut_header().set_quota_used(u64::from(*self.quota_used()));
+        executed_info.mut_header().set_quota_limit(self.quota_limit().low_u64());
 
         executed_info.receipts = self
             .receipts
@@ -453,9 +398,7 @@ impl ClosedBlock {
                 receipt_proto_option
             })
             .collect();
-        executed_info
-            .mut_header()
-            .set_proposer(self.proposer().to_vec());
+        executed_info.mut_header().set_proposer(self.proposer().to_vec());
         executed_info
     }
 
@@ -497,10 +440,7 @@ impl BlockDataProvider for EVMBlockDataProvider {
             let index = self.context.block_number - number.low_u64() - 1;
             assert!(
                 index < self.context.last_hashes.len() as u64,
-                format!(
-                    "Inconsistent context, should contain at least {:?} last hashes",
-                    index + 1
-                )
+                format!("Inconsistent context, should contain at least {:?} last hashes", index + 1)
             );
             let r = self.context.last_hashes[index as usize];
             trace!(

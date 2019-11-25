@@ -31,12 +31,7 @@ impl<'a> BlockVerify<'a> {
 }
 
 impl<'a> BlockVerify<'a> {
-    pub fn verify_quota(
-        &self,
-        block_quota_limit: u64,
-        account_quota_limit: &AccountGasLimit,
-        check_quota: bool,
-    ) -> bool {
+    pub fn verify_quota(&self, block_quota_limit: u64, account_quota_limit: &AccountGasLimit, check_quota: bool) -> bool {
         let quota_limit = account_quota_limit.get_common_quota_limit();
         let mut specific_quota_limit = account_quota_limit.get_specific_quota_limit().clone();
         let mut account_gas_used: HashMap<Address, u64> = HashMap::new();
@@ -100,9 +95,7 @@ mod tests {
         raw_tx.quota = 1000;
         let tx = raw_tx.sign(*privkey);
 
-        let block = BlockVerify {
-            transactions: &vec![tx],
-        };
+        let block = BlockVerify { transactions: &vec![tx] };
 
         let mut account_quota_limit = AccountGasLimit::new();
         account_quota_limit.set_common_quota_limit(5000);

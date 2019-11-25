@@ -58,10 +58,7 @@ impl Permission {
     pub fn in_permission(&self, cont: Address, func: Vec<u8>) -> bool {
         // let cont_addr = Address::from(&params.input[16..36]);
         // let func = &params.input[36..40];
-        let resource = Resource {
-            addr: cont,
-            func: func,
-        };
+        let resource = Resource { addr: cont, func: func };
         self.resources.contains(&resource)
     }
 

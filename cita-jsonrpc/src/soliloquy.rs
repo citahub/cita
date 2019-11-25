@@ -199,9 +199,6 @@ count_per_batch = 30
         "#;
 
         let response = get_response(toml_str.to_string());
-        assert_eq!(
-            response.get_software_version().contains("softwareVersion"),
-            true
-        );
+        assert_eq!(response.get_software_version().contains("softwareVersion"), true);
     }
 }

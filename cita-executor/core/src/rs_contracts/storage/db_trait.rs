@@ -13,15 +13,9 @@ pub enum DataCategory {
 pub trait DataBase {
     type error;
 
-    fn insert(&self, column: DataCategory, key: Vec<u8>, value: Vec<u8>)
-        -> Result<(), Self::error>;
+    fn insert(&self, column: DataCategory, key: Vec<u8>, value: Vec<u8>) -> Result<(), Self::error>;
 
-    fn insert_batch(
-        &self,
-        column: DataCategory,
-        keys: Vec<Vec<u8>>,
-        values: Vec<Vec<u8>>,
-    ) -> Result<(), Self::error>;
+    fn insert_batch(&self, column: DataCategory, keys: Vec<Vec<u8>>, values: Vec<Vec<u8>>) -> Result<(), Self::error>;
 
     fn remove(&self, column: DataCategory, key: Vec<u8>) -> Result<(), Self::error>;
 

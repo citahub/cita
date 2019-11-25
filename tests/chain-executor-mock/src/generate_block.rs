@@ -96,13 +96,7 @@ impl BuildBlock {
         proof.proposal = H256::default();
         let mut commits = HashMap::new();
         let msg = serialize(
-            &(
-                proof.height,
-                proof.round,
-                Step::Precommit,
-                sender,
-                Some(proof.proposal),
-            ),
+            &(proof.height, proof.round, Step::Precommit, sender, Some(proof.proposal)),
             Infinite,
         )
         .unwrap();
@@ -113,9 +107,7 @@ impl BuildBlock {
         previous_proof.height = height as usize - 1;
         block.mut_header().set_proof(previous_proof.into());
         let transactions_root = block.get_body().transactions_root();
-        block
-            .mut_header()
-            .set_transactions_root(transactions_root.to_vec());
+        block.mut_header().set_transactions_root(transactions_root.to_vec());
         let mut proof_blk = BlockWithProof::new();
         proof_blk.set_blk(block);
         proof_blk.set_proof(proof.into());

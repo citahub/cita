@@ -57,9 +57,6 @@ mod tests {
         let executor = init_executor();
         let admin = Admin::new(&executor);
         let addr = admin.get_admin(BlockTag::Tag(Tag::Pending)).unwrap();
-        assert_eq!(
-            addr,
-            Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523")
-        );
+        assert_eq!(addr, Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"));
     }
 }

@@ -113,12 +113,7 @@ impl<'a> QuotaManager<'a> {
     /// Quota array
     pub fn quota(&self, block_tag: BlockTag) -> Option<Vec<u64>> {
         self.executor
-            .call_method(
-                &*CONTRACT_ADDRESS,
-                &*QUOTAS_HASH.as_slice(),
-                None,
-                block_tag,
-            )
+            .call_method(&*CONTRACT_ADDRESS, &*QUOTAS_HASH.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_u64_vec(&output))
     }
@@ -131,12 +126,7 @@ impl<'a> QuotaManager<'a> {
     /// Account array
     pub fn users(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.executor
-            .call_method(
-                &*CONTRACT_ADDRESS,
-                &*ACCOUNTS_HASH.as_slice(),
-                None,
-                block_tag,
-            )
+            .call_method(&*CONTRACT_ADDRESS, &*ACCOUNTS_HASH.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
@@ -162,12 +152,7 @@ impl<'a> QuotaManager<'a> {
     /// Global account quota limit
     pub fn account_quota_limit(&self, block_tag: BlockTag) -> Option<u64> {
         self.executor
-            .call_method(
-                &*CONTRACT_ADDRESS,
-                &*DEFAULT_AQL_HASH.as_slice(),
-                None,
-                block_tag,
-            )
+            .call_method(&*CONTRACT_ADDRESS, &*DEFAULT_AQL_HASH.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_u64(&output))
     }
@@ -180,12 +165,7 @@ impl<'a> QuotaManager<'a> {
     /// Auto exec quota limit
     pub fn auto_exec_quota_limit(&self, block_tag: BlockTag) -> Option<u64> {
         self.executor
-            .call_method(
-                &*CONTRACT_ADDRESS,
-                &*AUTO_EXEC_QL_HASH.as_slice(),
-                None,
-                block_tag,
-            )
+            .call_method(&*CONTRACT_ADDRESS, &*AUTO_EXEC_QL_HASH.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_u64(&output))
     }
@@ -228,21 +208,15 @@ mod tests {
         assert_eq!(quota, vec![BQL_VALUE]);
 
         // Test block quota limit
-        let block_quota_limit = quota_management
-            .block_quota_limit(BlockTag::Tag(Tag::Pending))
-            .unwrap();
+        let block_quota_limit = quota_management.block_quota_limit(BlockTag::Tag(Tag::Pending)).unwrap();
         assert_eq!(block_quota_limit, BQL_VALUE);
 
         // Test account quota limit
-        let account_quota_limit = quota_management
-            .account_quota_limit(BlockTag::Tag(Tag::Pending))
-            .unwrap();
+        let account_quota_limit = quota_management.account_quota_limit(BlockTag::Tag(Tag::Pending)).unwrap();
         assert_eq!(account_quota_limit, AQL_VALUE);
 
         // Test auto exec quota limit
-        let auto_exec_quota_limit = quota_management
-            .auto_exec_quota_limit(BlockTag::Tag(Tag::Pending))
-            .unwrap();
+        let auto_exec_quota_limit = quota_management.auto_exec_quota_limit(BlockTag::Tag(Tag::Pending)).unwrap();
         assert_eq!(auto_exec_quota_limit, AUTO_EXEC_QL_VALUE);
     }
 }

@@ -34,11 +34,7 @@ lazy_static! {
 pub struct ChainManagement;
 
 impl ChainManagement {
-    pub fn ext_chain_id(
-        data_provider: &mut DataProvider,
-        gas: &U256,
-        sender: &Address,
-    ) -> Option<(U256, U256)> {
+    pub fn ext_chain_id(data_provider: &mut DataProvider, gas: &U256, sender: &Address) -> Option<(U256, U256)> {
         trace!("Call chainManagement ext_chain_id()");
         let mut params = InterpreterParams::default();
         params.receiver = *CONTRACT_ADDRESS;

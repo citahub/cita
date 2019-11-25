@@ -48,21 +48,13 @@ impl HistoryHeights {
     pub fn update_height(&mut self, height: u64) {
         // update 'min_height', 'max_height', 'heights'
         if height < self.min_height {
-            trace!(
-                "height is small than min_height: {} < {}",
-                height,
-                self.min_height,
-            );
+            trace!("height is small than min_height: {} < {}", height, self.min_height,);
             return;
         } else if height > self.max_height {
             self.max_height = height;
 
             let old_min_height = self.min_height;
-            self.min_height = if height > BLOCKLIMIT {
-                height - BLOCKLIMIT + 1
-            } else {
-                0
-            };
+            self.min_height = if height > BLOCKLIMIT { height - BLOCKLIMIT + 1 } else { 0 };
 
             self.heights.insert(height);
             for i in old_min_height..self.min_height {

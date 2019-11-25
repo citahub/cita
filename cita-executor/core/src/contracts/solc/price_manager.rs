@@ -26,8 +26,7 @@ use cita_types::{Address, U256};
 
 lazy_static! {
     static ref GET_QUOTA_PRICE: Vec<u8> = method_tools::encode_to_vec(b"getQuotaPrice()");
-    static ref CONTRACT_ADDRESS: Address =
-        Address::from_str(reserved_addresses::PRICE_MANAGEMENT).unwrap();
+    static ref CONTRACT_ADDRESS: Address = Address::from_str(reserved_addresses::PRICE_MANAGEMENT).unwrap();
 }
 
 /// Configuration items from system contract
@@ -43,12 +42,7 @@ impl<'a> PriceManagement<'a> {
     /// Set quota price
     pub fn quota_price(&self, block_tag: BlockTag) -> Option<U256> {
         self.executor
-            .call_method(
-                &*CONTRACT_ADDRESS,
-                &*GET_QUOTA_PRICE.as_slice(),
-                None,
-                block_tag,
-            )
+            .call_method(&*CONTRACT_ADDRESS, &*GET_QUOTA_PRICE.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_u256(&output))
     }
@@ -70,9 +64,7 @@ mod tests {
     fn test_quota_price() {
         let executor = init_executor();
         let price_management = PriceManagement::new(&executor);
-        let price = price_management
-            .quota_price(BlockTag::Tag(Tag::Pending))
-            .unwrap();
+        let price = price_management.quota_price(BlockTag::Tag(Tag::Pending)).unwrap();
         assert_eq!(price, U256::from(100_0000));
     }
 }

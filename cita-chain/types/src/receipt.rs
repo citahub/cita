@@ -75,12 +75,7 @@ impl Receipt {
 
         receipt_proto.set_quota_used(self.quota_used.lower_hex());
         receipt_proto.set_log_bloom(self.log_bloom.to_vec());
-        receipt_proto.logs = self
-            .logs
-            .clone()
-            .into_iter()
-            .map(|log_entry| log_entry.protobuf())
-            .collect();
+        receipt_proto.logs = self.logs.clone().into_iter().map(|log_entry| log_entry.protobuf()).collect();
         receipt_proto.set_account_nonce(self.account_nonce.as_u64());
         receipt_proto.set_transaction_hash(self.transaction_hash.to_vec());
         receipt_proto
@@ -90,9 +85,7 @@ impl Receipt {
 impl From<ProtoReceipt> for Receipt {
     fn from(receipt: ProtoReceipt) -> Self {
         let state_root = if receipt.state_root.is_some() {
-            Some(H256::from_slice(
-                receipt.clone().take_state_root().get_state_root(),
-            ))
+            Some(H256::from_slice(receipt.clone().take_state_root().get_state_root()))
         } else {
             None
         };
@@ -107,34 +100,17 @@ impl From<ProtoReceipt> for Receipt {
             .iter()
             .map(|log_entry| {
                 let address: Address = Address::from_slice(log_entry.get_address());
-                let topics: Vec<H256> = log_entry
-                    .get_topics()
-                    .iter()
-                    .map(|topic| H256::from_slice(topic))
-                    .collect();
+                let topics: Vec<H256> = log_entry.get_topics().iter().map(|topic| H256::from_slice(topic)).collect();
                 let data: Bytes = Bytes::from(log_entry.get_data());
-                Log {
-                    address,
-                    topics,
-                    data,
-                }
+                Log { address, topics, data }
             })
             .collect();
 
         if receipt.error.is_some() {
-            error = Some(ReceiptError::from_proto(
-                receipt.clone().take_error().get_error(),
-            ));
+            error = Some(ReceiptError::from_proto(receipt.clone().take_error().get_error()));
         }
 
-        Receipt::new(
-            state_root,
-            quota_used,
-            logs,
-            error,
-            account_nonce,
-            transaction_hash,
-        )
+        Receipt::new(state_root, quota_used, logs, error, account_nonce, transaction_hash)
     }
 }
 

@@ -13,9 +13,7 @@
 // limitations under the License.
 
 use crate::cita_executive::VmExecParams;
-use crate::contracts::{
-    native::factory::Contract, solc::ChainManagement, tools::method as method_tools,
-};
+use crate::contracts::{native::factory::Contract, solc::ChainManagement, tools::method as method_tools};
 // use crate::state::StateProof;
 use cita_types::{Address, H256, U256};
 use core::header::Header;
@@ -29,14 +27,10 @@ use cita_vm::evm::DataProvider;
 use cita_vm::evm::InterpreterResult;
 
 lazy_static! {
-    static ref VERIFY_TRANSACTION_FUNC: u32 =
-        method_tools::encode_to_u32(b"verifyTransaction(address,bytes4,uint64,bytes)");
-    static ref VERIFY_STATE_FUNC: u32 =
-        method_tools::encode_to_u32(b"verifyState(uint256,uint64,bytes)");
-    static ref VERIFY_BLOCK_HEADER_FUNC: u32 =
-        method_tools::encode_to_u32(b"verifyBlockHeader(uint256,bytes)");
-    static ref GET_EXPECTED_BLOCK_NUMBER_FUNC: u32 =
-        method_tools::encode_to_u32(b"getExpectedBlockNumber(uint256)");
+    static ref VERIFY_TRANSACTION_FUNC: u32 = method_tools::encode_to_u32(b"verifyTransaction(address,bytes4,uint64,bytes)");
+    static ref VERIFY_STATE_FUNC: u32 = method_tools::encode_to_u32(b"verifyState(uint256,uint64,bytes)");
+    static ref VERIFY_BLOCK_HEADER_FUNC: u32 = method_tools::encode_to_u32(b"verifyBlockHeader(uint256,bytes)");
+    static ref GET_EXPECTED_BLOCK_NUMBER_FUNC: u32 = method_tools::encode_to_u32(b"getExpectedBlockNumber(uint256)");
 }
 
 #[derive(Clone)]
@@ -54,16 +48,10 @@ impl Contract for CrossChainVerify {
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         method_tools::extract_to_u32(&params.data[..]).and_then(|signature| match signature {
-            sig if sig == *VERIFY_TRANSACTION_FUNC => {
-                self.verify_transaction(params, data_provider)
-            }
+            sig if sig == *VERIFY_TRANSACTION_FUNC => self.verify_transaction(params, data_provider),
             sig if sig == *VERIFY_STATE_FUNC => self.verify_state(params, data_provider),
-            sig if sig == *VERIFY_BLOCK_HEADER_FUNC => {
-                self.verify_block_header(params, data_provider)
-            }
-            sig if sig == *GET_EXPECTED_BLOCK_NUMBER_FUNC => {
-                self.get_expected_block_number(params, data_provider)
-            }
+            sig if sig == *VERIFY_BLOCK_HEADER_FUNC => self.verify_block_header(params, data_provider),
+            sig if sig == *GET_EXPECTED_BLOCK_NUMBER_FUNC => self.get_expected_block_number(params, data_provider),
             _ => Err(NativeError::Internal("out of gas".to_string())),
         })
     }
@@ -120,13 +108,14 @@ impl CrossChainVerify {
         if result.is_none() {
             return Err(NativeError::Internal("decode 2nd param failed".to_string()));
         }
-        let hasher = result.unwrap()[..4].iter().take(4).enumerate().fold(
-            [0u8; 4],
-            |mut acc, (idx, val)| {
+        let hasher = result.unwrap()[..4]
+            .iter()
+            .take(4)
+            .enumerate()
+            .fold([0u8; 4], |mut acc, (idx, val)| {
                 acc[idx] = *val;
                 acc
-            },
-        );
+            });
         trace!("hasher = {:?}", hasher);
         let result = decoded.remove(0).to_uint();
         if result.is_none() {
@@ -145,26 +134,18 @@ impl CrossChainVerify {
 
         let relay_info = proof.extract_relay_info();
         if relay_info.is_none() {
-            return Err(NativeError::Internal(
-                "extract relay info failed".to_string(),
-            ));
+            return Err(NativeError::Internal("extract relay info failed".to_string()));
         }
         let relay_info = relay_info.unwrap();
         trace!("relay_info {:?}", proof_data);
 
-        let ret =
-            ChainManagement::ext_chain_id(data_provider, &U256::from(gas_left), &params.sender);
+        let ret = ChainManagement::ext_chain_id(data_provider, &U256::from(gas_left), &params.sender);
         if ret.is_none() {
             return Err(NativeError::Internal("get chain id failed".to_owned()));
         }
         let (gas_left, chain_id) = ret.unwrap();
 
-        let ret = ChainManagement::ext_authorities(
-            data_provider,
-            &gas_left,
-            &params.sender,
-            relay_info.from_chain_id,
-        );
+        let ret = ChainManagement::ext_authorities(data_provider, &gas_left, &params.sender, relay_info.from_chain_id);
         if ret.is_none() {
             return Err(NativeError::Internal("get authorities failed".to_owned()));
         }
@@ -172,25 +153,16 @@ impl CrossChainVerify {
 
         let ret = proof.extract_crosschain_data(addr, hasher, nonce, chain_id, &authorities[..]);
         if ret.is_none() {
-            return Err(NativeError::Internal(
-                "extract_crosschain_data failed".to_string(),
-            ));
+            return Err(NativeError::Internal("extract_crosschain_data failed".to_string()));
         }
         let (sender, tx_data) = ret.unwrap();
 
-        let tokens = vec![
-            ethabi::Token::Address(sender.into()),
-            ethabi::Token::Bytes(tx_data.clone()),
-        ];
+        let tokens = vec![ethabi::Token::Address(sender.into()), ethabi::Token::Bytes(tx_data.clone())];
         let result = ethabi::encode(&tokens);
         trace!("encoded {:?}", result);
 
         self.output = result;
-        Ok(InterpreterResult::Normal(
-            self.output.clone(),
-            gas_left.low_u64(),
-            vec![],
-        ))
+        Ok(InterpreterResult::Normal(self.output.clone(), gas_left.low_u64(), vec![]))
     }
 
     fn verify_state(
@@ -336,8 +308,7 @@ impl CrossChainVerify {
         let block_header_curr = Header::from_bytes(&block_header_curr_bytes);
 
         let block_header_prev_bytes: Vec<u8> =
-            self.block_headers
-                .get_bytes(data_provider, &params.code_address, &chain_id)?;
+            self.block_headers.get_bytes(data_provider, &params.code_address, &chain_id)?;
 
         let verify_result = if block_header_prev_bytes.is_empty() {
             trace!("sync first block header");
@@ -345,12 +316,7 @@ impl CrossChainVerify {
         } else {
             let block_header_prev = Header::from_bytes(&block_header_prev_bytes);
 
-            let ret = ChainManagement::ext_authorities(
-                data_provider,
-                &U256::from(gas_left),
-                &params.sender,
-                chain_id,
-            );
+            let ret = ChainManagement::ext_authorities(data_provider, &U256::from(gas_left), &params.sender, chain_id);
             if ret.is_none() {
                 return Err(NativeError::Internal("get authorities failed".to_owned()));
             }
@@ -362,12 +328,8 @@ impl CrossChainVerify {
 
         if verify_result {
             trace!("store the {} block header", block_header_curr.number());
-            self.block_headers.set_bytes(
-                data_provider,
-                &params.code_address,
-                &chain_id,
-                &block_header_curr_bytes,
-            )?;
+            self.block_headers
+                .set_bytes(data_provider, &params.code_address, &chain_id, &block_header_curr_bytes)?;
             trace!(
                 "store the {} block state root {}",
                 block_header_curr.number(),
@@ -386,11 +348,7 @@ impl CrossChainVerify {
         trace!("encoded {:?}", result);
 
         self.output = result;
-        Ok(InterpreterResult::Normal(
-            self.output.clone(),
-            gas_left,
-            vec![],
-        ))
+        Ok(InterpreterResult::Normal(self.output.clone(), gas_left, vec![]))
     }
 
     fn get_expected_block_number(
@@ -422,9 +380,7 @@ impl CrossChainVerify {
         let chain_id = U256::from_big_endian(&result.unwrap());
         trace!("chain_id = {}", chain_id);
 
-        let block_header_bytes: Vec<u8> =
-            self.block_headers
-                .get_bytes(data_provider, &params.code_address, &chain_id)?;
+        let block_header_bytes: Vec<u8> = self.block_headers.get_bytes(data_provider, &params.code_address, &chain_id)?;
 
         let block_number = if block_header_bytes.is_empty() {
             0
@@ -439,10 +395,6 @@ impl CrossChainVerify {
         trace!("encoded {:?}", result);
 
         self.output = result;
-        Ok(InterpreterResult::Normal(
-            self.output.clone(),
-            gas_left,
-            vec![],
-        ))
+        Ok(InterpreterResult::Normal(self.output.clone(), gas_left, vec![]))
     }
 }

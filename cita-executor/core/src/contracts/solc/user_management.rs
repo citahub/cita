@@ -31,8 +31,7 @@ const ACCOUNTS: &[u8] = &*b"queryAccounts()";
 lazy_static! {
     static ref ACCOUNTS_HASH: Vec<u8> = method_tools::encode_to_vec(ACCOUNTS);
     static ref ALLGROUPS_HASH: Vec<u8> = method_tools::encode_to_vec(ALLGROUPS);
-    static ref CONTRACT_ADDRESS: H160 =
-        H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
+    static ref CONTRACT_ADDRESS: H160 = H160::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
 }
 
 pub struct UserManagement<'a> {
@@ -46,15 +45,11 @@ impl<'a> UserManagement<'a> {
 
     pub fn load_group_accounts(&self, block_tag: BlockTag) -> HashMap<Address, Vec<Address>> {
         let mut group_accounts = HashMap::new();
-        let groups = self
-            .all_groups(block_tag)
-            .unwrap_or_else(Self::default_all_groups);
+        let groups = self.all_groups(block_tag).unwrap_or_else(Self::default_all_groups);
 
         trace!("ALl groups: {:?}", groups);
         for group in groups {
-            let accounts = self
-                .accounts(&group, block_tag)
-                .unwrap_or_else(Self::default_accounts);
+            let accounts = self.accounts(&group, block_tag).unwrap_or_else(Self::default_accounts);
             trace!("ALl accounts for group {}: {:?}", group, accounts);
             group_accounts.insert(group, accounts);
         }
@@ -65,12 +60,7 @@ impl<'a> UserManagement<'a> {
     /// Group array
     pub fn all_groups(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.executor
-            .call_method(
-                &*CONTRACT_ADDRESS,
-                &*ALLGROUPS_HASH.as_slice(),
-                None,
-                block_tag,
-            )
+            .call_method(&*CONTRACT_ADDRESS, &*ALLGROUPS_HASH.as_slice(), None, block_tag)
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
@@ -110,13 +100,8 @@ mod tests {
         let executor = init_executor();
 
         let user_management = UserManagement::new(&executor);
-        let all_groups: Vec<Address> = user_management
-            .all_groups(BlockTag::Tag(Tag::Pending))
-            .unwrap();
+        let all_groups: Vec<Address> = user_management.all_groups(BlockTag::Tag(Tag::Pending)).unwrap();
 
-        assert_eq!(
-            all_groups,
-            vec![H160::from_str(reserved_addresses::GROUP).unwrap()]
-        );
+        assert_eq!(all_groups, vec![H160::from_str(reserved_addresses::GROUP).unwrap()]);
     }
 }

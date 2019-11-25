@@ -86,3 +86,10 @@ pub fn is_permssion_contract(addr: Address) -> bool {
     }
     false
 }
+
+pub fn u256_to_bool(a: U256) -> bool {
+    if a == U256::zero() {
+        return true;
+    }
+    false
+}

@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::cita_executive::{
-    build_evm_context, build_vm_exec_params, call as vm_call, ExecutiveParams,
-};
+use crate::cita_executive::{build_evm_context, build_vm_exec_params, call as vm_call, ExecutiveParams};
 use crate::cita_vm_helper::get_interpreter_conf;
 use crate::contracts::tools::method as method_tools;
 use crate::data_provider::Store as VMSubState;

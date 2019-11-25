@@ -120,9 +120,7 @@ impl Synchronizer {
             self.remote_sync_time_out = Instant::now();
         }
 
-        self.latest_status_lists = self
-            .latest_status_lists
-            .split_off(&(latest_status.get_height() + 1));
+        self.latest_status_lists = self.latest_status_lists.split_off(&(latest_status.get_height() + 1));
         self.current_status = latest_status;
         self.broadcast_status();
         self.prune_block_list_cache(new_height + 1);
@@ -152,10 +150,7 @@ impl Synchronizer {
                 self.block_lists.len()
             );
 
-            if !self.block_lists.is_empty()
-                && new_height < self.sync_end_height
-                && self.local_sync_count >= 3
-            {
+            if !self.block_lists.is_empty() && new_height < self.sync_end_height && self.local_sync_count >= 3 {
                 // Chain height does not increase, loss data or data is invalid,
                 // send cache to executor and chain, and clear cache
                 self.local_sync_count = 0;
@@ -208,18 +203,14 @@ impl Synchronizer {
             // A node on the chain blocks out, synchronizing the latest block
             self.add_latest_sync_lists(status.get_height(), origin);
 
-            if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT
-                && !self.is_synchronizing
-            {
+            if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT && !self.is_synchronizing {
                 self.start_sync_req(current_height + 1);
             }
         } else {
             // The node is far behind the data on the chain and initiates a synchronization request
             self.add_latest_sync_lists(status.get_height(), origin);
 
-            if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT
-                || !self.is_synchronizing
-            {
+            if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT || !self.is_synchronizing {
                 self.start_sync_req(current_height + 1);
             }
         }
@@ -236,8 +227,7 @@ impl Synchronizer {
         let mut heights = vec![];
         for block in blocks.into_iter() {
             heights.push(block.get_header().get_height());
-            self.block_lists
-                .insert(block.get_header().get_height(), block);
+            self.block_lists.insert(block.get_header().get_height(), block);
         }
 
         debug!("sync: process_sync: heights = {:?}", heights);
@@ -256,15 +246,8 @@ impl Synchronizer {
         let mut is_send = false;
         let current_height = self.current_status.get_height();
 
-        if let Some((height, origins)) = self
-            .latest_status_lists
-            .iter()
-            .rfind(|&(_, origins)| !origins.is_empty())
-        {
-            debug!(
-                "sync: start_sync_req: height = {}, origins = {:?}",
-                height, origins
-            );
+        if let Some((height, origins)) = self.latest_status_lists.iter().rfind(|&(_, origins)| !origins.is_empty()) {
+            debug!("sync: start_sync_req: height = {}, origins = {:?}", height, origins);
             if let Some(origins) = self.latest_status_lists.get(height) {
                 if *height > current_height {
                     origin = origins[self.rand.gen_range(0, origins.len())];
@@ -343,10 +326,8 @@ impl Synchronizer {
         );
         let msg: Message = self.current_status.clone().into();
 
-        self.nodes_mgr_client.broadcast(BroadcastReq::new(
-            routing_key!(Synchronizer >> Status).into(),
-            msg,
-        ));
+        self.nodes_mgr_client
+            .broadcast(BroadcastReq::new(routing_key!(Synchronizer >> Status).into(), msg));
     }
 
     // Submit synchronization information

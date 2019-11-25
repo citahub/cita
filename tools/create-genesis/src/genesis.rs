@@ -106,10 +106,7 @@ impl<'a> GenesisCreator<'a> {
 
         // 4. Save super admin
         let super_admin = self.contract_args.contracts.admin.admin.clone();
-        self.set_account_value(
-            &super_admin,
-            U256::from_str(clean_0x(&self.init_token)).unwrap(),
-        );
+        self.set_account_value(&super_admin, U256::from_str(clean_0x(&self.init_token)).unwrap());
         // 5. Save genesis to file
         self.save_to_file();
         println!("Create genesis successfully !");
@@ -124,9 +121,7 @@ impl<'a> GenesisCreator<'a> {
 
             self.write_docs(contract_name, data);
             if let Some(constructor) = self.load_contract(contract_name.to_string()).constructor() {
-                let params = normal_params
-                    .get(*contract_name)
-                    .map_or(Vec::new(), |p| (*p).clone());
+                let params = normal_params.get(*contract_name).map_or(Vec::new(), |p| (*p).clone());
                 println!(
                     "Contract name {:?} address {:?} params is {:?}",
                     contract_name, address, params
@@ -175,7 +170,11 @@ impl<'a> GenesisCreator<'a> {
                         value: U256::from(0),
                     };
                     self.accounts.insert((*address).clone(), admin_contract);
-                } else {
+                }
+                else if *contract_name == "EmergencyIntervention" {
+                    continue
+                }
+                else {
                     if let Some(account) = Miner::mine(bytes) {
                         self.accounts.insert((*address).clone(), account);
                     }
@@ -198,15 +197,8 @@ impl<'a> GenesisCreator<'a> {
         if let Some(constructor) = self.load_contract(contract_name.clone()).constructor() {
             for (name, info) in perm_contracts.basic.list().iter() {
                 let address = &info.address;
-                let params = self
-                    .contract_list
-                    .permission_contracts
-                    .basic
-                    .as_params(name);
-                println!(
-                    "Contract name {:?} name {:?} params is {:?}",
-                    contract_name, name, params
-                );
+                let params = self.contract_list.permission_contracts.basic.as_params(name);
+                println!("Contract name {:?} name {:?} params is {:?}", contract_name, name, params);
 
                 // let bytes = constructor
                 //     .encode_input(input_data.clone(), &params)
@@ -265,8 +257,7 @@ impl<'a> GenesisCreator<'a> {
 
     pub fn write_docs(&self, name: &str, data: BTreeMap<String, String>) {
         for doc_type in ["hashes", "userdoc", "devdoc"].iter() {
-            let file_path =
-                self.contract_docs_dir.to_owned() + "/" + name + "-" + doc_type + ".json";
+            let file_path = self.contract_docs_dir.to_owned() + "/" + name + "-" + doc_type + ".json";
             let path = Path::new(&file_path);
             let json = json::stringify_pretty(data[*doc_type].clone(), 4);
             let mut f = File::create(path).expect("failed to write docs.");

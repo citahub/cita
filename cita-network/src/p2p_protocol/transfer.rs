@@ -14,9 +14,7 @@
 
 use crate::cita_protocol::network_message_to_pubsub_message;
 use crate::network::{NetworkClient, RemoteMessage};
-use crate::node_manager::{
-    AddConnectedNodeReq, InitMsg, NetworkInitReq, NodesManagerClient, RetransNetMsgReq,
-};
+use crate::node_manager::{AddConnectedNodeReq, InitMsg, NetworkInitReq, NodesManagerClient, RetransNetMsgReq};
 use bytes::BytesMut;
 use cita_types::Address;
 use libproto::{Message as ProtoMessage, TryFrom, TryInto};
@@ -56,10 +54,7 @@ impl ServiceProtocol for TransferProtocol {
         let req = NetworkInitReq::new(control.session.id);
         self.nodes_mgr_client.network_init(req);
 
-        info!(
-            "[Transfer] Connected sessions: {:?}",
-            self.connected_session_ids
-        );
+        info!("[Transfer] Connected sessions: {:?}", self.connected_session_ids);
     }
 
     fn disconnected(&mut self, control: ProtocolContextMutRef) {
@@ -97,10 +92,7 @@ impl ServiceProtocol for TransferProtocol {
             let mut msg = ProtoMessage::try_from(&info.data).unwrap();
             msg.set_origin(sid.value() as u32);
             self.network_client
-                .handle_remote_message(RemoteMessage::new(
-                    info.key.clone(),
-                    msg.try_into().unwrap(),
-                ));
+                .handle_remote_message(RemoteMessage::new(info.key.clone(), msg.try_into().unwrap()));
 
             // Now only consensus need be retransfered
             if info.ttl > 0 {

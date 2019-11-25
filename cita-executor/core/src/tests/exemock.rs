@@ -16,8 +16,7 @@ use std::collections::BTreeMap;
 
 use cita_types::{Address, H256, U256};
 pub use cita_vm::evm::{
-    common, Context, DataProvider, Error, Interpreter, InterpreterConf, InterpreterParams,
-    InterpreterResult, OpCode,
+    common, Context, DataProvider, Error, Interpreter, InterpreterConf, InterpreterParams, InterpreterResult, OpCode,
 };
 
 #[derive(Clone, Default)]
@@ -41,17 +40,11 @@ impl DataProvider for DataProviderMock {
     }
 
     fn add_refund(&mut self, address: &Address, n: u64) {
-        self.refund
-            .entry(*address)
-            .and_modify(|v| *v += n)
-            .or_insert(n);
+        self.refund.entry(*address).and_modify(|v| *v += n).or_insert(n);
     }
 
     fn sub_refund(&mut self, address: &Address, n: u64) {
-        self.refund
-            .entry(*address)
-            .and_modify(|v| *v -= n)
-            .or_insert(n);
+        self.refund.entry(*address).and_modify(|v| *v -= n).or_insert(n);
     }
 
     fn get_refund(&self, address: &Address) -> u64 {
@@ -67,9 +60,7 @@ impl DataProvider for DataProviderMock {
     }
 
     fn get_code_hash(&self, address: &Address) -> H256 {
-        self.db
-            .get(address)
-            .map_or(H256::zero(), |v| self.sha3(v.code.as_slice()))
+        self.db.get(address).map_or(H256::zero(), |v| self.sha3(v.code.as_slice()))
     }
 
     fn get_block_hash(&self, _: &U256) -> H256 {
@@ -77,9 +68,9 @@ impl DataProvider for DataProviderMock {
     }
 
     fn get_storage(&self, address: &Address, key: &H256) -> H256 {
-        self.db.get(address).map_or(H256::zero(), |v| {
-            v.storage.get(key).map_or(H256::zero(), |&v| v)
-        })
+        self.db
+            .get(address)
+            .map_or(H256::zero(), |v| v.storage.get(key).map_or(H256::zero(), |&v| v))
     }
 
     fn set_storage(&mut self, address: &Address, key: H256, value: H256) {
@@ -91,9 +82,9 @@ impl DataProvider for DataProviderMock {
     }
 
     fn get_storage_origin(&self, address: &Address, key: &H256) -> H256 {
-        self.db_origin.get(address).map_or(H256::zero(), |v| {
-            v.storage.get(key).map_or(H256::zero(), |&v| v)
-        })
+        self.db_origin
+            .get(address)
+            .map_or(H256::zero(), |v| v.storage.get(key).map_or(H256::zero(), |&v| v))
     }
 
     fn set_storage_origin(&mut self, address: &Address, key: H256, value: H256) {
@@ -115,11 +106,7 @@ impl DataProvider for DataProviderMock {
 
     fn is_empty(&self, address: &Address) -> bool {
         match self.db.get(address) {
-            Some(account) => {
-                account.balance == U256::zero()
-                    && account.code.is_empty()
-                    && account.nonce == U256::zero()
-            }
+            Some(account) => account.balance == U256::zero() && account.code.is_empty() && account.nonce == U256::zero(),
             None => true,
         }
     }
@@ -128,11 +115,7 @@ impl DataProvider for DataProviderMock {
         self.db.get(address).is_some()
     }
 
-    fn call(
-        &self,
-        opcode: OpCode,
-        params: InterpreterParams,
-    ) -> (Result<InterpreterResult, Error>) {
+    fn call(&self, opcode: OpCode, params: InterpreterParams) -> (Result<InterpreterResult, Error>) {
         match opcode {
             OpCode::CALL => {
                 let mut it = Interpreter::new(

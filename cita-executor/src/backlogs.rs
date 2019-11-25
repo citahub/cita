@@ -103,13 +103,7 @@ impl Backlog {
         closed_block
     }
 
-    pub fn insert_open(
-        &mut self,
-        height: u64,
-        priority: Priority,
-        open_block: OpenBlock,
-        proof: Option<Proof>,
-    ) -> bool {
+    pub fn insert_open(&mut self, height: u64, priority: Priority, open_block: OpenBlock, proof: Option<Proof>) -> bool {
         // check priority
         if let Some(ref present_priority) = self.priority {
             if *present_priority as u8 > priority as u8 {
@@ -128,11 +122,7 @@ impl Backlog {
             let bft_proof = proof::BftProof::from(proof.clone());
             let proof_height = wrap_height(bft_proof.height);
             if proof_height + 1 != height {
-                trace!(
-                    "arrived {}-th OpenBlock with invalid proof.height({})",
-                    height,
-                    proof_height,
-                );
+                trace!("arrived {}-th OpenBlock with invalid proof.height({})", height, proof_height,);
                 return false;
             }
         }
@@ -218,11 +208,7 @@ impl Backlogs {
         // }
     }
 
-    pub fn insert_block_with_proof(
-        &mut self,
-        open_block: OpenBlock,
-        present_proof: &Proof,
-    ) -> bool {
+    pub fn insert_block_with_proof(&mut self, open_block: OpenBlock, present_proof: &Proof) -> bool {
         let block_height = wrap_height(open_block.number() as usize);
         if block_height != (self.get_current_height() + 1) {
             warn!("executor had received {}=th blockWithProof", block_height);
@@ -248,28 +234,14 @@ impl Backlogs {
         );
 
         if !self.is_proof_ok(present_bft_proof.height as u64, &present_proof) {
-            warn!(
-                "{}-th present bft proof is invalid",
-                wrap_height(present_bft_proof.height)
-            );
+            warn!("{}-th present bft proof is invalid", wrap_height(present_bft_proof.height));
             return false;
         }
 
-        self.insert_open(
-            block_height,
-            Priority::BlockWithProof,
-            open_block,
-            Some(previous_proof),
-        )
+        self.insert_open(block_height, Priority::BlockWithProof, open_block, Some(previous_proof))
     }
 
-    fn insert_open(
-        &mut self,
-        height: u64,
-        priority: Priority,
-        open_block: OpenBlock,
-        proof: Option<Proof>,
-    ) -> bool {
+    fn insert_open(&mut self, height: u64, priority: Priority, open_block: OpenBlock, proof: Option<Proof>) -> bool {
         // discard staled
         if height <= self.get_current_height() {
             return false;
@@ -293,24 +265,15 @@ impl Backlogs {
         assert_eq!(self.get_current_height(), height - 1);
 
         if self.backlogs.get(&height).is_none() {
-            return Err(format!(
-                "{}-th is not completed cause backlog.open_block is None",
-                height
-            ));
+            return Err(format!("{}-th is not completed cause backlog.open_block is None", height));
         }
         let backlog = &self.backlogs[&height];
         if !backlog.is_completed() {
-            return Err(format!(
-                "{}-th is not completed cause backlog.is_completed is false",
-                height,
-            ));
+            return Err(format!("{}-th is not completed cause backlog.is_completed is false", height,));
         }
         let proof = backlog.get_proof().unwrap();
         if !self.is_proof_ok(height - 1, proof) {
-            return Err(format!(
-                "{}-th is not completed cause backlog.proof is invalid",
-                height
-            ));
+            return Err(format!("{}-th is not completed cause backlog.proof is invalid", height));
         }
 
         Ok(())
@@ -349,10 +312,7 @@ impl Backlogs {
 
         let executed_result = &self.completed[&prev_height];
         let validators = executed_result.get_config().get_validators();
-        let proof_checkers: Vec<Address> = validators
-            .iter()
-            .map(|vec| Address::from_slice(&vec[..]))
-            .collect();
+        let proof_checkers: Vec<Address> = validators.iter().map(|vec| Address::from_slice(&vec[..])).collect();
 
         // FIXME for unit tests only. Should be remove latter
         if proof_checkers.is_empty() {
@@ -378,9 +338,7 @@ impl Backlogs {
         let backlog = self.backlogs.remove(&height).unwrap();
         let closed_block = backlog.complete();
         self.current_height += 1;
-        self.current_hash = closed_block
-            .hash()
-            .expect("already rehash at backlog.complete below");
+        self.current_hash = closed_block.hash().expect("already rehash at backlog.complete below");
         Ok(closed_block)
     }
 
@@ -461,10 +419,7 @@ mod tests {
     }
 
     fn get_open_block(backlogs: &Backlogs, height: u64) -> Option<&OpenBlock> {
-        backlogs
-            .backlogs
-            .get(&height)
-            .and_then(|backlog| backlog.get_open_block())
+        backlogs.backlogs.get(&height).and_then(|backlog| backlog.get_open_block())
     }
 
     #[test]
@@ -541,11 +496,7 @@ mod tests {
                 proof: Some(generate_proof(height - 1)),
                 closed_block: Some(closed_block),
             };
-            assert_eq!(
-                false,
-                backlog.is_completed(),
-                "false cause block.timestamp is not equal"
-            );
+            assert_eq!(false, backlog.is_completed(), "false cause block.timestamp is not equal");
         }
 
         {
@@ -611,12 +562,7 @@ mod tests {
         backlogs.insert_completed_result(2, generate_executed_result());
         assert_eq!(
             false,
-            backlogs.insert_open(
-                2,
-                Priority::Proposal,
-                open_block.clone(),
-                Some(generate_proof(1)),
-            ),
+            backlogs.insert_open(2, Priority::Proposal, open_block.clone(), Some(generate_proof(1)),),
             "insert staled block should return false"
         );
         assert_eq!(
@@ -632,12 +578,7 @@ mod tests {
         let closed_block = generate_closed_block(open_block.clone(), path);
         assert_eq!(
             true,
-            backlogs.insert_open(
-                3,
-                Priority::BlockWithProof,
-                open_block.clone(),
-                Some(generate_proof(2)),
-            ),
+            backlogs.insert_open(3, Priority::BlockWithProof, open_block.clone(), Some(generate_proof(2)),),
         );
         assert_eq!(
             true,
@@ -654,12 +595,7 @@ mod tests {
         assert!(get_open_block(&backlogs, 3).is_none());
         assert_eq!(
             false,
-            backlogs.insert_open(
-                3,
-                Priority::Proposal,
-                open_block.clone(),
-                Some(generate_proof(2)),
-            ),
+            backlogs.insert_open(3, Priority::Proposal, open_block.clone(), Some(generate_proof(2)),),
             "insert staled open_block should return false",
         );
     }
@@ -667,10 +603,7 @@ mod tests {
     #[test]
     fn test_wrap_height() {
         assert_eq!(0, wrap_height(::std::usize::MAX));
-        assert_eq!(
-            ::std::usize::MAX as u64 - 1,
-            wrap_height(::std::usize::MAX - 1)
-        );
+        assert_eq!(::std::usize::MAX as u64 - 1, wrap_height(::std::usize::MAX - 1));
         assert_eq!(2, wrap_height(2));
     }
 }

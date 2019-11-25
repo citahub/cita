@@ -38,36 +38,15 @@ impl InitData {
 
     pub fn get_params(&self) -> BTreeMap<String, Vec<Token>> {
         let mut params = BTreeMap::new();
-        params.insert(
-            "SysConfig".to_string(),
-            self.contracts.sys_config.as_params(),
-        );
-        params.insert(
-            "QuotaManager".to_string(),
-            self.contracts.quota_manager.as_params(),
-        );
-        params.insert(
-            "NodeManager".to_string(),
-            self.contracts.node_manager.as_params(),
-        );
-        params.insert(
-            "ChainManager".to_string(),
-            self.contracts.chain_manager.as_params(),
-        );
-        params.insert(
-            "Authorization".to_string(),
-            self.contracts.authorization.as_params(),
-        );
+        params.insert("SysConfig".to_string(), self.contracts.sys_config.as_params());
+        params.insert("QuotaManager".to_string(), self.contracts.quota_manager.as_params());
+        params.insert("NodeManager".to_string(), self.contracts.node_manager.as_params());
+        params.insert("ChainManager".to_string(), self.contracts.chain_manager.as_params());
+        params.insert("Authorization".to_string(), self.contracts.authorization.as_params());
         params.insert("Group".to_string(), self.contracts.group.as_params());
         params.insert("Admin".to_string(), self.contracts.admin.as_params());
-        params.insert(
-            "VersionManager".to_string(),
-            self.contracts.version_manager.as_params(),
-        );
-        params.insert(
-            "PriceManager".to_string(),
-            self.contracts.price_manager.as_params(),
-        );
+        params.insert("VersionManager".to_string(), self.contracts.version_manager.as_params());
+        params.insert("PriceManager".to_string(), self.contracts.price_manager.as_params());
         params
     }
 }
@@ -154,19 +133,13 @@ pub struct SysConfig {
 impl GetParams for SysConfig {
     fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
-        tokens.push(Token::Uint(
-            U256::from_str(&self.delay_block_number).unwrap(),
-        ));
-        tokens.push(Token::Address(
-            Address::from_str(clean_0x(&self.chain_owner)).unwrap(),
-        ));
+        tokens.push(Token::Uint(U256::from_str(&self.delay_block_number).unwrap()));
+        tokens.push(Token::Address(Address::from_str(clean_0x(&self.chain_owner)).unwrap()));
         tokens.push(Token::String(self.chain_name.clone()));
         tokens.push(Token::Uint(U256::from_str(&self.chain_id).unwrap()));
         tokens.push(Token::String(self.operator.clone()));
         tokens.push(Token::String(self.website.clone()));
-        tokens.push(Token::Uint(
-            U256::from_dec_str(&self.block_interval).unwrap(),
-        ));
+        tokens.push(Token::Uint(U256::from_dec_str(&self.block_interval).unwrap()));
         tokens.push(Token::Uint(U256::from_str(&self.economical_model).unwrap()));
         tokens.push(Token::String(self.name.clone()));
         tokens.push(Token::String(self.symbol.clone()));
@@ -193,9 +166,7 @@ pub struct QuotaManager {
 impl GetParams for QuotaManager {
     fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
-        tokens.push(Token::Address(
-            Address::from_str(clean_0x(&self.admin)).unwrap(),
-        ));
+        tokens.push(Token::Address(Address::from_str(clean_0x(&self.admin)).unwrap()));
         tokens
     }
 }
@@ -259,9 +230,7 @@ pub struct Authorization {
 impl GetParams for Authorization {
     fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
-        tokens.push(Token::Address(
-            Address::from_str(clean_0x(&self.super_admin)).unwrap(),
-        ));
+        tokens.push(Token::Address(Address::from_str(clean_0x(&self.super_admin)).unwrap()));
         tokens
     }
 }
@@ -276,9 +245,7 @@ pub struct Group {
 impl GetParams for Group {
     fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
-        tokens.push(Token::Address(
-            Address::from_str(clean_0x(&self.parent)).unwrap(),
-        ));
+        tokens.push(Token::Address(Address::from_str(clean_0x(&self.parent)).unwrap()));
         tokens.push(Token::FixedBytes(self.name.clone().into_bytes()));
 
         let mut accounts = Vec::new();
@@ -298,9 +265,7 @@ pub struct Admin {
 impl GetParams for Admin {
     fn as_params(&self) -> Vec<Token> {
         let mut tokens = Vec::new();
-        tokens.push(Token::Address(
-            Address::from_str(clean_0x(&self.admin)).unwrap(),
-        ));
+        tokens.push(Token::Address(Address::from_str(clean_0x(&self.admin)).unwrap()));
         tokens
     }
 }
@@ -383,10 +348,7 @@ mod tests {
             version: 2"#;
 
         let config: InitData = serde_yaml::from_str(&params_string).unwrap();
-        assert_eq!(
-            config.contracts.sys_config.delay_block_number,
-            "1".to_string()
-        );
+        assert_eq!(config.contracts.sys_config.delay_block_number, "1".to_string());
         assert_eq!(config.contracts.sys_config.check_call_permission, false);
         assert_eq!(
             config.contracts.sys_config.avatar,
@@ -407,9 +369,6 @@ mod tests {
         );
         assert_eq!(config.contracts.group.name, String::from("rootGroup"));
         assert_eq!(config.contracts.version_manager.version, String::from("2"));
-        assert_eq!(
-            config.contracts.price_manager.quota_price,
-            String::from("1000000")
-        );
+        assert_eq!(config.contracts.price_manager.quota_price, String::from("1000000"));
     }
 }

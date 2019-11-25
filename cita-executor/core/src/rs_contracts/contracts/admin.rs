@@ -36,16 +36,10 @@ impl AdminContract {
         let mut a = AdminContract::default();
         a.contracts.insert(0, Some(str));
         let s = serde_json::to_string(&a).unwrap();
-        let _ = contracts_db.insert(
-            DataCategory::Contracts,
-            b"admin-contract".to_vec(),
-            s.as_bytes().to_vec(),
-        );
+        let _ = contracts_db.insert(DataCategory::Contracts, b"admin-contract".to_vec(), s.as_bytes().to_vec());
 
         // debug information
-        let bin_map = contracts_db
-            .get(DataCategory::Contracts, b"admin-contract".to_vec())
-            .unwrap();
+        let bin_map = contracts_db.get(DataCategory::Contracts, b"admin-contract".to_vec()).unwrap();
         let str = String::from_utf8(bin_map.unwrap()).unwrap();
         let contracts: AdminContract = serde_json::from_str(&str).unwrap();
         trace!("System contract admin {:?} after init.", contracts);
@@ -97,8 +91,7 @@ impl<B: DB> Contract<B> for AdminContract {
         state: Arc<RefCell<State<B>>>,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - Admin - enter execute");
-        let (contract_map, latest_admin) =
-            self.get_latest_item(context.block_number, contracts_db.clone());
+        let (contract_map, latest_admin) = self.get_latest_item(context.block_number, contracts_db.clone());
         match (contract_map, latest_admin) {
             (Some(mut contract_map), Some(mut latest_admin)) => {
                 trace!(
@@ -108,33 +101,25 @@ impl<B: DB> Contract<B> for AdminContract {
                 );
 
                 let mut updated = false;
-                let result =
-                    extract_to_u32(&params.input[..]).and_then(|signature| match signature {
-                        0xf851a440u32 => latest_admin.get_admin(),
-                        0x24d7806cu32 => latest_admin.is_admin(params),
-                        0x1c1b8772u32 => latest_admin.update(params, &mut updated),
-                        _ => panic!("Invalid function signature".to_owned()),
-                    });
+                let result = extract_to_u32(&params.input[..]).and_then(|signature| match signature {
+                    0xf851a440u32 => latest_admin.get_admin(),
+                    0x24d7806cu32 => latest_admin.is_admin(params),
+                    0x1c1b8772u32 => latest_admin.update(params, &mut updated),
+                    _ => panic!("Invalid function signature".to_owned()),
+                });
 
                 // update contract db
                 if result.is_ok() && updated {
                     let new_admin = latest_admin;
                     let str = serde_json::to_string(&new_admin).unwrap();
-                    contract_map
-                        .contracts
-                        .insert(context.block_number, Some(str));
+                    contract_map.contracts.insert(context.block_number, Some(str));
                     let str = serde_json::to_string(&contract_map).unwrap();
                     let updated_hash = keccak256(&str.as_bytes().to_vec());
-                    let _ = contracts_db.insert(
-                        DataCategory::Contracts,
-                        b"admin-contract".to_vec(),
-                        str.as_bytes().to_vec(),
-                    );
+                    let _ =
+                        contracts_db.insert(DataCategory::Contracts, b"admin-contract".to_vec(), str.as_bytes().to_vec());
 
                     // debug information
-                    let bin_map = contracts_db
-                        .get(DataCategory::Contracts, b"admin-contract".to_vec())
-                        .unwrap();
+                    let bin_map = contracts_db.get(DataCategory::Contracts, b"admin-contract".to_vec()).unwrap();
                     let str = String::from_utf8(bin_map.unwrap()).unwrap();
                     let contracts: AdminContract = serde_json::from_str(&str).unwrap();
                     trace!("System contract admin {:?} after update.", contracts);
@@ -176,18 +161,10 @@ impl Admin {
 
     fn get_admin(&self) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - Admin - get_admin");
-        return Ok(InterpreterResult::Normal(
-            H256::from(self.admin).0.to_vec(),
-            0,
-            vec![],
-        ));
+        return Ok(InterpreterResult::Normal(H256::from(self.admin).0.to_vec(), 0, vec![]));
     }
 
-    fn update(
-        &mut self,
-        params: &InterpreterParams,
-        changed: &mut bool,
-    ) -> Result<InterpreterResult, ContractError> {
+    fn update(&mut self, params: &InterpreterParams, changed: &mut bool) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - Admin - update");
         let param_address = Address::from_slice(&params.input[16..36]);
         // only admin can invoke
@@ -205,11 +182,7 @@ impl Admin {
             let log = Log(param_address, topics, vec![]);
             logs.push(log);
 
-            return Ok(InterpreterResult::Normal(
-                H256::from(1).0.to_vec(),
-                params.gas_limit,
-                logs,
-            ));
+            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, logs));
         }
 
         Err(ContractError::Internal("Only admin can do".to_owned()))
@@ -219,17 +192,9 @@ impl Admin {
         trace!("System contract - Admin - is_admin");
         let param_address = Address::from_slice(&params.input[16..36]);
         if param_address == self.admin {
-            return Ok(InterpreterResult::Normal(
-                H256::from(1).0.to_vec(),
-                params.gas_limit,
-                vec![],
-            ));
+            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
         } else {
-            return Ok(InterpreterResult::Normal(
-                H256::from(0).0.to_vec(),
-                params.gas_limit,
-                vec![],
-            ));
+            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
         }
     }
 
@@ -247,8 +212,7 @@ mod test {
 
     #[test]
     fn test_admin_seralization() {
-        let admin_contract =
-            Admin::init(Address::from("0x17142e6484cb72d1f1e6dca02eedf877a90e49d9"));
+        let admin_contract = Admin::init(Address::from("0x17142e6484cb72d1f1e6dca02eedf877a90e49d9"));
         let serialized = serde_json::to_string(&admin_contract).unwrap();
 
         let admin_deserialized: Admin = serde_json::from_str(&serialized).unwrap();
@@ -272,14 +236,12 @@ mod test {
         params.input = get_admin_input;
         context.block_number = 0;
 
-        let result = admin_contract
-            .execute(&params, &context, db.clone())
-            .unwrap();
+        let result = admin_contract.execute(&params, &context, db.clone()).unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
                 let expected_output = vec![
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 90, 228, 86, 122, 213, 217, 251, 146,
-                    188, 154, 253, 106, 101, 126, 111, 161, 58, 37, 35,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 90, 228, 86, 122, 213, 217, 251, 146, 188, 154, 253, 106, 101,
+                    126, 111, 161, 58, 37, 35,
                 ];
                 assert_eq!(data, expected_output);
             }
@@ -298,8 +260,8 @@ mod test {
 
         // "isadmin("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523")"
         let is_admin_input = vec![
-            36, 215, 128, 108, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 90, 228, 86, 122, 213, 217,
-            251, 146, 188, 154, 253, 106, 101, 126, 111, 161, 58, 37, 35,
+            36, 215, 128, 108, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 90, 228, 86, 122, 213, 217, 251, 146, 188, 154, 253,
+            106, 101, 126, 111, 161, 58, 37, 35,
         ];
         let mut params = InterpreterParams::default();
         let mut context = Context::default();
@@ -307,14 +269,11 @@ mod test {
         params.input = is_admin_input;
         context.block_number = 0;
 
-        let result = admin_contract
-            .execute(&params, &context, db.clone())
-            .unwrap();
+        let result = admin_contract.execute(&params, &context, db.clone()).unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
                 let output_true = vec![
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 1,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
                 ];
                 assert_eq!(data, output_true);
             }
@@ -333,8 +292,8 @@ mod test {
 
         // "isadmin("0x17142e6484cb72d1f1e6dca02eedf877a90e49d9")"
         let is_admin_input = vec![
-            36, 215, 128, 108, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 20, 46, 100, 132, 203, 114,
-            209, 241, 230, 220, 160, 46, 237, 248, 119, 169, 14, 73, 217,
+            36, 215, 128, 108, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 20, 46, 100, 132, 203, 114, 209, 241, 230, 220, 160,
+            46, 237, 248, 119, 169, 14, 73, 217,
         ];
         let mut params = InterpreterParams::default();
         let mut context = Context::default();
@@ -342,14 +301,11 @@ mod test {
         params.input = is_admin_input;
         context.block_number = 0;
 
-        let result = admin_contract
-            .execute(&params, &context, db.clone())
-            .unwrap();
+        let result = admin_contract.execute(&params, &context, db.clone()).unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
                 let output_false = vec![
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ];
                 assert_eq!(data, output_false);
             }
@@ -368,22 +324,19 @@ mod test {
 
         // "upateAdmin("0x17142e6484cb72d1f1e6dca02eedf877a90e49d9")"
         let update_admin_input = vec![
-            28, 27, 135, 114, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 20, 46, 100, 132, 203, 114,
-            209, 241, 230, 220, 160, 46, 237, 248, 119, 169, 14, 73, 217,
+            28, 27, 135, 114, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 20, 46, 100, 132, 203, 114, 209, 241, 230, 220, 160,
+            46, 237, 248, 119, 169, 14, 73, 217,
         ];
         let mut params = InterpreterParams::default();
         let mut context = Context::default();
         params.contract.code_address = Address::from("0xffffffffffffffffffffffffffffffffff02000c");
         params.input = update_admin_input;
         context.block_number = 4;
-        let result = admin_contract
-            .execute(&params, &context, db.clone())
-            .unwrap();
+        let result = admin_contract.execute(&params, &context, db.clone()).unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
                 let expected_output = vec![
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 1,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
                 ];
                 assert_eq!(data, expected_output);
             }
@@ -398,14 +351,12 @@ mod test {
         params.input = get_admin_input;
         context.block_number = 0;
 
-        let result = admin_contract
-            .execute(&params, &context, db.clone())
-            .unwrap();
+        let result = admin_contract.execute(&params, &context, db.clone()).unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
                 let output = vec![
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 90, 228, 86, 122, 213, 217, 251, 146,
-                    188, 154, 253, 106, 101, 126, 111, 161, 58, 37, 35,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 90, 228, 86, 122, 213, 217, 251, 146, 188, 154, 253, 106, 101,
+                    126, 111, 161, 58, 37, 35,
                 ];
                 assert_eq!(data, output);
             }
@@ -419,14 +370,12 @@ mod test {
         params.contract.code_address = Address::from("0xffffffffffffffffffffffffffffffffff02000c");
         params.input = get_admin_input;
         context.block_number = 2;
-        let result = admin_contract
-            .execute(&params, &context, db.clone())
-            .unwrap();
+        let result = admin_contract.execute(&params, &context, db.clone()).unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
                 let output = vec![
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 90, 228, 86, 122, 213, 217, 251, 146,
-                    188, 154, 253, 106, 101, 126, 111, 161, 58, 37, 35,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 90, 228, 86, 122, 213, 217, 251, 146, 188, 154, 253, 106, 101,
+                    126, 111, 161, 58, 37, 35,
                 ];
                 assert_eq!(data, output);
             }
@@ -440,14 +389,12 @@ mod test {
         params.contract.code_address = Address::from("0xffffffffffffffffffffffffffffffffff02000c");
         params.input = get_admin_input;
         context.block_number = 4;
-        let result = admin_contract
-            .execute(&params, &context, db.clone())
-            .unwrap();
+        let result = admin_contract.execute(&params, &context, db.clone()).unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
                 let expected_output = vec![
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 20, 46, 100, 132, 203, 114, 209, 241,
-                    230, 220, 160, 46, 237, 248, 119, 169, 14, 73, 217,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 20, 46, 100, 132, 203, 114, 209, 241, 230, 220, 160, 46, 237,
+                    248, 119, 169, 14, 73, 217,
                 ];
                 assert_eq!(data, expected_output);
             }
@@ -461,14 +408,12 @@ mod test {
         params.contract.code_address = Address::from("0xffffffffffffffffffffffffffffffffff02000c");
         params.input = get_admin_input;
         context.block_number = 50;
-        let result = admin_contract
-            .execute(&params, &context, db.clone())
-            .unwrap();
+        let result = admin_contract.execute(&params, &context, db.clone()).unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
                 let expected_output = vec![
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 20, 46, 100, 132, 203, 114, 209, 241,
-                    230, 220, 160, 46, 237, 248, 119, 169, 14, 73, 217,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 20, 46, 100, 132, 203, 114, 209, 241, 230, 220, 160, 46, 237,
+                    248, 119, 169, 14, 73, 217,
                 ];
                 assert_eq!(data, expected_output);
             }

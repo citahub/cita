@@ -56,9 +56,7 @@ impl TxWal {
             values.push(block_binary);
             keys.push(tx.get_tx_hash().to_vec());
         }
-        self.db
-            .insert_batch(None, keys, values)
-            .expect("insert batch txs");
+        self.db.insert_batch(None, keys, values).expect("insert batch txs");
     }
 
     pub fn delete_with_hash(&mut self, tx_hash: &H256) {
@@ -70,9 +68,7 @@ impl TxWal {
         for tx_hash in tx_hashes {
             keys.push(tx_hash.to_vec());
         }
-        self.db
-            .remove_batch(None, &keys)
-            .expect("delete with hashes");
+        self.db.remove_batch(None, &keys).expect("delete with hashes");
     }
 
     pub fn read_all(&self) -> Vec<SignedTransaction> {
@@ -146,10 +142,7 @@ mod tests {
         let tx11 = wal.get(tx2.get_tx_hash());
         assert_eq!(Some(tx2.clone()), tx11);
 
-        wal.delete_with_hashes(&vec![
-            H256::from(tx1.get_tx_hash()),
-            H256::from(tx2.get_tx_hash()),
-        ]);
+        wal.delete_with_hashes(&vec![H256::from(tx1.get_tx_hash()), H256::from(tx2.get_tx_hash())]);
         let tx12 = wal.get(tx1.get_tx_hash());
         let tx22 = wal.get(tx2.get_tx_hash());
 

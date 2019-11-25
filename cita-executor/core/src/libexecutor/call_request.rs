@@ -36,11 +36,7 @@ impl From<Call> for CallRequest {
                 Some(Address::from(call.get_from()))
             },
             to: Address::from(call.get_to()),
-            data: if call.data.is_empty() {
-                None
-            } else {
-                Some(call.data)
-            },
+            data: if call.data.is_empty() { None } else { Some(call.data) },
         }
     }
 }

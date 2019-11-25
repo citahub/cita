@@ -54,27 +54,17 @@ pub fn generate_signer() -> Signer {
 
 pub fn generate_executed_result(height: u64) -> libproto::ExecutedResult {
     let mut executed_result = libproto::ExecutedResult::new();
-    executed_result
-        .mut_executed_info()
-        .mut_header()
-        .set_height(height);
+    executed_result.mut_executed_info().mut_header().set_height(height);
     executed_result
 }
 
 pub fn generate_proof(signer: Signer, height: u64, proposal: H256) -> libproto::Proof {
     let serialized = bincode::serialize(
-        &(
-            height as usize,
-            PROOF_ROUND,
-            PROOF_STEP,
-            signer.address,
-            proposal,
-        ),
+        &(height as usize, PROOF_ROUND, PROOF_STEP, signer.address, proposal),
         bincode::Infinite,
     )
     .expect("serialize into bytes");
-    let signature = Signature::sign(signer.keypair.privkey(), &serialized.crypt_hash())
-        .expect("signature message");
+    let signature = Signature::sign(signer.keypair.privkey(), &serialized.crypt_hash()).expect("signature message");
 
     let mut commits = ::std::collections::HashMap::new();
     commits.insert(signer.address, signature);
@@ -82,12 +72,7 @@ pub fn generate_proof(signer: Signer, height: u64, proposal: H256) -> libproto::
     bft_proof.into()
 }
 
-pub fn generate_signed_transaction(
-    to: Address,
-    data: Vec<u8>,
-    nonce: u32,
-    privkey: PrivKey,
-) -> libproto::SignedTransaction {
+pub fn generate_signed_transaction(to: Address, data: Vec<u8>, nonce: u32, privkey: PrivKey) -> libproto::SignedTransaction {
     let mut transaction = libproto::Transaction::new();
     transaction.set_nonce(U256::from(nonce).lower_hex());
     transaction.set_data(data);
@@ -128,9 +113,7 @@ pub fn generate_block(
     let mut proto_block = libproto::Block::new();
     proto_block.set_body(body);
     let transactions_root = proto_block.get_body().transactions_root().to_vec();
-    proto_block
-        .mut_header()
-        .set_transactions_root(transactions_root);
+    proto_block.mut_header().set_transactions_root(transactions_root);
     proto_block.mut_header().set_prevhash(parent_hash.to_vec());
     proto_block.mut_header().set_height(height);
     proto_block.mut_header().set_timestamp(1543976147000);
@@ -157,15 +140,15 @@ pub fn generate_contract() -> Vec<u8> {
     //            }
     //        "#;
     let bin_code = "\
-608060405234801561001057600080fd5b507fb8f132fb6526e0405f3ce4f3bab301f1d44\
-09b1e7f2c01c2037d6cf845c831cb30604051808273ffffffffffffffffffffffffffffffffffffffff1673fffffff\
-fffffffffffffffffffffffffffffffff16815260200191505060405180910390a1610118806100836000396000f30\
-06080604052600436106049576000357c0100000000000000000000000000000000000000000000000000000000900\
-463ffffffff16806360fe47b114604e5780636d4ce63c146078575b600080fd5b348015605957600080fd5b5060766\
-004803603810190808035906020019092919050505060a0565b005b348015608357600080fd5b50608a60e3565b604\
-0518082815260200191505060405180910390f35b806000819055507fa17a9e66f0c355e3aa3b9ea969991204d6b1d\
-2e62a47877f612cb2371d79e06a6000546040518082815260200191505060405180910390a150565b6000805490509\
-05600a165627a7a7230582099e8d1cb1b7a1d19a5c72911caec1b01c02b80276e2b46d7c5239dea4c42d9f10029";
+                    608060405234801561001057600080fd5b507fb8f132fb6526e0405f3ce4f3bab301f1d44\
+                    09b1e7f2c01c2037d6cf845c831cb30604051808273ffffffffffffffffffffffffffffffffffffffff1673fffffff\
+                    fffffffffffffffffffffffffffffffff16815260200191505060405180910390a1610118806100836000396000f30\
+                    06080604052600436106049576000357c0100000000000000000000000000000000000000000000000000000000900\
+                    463ffffffff16806360fe47b114604e5780636d4ce63c146078575b600080fd5b348015605957600080fd5b5060766\
+                    004803603810190808035906020019092919050505060a0565b005b348015608357600080fd5b50608a60e3565b604\
+                    0518082815260200191505060405180910390f35b806000819055507fa17a9e66f0c355e3aa3b9ea969991204d6b1d\
+                    2e62a47877f612cb2371d79e06a6000546040518082815260200191505060405180910390a150565b6000805490509\
+                    05600a165627a7a7230582099e8d1cb1b7a1d19a5c72911caec1b01c02b80276e2b46d7c5239dea4c42d9f10029";
     bin_code.as_bytes().to_owned()
 }
 

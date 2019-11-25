@@ -69,10 +69,7 @@ impl FilterHelper for Chain {
         filter.from_block = BlockTag::Height(block_filter);
         filter.to_block = BlockTag::Tag(Tag::Latest);
         let limit = filter.limit;
-        split_logs(
-            self.get_logs(&filter).into_iter().map(Into::into).collect(),
-            limit,
-        )
+        split_logs(self.get_logs(&filter).into_iter().map(Into::into).collect(), limit)
     }
 }
 
@@ -82,10 +79,7 @@ impl RpcFilter for Chain {
         let id = filterdb.try_lock().unwrap().gen_id();
         let block_number = self.get_current_height();
         filterdb.try_lock().unwrap().gen_logs_filter(id, filter);
-        filterdb
-            .try_lock()
-            .unwrap()
-            .gen_block_filter(id, block_number);
+        filterdb.try_lock().unwrap().gen_block_filter(id, block_number);
         drop(filterdb);
         id
     }
@@ -94,10 +88,7 @@ impl RpcFilter for Chain {
         let filterdb = self.filter_db();
         let block_number = self.get_current_height();
         let id = filterdb.try_lock().unwrap().gen_id();
-        filterdb
-            .try_lock()
-            .unwrap()
-            .gen_block_filter(id, block_number);
+        filterdb.try_lock().unwrap().gen_block_filter(id, block_number);
         drop(filterdb);
         id
     }
@@ -116,9 +107,7 @@ impl RpcFilter for Chain {
         // Check the logs
         if let Some(filter) = filterdb.try_lock().unwrap().get_logs_filter(id) {
             trace!("Into filter changes: logs");
-            changes = Some(FilterChanges::Logs(
-                self.get_logs_with_filter(filter.clone(), block_filter),
-            ));
+            changes = Some(FilterChanges::Logs(self.get_logs_with_filter(filter.clone(), block_filter)));
         };
 
         // Check the block
@@ -129,16 +118,11 @@ impl RpcFilter for Chain {
                 .filter_map(|_id| self.block_hash_by_height(_id))
                 .collect::<Vec<H256>>();
             trace!("Block filter changes: {:?}", hashes);
-            changes = Some(FilterChanges::Hashes(
-                hashes.into_iter().map(Into::into).collect(),
-            ));
+            changes = Some(FilterChanges::Hashes(hashes.into_iter().map(Into::into).collect()));
         };
 
         // Update the block filter: use the current number
-        filterdb
-            .try_lock()
-            .unwrap()
-            .gen_block_filter(id, current_number + 1);
+        filterdb.try_lock().unwrap().gen_block_filter(id, current_number + 1);
         drop(filterdb);
         changes
     }

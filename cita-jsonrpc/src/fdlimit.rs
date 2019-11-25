@@ -47,15 +47,7 @@ pub fn set_fd_limit() {
         let mut maxfiles: libc::c_int = 0;
         let mut size: libc::size_t = size_of_val(&maxfiles) as libc::size_t;
 
-        if libc::sysctl(
-            &mut mib[0],
-            2,
-            &mut maxfiles as *mut _ as *mut _,
-            &mut size,
-            null_mut(),
-            0,
-        ) != 0
-        {
+        if libc::sysctl(&mut mib[0], 2, &mut maxfiles as *mut _ as *mut _, &mut size, null_mut(), 0) != 0 {
             let err = io::Error::last_os_error();
             panic!("set_fd_limit: error calling sysctl: {}", err);
         }

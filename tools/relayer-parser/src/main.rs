@@ -49,20 +49,13 @@ fn main() {
     let _ = cfg
         .get_servers(args.chain_id)
         .and_then(|servers| fetch_txproof(&servers[..], args.tx_hash))
-        .and_then(|tx_proof_rlp| {
-            deconstruct_txproof(&tx_proof_rlp[..]).map(|relay_info| (tx_proof_rlp, relay_info))
-        })
+        .and_then(|tx_proof_rlp| deconstruct_txproof(&tx_proof_rlp[..]).map(|relay_info| (tx_proof_rlp, relay_info)))
         .and_then(|(tx_proof_rlp, relay_info)| {
             cfg.get_servers(relay_info.to_chain_id)
                 .map(|to_servers| (to_servers, tx_proof_rlp, relay_info))
         })
         .and_then(|(to_servers, tx_proof_rlp, relay_info)| {
-            relay_transaction(
-                &to_servers[..],
-                &cfg.get_private_key(),
-                &tx_proof_rlp[..],
-                &relay_info,
-            )
+            relay_transaction(&to_servers[..], &cfg.get_private_key(), &tx_proof_rlp[..], &relay_info)
         })
         .map(|tx_hash| {
             println!("{:?}", tx_hash);
@@ -108,10 +101,7 @@ fn construct_transaction(
             if metadata.chain_id_v1 == relay_info.to_chain_id.into() {
                 Some(relay_info.to_chain_id)
             } else {
-                error!(
-                    "chain id is not right {} != {}",
-                    metadata.chain_id, relay_info.to_chain_id
-                );
+                error!("chain id is not right {} != {}", metadata.chain_id, relay_info.to_chain_id);
                 None
             }
         })
@@ -133,12 +123,7 @@ fn construct_transaction(
 }
 
 #[inline]
-fn relay_transaction(
-    servers: &[UpStream],
-    pkey: &PrivKey,
-    tx_proof_rlp: &[u8],
-    relay_info: &RelayInfo,
-) -> Option<H256> {
+fn relay_transaction(servers: &[UpStream], pkey: &PrivKey, tx_proof_rlp: &[u8], relay_info: &RelayInfo) -> Option<H256> {
     let mut ret = None;
     for upstream in servers.iter() {
         if let Some(utx) = construct_transaction(upstream, pkey, tx_proof_rlp, relay_info) {

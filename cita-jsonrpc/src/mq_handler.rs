@@ -57,18 +57,14 @@ impl MqHandler {
 
                 match resp {
                     TransferType::HTTP((req_info, sender)) => {
-                        sender
-                            .send(Output::from_res_info(content, req_info))
-                            .map_err(|e| {
-                                error!("http: {:?}", e);
-                            })?;
+                        sender.send(Output::from_res_info(content, req_info)).map_err(|e| {
+                            error!("http: {:?}", e);
+                        })?;
                     }
                     TransferType::WEBSOCKET((req_info, sender)) => {
-                        let json_body =
-                            serde_json::to_string(&Output::from_res_info(content, req_info))
-                                .map_err(|e| {
-                                    error!("ws: {:?}", e);
-                                })?;
+                        let json_body = serde_json::to_string(&Output::from_res_info(content, req_info)).map_err(|e| {
+                            error!("ws: {:?}", e);
+                        })?;
                         sender.send(json_body).map_err(|e| {
                             error!("ws: {:?}", e);
                         })?;

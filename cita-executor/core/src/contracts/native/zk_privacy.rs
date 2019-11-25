@@ -89,24 +89,15 @@ impl Default for ZkPrivacy {
 }
 
 impl ZkPrivacy {
-    fn init(
-        &mut self,
-        params: &VmExecParams,
-        data_provider: &mut DataProvider,
-    ) -> Result<InterpreterResult, NativeError> {
+    fn init(&mut self, params: &VmExecParams, data_provider: &mut DataProvider) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(5000);
         if params.gas < gas_cost {
             return Err(NativeError::Internal("out of gas".to_string()));
         }
         let sender = U256::from(H256::from(params.sender));
-        self.admin
-            .set(data_provider, &params.code_address.unwrap(), sender)?;
+        self.admin.set(data_provider, &params.code_address.unwrap(), sender)?;
         let gas_left = params.gas - gas_cost;
-        Ok(InterpreterResult::Normal(
-            vec![],
-            gas_left.low_u64(),
-            vec![],
-        ))
+        Ok(InterpreterResult::Normal(vec![], gas_left.low_u64(), vec![]))
     }
 
     fn set_balance(
@@ -122,32 +113,18 @@ impl ZkPrivacy {
         let mut index = 4;
 
         let mut len = 128;
-        let addr = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let addr = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
         index += len;
 
         len = 128;
-        let balance = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let balance = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
 
         trace!("set_balance {} {}", addr, balance);
 
-        self.balances.set_bytes(
-            data_provider,
-            &params.code_address.unwrap(),
-            &addr,
-            &balance,
-        )?;
+        self.balances
+            .set_bytes(data_provider, &params.code_address.unwrap(), &addr, &balance)?;
         let gas_left = params.gas - gas_cost;
-        Ok(InterpreterResult::Normal(
-            vec![],
-            gas_left.low_u64(),
-            vec![],
-        ))
+        Ok(InterpreterResult::Normal(vec![], gas_left.low_u64(), vec![]))
     }
 
     fn get_balance(
@@ -163,26 +140,17 @@ impl ZkPrivacy {
         let index = 4;
 
         let len = 128;
-        let addr = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let addr = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
 
         self.output.clear();
-        let balance: String =
-            self.balances
-                .get_bytes(data_provider, &params.code_address.unwrap(), &addr)?;
+        let balance: String = self.balances.get_bytes(data_provider, &params.code_address.unwrap(), &addr)?;
         for v in balance.as_bytes() {
             self.output.push(*v);
         }
         trace!("get_balance {} {}", addr, balance);
 
         let gas_left = params.gas - gas_cost;
-        Ok(InterpreterResult::Normal(
-            self.output.clone(),
-            gas_left.low_u64(),
-            vec![],
-        ))
+        Ok(InterpreterResult::Normal(self.output.clone(), gas_left.low_u64(), vec![]))
     }
 
     fn send_verify(
@@ -200,42 +168,27 @@ impl ZkPrivacy {
 
         // get address
         let mut len = 128;
-        let addr = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let addr = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
         index += len;
 
         // get proof
         len = 770;
-        let proof = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let proof = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
         index += len;
 
         // get coin
         len = 64;
-        let coin = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let coin = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
         index += len;
 
         // get delt_ba
         len = 128;
-        let delt_ba = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let delt_ba = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
         index += len;
 
         // get enc
         len = 192;
-        let enc = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let enc = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
 
         // get block_number
         let block_number = U256::from(env_info.number);
@@ -250,33 +203,22 @@ impl ZkPrivacy {
         );
 
         // check coin is dup
-        let coins_len = self
-            .coins
-            .get_len(data_provider, &params.code_address.unwrap())?;
+        let coins_len = self.coins.get_len(data_provider, &params.code_address.unwrap())?;
         for i in 0..coins_len {
-            let coin_added: String =
-                *self
-                    .coins
-                    .get_bytes(data_provider, &params.code_address.unwrap(), i)?;
+            let coin_added: String = *self.coins.get_bytes(data_provider, &params.code_address.unwrap(), i)?;
             if coin == coin_added {
                 return Err(NativeError::Internal("dup coin".to_string()));
             }
         }
 
         // compare block number
-        let last_block_number =
-            self.last_spent
-                .get(data_provider, &params.code_address.unwrap(), &addr)?;
+        let last_block_number = self.last_spent.get(data_provider, &params.code_address.unwrap(), &addr)?;
         if last_block_number >= block_number {
-            return Err(NativeError::Internal(
-                "block_number less than last".to_string(),
-            ));
+            return Err(NativeError::Internal("block_number less than last".to_string()));
         }
 
         // get balance
-        let balance: String =
-            self.balances
-                .get_bytes(data_provider, &params.code_address.unwrap(), &addr)?;
+        let balance: String = self.balances.get_bytes(data_provider, &params.code_address.unwrap(), &addr)?;
         trace!("balance {}", balance);
 
         let ret = p2c_verify(
@@ -296,49 +238,32 @@ impl ZkPrivacy {
         }
 
         // update last spent
-        self.last_spent.set(
-            data_provider,
-            &params.code_address.unwrap(),
-            &addr,
-            block_number,
-        )?;
+        self.last_spent
+            .set(data_provider, &params.code_address.unwrap(), &addr, block_number)?;
         // add coin
-        self.coins.set_bytes(
-            data_provider,
-            &params.code_address.unwrap(),
-            coins_len,
-            &coin,
-        )?;
+        self.coins
+            .set_bytes(data_provider, &params.code_address.unwrap(), coins_len, &coin)?;
         self.coins
             .set_len(data_provider, &params.code_address.unwrap(), coins_len + 1)?;
 
         // restore merkle tree form storage
         let mut tree = IncrementalMerkleTree::new(TREE_DEPTH);
-        let left_str: String = *self
-            .left
-            .get_bytes(data_provider, &params.code_address.unwrap())?;
+        let left_str: String = *self.left.get_bytes(data_provider, &params.code_address.unwrap())?;
         let tree_left = if left_str.is_empty() {
             None
         } else {
             Some(PedersenDigest(str2u644(left_str)))
         };
-        let right_str: String = *self
-            .right
-            .get_bytes(data_provider, &params.code_address.unwrap())?;
+        let right_str: String = *self.right.get_bytes(data_provider, &params.code_address.unwrap())?;
         let tree_right = if right_str.is_empty() {
             None
         } else {
             Some(PedersenDigest(str2u644(right_str)))
         };
         let mut parents = Vec::new();
-        let parents_len = self
-            .parents
-            .get_len(data_provider, &params.code_address.unwrap())?;
+        let parents_len = self.parents.get_len(data_provider, &params.code_address.unwrap())?;
         for i in 0..parents_len {
-            let hash_str: String =
-                *self
-                    .parents
-                    .get_bytes(data_provider, &params.code_address.unwrap(), i)?;
+            let hash_str: String = *self.parents.get_bytes(data_provider, &params.code_address.unwrap(), i)?;
             let hash = if hash_str.is_empty() {
                 None
             } else {
@@ -361,15 +286,13 @@ impl ZkPrivacy {
             Some(hash) => u6442str(hash.0),
             None => "".to_string(),
         };
-        self.left
-            .set_bytes(data_provider, &params.code_address.unwrap(), &left)?;
+        self.left.set_bytes(data_provider, &params.code_address.unwrap(), &left)?;
 
         let right = match tree.export_right() {
             Some(hash) => u6442str(hash.0),
             None => "".to_string(),
         };
-        self.right
-            .set_bytes(data_provider, &params.code_address.unwrap(), &right)?;
+        self.right.set_bytes(data_provider, &params.code_address.unwrap(), &right)?;
 
         let mut i = 0;
         for opt_hash in tree.export_parents().iter() {
@@ -381,17 +304,12 @@ impl ZkPrivacy {
                 .set_bytes(data_provider, &params.code_address.unwrap(), i, &str)?;
             i += 1;
         }
-        self.parents
-            .set_len(data_provider, &params.code_address.unwrap(), i)?;
+        self.parents.set_len(data_provider, &params.code_address.unwrap(), i)?;
 
         // sub balance
         let new_balance = ecc_sub(balance, delt_ba);
-        self.balances.set_bytes(
-            data_provider,
-            &params.code_address.unwrap(),
-            &addr,
-            &new_balance,
-        )?;
+        self.balances
+            .set_bytes(data_provider, &params.code_address.unwrap(), &addr, &new_balance)?;
 
         let mut data = Vec::new();
         data.extend_from_slice(coin.as_bytes());
@@ -409,11 +327,7 @@ impl ZkPrivacy {
 
         trace!("send_verify OK data len {}", data.len());
         let gas_left = params.gas - gas_cost;
-        Ok(InterpreterResult::Normal(
-            vec![],
-            gas_left.low_u64(),
-            vec![],
-        ))
+        Ok(InterpreterResult::Normal(vec![], gas_left.low_u64(), vec![]))
     }
 
     fn receive_verify(
@@ -430,61 +344,36 @@ impl ZkPrivacy {
 
         // get address
         let mut len = 128;
-        let addr = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let addr = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
         index += len;
 
         // get proof
         len = 770;
-        let proof = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let proof = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
         index += len;
 
         // get nullifier
         len = 64;
-        let nullifier = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let nullifier = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
         index += len;
 
         // get root
         len = 64;
-        let root = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let root = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
         index += len;
 
         // get delt_ba
         len = 128;
-        let delt_ba = String::from_utf8(Vec::from(
-            data.get(index..index + len).expect("no enough data"),
-        ))
-        .unwrap();
+        let delt_ba = String::from_utf8(Vec::from(data.get(index..index + len).expect("no enough data"))).unwrap();
 
-        trace!(
-            "receive_verify args: {} {} {} {} {}",
-            addr,
-            proof,
-            nullifier,
-            root,
-            delt_ba
-        );
+        trace!("receive_verify args: {} {} {} {} {}", addr, proof, nullifier, root, delt_ba);
 
         // check nullifier is dup
-        let nullifier_set_len = self
-            .nullifier_set
-            .get_len(data_provider, &params.code_address.unwrap())?;
+        let nullifier_set_len = self.nullifier_set.get_len(data_provider, &params.code_address.unwrap())?;
         for i in 0..nullifier_set_len {
-            let nullifier_in_set: String =
-                *self
-                    .nullifier_set
-                    .get_bytes(data_provider, &params.code_address.unwrap(), i)?;
+            let nullifier_in_set: String = *self
+                .nullifier_set
+                .get_bytes(data_provider, &params.code_address.unwrap(), i)?;
             if nullifier == nullifier_in_set {
                 return Err(NativeError::Internal("dup nullifier".to_string()));
             }
@@ -494,31 +383,22 @@ impl ZkPrivacy {
         // str2u644(root.clone()) == tree.root()
         // restore merkle tree form storage
         let mut tree = IncrementalMerkleTree::new(TREE_DEPTH);
-        let left_str: String = *self
-            .left
-            .get_bytes(data_provider, &params.code_address.unwrap())?;
+        let left_str: String = *self.left.get_bytes(data_provider, &params.code_address.unwrap())?;
         let tree_left = if left_str.is_empty() {
             None
         } else {
             Some(PedersenDigest(str2u644(left_str)))
         };
-        let right_str: String = *self
-            .right
-            .get_bytes(data_provider, &params.code_address.unwrap())?;
+        let right_str: String = *self.right.get_bytes(data_provider, &params.code_address.unwrap())?;
         let tree_right = if right_str.is_empty() {
             None
         } else {
             Some(PedersenDigest(str2u644(right_str)))
         };
         let mut parents = Vec::new();
-        let parents_len = self
-            .parents
-            .get_len(data_provider, &params.code_address.unwrap())?;
+        let parents_len = self.parents.get_len(data_provider, &params.code_address.unwrap())?;
         for i in 0..parents_len {
-            let hash_str: String =
-                *self
-                    .parents
-                    .get_bytes(data_provider, &params.code_address.unwrap(), i)?;
+            let hash_str: String = *self.parents.get_bytes(data_provider, &params.code_address.unwrap(), i)?;
             let hash = if hash_str.is_empty() {
                 None
             } else {
@@ -540,37 +420,20 @@ impl ZkPrivacy {
             return Err(NativeError::Internal("c2p_verify failed".to_string()));
         }
         // add nullifier into nullifier_set
-        self.nullifier_set.set_bytes(
-            data_provider,
-            &params.code_address.unwrap(),
-            nullifier_set_len,
-            &nullifier,
-        )?;
-        self.nullifier_set.set_len(
-            data_provider,
-            &params.code_address.unwrap(),
-            nullifier_set_len + 1,
-        )?;
+        self.nullifier_set
+            .set_bytes(data_provider, &params.code_address.unwrap(), nullifier_set_len, &nullifier)?;
+        self.nullifier_set
+            .set_len(data_provider, &params.code_address.unwrap(), nullifier_set_len + 1)?;
         // add balance
-        let balance: String =
-            self.balances
-                .get_bytes(data_provider, &params.code_address.unwrap(), &addr)?;
+        let balance: String = self.balances.get_bytes(data_provider, &params.code_address.unwrap(), &addr)?;
         trace!("balance {}", balance);
         let new_balance = ecc_add(balance, delt_ba);
-        self.balances.set_bytes(
-            data_provider,
-            &params.code_address.unwrap(),
-            &addr,
-            &new_balance,
-        )?;
+        self.balances
+            .set_bytes(data_provider, &params.code_address.unwrap(), &addr, &new_balance)?;
 
         trace!("receive_verify OK");
 
         let gas_left = params.gas - gas_cost;
-        Ok(InterpreterResult::Normal(
-            vec![],
-            gas_left.low_u64(),
-            vec![],
-        ))
+        Ok(InterpreterResult::Normal(vec![], gas_left.low_u64(), vec![]))
     }
 }

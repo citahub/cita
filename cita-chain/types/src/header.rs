@@ -15,9 +15,7 @@
 //! Block header.
 
 use cita_types::{Address, Bloom, H256, U256};
-use libproto::blockchain::{
-    Block as ProtoBlock, BlockHeader as ProtoBlockHeader, Proof as ProtoProof, ProofType,
-};
+use libproto::blockchain::{Block as ProtoBlock, BlockHeader as ProtoBlockHeader, Proof as ProtoProof, ProofType};
 use libproto::executor::{ExecutedHeader, ExecutedInfo};
 use proof::BftProof;
 use rlp::{self, Decodable, DecoderError, Encodable, RlpStream, UntrustedRlp};

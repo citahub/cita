@@ -34,8 +34,7 @@ pub enum Error {
     Parse,
 }
 
-type RpcSender =
-    Mutex<mpsc::Sender<(hyper::Request, oneshot::Sender<Result<hyper::Chunk, Error>>)>>;
+type RpcSender = Mutex<mpsc::Sender<(hyper::Request, oneshot::Sender<Result<hyper::Chunk, Error>>)>>;
 
 pub struct RpcClient {
     sender: RpcSender,
@@ -46,8 +45,7 @@ impl RpcClient {
     pub fn create(upstream: &UpStream) -> ::std::sync::Arc<Self> {
         let tb = ::std::thread::Builder::new().name("RpcClient".to_string());
         let uri = upstream.url.parse::<hyper::Uri>().unwrap();
-        let (tx, rx) =
-            mpsc::channel::<(hyper::Request, oneshot::Sender<Result<hyper::Chunk, Error>>)>(65_535);
+        let (tx, rx) = mpsc::channel::<(hyper::Request, oneshot::Sender<Result<hyper::Chunk, Error>>)>(65_535);
         let timeout_duration = upstream.timeout;
 
         let _tb = tb
@@ -118,11 +116,7 @@ macro_rules! rpc_send_and_get_result_from_reply {
         let body: String = $request.into();
         let data = rpc_cli.do_post(&body)?;
         let reply: ReplyType = serde_json::from_slice(&data).map_err(|_| {
-            error!(
-                "send {:?} return error: {:?}",
-                &body,
-                ::std::str::from_utf8(&data)
-            );
+            error!("send {:?} return error: {:?}", &body, ::std::str::from_utf8(&data));
             Error::Parse
         })?;
         trace!("get reply {:?}.", reply);
@@ -160,10 +154,7 @@ pub fn cita_get_metadata(upstream: &UpStream) -> Result<rpc_types::MetaData, Err
     Ok(result)
 }
 
-pub fn cita_send_transaction(
-    upstream: &UpStream,
-    utx: &UnverifiedTransaction,
-) -> Result<H256, Error> {
+pub fn cita_send_transaction(upstream: &UpStream, utx: &UnverifiedTransaction) -> Result<H256, Error> {
     let tx_bytes: Vec<u8> = utx.try_into().unwrap();
     let req = rpc_request::SendRawTransactionParams::new(tx_bytes.into()).into_request(1);
     let result = rpc_send_and_get_result_from_reply!(upstream, req, rpc_types::TxResponse);

@@ -17,9 +17,7 @@ use bincode::{serialize, Infinite};
 use cita_types::H256;
 use hashable::Hashable;
 use libproto::TryInto;
-use libproto::{
-    Block, BlockWithProof, Message, Proposal, SignedProposal, SignedTransaction, Transaction,
-};
+use libproto::{Block, BlockWithProof, Message, Proposal, SignedProposal, SignedTransaction, Transaction};
 use proof::BftProof;
 use rustc_serialize::hex::FromHex;
 use std::collections::HashMap;
@@ -99,13 +97,7 @@ impl BuildBlock {
         proof.proposal = H256::default();
         let mut commits = HashMap::new();
         let msg = serialize(
-            &(
-                proof.height,
-                proof.round,
-                Step::Precommit,
-                sender,
-                Some(proof.proposal),
-            ),
+            &(proof.height, proof.round, Step::Precommit, sender, Some(proof.proposal)),
             Infinite,
         )
         .unwrap();
@@ -117,9 +109,7 @@ impl BuildBlock {
         previous_proof.height = height as usize - 1;
         block.mut_header().set_proof(previous_proof.into());
         let transactions_root = block.get_body().transactions_root();
-        block
-            .mut_header()
-            .set_transactions_root(transactions_root.to_vec());
+        block.mut_header().set_transactions_root(transactions_root.to_vec());
         let mut proof_blk = BlockWithProof::new();
         proof_blk.set_blk(block);
         proof_blk.set_proof(proof.into());
@@ -135,8 +125,7 @@ impl BuildBlock {
         privkey: &PrivKey,
         timestamp: u64,
     ) -> (Vec<u8>, SignedProposal) {
-        let (_, mut proofed_block) =
-            Self::build_block_with_proof(txs, prev_hash, height, privkey, timestamp);
+        let (_, mut proofed_block) = Self::build_block_with_proof(txs, prev_hash, height, privkey, timestamp);
         let block = proofed_block.take_blk();
         let proof: BftProof = BftProof::from(proofed_block.take_proof());
         let mut proposal = Proposal::new();
@@ -146,13 +135,7 @@ impl BuildBlock {
 
         let sender = KeyPair::from_privkey(*privkey).unwrap().address();
         let serialized = serialize(
-            &(
-                proof.height,
-                proof.round,
-                Step::Precommit,
-                sender,
-                Some(proof.proposal),
-            ),
+            &(proof.height, proof.round, Step::Precommit, sender, Some(proof.proposal)),
             Infinite,
         )
         .unwrap();

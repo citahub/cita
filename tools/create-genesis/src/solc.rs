@@ -54,10 +54,7 @@ impl Solc {
             .arg("--version")
             .output()
             .expect("solc compiler not exist !");
-        println!(
-            "Solc version: {:?}",
-            String::from_utf8(output.stdout).unwrap()
-        );
+        println!("Solc version: {:?}", String::from_utf8(output.stdout).unwrap());
         output.status.success()
     }
 }

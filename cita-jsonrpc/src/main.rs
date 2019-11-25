@@ -140,12 +140,7 @@ fn main() {
 
     start_pubsub(
         "jsonrpc",
-        routing_key!([
-            Auth >> Response,
-            Chain >> Response,
-            Executor >> Response,
-            Net >> Response,
-        ]),
+        routing_key!([Auth >> Response, Chain >> Response, Executor >> Response, Net >> Response,]),
         tx_sub,
         rx_pub,
     );
@@ -199,10 +194,7 @@ fn main() {
         loop {
             if let Ok((_, msg_bytes)) = rx.recv() {
                 let resp_msg = soliloquy.handle(&msg_bytes);
-                let _ = soli_resp_tx.send((
-                    routing_key!(Jsonrpc >> Response).into(),
-                    resp_msg.try_into().unwrap(),
-                ));
+                let _ = soli_resp_tx.send((routing_key!(Jsonrpc >> Response).into(), resp_msg.try_into().unwrap()));
             }
         }
     });
@@ -212,8 +204,7 @@ fn main() {
         let ws_config = config.ws_config.clone();
         let tx = tx_relay.clone();
         thread::spawn(move || {
-            let url =
-                ws_config.listen_ip.clone() + ":" + &ws_config.listen_port.clone().to_string();
+            let url = ws_config.listen_ip.clone() + ":" + &ws_config.listen_port.clone().to_string();
             //let factory = WsFactory::new(ws_responses, tx_pub, 0);
             let factory = WsFactory::new(ws_responses, tx, 0);
             info!("WebSocket Listening on {}", url);
@@ -226,14 +217,10 @@ fn main() {
 
     if config.http_config.enable {
         let http_config = config.http_config.clone();
-        let addr =
-            http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
+        let addr = http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
         info!("Http Listening on {}", &addr);
 
-        let threads: usize = config
-            .http_config
-            .thread_number
-            .unwrap_or_else(num_cpus::get);
+        let threads: usize = config.http_config.thread_number.unwrap_or_else(num_cpus::get);
 
         let addr = addr.parse().unwrap();
         let timeout = http_config.timeout;
@@ -241,23 +228,13 @@ fn main() {
         let _ = thread::Builder::new()
             .name(String::from("http worker"))
             .spawn(move || {
-                let server =
-                    Server::create(&addr, tx_relay, http_responses, timeout, &allow_origin)
-                        .unwrap();
-                let jsonrpc_server = server
-                    .jsonrpc()
-                    .map_err(|err| eprintln!("server err {}", err));
+                let server = Server::create(&addr, tx_relay, http_responses, timeout, &allow_origin).unwrap();
+                let jsonrpc_server = server.jsonrpc().map_err(|err| eprintln!("server err {}", err));
 
-                let mut rt = tokio::runtime::Builder::new()
-                    .core_threads(threads)
-                    .build()
-                    .unwrap();
+                let mut rt = tokio::runtime::Builder::new().core_threads(threads).build().unwrap();
                 rt.spawn(jsonrpc_server);
 
-                tokio_executor::enter()
-                    .unwrap()
-                    .block_on(rt.shutdown_on_idle())
-                    .unwrap();
+                tokio_executor::enter().unwrap().block_on(rt.shutdown_on_idle()).unwrap();
             })
             .unwrap();
     }
@@ -288,10 +265,7 @@ fn batch_forward_new_tx(
 
     let data: Message = request.into();
     tx_pub
-        .send((
-            routing_key!(Jsonrpc >> RequestNewTxBatch).into(),
-            data.try_into().unwrap(),
-        ))
+        .send((routing_key!(Jsonrpc >> RequestNewTxBatch).into(), data.try_into().unwrap()))
         .unwrap();
     *time_stamp = SystemTime::now();
     new_tx_request_buffer.clear();
@@ -329,11 +303,7 @@ fn start_profile(config: &ProfileConfig) {
         let duration = config.flag_prof_duration;
         thread::spawn(move || {
             thread::sleep(Duration::new(start, 0));
-            PROFILER
-                .lock()
-                .unwrap()
-                .start("./jsonrpc.profile")
-                .expect("Couldn't start");
+            PROFILER.lock().unwrap().start("./jsonrpc.profile").expect("Couldn't start");
             thread::sleep(Duration::new(duration, 0));
             PROFILER.lock().unwrap().stop().unwrap();
         });

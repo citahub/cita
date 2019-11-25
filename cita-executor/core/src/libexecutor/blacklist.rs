@@ -57,20 +57,8 @@ impl BlackList {
 
     pub fn protobuf(&self) -> ProtoBlackList {
         let mut bl = ProtoBlackList::new();
-        bl.set_black_list(
-            self.black_list
-                .clone()
-                .into_iter()
-                .map(|address| address.to_vec())
-                .collect(),
-        );
-        bl.set_clear_list(
-            self.clear_list
-                .clone()
-                .into_iter()
-                .map(|address| address.to_vec())
-                .collect(),
-        );
+        bl.set_black_list(self.black_list.clone().into_iter().map(|address| address.to_vec()).collect());
+        bl.set_clear_list(self.clear_list.clone().into_iter().map(|address| address.to_vec()).collect());
         bl
     }
 }

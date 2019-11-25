@@ -14,9 +14,8 @@
 
 use futures::future::{self as future, Future};
 use hyper::header::{
-    HeaderMap as Headers, HeaderName, HeaderValue, ACCEPT, ACCESS_CONTROL_ALLOW_HEADERS,
-    ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_MAX_AGE,
-    CONTENT_TYPE, ORIGIN, USER_AGENT,
+    HeaderMap as Headers, HeaderName, HeaderValue, ACCEPT, ACCESS_CONTROL_ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_METHODS,
+    ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_MAX_AGE, CONTENT_TYPE, ORIGIN, USER_AGENT,
 };
 use hyper::service::{MakeService, Service};
 use hyper::{Body, Method, Request, Response, StatusCode};
@@ -91,9 +90,7 @@ struct BatchRpcAccessLog {
 impl From<MQAccessLog> for RpcAccessLog {
     fn from(mq_log: MQAccessLog) -> Self {
         match mq_log {
-            MQAccessLog::Single { id, method } => {
-                RpcAccessLog::Single(SingleRpcAccessLog { id, method })
-            }
+            MQAccessLog::Single { id, method } => RpcAccessLog::Single(SingleRpcAccessLog { id, method }),
             MQAccessLog::Batch { count } => RpcAccessLog::Batch(BatchRpcAccessLog { count }),
         }
     }
@@ -177,8 +174,7 @@ impl Service for Jsonrpc {
 
                             let timeout_responses = Arc::clone(&responses);
                             let pulibsher = Publisher::new(responses, sender, headers);
-                            let pulibsher =
-                                TimeoutPublisher::new(pulibsher, timeout, timeout_responses);
+                            let pulibsher = TimeoutPublisher::new(pulibsher, timeout, timeout_responses);
 
                             pulibsher.publish(mq_req)
                         }
@@ -343,16 +339,10 @@ mod integration_test {
                     .with_graceful_shutdown(shutdown_rx)
                     .map_err(|err| eprintln!("server err {}", err));
 
-                let mut rt = tokio::runtime::Builder::new()
-                    .core_threads(2)
-                    .build()
-                    .unwrap();
+                let mut rt = tokio::runtime::Builder::new().core_threads(2).build().unwrap();
                 rt.spawn(jsonrpc_server);
 
-                tokio_executor::enter()
-                    .unwrap()
-                    .block_on(rt.shutdown_on_idle())
-                    .unwrap();
+                tokio_executor::enter().unwrap().block_on(rt.shutdown_on_idle()).unwrap();
             })
             .unwrap();
         let (addr, shutdown_tx) = addr_rx.recv().unwrap();
@@ -397,10 +387,7 @@ mod integration_test {
                             let _ = sender.send(Output::from_res_info(content, req_info));
                         }
                         TransferType::WEBSOCKET((req_info, sender)) => {
-                            let _ = sender.send(
-                                serde_json::to_string(&Output::from_res_info(content, req_info))
-                                    .unwrap(),
-                            );
+                            let _ = sender.send(serde_json::to_string(&Output::from_res_info(content, req_info)).unwrap());
                         }
                     }
                 } else {
@@ -417,22 +404,15 @@ mod integration_test {
         let client = hyper::Client::builder().keep_alive(true).build_http();
 
         let mut works: Vec<Box<Future<Item = (), Error = _>>> = vec![];
-        let uri = hyper::Uri::from_str(
-            format!("http://{}:{}/", serve.addr.ip(), serve.addr.port()).as_str(),
-        )
-        .unwrap();
+        let uri = hyper::Uri::from_str(format!("http://{}:{}/", serve.addr.ip(), serve.addr.port()).as_str()).unwrap();
 
-        let req = hyper::Request::post(uri.clone())
-            .body(hyper::Body::empty())
-            .unwrap();
+        let req = hyper::Request::post(uri.clone()).body(hyper::Body::empty()).unwrap();
         let work_empty = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 400);
             Ok(())
         });
 
-        let req = hyper::Request::options(uri.clone())
-            .body(hyper::Body::empty())
-            .unwrap();
+        let req = hyper::Request::options(uri.clone()).body(hyper::Body::empty()).unwrap();
         let work_options = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 200);
             let headers = resp.headers().clone();
@@ -450,10 +430,7 @@ mod integration_test {
                 headers.get(ACCESS_CONTROL_ALLOW_HEADERS),
                 Some(&HeaderValue::from_vec(expect_headers))
             );
-            assert_eq!(
-                headers.get(ACCESS_CONTROL_MAX_AGE),
-                Some(&HeaderValue::from(CORS_CACHE))
-            );
+            assert_eq!(headers.get(ACCESS_CONTROL_MAX_AGE), Some(&HeaderValue::from(CORS_CACHE)));
             Ok(())
         });
 
@@ -462,13 +439,9 @@ mod integration_test {
             "id": null,
             "params": ["0x000000000000000000000000000000000000000000000000000000000000000a"]
         }"#;
-        let rpcreq =
-            serde_json::from_str::<jsonrpc_types::rpc_request::PartialRequest>(request_str)
-                .unwrap();
+        let rpcreq = serde_json::from_str::<jsonrpc_types::rpc_request::PartialRequest>(request_str).unwrap();
         let data = serde_json::to_string(&JsonrpcRequest::Single(rpcreq)).unwrap();
-        let req = hyper::Request::post(uri.clone())
-            .body(hyper::Body::from(data))
-            .unwrap();
+        let req = hyper::Request::post(uri.clone()).body(hyper::Body::from(data)).unwrap();
         let work_method_not_found = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 200);
             resp.into_body()
@@ -495,13 +468,8 @@ mod integration_test {
                 })
         });
 
-        let data = format!(
-            "{}",
-            json!({"jsonrpc":"2.0","method":"peerCount","params":[],"id":74})
-        );
-        let req = hyper::Request::post(uri.clone())
-            .body(hyper::Body::from(data))
-            .unwrap();
+        let data = format!("{}", json!({"jsonrpc":"2.0","method":"peerCount","params":[],"id":74}));
+        let req = hyper::Request::post(uri.clone()).body(hyper::Body::from(data)).unwrap();
         let work_peercount = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 200);
             resp.into_body()
@@ -524,9 +492,7 @@ mod integration_test {
                 {"jsonrpc":"2.0","method":"peerCount","params":[],"id":75}
             ])
         );
-        let req = hyper::Request::post(uri.clone())
-            .body(hyper::Body::from(data))
-            .unwrap();
+        let req = hyper::Request::post(uri.clone()).body(hyper::Body::from(data)).unwrap();
         let work_peercount_batch = client.request(req).and_then(|resp| {
             assert_eq!(resp.status().as_u16(), 200);
             resp.into_body()

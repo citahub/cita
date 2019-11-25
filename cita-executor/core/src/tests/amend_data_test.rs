@@ -26,11 +26,7 @@ use cita_types::{Address, H256, U256};
 use core::transaction::{SignedTransaction, Transaction};
 use types::Bytes;
 
-fn build_transaction(
-    data: &Vec<u8>,
-    value: U256,
-    use_super_admin: bool,
-) -> (SignedTransaction, BlockSysConfig) {
+fn build_transaction(data: &Vec<u8>, value: U256, use_super_admin: bool) -> (SignedTransaction, BlockSysConfig) {
     let mut tx = Transaction::default();
     tx.action = Action::AmendData;
     tx.data = data.to_vec();

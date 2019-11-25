@@ -57,10 +57,7 @@ impl IntoResponse for ServiceError {
                 new_response(None, Some(Body::from(resp_body)))
             }
             ServiceError::MQRpcTimeout(req_info) => {
-                let timeout_err = jsonrpc_types::Error::server_error(
-                    error::ErrorCode::time_out_error(),
-                    MSG_TIMEOUT_RESEND,
-                );
+                let timeout_err = jsonrpc_types::Error::server_error(error::ErrorCode::time_out_error(), MSG_TIMEOUT_RESEND);
                 let failure = match req_info {
                     Some(info) => RpcFailure::from_options(info, timeout_err),
                     None => RpcFailure::from(timeout_err),

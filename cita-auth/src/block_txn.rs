@@ -54,12 +54,8 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Error::*;
         match *self {
-            BadOrigin { expected, got } => {
-                write!(f, "Bad origin: expect {}, got {}", expected, got)
-            }
-            BadBlockHash { expected, got } => {
-                write!(f, "Bad block hash: expected {}, got {}", expected, got)
-            }
+            BadOrigin { expected, got } => write!(f, "Bad origin: expect {}, got {}", expected, got),
+            BadBlockHash { expected, got } => write!(f, "Bad block hash: expected {}, got {}", expected, got),
             BadShortID => write!(f, "Including transaction with bad short id"),
             BadTxSignature => write!(f, "Including transaction with bad signature"),
         }
@@ -114,8 +110,7 @@ impl BlockTxnMessage {
                 // TODO: move verify tx sig to transaction?
                 let bytes: Vec<u8> = transaction.get_transaction().try_into().unwrap();
                 let hash = bytes.crypt_hash();
-                let result =
-                    verify_tx_sig(transaction.get_crypto(), &hash, transaction.get_signature());
+                let result = verify_tx_sig(transaction.get_crypto(), &hash, transaction.get_signature());
                 match result {
                     Ok(pubkey) => {
                         let mut signed_tx = SignedTransaction::new();
@@ -151,13 +146,7 @@ mod tests {
         };
 
         let result = block_txn_message.validate(&expected);
-        assert_eq!(
-            result,
-            Err(Error::BadOrigin {
-                expected: 1,
-                got: 2
-            })
-        );
+        assert_eq!(result, Err(Error::BadOrigin { expected: 1, got: 2 }));
     }
 
     #[test]
@@ -176,13 +165,7 @@ mod tests {
         };
 
         let result = block_txn_message.validate(&expected);
-        assert_eq!(
-            result,
-            Err(Error::BadBlockHash {
-                expected: h1,
-                got: h2
-            })
-        );
+        assert_eq!(result, Err(Error::BadBlockHash { expected: h1, got: h2 }));
     }
 
     #[test]

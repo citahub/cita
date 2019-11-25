@@ -14,8 +14,7 @@
 
 use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::node_manager::{
-    BroadcastReq, DealRichStatusReq, GetPeerCountReq, GetPeersInfoReq, NodesManagerClient,
-    SingleTxReq,
+    BroadcastReq, DealRichStatusReq, GetPeerCountReq, GetPeersInfoReq, NodesManagerClient, SingleTxReq,
 };
 use crate::synchronizer::{SynchronizerClient, SynchronizerMessage};
 use jsonrpc_types::rpc_types::PeersInfo;
@@ -41,11 +40,7 @@ pub struct Network {
 }
 
 impl Network {
-    pub fn new(
-        mq_client: MqAgentClient,
-        nodes_mgr_client: NodesManagerClient,
-        sync_client: SynchronizerClient,
-    ) -> Self {
+    pub fn new(mq_client: MqAgentClient, nodes_mgr_client: NodesManagerClient, sync_client: SynchronizerClient) -> Self {
         let (tx, rx) = unbounded();
         let client = NetworkClient { sender: tx };
         Network {
@@ -123,9 +118,7 @@ impl LocalMessage {
         let rt_key = RoutingKey::from(&self.key);
         trace!("[Network] Receive Message from Local/{}", self.key);
 
-        if service.is_pause.load(Ordering::SeqCst)
-            && rt_key.get_sub_module() != SubModules::Snapshot
-        {
+        if service.is_pause.load(Ordering::SeqCst) && rt_key.get_sub_module() != SubModules::Snapshot {
             return;
         }
 
@@ -176,19 +169,16 @@ impl LocalMessage {
                     response.set_request_id(req.take_request_id());
 
                     let (tx, rx) = unbounded();
-                    service
-                        .nodes_mgr_client
-                        .get_peer_count(GetPeerCountReq::new(tx));
+                    service.nodes_mgr_client.get_peer_count(GetPeerCountReq::new(tx));
 
                     // Get peer count from rx channel
                     // FIXME: This is a block receive, double check about this
                     let peer_count = rx.recv().unwrap();
                     response.set_peercount(peer_count as u32);
                     let msg: ProtoMessage = response.into();
-                    service.mq_client.send_peer_count(PubMessage::new(
-                        routing_key!(Net >> Response).into(),
-                        msg.try_into().unwrap(),
-                    ));
+                    service
+                        .mq_client
+                        .send_peer_count(PubMessage::new(routing_key!(Net >> Response).into(), msg.try_into().unwrap()));
                 }
             } else {
                 warn!("[Network] Receive unexpected rpc data");
@@ -208,9 +198,7 @@ impl LocalMessage {
                     response.set_request_id(req.take_request_id());
 
                     let (tx, rx) = unbounded();
-                    service
-                        .nodes_mgr_client
-                        .get_peers_info(GetPeersInfoReq::new(tx));
+                    service.nodes_mgr_client.get_peers_info(GetPeersInfoReq::new(tx));
 
                     // Get peers from rx channel
                     // FIXME: This is a block receive, double check about this
@@ -230,10 +218,9 @@ impl LocalMessage {
                     }
 
                     let msg: ProtoMessage = response.into();
-                    service.mq_client.send_peer_count(PubMessage::new(
-                        routing_key!(Net >> Response).into(),
-                        msg.try_into().unwrap(),
-                    ));
+                    service
+                        .mq_client
+                        .send_peer_count(PubMessage::new(routing_key!(Net >> Response).into(), msg.try_into().unwrap()));
                 }
             } else {
                 warn!("[Network] Receive unexpected get peers info data");
@@ -298,9 +285,7 @@ impl RemoteMessage {
         let rt_key = RoutingKey::from(&self.key);
         trace!("[Network] Receive Message from Remote/{}", self.key);
 
-        if service.is_pause.load(Ordering::SeqCst)
-            && rt_key.get_sub_module() != SubModules::Snapshot
-        {
+        if service.is_pause.load(Ordering::SeqCst) && rt_key.get_sub_module() != SubModules::Snapshot {
             return;
         }
 
@@ -316,14 +301,12 @@ impl RemoteMessage {
                     .handle_remote_response(SynchronizerMessage::new(self.key, self.data));
             }
             routing_key!(Synchronizer >> SyncRequest) => {
-                service.mq_client.pub_sync_request(PubMessage::new(
-                    routing_key!(Net >> SyncRequest).into(),
-                    self.data,
-                ));
+                service
+                    .mq_client
+                    .pub_sync_request(PubMessage::new(routing_key!(Net >> SyncRequest).into(), self.data));
             }
             routing_key!(Consensus >> CompactSignedProposal) => {
-                let msg =
-                    PubMessage::new(routing_key!(Net >> CompactSignedProposal).into(), self.data);
+                let msg = PubMessage::new(routing_key!(Net >> CompactSignedProposal).into(), self.data);
                 service.mq_client.forward_msg_to_consensus(msg);
             }
             routing_key!(Consensus >> RawBytes) => {

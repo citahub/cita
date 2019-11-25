@@ -44,16 +44,8 @@ impl<'a> VersionManager<'a> {
 
     pub fn get_version(&self, block_tag: BlockTag) -> Option<u32> {
         self.executor
-            .call_method(
-                &*CONTRACT_ADDRESS,
-                &*VERSION_HASH.as_slice(),
-                None,
-                block_tag,
-            )
-            .and_then(|output| {
-                decode(&[ParamType::Uint(64)], &output)
-                    .map_err(|_| "decode value error".to_string())
-            })
+            .call_method(&*CONTRACT_ADDRESS, &*VERSION_HASH.as_slice(), None, block_tag)
+            .and_then(|output| decode(&[ParamType::Uint(64)], &output).map_err(|_| "decode value error".to_string()))
             .ok()
             .and_then(|mut x| x.remove(0).to_uint())
             .map(|x| H256::from(x).low_u64() as u32)
@@ -75,9 +67,7 @@ mod tests {
     fn test_get_version() {
         let executor = init_executor();
         let version_management = VersionManager::new(&executor);
-        let version = version_management
-            .get_version(BlockTag::Tag(Tag::Pending))
-            .unwrap();
+        let version = version_management.get_version(BlockTag::Tag(Tag::Pending)).unwrap();
         assert_eq!(version, 2);
     }
 }

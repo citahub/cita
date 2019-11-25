@@ -36,22 +36,13 @@ fn encode(dest_hasher: [u8; 4], tx_proof_rlp: &[u8]) -> Vec<u8> {
     trace!("encode proof_len {:?}", tx_proof_rlp.len());
     trace!("encode proof_data {:?}", tx_proof_rlp);
     let encoded = ethabi::encode(&[ethabi::Token::Bytes(tx_proof_rlp.to_vec())]);
-    let ret = Vec::from(&dest_hasher[..])
-        .into_iter()
-        .chain(encoded.into_iter())
-        .collect();
+    let ret = Vec::from(&dest_hasher[..]).into_iter().chain(encoded.into_iter()).collect();
     trace!("encode result {:?}", ret);
     ret
 }
 
 #[inline]
-fn sign(
-    pkey: &PrivKey,
-    addr: H160,
-    code: Vec<u8>,
-    chain_id: U256,
-    height: U256,
-) -> UnverifiedTransaction {
+fn sign(pkey: &PrivKey, addr: H160, code: Vec<u8>, chain_id: U256, height: U256) -> UnverifiedTransaction {
     let mut tx = Transaction::new();
     tx.set_data(code);
     tx.set_to_v1(addr.to_vec());
