@@ -214,8 +214,8 @@ impl PermManager {
             ParamType::Array(Box::new(ParamType::Address)),
             ParamType::Array(Box::new(ParamType::FixedBytes(4)))
         ];
-        if let Ok(params) = ethabi::decode(&tokens, &params.input[4..]) {
-            match (&params[0], &params[1], &params[2]) {
+        if let Ok(args) = ethabi::decode(&tokens, &params.input[4..]) {
+            match (&args[0], &args[1], &args[2]) {
                 (Token::FixedBytes(name), Token::Array(addrs), Token::Array(funcs)) => {
                     let perm_name = H256::from_slice(name);
                     let perm_addrs = addrs.iter().map(|i| match i {
@@ -247,7 +247,7 @@ impl PermManager {
                     logs.push(log);
 
                     *changed = true;
-                    return Ok(InterpreterResult::Normal(H256::from(perm_address).0.to_vec(), 0, logs));
+                    return Ok(InterpreterResult::Normal(H256::from(perm_address).0.to_vec(), params.gas_limit, logs));
                 }
                 _ => unimplemented!(),
             }
@@ -282,6 +282,9 @@ impl PermManager {
         trace!("params decoded: perm_address: {:?}, perm_name: {:?}", perm_address, perm_name);
         if let Some(perm) = self.perm_collection.get_mut(&perm_address) {
             perm.update_name(&perm_name);
+        } else {
+            warn!("The account not exists");
+            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
         }
 
         *changed = true;
@@ -292,55 +295,168 @@ impl PermManager {
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - add_permission_resource, input {:?}", params.input);
-        // 解析一个address, 两个数组
-        let perm_address = Address::from(&params.input[16..36]);
-        let perm_conts = Vec::new();
-        let perm_funcs = Vec::new();
-        trace!("params decoded: account: {:?}, permissions: {:?} resource: {:?}", perm_address, perm_conts, perm_funcs);
+        let tokens = vec![
+            ParamType::Address,
+            ParamType::Array(Box::new(ParamType::Address)),
+            ParamType::Array(Box::new(ParamType::FixedBytes(4))),
+        ];
 
-        if let Some(p) = self.perm_collection.get_mut(&perm_address) {
-            p.add_resources(perm_conts, perm_funcs);
+        if let Ok(args) = ethabi::decode(&tokens, &&params.input[4..]) {
+            match (&args[0], &args[1], &args[2]) {
+                (Token::Address(perm), Token::Array(addrs), Token::Array(funcs)) => {
+                    let perm_address = Address::from_slice(&perm.to_vec());
+                    let perm_conts = addrs
+                        .iter()
+                        .map(|i| match i {
+                            Token::Address(x) => Address::from_slice(x),
+                            _ => unreachable!(),
+                        })
+                        .collect::<Vec<Address>>();
+                    let perm_funcs = funcs
+                        .iter()
+                        .map(|i| match i {
+                            Token::FixedBytes(x) => x.clone(),
+                            _ => unreachable!(),
+                        })
+                        .collect::<Vec<_>>();
+                    trace!("params decoded: account: {:?}, permissions: {:?} resource: {:?}", perm_address, perm_conts, perm_funcs);
+                    if let Some(p) = self.perm_collection.get_mut(&perm_address) {
+                        p.add_resources(perm_conts, perm_funcs);
+                    } else {
+                        warn!("The account not exists");
+                        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+                    }
+                    *changed = true;
+                    return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+                }
+                _ => unreachable!(),
+            }
         }
-
-        *changed = true;
-        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn del_permission_resources(&mut self,
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - del_permission_resource, input {:?}", params.input);
-        let perm_address = Address::from(&params.input[16..36]);
-        let perm_conts = Vec::new();
-        let perm_funcs = Vec::new();
-        // 解析一个address, 两个数组
-        trace!("params decoded: account: {:?}, permissions: {:?} resource: {:?}", perm_address, perm_conts, perm_funcs);
+        let tokens = vec![
+            ParamType::Address,
+            ParamType::Array(Box::new(ParamType::Address)),
+            ParamType::Array(Box::new(ParamType::FixedBytes(4))),
+        ];
 
-        if let Some(p) = self.perm_collection.get_mut(&perm_address) {
-            p.delete_resources(perm_conts, perm_funcs);
+        if let Ok(args) = ethabi::decode(&tokens, &&params.input[4..]) {
+            match (&args[0], &args[1], &args[2]) {
+                (Token::Address(perm), Token::Array(addrs), Token::Array(funcs)) => {
+                    let perm_address = Address::from_slice(&perm.to_vec());
+                    let perm_conts = addrs
+                        .iter()
+                        .map(|i| match i {
+                            Token::Address(x) => Address::from_slice(x),
+                            _ => unreachable!(),
+                        })
+                        .collect::<Vec<Address>>();
+                    let perm_funcs = funcs
+                        .iter()
+                        .map(|i| match i {
+                            Token::FixedBytes(x) => x.clone(),
+                            _ => unreachable!(),
+                        })
+                        .collect::<Vec<_>>();
+                    trace!("params decoded: account: {:?}, permissions: {:?} resource: {:?}", perm_address, perm_conts, perm_funcs);
+                    if let Some(p) = self.perm_collection.get_mut(&perm_address) {
+                        p.delete_resources(perm_conts, perm_funcs);
+                    } else {
+                        warn!("The account not exists");
+                        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+                    }
+                    *changed = true;
+                    return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+                }
+                _ => unreachable!(),
+            }
         }
-
-        *changed = true;
-
-        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn set_authorizations(&mut self,
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - set_authorizations, input {:?}", params.input);
-        let account = Address::from(&params.input[16..36]);
-        let permissions = Vec::new();
-        // 解析一个address, 一个数组
-        trace!("params decoded: account: {:?}, permissions: {:?}", account, permissions);
+        let tokens = vec![
+            ParamType::Address,
+            ParamType::Array(Box::new(ParamType::Address)),
+        ];
 
-        for p in permissions.iter() {
-            if let Some(perms) = self.account_own_perms.get_mut(&account) {
-                perms.insert(*p);
+        if let Ok(args) = ethabi::decode(&tokens, &&params.input[4..]) {
+            match (&args[0], &args[1]) {
+                (Token::Address(account), Token::Array(addrs)) => {
+                    let account = Address::from_slice(&account.to_vec());
+                    let perm_conts = addrs
+                        .iter()
+                        .map(|i| match i {
+                            Token::Address(x) => Address::from_slice(x),
+                            _ => unreachable!(),
+                        })
+                        .collect::<Vec<Address>>();
+
+                    trace!("params decoded: account: {:?}, permissions: {:?}", account, perm_conts);
+                    for p in perm_conts.iter() {
+                        if let Some(perms) = self.account_own_perms.get_mut(&account) {
+                            perms.insert(*p);
+                        } else {
+                            let mut set = HashSet::new();
+                            set.insert(*p);
+                            self.account_own_perms.insert(account, set);
+                        }
+                    }
+                    *changed = true;
+                    return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+                }
+                _ => unreachable!(),
             }
         }
-        *changed = true;
-        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+    }
+
+
+    pub fn cancel_authorizations(&mut self,
+        params: &InterpreterParams, changed: &mut bool,
+        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        trace!("System contract - permission  - cancel_authorizations");
+        let tokens = vec![
+            ParamType::Address,
+            ParamType::Array(Box::new(ParamType::Address)),
+        ];
+
+        if let Ok(args) = ethabi::decode(&tokens, &&params.input[4..]) {
+            match (&args[0], &args[1]) {
+                (Token::Address(account), Token::Array(addrs)) => {
+                    let account = Address::from_slice(&account.to_vec());
+                    let perm_conts = addrs
+                        .iter()
+                        .map(|i| match i {
+                            Token::Address(x) => Address::from_slice(x),
+                            _ => unreachable!(),
+                        })
+                        .collect::<Vec<Address>>();
+                        trace!("params decoded: account: {:?}, permissions: {:?}", account, perm_conts);
+                        if let Some(perms) = self.account_own_perms.get_mut(&account) {
+                            for p in perm_conts {
+                                perms.remove(&p);
+                            }
+                            *changed = true;
+                            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+                        } else {
+                            warn!("The account not exists");
+                            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+                        }
+
+                }
+                _ => unreachable!(),
+            }
+        }
+        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
     }
 
     pub fn set_authorization(&mut self,
@@ -359,24 +475,6 @@ impl PermManager {
         return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
     }
 
-    pub fn cancel_authorizations(&mut self,
-        params: &InterpreterParams, changed: &mut bool,
-        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
-        trace!("System contract - permission  - cancel_authorizations");
-        let account = Address::from(&params.input[16..36]);
-        let permissions = Vec::new();
-         // 解析一个address, 一个数组
-
-        if let Some(perms) = self.account_own_perms.get_mut(&account) {
-            for p in permissions {
-                perms.remove(p);
-            }
-            *changed = true;
-            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
-        }
-
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
-    }
 
     pub fn cancel_authorization(&mut self,
         params: &InterpreterParams, changed: &mut bool,
