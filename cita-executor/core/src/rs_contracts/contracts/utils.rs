@@ -23,6 +23,14 @@ pub fn encode_to_vec(name: &[u8]) -> Vec<u8> {
     keccak256(name)[0..4].to_vec()
 }
 
+pub fn clean_0x(s: &str) -> &str {
+    if s.starts_with("0x") {
+        &s[2..]
+    } else {
+        s
+    }
+}
+
 // keys: ordered list
 pub fn get_latest_key(target: u64, keys: Vec<&u64>) -> u64 {
     if target == 0 {

@@ -1,5 +1,5 @@
 use super::check;
-use super::utils::{extract_to_u32, get_latest_key};
+use super::utils::{extract_to_u32, get_latest_key, clean_0x};
 
 use cita_types::{Address, H256, U256};
 use cita_vm::evm::{InterpreterParams, InterpreterResult, Log};
@@ -27,6 +27,9 @@ use ethabi::param_type::ParamType;
 
 use crate::cita_executive::create_address_from_address_and_nonce;
 use common_types::reserved_addresses;
+use cita_vm::state::StateObjectInfo;
+use ethabi::token::LenientTokenizer;
+use ethabi::token::Tokenizer;
 
 pub type FuncSig = [u8; 4];
 
@@ -128,7 +131,7 @@ impl<B: DB> Contract<B> for PermStore {
                 trace!("System contracts - permission - params input {:?}", params.input);
                 let mut updated = false;
                 let result = extract_to_u32(&params.input[..]).and_then(|signature| match signature {
-                    0xfc4a089c => latest_permission_manager.new_permission(params, &mut updated, context, contracts_db.clone()),
+                    0xfc4a089c => latest_permission_manager.new_permission(params, &mut updated, context, contracts_db.clone(), state.clone()),
                     0x98a05bb1 => latest_permission_manager.del_permission(params, &mut updated, context, contracts_db.clone()),
                     0x537bf9a3 => latest_permission_manager.update_permission_name(params, &mut updated, context, contracts_db.clone()),
                     0xf036ed56 => latest_permission_manager.add_permission_resources(params, &mut updated, context, contracts_db.clone()),
@@ -201,9 +204,9 @@ impl PermManager {
         }
     }
 
-    pub fn new_permission(&mut self,
+    pub fn new_permission<B: DB>(&mut self,
         params: &InterpreterParams, changed: &mut bool,
-        _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
+        _context: &Context, _contracts_db: Arc<ContractsDB>, state: Arc<RefCell<State<B>>>) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - new permission");
 
         let tokens = vec![
@@ -227,9 +230,11 @@ impl PermManager {
                     trace!("perm_addrs {:?}", perm_addrs);
                     trace!("perm_funcs {:?}", perm_funcs);
 
-                    let perm = Permission::new(perm_name.to_string(), perm_addrs, perm_funcs);
+                    let perm = Permission::new(perm_name.hex(), perm_addrs, perm_funcs);
+                    let nonce = state.borrow_mut().nonce(&Address::from(reserved_addresses::PERMISSION_CREATOR)).unwrap();
                     let perm_address = create_address_from_address_and_nonce(
-                        &Address::from(reserved_addresses::PERMISSION_CREATOR), &U256::zero());
+                        &Address::from(reserved_addresses::PERMISSION_CREATOR), &nonce);
+                    state.borrow_mut().inc_nonce(&Address::from(reserved_addresses::PERMISSION_CREATOR)).unwrap();
                     trace!("perm address created in new_permission {:?}", perm_address);
                     self.perm_collection.insert(perm_address, perm);
 
@@ -253,8 +258,9 @@ impl PermManager {
     pub fn del_permission(&mut self,
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
-            trace!("System contract - permission  - del permission");
+            trace!("System contract - permission  - del permission, input {:?}", params.input);
             let perm_address = Address::from(&params.input[16..36]);
+            trace!("params decoded: perm_address: {:?}", perm_address);
             self.perm_collection.remove(&perm_address);
 
             // update accounts permissions
@@ -269,10 +275,11 @@ impl PermManager {
     pub fn update_permission_name(&mut self,
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
-        trace!("System contract - permission  - update permission name");
+        trace!("System contract - permission  - update permission name, input {:?}", params.input);
         // 解析两个参数
         let perm_address = Address::from(&params.input[16..36]);
-        let perm_name = String::from("bbb");
+        let perm_name = H256::from(&params.input[36..68]).hex();
+        trace!("params decoded: perm_address: {:?}, perm_name: {:?}", perm_address, perm_name);
         if let Some(perm) = self.perm_collection.get_mut(&perm_address) {
             perm.update_name(&perm_name);
         }
@@ -284,11 +291,12 @@ impl PermManager {
     pub fn add_permission_resources(&mut self,
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
-        trace!("System contract - permission  - add_permission_resource");
+        trace!("System contract - permission  - add_permission_resource, input {:?}", params.input);
         // 解析一个address, 两个数组
         let perm_address = Address::from(&params.input[16..36]);
         let perm_conts = Vec::new();
         let perm_funcs = Vec::new();
+        trace!("params decoded: account: {:?}, permissions: {:?} resource: {:?}", perm_address, perm_conts, perm_funcs);
 
         if let Some(p) = self.perm_collection.get_mut(&perm_address) {
             p.add_resources(perm_conts, perm_funcs);
@@ -301,11 +309,12 @@ impl PermManager {
     pub fn del_permission_resources(&mut self,
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
-        trace!("System contract - permission  - del_permission_resource");
+        trace!("System contract - permission  - del_permission_resource, input {:?}", params.input);
         let perm_address = Address::from(&params.input[16..36]);
         let perm_conts = Vec::new();
         let perm_funcs = Vec::new();
-         // 解析一个address, 两个数组
+        // 解析一个address, 两个数组
+        trace!("params decoded: account: {:?}, permissions: {:?} resource: {:?}", perm_address, perm_conts, perm_funcs);
 
         if let Some(p) = self.perm_collection.get_mut(&perm_address) {
             p.delete_resources(perm_conts, perm_funcs);
@@ -319,10 +328,11 @@ impl PermManager {
     pub fn set_authorizations(&mut self,
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
-        trace!("System contract - permission  - set_authorizations");
+        trace!("System contract - permission  - set_authorizations, input {:?}", params.input);
         let account = Address::from(&params.input[16..36]);
         let permissions = Vec::new();
         // 解析一个address, 一个数组
+        trace!("params decoded: account: {:?}, permissions: {:?}", account, permissions);
 
         for p in permissions.iter() {
             if let Some(perms) = self.account_own_perms.get_mut(&account) {
@@ -336,9 +346,10 @@ impl PermManager {
     pub fn set_authorization(&mut self,
         params: &InterpreterParams, changed: &mut bool,
         _context: &Context, _contracts_db: Arc<ContractsDB>) -> Result<InterpreterResult, ContractError> {
-        trace!("System contract - permission  - set_authorization");
+        trace!("System contract - permission  - set_authorization, input {:?}", params.input);
         let account = Address::from(&params.input[16..36]);
         let permission = Address::from(&params.input[48..68]);
+        trace!("params decoded: account: {:?}, permission: {:?}", account, permission);
 
         if let Some(perms) = self.account_own_perms.get_mut(&account) {
             perms.insert(permission);
@@ -452,9 +463,12 @@ impl PermManager {
         let perm_address = Address::from(&params.input[16..36]);
         if let Some(p) = self.perm_collection.get(&perm_address) {
             let name = p.query_name();
-            let mut res = H256::from(0);
-            res.clone_from_slice(&name.as_bytes());
-            return Ok(InterpreterResult::Normal(res.to_vec(), params.gas_limit, vec![]));
+            trace!("permission name {:?}", name);
+            // let mut res = H256::from(0);
+            // res.clone_from_slice(&name.as_bytes());
+            let res = LenientTokenizer::tokenize(&ParamType::FixedBytes(32), &clean_0x(&name)).unwrap();
+            trace!("permission name bin {:?}", name);
+            return Ok(InterpreterResult::Normal(res.clone().to_fixed_bytes().unwrap(), params.gas_limit, vec![]));
         }
         return Ok(InterpreterResult::Normal(vec![], params.gas_limit, vec![]));
     }

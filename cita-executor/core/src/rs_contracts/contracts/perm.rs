@@ -20,6 +20,7 @@ pub struct Resource {
 impl Permission {
     pub fn new(name: String, contracts: Vec<Address>, funcs: Vec<Vec<u8>>) -> Self {
         let mut perm = Permission::default();
+        trace!("Permission name in new is {:?}", name);
         perm.name = name;
         for i in 0..contracts.len() {
             let resource = Resource{ addr: contracts[i], func: funcs[i].clone() };
@@ -54,6 +55,7 @@ impl Permission {
     }
 
     pub fn query_name(&self) ->  String {
+        trace!("Permission name in query name is {:?}", self.name);
         self.name.clone()
     }
 
