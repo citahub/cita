@@ -1,17 +1,17 @@
 use cita_vm::evm::{InterpreterParams, InterpreterResult};
 use cita_vm::state::State;
-use common_types::errors::ContractError;
 use common_types::context::Context;
+use common_types::errors::ContractError;
 
 use crate::rs_contracts::storage::db_contracts::ContractsDB;
-use std::sync::Arc;
-use serde::{Deserialize, Serialize};
 use cita_trie::DB;
+use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
+use std::sync::Arc;
 
 pub trait Contract<B>
 where
-    B: DB
+    B: DB,
 {
     fn execute(
         &self,

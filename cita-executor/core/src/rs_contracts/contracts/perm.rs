@@ -1,4 +1,3 @@
-
 use cita_types::Address;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -23,7 +22,10 @@ impl Permission {
         trace!("Permission name in new is {:?}", name);
         perm.name = name;
         for i in 0..contracts.len() {
-            let resource = Resource{ addr: contracts[i], func: funcs[i].clone() };
+            let resource = Resource {
+                addr: contracts[i],
+                func: funcs[i].clone(),
+            };
             perm.resources.insert(resource);
         }
         perm
@@ -31,14 +33,20 @@ impl Permission {
 
     pub fn add_resources(&mut self, contracts: Vec<Address>, funcs: Vec<Vec<u8>>) {
         for i in 0..contracts.len() {
-            let resource = Resource{ addr: contracts[i], func: funcs[i].clone() };
+            let resource = Resource {
+                addr: contracts[i],
+                func: funcs[i].clone(),
+            };
             self.resources.insert(resource);
         }
     }
 
     pub fn delete_resources(&mut self, contracts: Vec<Address>, funcs: Vec<Vec<u8>>) {
         for i in 0..contracts.len() {
-            let resource = Resource{ addr: contracts[i], func: funcs[i].clone() };
+            let resource = Resource {
+                addr: contracts[i],
+                func: funcs[i].clone(),
+            };
             self.resources.remove(&resource);
         }
     }
@@ -50,11 +58,14 @@ impl Permission {
     pub fn in_permission(&self, cont: Address, func: Vec<u8>) -> bool {
         // let cont_addr = Address::from(&params.input[16..36]);
         // let func = &params.input[36..40];
-        let resource = Resource{ addr: cont, func: func };
+        let resource = Resource {
+            addr: cont,
+            func: func,
+        };
         self.resources.contains(&resource)
     }
 
-    pub fn query_name(&self) ->  String {
+    pub fn query_name(&self) -> String {
         trace!("Permission name in query name is {:?}", self.name);
         self.name.clone()
     }

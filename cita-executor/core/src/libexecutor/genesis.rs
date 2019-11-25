@@ -26,21 +26,21 @@ use crypto::md5::Md5;
 use rlp::encode;
 use rustc_hex::FromHex;
 use serde_json;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
-use std::cell::RefCell;
 
 use crate::rs_contracts::contracts::admin::Admin;
 use crate::rs_contracts::contracts::perm::Permission;
 use crate::rs_contracts::contracts::price::Price;
 use crate::rs_contracts::factory::ContractsFactory;
 use crate::rs_contracts::storage::db_contracts::ContractsDB;
-use tiny_keccak::keccak256;
 use std::collections::BTreeMap;
+use tiny_keccak::keccak256;
 
 #[cfg(feature = "privatetx")]
 use zktx::set_param_path;
@@ -117,11 +117,11 @@ impl Genesis {
         state_db: Arc<CitaTrieDB>,
         contracts_db: Arc<ContractsDB>,
     ) -> Result<(), String> {
-
         let state = CitaState::from_existing(
             Arc::<CitaTrieDB>::clone(&state_db),
             *self.block.state_root(),
-        ).expect("Can not get state from db!");
+        )
+        .expect("Can not get state from db!");
 
         let state = Arc::new(RefCell::new(state));
         let mut contracts_factory = ContractsFactory::new(state.clone(), contracts_db.clone());
@@ -192,7 +192,9 @@ impl Genesis {
                         let addr = Address::from_unaligned(value.as_str()).unwrap();
                         conts.push(addr);
                         let mut hash_key = Vec::new();
-                        if addr == Address::from(reserved_addresses::PERMISSION_SEND_TX) || addr == Address::from(reserved_addresses::PERMISSION_CREATE_CONTRACT) {
+                        if addr == Address::from(reserved_addresses::PERMISSION_SEND_TX)
+                            || addr == Address::from(reserved_addresses::PERMISSION_CREATE_CONTRACT)
+                        {
                             hash_key = [0; 4].to_vec();
                         } else {
                             hash_key = keccak256(key.as_bytes()).to_vec()[0..4].to_vec();
@@ -204,9 +206,11 @@ impl Genesis {
                 let permission = Permission::new(perm_name, conts, funcs);
                 let str = serde_json::to_string(&permission).unwrap();
                 permission_contracts.insert(address, str);
-                // contracts_factory.register(address, str);
+            // contracts_factory.register(address, str);
             } else {
-                state.borrow_mut().new_contract(&address, U256::from(0), U256::from(0), vec![]);
+                state
+                    .borrow_mut()
+                    .new_contract(&address, U256::from(0), U256::from(0), vec![]);
                 {
                     state
                         .borrow_mut()
@@ -292,30 +296,31 @@ impl Genesis {
 }
 
 pub fn is_permssion_contract(addr: Address) -> bool {
-    if addr == Address::from(reserved_addresses::PERMISSION_SEND_TX) ||
-    addr == Address::from(reserved_addresses::PERMISSION_CREATE_CONTRACT) ||
-    addr == Address::from(reserved_addresses::PERMISSION_NEW_PERMISSION) ||
-    addr == Address::from(reserved_addresses::PERMISSION_DELETE_PERMISSION) ||
-    addr == Address::from(reserved_addresses::PERMISSION_UPDATE_PERMISSION) ||
-    addr == Address::from(reserved_addresses::PERMISSION_SET_AUTH) ||
-    addr == Address::from(reserved_addresses::PERMISSION_CANCEL_AUTH) ||
-    addr == Address::from(reserved_addresses::PERMISSION_NEW_ROLE) ||
-    addr == Address::from(reserved_addresses::PERMISSION_DELETE_ROLE) ||
-    addr == Address::from(reserved_addresses::PERMISSION_UPDATE_ROLE) ||
-    addr == Address::from(reserved_addresses::PERMISSION_SET_ROLE) ||
-    addr == Address::from(reserved_addresses::PERMISSION_CANCEL_ROLE) ||
-    addr == Address::from(reserved_addresses::PERMISSION_NEW_GROUP) ||
-    addr == Address::from(reserved_addresses::PERMISSION_DELETE_GROUP) ||
-    addr == Address::from(reserved_addresses::PERMISSION_UPDATE_GROUP) ||
-    addr == Address::from(reserved_addresses::PERMISSION_NEW_NODE) ||
-    addr == Address::from(reserved_addresses::PERMISSION_DELETE_NODE) ||
-    addr == Address::from(reserved_addresses::PERMISSION_UPDATE_NODE) ||
-    addr == Address::from(reserved_addresses::PERMISSION_ACCOUNT_QUOTA) ||
-    addr == Address::from(reserved_addresses::PERMISSION_BLOCK_QUOTA) ||
-    addr == Address::from(reserved_addresses::PERMISSION_BATCH_TX) ||
-    addr == Address::from(reserved_addresses::PERMISSION_EMERGENCY_INTERVENTION) ||
-    addr == Address::from(reserved_addresses::PERMISSION_QUOTA_PRICE) ||
-    addr == Address::from(reserved_addresses::PERMISSION_VERSION) {
+    if addr == Address::from(reserved_addresses::PERMISSION_SEND_TX)
+        || addr == Address::from(reserved_addresses::PERMISSION_CREATE_CONTRACT)
+        || addr == Address::from(reserved_addresses::PERMISSION_NEW_PERMISSION)
+        || addr == Address::from(reserved_addresses::PERMISSION_DELETE_PERMISSION)
+        || addr == Address::from(reserved_addresses::PERMISSION_UPDATE_PERMISSION)
+        || addr == Address::from(reserved_addresses::PERMISSION_SET_AUTH)
+        || addr == Address::from(reserved_addresses::PERMISSION_CANCEL_AUTH)
+        || addr == Address::from(reserved_addresses::PERMISSION_NEW_ROLE)
+        || addr == Address::from(reserved_addresses::PERMISSION_DELETE_ROLE)
+        || addr == Address::from(reserved_addresses::PERMISSION_UPDATE_ROLE)
+        || addr == Address::from(reserved_addresses::PERMISSION_SET_ROLE)
+        || addr == Address::from(reserved_addresses::PERMISSION_CANCEL_ROLE)
+        || addr == Address::from(reserved_addresses::PERMISSION_NEW_GROUP)
+        || addr == Address::from(reserved_addresses::PERMISSION_DELETE_GROUP)
+        || addr == Address::from(reserved_addresses::PERMISSION_UPDATE_GROUP)
+        || addr == Address::from(reserved_addresses::PERMISSION_NEW_NODE)
+        || addr == Address::from(reserved_addresses::PERMISSION_DELETE_NODE)
+        || addr == Address::from(reserved_addresses::PERMISSION_UPDATE_NODE)
+        || addr == Address::from(reserved_addresses::PERMISSION_ACCOUNT_QUOTA)
+        || addr == Address::from(reserved_addresses::PERMISSION_BLOCK_QUOTA)
+        || addr == Address::from(reserved_addresses::PERMISSION_BATCH_TX)
+        || addr == Address::from(reserved_addresses::PERMISSION_EMERGENCY_INTERVENTION)
+        || addr == Address::from(reserved_addresses::PERMISSION_QUOTA_PRICE)
+        || addr == Address::from(reserved_addresses::PERMISSION_VERSION)
+    {
         return true;
     }
     false

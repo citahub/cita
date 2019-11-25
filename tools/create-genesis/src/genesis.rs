@@ -124,13 +124,14 @@ impl<'a> GenesisCreator<'a> {
 
             self.write_docs(contract_name, data);
             if let Some(constructor) = self.load_contract(contract_name.to_string()).constructor() {
-                let params = normal_params.get(*contract_name).map_or(Vec::new(), |p| (*p).clone());
+                let params = normal_params
+                    .get(*contract_name)
+                    .map_or(Vec::new(), |p| (*p).clone());
                 println!(
                     "Contract name {:?} address {:?} params is {:?}",
                     contract_name, address, params
                 );
                 let bytes = constructor.encode_input(input_data, &params).unwrap();
-
 
                 if *contract_name == "Admin" {
                     let mut param = BTreeMap::new();
@@ -174,8 +175,7 @@ impl<'a> GenesisCreator<'a> {
                         value: U256::from(0),
                     };
                     self.accounts.insert((*address).clone(), admin_contract);
-                }
-                else {
+                } else {
                     if let Some(account) = Miner::mine(bytes) {
                         self.accounts.insert((*address).clone(), account);
                     }
@@ -203,7 +203,10 @@ impl<'a> GenesisCreator<'a> {
                     .permission_contracts
                     .basic
                     .as_params(name);
-                println!("Contract name {:?} name {:?} params is {:?}", contract_name, name, params);
+                println!(
+                    "Contract name {:?} name {:?} params is {:?}",
+                    contract_name, name, params
+                );
 
                 // let bytes = constructor
                 //     .encode_input(input_data.clone(), &params)

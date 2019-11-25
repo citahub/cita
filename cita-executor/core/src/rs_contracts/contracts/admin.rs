@@ -11,12 +11,12 @@ use crate::rs_contracts::storage::db_contracts::ContractsDB;
 use crate::rs_contracts::storage::db_trait::DataBase;
 use crate::rs_contracts::storage::db_trait::DataCategory;
 
+use cita_trie::DB;
+use cita_vm::state::State;
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tiny_keccak::keccak256;
-use std::cell::RefCell;
-use cita_vm::state::State;
-use cita_trie::DB;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AdminContract {
@@ -36,10 +36,16 @@ impl AdminContract {
         let mut a = AdminContract::default();
         a.contracts.insert(0, Some(str));
         let s = serde_json::to_string(&a).unwrap();
-        let _ = contracts_db.insert(DataCategory::Contracts, b"admin-contract".to_vec(), s.as_bytes().to_vec());
+        let _ = contracts_db.insert(
+            DataCategory::Contracts,
+            b"admin-contract".to_vec(),
+            s.as_bytes().to_vec(),
+        );
 
         // debug information
-        let bin_map = contracts_db.get(DataCategory::Contracts, b"admin-contract".to_vec()).unwrap();
+        let bin_map = contracts_db
+            .get(DataCategory::Contracts, b"admin-contract".to_vec())
+            .unwrap();
         let str = String::from_utf8(bin_map.unwrap()).unwrap();
         let contracts: AdminContract = serde_json::from_str(&str).unwrap();
         trace!("System contract admin {:?} after init.", contracts);
@@ -47,11 +53,17 @@ impl AdminContract {
         keccak256(&s.as_bytes().to_vec())
     }
 
-    pub fn get_latest_item(&self, current_height: u64, contracts_db: Arc<ContractsDB>) -> (Option<AdminContract>, Option<Admin>) {
+    pub fn get_latest_item(
+        &self,
+        current_height: u64,
+        contracts_db: Arc<ContractsDB>,
+    ) -> (Option<AdminContract>, Option<Admin>) {
         let mut latest_admin = Admin::default();
         let mut contract_map = AdminContract::default();
 
-        if let Some(admin_map) = contracts_db.get(DataCategory::Contracts, b"admin-contract".to_vec()).expect("get admin map error")
+        if let Some(admin_map) = contracts_db
+            .get(DataCategory::Contracts, b"admin-contract".to_vec())
+            .expect("get admin map error")
         {
             let s = String::from_utf8(admin_map).expect("from vec to string error");
             contract_map = serde_json::from_str(&s).unwrap();
@@ -85,24 +97,32 @@ impl<B: DB> Contract<B> for AdminContract {
         state: Arc<RefCell<State<B>>>,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - Admin - enter execute");
-        let (contract_map, latest_admin) = self.get_latest_item(context.block_number, contracts_db.clone());
+        let (contract_map, latest_admin) =
+            self.get_latest_item(context.block_number, contracts_db.clone());
         match (contract_map, latest_admin) {
             (Some(mut contract_map), Some(mut latest_admin)) => {
-                trace!("System contracts - admin - params {:?}, input {:?}", params.read_only, params.input);
+                trace!(
+                    "System contracts - admin - params {:?}, input {:?}",
+                    params.read_only,
+                    params.input
+                );
 
                 let mut updated = false;
-                let result = extract_to_u32(&params.input[..]).and_then(|signature| match signature {
-                    0xf851a440u32 => latest_admin.get_admin(),
-                    0x24d7806cu32 => latest_admin.is_admin(params),
-                    0x1c1b8772u32 => latest_admin.update(params, &mut updated),
-                    _ => panic!("Invalid function signature".to_owned()),
-                });
+                let result =
+                    extract_to_u32(&params.input[..]).and_then(|signature| match signature {
+                        0xf851a440u32 => latest_admin.get_admin(),
+                        0x24d7806cu32 => latest_admin.is_admin(params),
+                        0x1c1b8772u32 => latest_admin.update(params, &mut updated),
+                        _ => panic!("Invalid function signature".to_owned()),
+                    });
 
                 // update contract db
                 if result.is_ok() && updated {
                     let new_admin = latest_admin;
                     let str = serde_json::to_string(&new_admin).unwrap();
-                    contract_map.contracts.insert(context.block_number, Some(str));
+                    contract_map
+                        .contracts
+                        .insert(context.block_number, Some(str));
                     let str = serde_json::to_string(&contract_map).unwrap();
                     let updated_hash = keccak256(&str.as_bytes().to_vec());
                     let _ = contracts_db.insert(
@@ -120,11 +140,17 @@ impl<B: DB> Contract<B> for AdminContract {
                     trace!("System contract admin {:?} after update.", contracts);
 
                     // update state
-                    let _ = state.borrow_mut().set_storage(&params.contract.code_address,
-                            H256::from(context.block_number), H256::from(updated_hash)).expect("state set storage error");
+                    let _ = state
+                        .borrow_mut()
+                        .set_storage(
+                            &params.contract.code_address,
+                            H256::from(context.block_number),
+                            H256::from(updated_hash),
+                        )
+                        .expect("state set storage error");
                 }
                 return result;
-            },
+            }
             _ => unreachable!(),
         }
     }

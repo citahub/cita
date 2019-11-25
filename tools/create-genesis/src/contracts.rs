@@ -276,13 +276,20 @@ impl Contracts {
         contracts
     }
 
-    pub fn as_params(&self, normal_contracts: &NormalContracts, name: &str) -> BTreeMap<String, String> {
+    pub fn as_params(
+        &self,
+        normal_contracts: &NormalContracts,
+        name: &str,
+    ) -> BTreeMap<String, String> {
         let mut params = BTreeMap::new();
         if let Some(info) = self.list().get(name) {
             let (conts, funcs) = info.get_contract_info(normal_contracts);
             println!("===> conts {:?} funcs {:?}", conts, funcs);
             for i in 0..conts.len() {
-                params.insert(funcs.get(i).unwrap().to_string(), conts.get(i).unwrap().to_string());
+                params.insert(
+                    funcs.get(i).unwrap().to_string(),
+                    conts.get(i).unwrap().to_string(),
+                );
             }
             params.insert("perm_name".to_string(), name.to_string());
         }
