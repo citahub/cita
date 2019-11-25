@@ -1,5 +1,5 @@
 use super::check;
-use super::utils::{extract_to_u32, get_latest_key, u256_to_bool};
+use super::utils::{extract_to_u32, get_latest_key, h256_to_bool};
 
 use cita_types::{Address, H256, U256};
 use cita_vm::evm::{InterpreterParams, InterpreterResult, Log};
@@ -159,10 +159,11 @@ impl EmergencyIntervention {
         contracts_db: Arc<ContractsDB>,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - emerg - set_state");
-        let param_state = U256::from(&params.input[16..36]);
+        let param_state = h256_to_bool(H256::from(&params.input[4..]));
+        trace!("param_state {:?}, self.state {:?}", param_state, self.state);
         // Note: Only admin can change quota price
-        if check::only_admin(params, context, contracts_db.clone()).expect("only admin can invoke price setting") {
-            self.state = u256_to_bool(param_state);
+        if check::only_admin(params, context, contracts_db.clone()).expect("only admin can invoke price setting") && param_state != self.state {
+            self.state = param_state;
             *changed = true;
             return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
         }

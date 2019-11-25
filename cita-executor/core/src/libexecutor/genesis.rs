@@ -173,10 +173,6 @@ impl Genesis {
                         contracts_factory.register(address, str);
                     }
                 }
-            } else if address == Address::from(reserved_addresses::EMERGENCY_INTERVENTION) {
-                let contract = emergency_intervention::EmergencyIntervention::default();
-                let str = serde_json::to_string(&contract).unwrap();
-                contracts_factory.register(address, str);
             } else if is_permssion_contract(address) {
                 let mut perm_name = String::default();
                 let mut conts = Vec::new();
@@ -230,6 +226,11 @@ impl Genesis {
                 }
             }
         }
+        // register emergency intervention
+        let emerg_contract = emergency_intervention::EmergencyIntervention::default();
+        let str = serde_json::to_string(&emerg_contract).unwrap();
+        contracts_factory.register(Address::from(reserved_addresses::EMERGENCY_INTERVENTION), str);
+        // register permission_contracts
         contracts_factory.register_perms(admin, permission_contracts);
         state.borrow_mut().commit().expect("state commit error");
         //query is store in chain

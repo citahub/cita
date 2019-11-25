@@ -170,15 +170,13 @@ impl<'a> GenesisCreator<'a> {
                         value: U256::from(0),
                     };
                     self.accounts.insert((*address).clone(), admin_contract);
-                }
-                else if *contract_name == "EmergencyIntervention" {
-                    continue
-                }
-                else {
+                } else {
                     if let Some(account) = Miner::mine(bytes) {
                         self.accounts.insert((*address).clone(), account);
                     }
                 }
+            } else if *contract_name == "EmergencyIntervention" {
+                continue;
             } else if let Some(account) = Miner::mine(input_data) {
                 self.accounts.insert((*address).clone(), account);
                 println!("Normal contracts: {:?} {:?} is ok!", contract_name, address);
