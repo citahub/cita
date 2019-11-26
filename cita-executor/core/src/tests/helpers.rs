@@ -41,11 +41,18 @@ use crossbeam_channel::{Receiver, Sender};
 use libproto::blockchain;
 use util::AsMillis;
 
+use crate::rs_contracts::storage::db_contracts::ContractsDB;
+
 const SCRIPTS_DIR: &str = "../../scripts";
 
 pub fn get_temp_state() -> State<MemoryDB> {
     let db = Arc::new(MemoryDB::new(false));
     State::new(db).unwrap()
+}
+
+pub fn get_temp_contracts_db(path: &str) -> Arc<ContractsDB> {
+    let db = Arc::new(ContractsDB::new(path).unwrap());
+    db
 }
 
 pub fn solc(name: &str, source: &str) -> (Vec<u8>, Vec<u8>) {

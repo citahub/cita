@@ -1,11 +1,10 @@
 use super::check;
 use super::utils::{extract_to_u32, get_latest_key};
 
-use cita_types::{Address, H256, U256};
+use cita_types::{H256, U256};
 use cita_vm::evm::{InterpreterParams, InterpreterResult, Log};
 use common_types::context::Context;
 use common_types::errors::ContractError;
-use serde::{Deserialize, Serialize};
 
 use super::contract::Contract;
 use crate::rs_contracts::storage::db_contracts::ContractsDB;
@@ -59,15 +58,12 @@ impl PriceContract {
         current_height: u64,
         contracts_db: Arc<ContractsDB>,
     ) -> (Option<PriceContract>, Option<Price>) {
-        let mut latest_price = Price::default();
-        let mut contract_map = PriceContract::default();
-
         if let Some(price_map) = contracts_db
             .get(DataCategory::Contracts, b"price-contract".to_vec())
             .expect("get price error")
         {
             let s = String::from_utf8(price_map).expect("from vec to string error");
-            contract_map = serde_json::from_str(&s).unwrap();
+            let contract_map: PriceContract = serde_json::from_str(&s).unwrap();
             trace!("==> lala contract map {:?}", contract_map);
             let map_len = contract_map.contracts.len();
             trace!("==> lala contract map length {:?}", map_len);
@@ -81,7 +77,7 @@ impl PriceContract {
                 .or(contract_map.contracts.get(&latest_key))
                 .expect("get contract according to height error");
 
-            latest_price = serde_json::from_str(&(*bin).clone().unwrap()).unwrap();
+            let latest_price: Price = serde_json::from_str(&(*bin).clone().unwrap()).unwrap();
             trace!("System contracts latest price {:?}", latest_price);
             return (Some(contract_map), Some(latest_price));
         }

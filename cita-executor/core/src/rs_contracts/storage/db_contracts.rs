@@ -112,7 +112,7 @@ pub fn map_rocks_error(err: rocksdb::Error) -> DBError {
 #[cfg(test)]
 mod tests {
     use super::ContractsDB;
-    use crate::storage::db_trait::{DataBase, DataCategory};
+    use crate::rs_contracts::storage::db_trait::{DataBase, DataCategory};
 
     #[test]
     fn test_get_should_return_ok() {

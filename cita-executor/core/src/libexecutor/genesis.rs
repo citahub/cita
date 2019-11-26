@@ -20,7 +20,7 @@ use crate::types::reserved_addresses;
 use cita_database::{DataCategory, Database};
 use cita_types::traits::ConvertType;
 use cita_types::{clean_0x, Address, H256, U256};
-use cita_vm::state::{State as CitaState, StateObjectInfo};
+use cita_vm::state::State as CitaState;
 use crypto::digest::Digest;
 use crypto::md5::Md5;
 use rlp::encode;

@@ -1,5 +1,5 @@
 use crate::rs_contracts::contracts::build_in_perm::BUILD_IN_PERMS;
-use cita_types::{Address, H256, U256};
+use cita_types::Address;
 use cita_vm::evm::InterpreterParams;
 use common_types::context::Context;
 use common_types::errors::ContractError;

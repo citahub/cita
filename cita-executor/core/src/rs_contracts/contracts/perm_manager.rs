@@ -1,11 +1,10 @@
 use super::check;
 use super::utils::{check_same_length, clean_0x, extract_to_u32, get_latest_key};
 
-use cita_types::{Address, H256, U256};
+use cita_types::{Address, H256};
 use cita_vm::evm::{InterpreterParams, InterpreterResult, Log};
 use common_types::context::Context;
 use common_types::errors::ContractError;
-use serde::{Deserialize, Serialize};
 
 use super::contract::Contract;
 use crate::rs_contracts::contracts::build_in_perm;
@@ -16,7 +15,6 @@ use crate::rs_contracts::storage::db_trait::DataCategory;
 
 use cita_trie::DB;
 use cita_vm::state::State;
-use ethabi::encode;
 use ethabi::param_type::ParamType;
 use ethabi::Token;
 use std::cell::RefCell;
@@ -105,15 +103,15 @@ impl PermStore {
         current_height: u64,
         contracts_db: Arc<ContractsDB>,
     ) -> (Option<PermStore>, Option<PermManager>) {
-        let mut latest_perm_manager = PermManager::default();
-        let mut contract_map = PermStore::default();
+        // let mut latest_perm_manager = PermManager::default();
+        // let mut contract_map = PermStore::default();
 
         if let Some(perm_store) = contracts_db
             .get(DataCategory::Contracts, b"permission-contract".to_vec())
             .expect("get permission error")
         {
             let s = String::from_utf8(perm_store).expect("from vec to string error");
-            contract_map = serde_json::from_str(&s).unwrap();
+            let contract_map: PermStore = serde_json::from_str(&s).unwrap();
             trace!("==> lala contract map {:?}", contract_map);
 
             let map_len = contract_map.contracts.len();
@@ -128,7 +126,8 @@ impl PermStore {
                 .or(contract_map.contracts.get(&latest_key))
                 .expect("get contract according to height error");
 
-            latest_perm_manager = serde_json::from_str(&(*bin).clone().unwrap()).unwrap();
+            let latest_perm_manager: PermManager =
+                serde_json::from_str(&(*bin).clone().unwrap()).unwrap();
             trace!(
                 "System contracts latest permission {:?}",
                 latest_perm_manager

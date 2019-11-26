@@ -1049,6 +1049,7 @@ mod tests {
     use super::{CitaExecutive, Context, ExecutionError, TxGasSchedule};
     use crate::libexecutor::economical_model::EconomicalModel;
     use crate::libexecutor::{block::EVMBlockDataProvider, sys_config::BlockSysConfig};
+    use crate::rs_contracts::storage::db_contracts::ContractsDB;
     use crate::tests::helpers::*;
     use crate::types::transaction::Action;
     use crate::types::transaction::Transaction;
@@ -1101,11 +1102,13 @@ mod tests {
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
 
         let state = Arc::new(RefCell::new(state));
+        let contracts_db = get_temp_contracts_db("test-contracts-db/test_transfer_for_store");
 
         let result = {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state,
+                contracts_db.clone(),
                 &context,
                 EconomicalModel::Charge,
             )
@@ -1151,11 +1154,13 @@ mod tests {
         let conf = BlockSysConfig::default();
 
         let state = Arc::new(RefCell::new(state));
+        let contracts_db = get_temp_contracts_db("test-contracts-db/test_transfer_for_charge");
 
         let executed = {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
+                contracts_db.clone(),
                 &context,
                 EconomicalModel::Charge,
             )
@@ -1203,11 +1208,14 @@ mod tests {
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
+        let contracts_db =
+            get_temp_contracts_db("test-contracts-db/test_not_enough_cash_for_charge");
 
         let result = {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
+                contracts_db.clone(),
                 &context,
                 EconomicalModel::Charge,
             )
@@ -1244,11 +1252,13 @@ mod tests {
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
+        let contracts_db = get_temp_contracts_db("test-contracts-db/test_not_enough_base_gas");
 
         let result = {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
+                contracts_db.clone(),
                 &context,
                 EconomicalModel::Charge,
             )
@@ -1284,11 +1294,14 @@ mod tests {
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
+        let contracts_db =
+            get_temp_contracts_db("test-contracts-db/test_not_enough_cash_for_quota");
 
         let result = {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
+                contracts_db.clone(),
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1342,11 +1355,14 @@ contract HelloWorld {
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
+        let contracts_db =
+            get_temp_contracts_db("test-contracts-db/test_create_contract_out_of_gas");
 
         let res = {
             CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
+                contracts_db.clone(),
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1404,11 +1420,13 @@ contract AbiTest {
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
+        let contracts_db = get_temp_contracts_db("test-contracts-db/test_create_contract");
 
         {
             let _ = CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
+                contracts_db.clone(),
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1468,11 +1486,13 @@ contract AbiTest {
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
+        let contracts_db = get_temp_contracts_db("test-contracts-db/test_call_contract");
 
         {
             let _ = CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
+                contracts_db.clone(),
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1542,11 +1562,13 @@ contract AbiTest {
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
+        let contracts_db = get_temp_contracts_db("test-contracts-db/test_revert_instruction");
 
         {
             let res = CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
+                contracts_db.clone(),
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1621,11 +1643,13 @@ contract AbiTest {
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
+        let contracts_db = get_temp_contracts_db("test-contracts-db/test_require_instruction");
 
         {
             let res = CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
+                contracts_db.clone(),
                 &context,
                 EconomicalModel::Quota,
             )
@@ -1715,11 +1739,13 @@ contract FakePermissionManagement {
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
         let state = Arc::new(RefCell::new(state));
+        let contracts_db = get_temp_contracts_db("test-contracts-db/test_call_instruction");
 
         {
             let res = CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state.clone(),
+                contracts_db.clone(),
                 &context,
                 EconomicalModel::Quota,
             )

@@ -1,8 +1,7 @@
 use byteorder::{BigEndian, ByteOrder};
-use cita_types::{Address, H256, U256};
+use cita_types::{Address, H256};
 use common_types::errors::ContractError;
 use common_types::reserved_addresses;
-use rlp::RlpStream;
 use tiny_keccak::keccak256;
 
 pub fn extract_to_u32(data: &[u8]) -> Result<u32, ContractError> {

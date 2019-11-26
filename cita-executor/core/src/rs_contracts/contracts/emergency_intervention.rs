@@ -1,8 +1,8 @@
 use super::check;
 use super::utils::{extract_to_u32, get_latest_key, h256_to_bool};
 
-use cita_types::{Address, H256, U256};
-use cita_vm::evm::{InterpreterParams, InterpreterResult, Log};
+use cita_types::H256;
+use cita_vm::evm::{InterpreterParams, InterpreterResult};
 use common_types::context::Context;
 use common_types::errors::ContractError;
 use serde::{Deserialize, Serialize};
@@ -62,15 +62,15 @@ impl EmergContract {
         current_height: u64,
         contracts_db: Arc<ContractsDB>,
     ) -> (Option<EmergContract>, Option<EmergencyIntervention>) {
-        let mut latest_item = EmergencyIntervention::default();
-        let mut contract_map = EmergContract::default();
+        // let mut latest_item = EmergencyIntervention::default();
+        // let mut contract_map = EmergContract::default();
 
         if let Some(emerg_map) = contracts_db
             .get(DataCategory::Contracts, b"emerg-contract".to_vec())
             .expect("get emerg error")
         {
             let s = String::from_utf8(emerg_map).expect("from vec to string error");
-            contract_map = serde_json::from_str(&s).unwrap();
+            let contract_map: EmergContract = serde_json::from_str(&s).unwrap();
             trace!("==> lala contract map {:?}", contract_map);
             let map_len = contract_map.contracts.len();
             trace!("==> lala contract map length {:?}", map_len);
@@ -84,7 +84,8 @@ impl EmergContract {
                 .or(contract_map.contracts.get(&latest_key))
                 .expect("get contract according to height error");
 
-            latest_item = serde_json::from_str(&(*bin).clone().unwrap()).unwrap();
+            let latest_item: EmergencyIntervention =
+                serde_json::from_str(&(*bin).clone().unwrap()).unwrap();
             trace!("System contracts latest emerg {:?}", latest_item);
             return (Some(contract_map), Some(latest_item));
         }

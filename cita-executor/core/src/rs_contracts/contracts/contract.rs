@@ -5,7 +5,6 @@ use common_types::errors::ContractError;
 
 use crate::rs_contracts::storage::db_contracts::ContractsDB;
 use cita_trie::DB;
-use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::sync::Arc;
 

@@ -17,7 +17,7 @@ use std::sync::Arc;
 
 use crate::cita_executive::CitaExecutive;
 use crate::libexecutor::{economical_model::EconomicalModel, sys_config::BlockSysConfig};
-use crate::tests::helpers::get_temp_state;
+use crate::tests::helpers::{get_temp_contracts_db, get_temp_state};
 use crate::types::context::Context;
 use crate::types::transaction::Action;
 
@@ -50,10 +50,12 @@ fn build_transaction(
 fn test_amend_tool() {
     let state = get_temp_state();
     let context = Context::default();
+    let contracts_db = get_temp_contracts_db("test-contracts-db/test_amend_tool");
 
     let mut e = CitaExecutive::new(
         Arc::new(BlockDataProviderMock::default()),
         Arc::new(RefCell::new(state)),
+        contracts_db.clone(),
         &context,
         EconomicalModel::default(),
     );

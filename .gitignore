@@ -63,3 +63,5 @@ localtime
 
 # test data
 **/test-rocksdb
+**/rocksdb
+**/test-contracts-db

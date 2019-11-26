@@ -5,7 +5,6 @@ use cita_types::{Address, H256};
 use cita_vm::evm::{InterpreterParams, InterpreterResult, Log};
 use common_types::context::Context;
 use common_types::errors::ContractError;
-use serde::{Deserialize, Serialize};
 
 use crate::rs_contracts::storage::db_contracts::ContractsDB;
 use crate::rs_contracts::storage::db_trait::DataBase;
@@ -58,15 +57,15 @@ impl AdminContract {
         current_height: u64,
         contracts_db: Arc<ContractsDB>,
     ) -> (Option<AdminContract>, Option<Admin>) {
-        let mut latest_admin = Admin::default();
-        let mut contract_map = AdminContract::default();
+        // let mut latest_admin = Admin::default();
+        // let mut contract_map = AdminContract::default();
 
         if let Some(admin_map) = contracts_db
             .get(DataCategory::Contracts, b"admin-contract".to_vec())
             .expect("get admin map error")
         {
             let s = String::from_utf8(admin_map).expect("from vec to string error");
-            contract_map = serde_json::from_str(&s).unwrap();
+            let contract_map: AdminContract = serde_json::from_str(&s).unwrap();
             trace!("==> lala contract map {:?}", contract_map);
             let map_len = contract_map.contracts.len();
             trace!("==> lala contract map length {:?}", map_len);
@@ -80,7 +79,7 @@ impl AdminContract {
                 .or(contract_map.contracts.get(&latest_key))
                 .expect("get contract according to height error");
 
-            latest_admin = serde_json::from_str(&(*bin).clone().unwrap()).unwrap();
+            let latest_admin: Admin = serde_json::from_str(&(*bin).clone().unwrap()).unwrap();
             trace!("System contracts latest admin {:?}", latest_admin);
             return (Some(contract_map), Some(latest_admin));
         }
@@ -244,6 +243,7 @@ impl Admin {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::tests::helpers::get_temp_state;
 
     #[test]
     fn test_admin_seralization() {
@@ -257,6 +257,8 @@ mod test {
 
     #[test]
     fn test_get_admin() {
+        let state_db = get_temp_state();
+        let state = Arc::new(RefCell::new(state_db));
         let db = Arc::new(ContractsDB::new("rocksdb/test_get_admin").unwrap());
         let a = Admin::init(Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"));
         let a_json = serde_json::to_string(&a).unwrap();
@@ -273,7 +275,7 @@ mod test {
         context.block_number = 0;
 
         let result = admin_contract
-            .execute(&params, &context, db.clone())
+            .execute(&params, &context, db.clone(), state.clone())
             .unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
@@ -289,6 +291,8 @@ mod test {
 
     #[test]
     fn test_is_admin_return_true() {
+        let state_db = get_temp_state();
+        let state = Arc::new(RefCell::new(state_db));
         let db = Arc::new(ContractsDB::new("rocksdb/test_is_admin_return_true").unwrap());
         let a = Admin::init(Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"));
         let a_json = serde_json::to_string(&a).unwrap();
@@ -308,7 +312,7 @@ mod test {
         context.block_number = 0;
 
         let result = admin_contract
-            .execute(&params, &context, db.clone())
+            .execute(&params, &context, db.clone(), state.clone())
             .unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
@@ -324,6 +328,8 @@ mod test {
 
     #[test]
     fn test_is_admin_return_false() {
+        let state_db = get_temp_state();
+        let state = Arc::new(RefCell::new(state_db));
         let db = Arc::new(ContractsDB::new("rocksdb/test_is_admin_return_false").unwrap());
         let a = Admin::init(Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"));
         let a_json = serde_json::to_string(&a).unwrap();
@@ -343,7 +349,7 @@ mod test {
         context.block_number = 0;
 
         let result = admin_contract
-            .execute(&params, &context, db.clone())
+            .execute(&params, &context, db.clone(), state.clone())
             .unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
@@ -359,6 +365,8 @@ mod test {
 
     #[test]
     fn test_update_admin() {
+        let state_db = get_temp_state();
+        let state = Arc::new(RefCell::new(state_db));
         let db = Arc::new(ContractsDB::new("rocksdb/test_udpate_admin").unwrap());
         let a = Admin::init(Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523"));
         let a_json = serde_json::to_string(&a).unwrap();
@@ -375,9 +383,10 @@ mod test {
         let mut context = Context::default();
         params.contract.code_address = Address::from("0xffffffffffffffffffffffffffffffffff02000c");
         params.input = update_admin_input;
+        params.sender = Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523");
         context.block_number = 4;
         let result = admin_contract
-            .execute(&params, &context, db.clone())
+            .execute(&params, &context, db.clone(), state.clone())
             .unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
@@ -399,7 +408,7 @@ mod test {
         context.block_number = 0;
 
         let result = admin_contract
-            .execute(&params, &context, db.clone())
+            .execute(&params, &context, db.clone(), state.clone())
             .unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
@@ -420,7 +429,7 @@ mod test {
         params.input = get_admin_input;
         context.block_number = 2;
         let result = admin_contract
-            .execute(&params, &context, db.clone())
+            .execute(&params, &context, db.clone(), state.clone())
             .unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
@@ -441,7 +450,7 @@ mod test {
         params.input = get_admin_input;
         context.block_number = 4;
         let result = admin_contract
-            .execute(&params, &context, db.clone())
+            .execute(&params, &context, db.clone(), state.clone())
             .unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {
@@ -462,7 +471,7 @@ mod test {
         params.input = get_admin_input;
         context.block_number = 50;
         let result = admin_contract
-            .execute(&params, &context, db.clone())
+            .execute(&params, &context, db.clone(), state.clone())
             .unwrap();
         match result {
             InterpreterResult::Normal(data, _, _) => {

@@ -35,7 +35,6 @@ use std::convert::Into;
 use std::sync::Arc;
 use util::RwLock;
 
-use crate::rs_contracts::factory::ContractsFactory;
 use crate::rs_contracts::storage::db_contracts::ContractsDB;
 
 pub type CitaTrieDB = TrieDB<RocksDB>;

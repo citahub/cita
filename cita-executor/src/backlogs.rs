@@ -416,6 +416,7 @@ mod tests {
     use crate::core::libexecutor::sys_config::BlockSysConfig;
     use crate::core::TrieDB;
     use cita_database::{Config, RocksDB, NUM_COLUMNS};
+    use core_executor::rs_contracts::storage::db_contracts::ContractsDB;
     use hashable::HASH_NULL_RLP;
     use std::sync::Arc;
 
@@ -460,6 +461,11 @@ mod tests {
         TrieDB::new(db.clone())
     }
 
+    fn generate_contract_db(path: &str) -> Arc<ContractsDB> {
+        let db = Arc::new(ContractsDB::new(path).unwrap());
+        db
+    }
+
     fn get_open_block(backlogs: &Backlogs, height: u64) -> Option<&OpenBlock> {
         backlogs
             .backlogs
@@ -475,11 +481,14 @@ mod tests {
     fn generate_closed_block(open_block: OpenBlock, path: &str) -> ClosedBlock {
         let db = generate_state_db(path);
         let state_db = Arc::new(db);
+        let contracts_db_path = path.to_owned() + "/contractsdb";
+        let contracts_db = generate_contract_db(&contracts_db_path);
 
         let exec_block = ExecutedBlock::create(
             &BlockSysConfig::default(),
             open_block.clone(),
             state_db,
+            contracts_db,
             HASH_NULL_RLP,
             Arc::new(Vec::new()),
             false,

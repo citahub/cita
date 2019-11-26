@@ -1,5 +1,4 @@
 use cita_types::Address;
-use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 pub type FuncSig = [u8; 4];
