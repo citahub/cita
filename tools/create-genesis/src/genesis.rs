@@ -175,6 +175,94 @@ impl<'a> GenesisCreator<'a> {
                         value: U256::from(0),
                     };
                     self.accounts.insert((*address).clone(), admin_contract);
+                } else if *contract_name == "SysConfig" {
+                    let mut param = BTreeMap::new();
+                    let delay_block_number = match params.get(0) {
+                        Some(Token::Uint(s)) => s,
+                        _ => unimplemented!(),
+                    };
+                    let chain_owner = match params.get(1) {
+                        Some(Token::Address(s)) => s,
+                        _ => unimplemented!(),
+                    };
+                    let chain_name = match params.get(2) {
+                        Some(Token::String(s)) => s,
+                        _ => unimplemented!(),
+                    };
+                    let chain_id = match params.get(3) {
+                        Some(Token::Uint(s)) => s,
+                        _ => unimplemented!(),
+                    };
+                    let operator = match params.get(4) {
+                        Some(Token::String(s)) => s,
+                        _ => unimplemented!(),
+                    };
+                    let website = match params.get(5) {
+                        Some(Token::String(s)) => s,
+                        _ => unimplemented!(),
+                    };
+                    let block_interval = match params.get(6) {
+                        Some(Token::Uint(s)) => s,
+                        _ => unimplemented!(),
+                    };
+                    let economical_model = match params.get(7) {
+                        Some(Token::Uint(s)) => s,
+                        _ => unimplemented!(),
+                    };
+                    let name = match params.get(8) {
+                        Some(Token::String(s)) => s,
+                        _ => unimplemented!(),
+                    };
+                    let symbol = match params.get(9) {
+                        Some(Token::String(s)) => s,
+                        _ => unimplemented!(),
+                    };
+                    let avatar = match params.get(10) {
+                        Some(Token::String(s)) => s,
+                        _ => unimplemented!(),
+                    };
+                    let flags = match params.get(11) {
+                        Some(Token::Array(s)) => s
+                            .iter()
+                            .map(|i| match i {
+                                Token::Bool(b) => *b,
+                                _ => panic!("should not be here"),
+                            })
+                            .collect::<Vec<bool>>(),
+                        _ => panic!("should not be here"),
+                    };
+
+                    param.insert(
+                        "delay_block_number".to_string(),
+                        delay_block_number.to_hex(),
+                    );
+                    param.insert("chain_owner".to_string(), chain_owner.hex());
+                    param.insert("chain_name".to_string(), chain_name.to_string());
+                    param.insert("chain_id".to_string(), chain_id.to_hex());
+                    param.insert("operator".to_string(), operator.to_string());
+                    param.insert("website".to_string(), website.to_string());
+                    param.insert("block_interval".to_string(), block_interval.to_hex());
+                    param.insert("economical_model".to_string(), economical_model.to_hex());
+                    param.insert("name".to_string(), name.to_string());
+                    param.insert("symbol".to_string(), symbol.to_string());
+                    param.insert("avatar".to_string(), avatar.to_string());
+                    param.insert("check_call_permission".to_string(), flags[0].to_string());
+                    param.insert("check_send_tx_permission".to_string(), flags[1].to_string());
+                    param.insert(
+                        "check_create_contract_permission".to_string(),
+                        flags[2].to_string(),
+                    );
+                    param.insert("check_quota".to_string(), flags[3].to_string());
+                    param.insert("check_fee_back_platform".to_string(), flags[4].to_string());
+                    param.insert("auto_exec".to_string(), flags[5].to_string());
+
+                    let contract = Account {
+                        nonce: U256::from(1),
+                        code: "".to_string(),
+                        storage: param,
+                        value: U256::from(0),
+                    };
+                    self.accounts.insert((*address).clone(), contract);
                 } else {
                     if let Some(account) = Miner::mine(bytes) {
                         self.accounts.insert((*address).clone(), account);

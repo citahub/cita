@@ -2,6 +2,8 @@ use byteorder::{BigEndian, ByteOrder};
 use cita_types::{Address, H256};
 use common_types::errors::ContractError;
 use common_types::reserved_addresses;
+use ethabi::Token;
+use std::u64;
 use tiny_keccak::keccak256;
 
 pub fn extract_to_u32(data: &[u8]) -> Result<u32, ContractError> {
@@ -91,4 +93,36 @@ pub fn h256_to_bool(a: H256) -> bool {
         return true;
     }
     false
+}
+
+pub fn string_to_u64(s: &str) -> u64 {
+    if let Ok(u) = s.parse::<u64>() {
+        return u;
+    }
+    0
+}
+
+pub fn string_to_bool(s: &str) -> bool {
+    if let Ok(t) = s.parse::<bool>() {
+        return t;
+    }
+    false
+}
+
+pub fn hex_to_integer(s: &str) -> u64 {
+    if let Ok(r) = u64::from_str_radix("bb8", 16) {
+        return r;
+    }
+    0
+}
+
+pub fn encode_string(str: &str) -> String {
+    let mut tokens = Vec::new();
+    tokens.push(Token::String(str.to_string()));
+    let bin = ethabi::encode(&tokens);
+    hex::encode(&bin)
+}
+
+pub fn string_to_static_str(s: String) -> &'static str {
+    Box::leak(s.into_boxed_str())
 }

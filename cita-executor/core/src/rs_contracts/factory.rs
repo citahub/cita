@@ -15,6 +15,7 @@ use crate::rs_contracts::contracts::contract::Contract;
 use crate::rs_contracts::contracts::emergency_intervention::EmergContract;
 use crate::rs_contracts::contracts::perm_manager::PermStore;
 use crate::rs_contracts::contracts::price::PriceContract;
+use crate::rs_contracts::contracts::sys_config::SystemContract;
 use crate::rs_contracts::storage::db_contracts::ContractsDB;
 
 use cita_trie::DB;
@@ -30,6 +31,7 @@ pub struct ContractsFactory<B> {
     price_contract: PriceContract,
     perm_store: PermStore,
     emerg_contract: EmergContract,
+    system_contract: SystemContract,
 }
 
 impl<B: DB> ContractsFactory<B> {
@@ -51,6 +53,10 @@ impl<B: DB> ContractsFactory<B> {
         } else if address == Address::from(reserved_addresses::EMERGENCY_INTERVENTION) {
             updated_hash = self
                 .emerg_contract
+                .init(contract, self.contracts_db.clone());
+        } else if address == Address::from(reserved_addresses::SYS_CONFIG) {
+            updated_hash = self
+                .system_contract
                 .init(contract, self.contracts_db.clone());
         }
         trace!("===> updated hash {:?}", updated_hash);
@@ -81,6 +87,7 @@ impl<B: DB> ContractsFactory<B> {
             price_contract: PriceContract::default(),
             perm_store: PermStore::default(),
             emerg_contract: EmergContract::default(),
+            system_contract: SystemContract::default(),
         }
     }
 
@@ -90,6 +97,7 @@ impl<B: DB> ContractsFactory<B> {
             || *addr == Address::from(reserved_addresses::PERMISSION_MANAGEMENT)
             || *addr == Address::from(reserved_addresses::AUTHORIZATION)
             || *addr == Address::from(reserved_addresses::EMERGENCY_INTERVENTION)
+            || *addr == Address::from(reserved_addresses::SYS_CONFIG)
             || is_permssion_contract(*addr)
         {
             return true;
@@ -122,6 +130,13 @@ impl<B: DB> ContractsFactory<B> {
             == Address::from(reserved_addresses::EMERGENCY_INTERVENTION)
         {
             return self.emerg_contract.execute(
+                &params,
+                context,
+                self.contracts_db.clone(),
+                self.state.clone(),
+            );
+        } else if params.contract.code_address == Address::from(reserved_addresses::SYS_CONFIG) {
+            return self.system_contract.execute(
                 &params,
                 context,
                 self.contracts_db.clone(),

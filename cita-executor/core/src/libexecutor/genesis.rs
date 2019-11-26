@@ -33,11 +33,16 @@ use std::io::BufReader;
 use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
+use std::u64;
 
 use crate::rs_contracts::contracts::admin::Admin;
 use crate::rs_contracts::contracts::emergency_intervention;
 use crate::rs_contracts::contracts::perm::Permission;
 use crate::rs_contracts::contracts::price::Price;
+use crate::rs_contracts::contracts::sys_config::Sysconfig;
+use crate::rs_contracts::contracts::utils::{
+    encode_string, hex_to_integer, string_to_bool, string_to_static_str, string_to_u64,
+};
 use crate::rs_contracts::factory::ContractsFactory;
 use crate::rs_contracts::storage::db_contracts::ContractsDB;
 use std::collections::BTreeMap;
@@ -180,6 +185,82 @@ impl Genesis {
                         contracts_factory.register(address, str);
                     }
                 }
+            } else if address == Address::from(reserved_addresses::SYS_CONFIG) {
+                let auto_exec = contract
+                    .storage
+                    .get("auto_exec")
+                    .expect("get storage error");
+                let delay_block_number = contract
+                    .storage
+                    .get("delay_block_number")
+                    .expect("get storage error");
+                let avatar = contract.storage.get("avatar").expect("get storage error");
+                let symbol = contract.storage.get("symbol").expect("get storage error");
+                let block_interval = contract
+                    .storage
+                    .get("block_interval")
+                    .expect("get storage error");
+                let chain_id = contract.storage.get("chain_id").expect("get storage error");
+                let chain_name = contract
+                    .storage
+                    .get("chain_name")
+                    .expect("get storage error");
+                let chain_owner = contract
+                    .storage
+                    .get("chain_owner")
+                    .expect("get storage error");
+                let check_call_permission = contract
+                    .storage
+                    .get("check_call_permission")
+                    .expect("get storage error");
+                let check_create_contract_permission = contract
+                    .storage
+                    .get("check_create_contract_permission")
+                    .expect("get storage error");
+                let check_fee_back_platform = contract
+                    .storage
+                    .get("check_fee_back_platform")
+                    .expect("get storage error");
+                let check_quota = contract
+                    .storage
+                    .get("check_quota")
+                    .expect("get storage error");
+                let check_send_tx_permission = contract
+                    .storage
+                    .get("check_send_tx_permission")
+                    .expect("get storage error");
+                let economical_model = contract
+                    .storage
+                    .get("economical_model")
+                    .expect("get storage error");
+                let name = contract.storage.get("name").expect("get storage error");
+                let operator = contract.storage.get("operator").expect("get storage error");
+                let website = contract.storage.get("website").expect("get storage error");
+
+                trace!("Block interval is {:?}", block_interval);
+                trace!("Block interval after {:?}", string_to_u64(block_interval));
+
+                let system_config = Sysconfig::new(
+                    string_to_u64(delay_block_number),
+                    string_to_bool(check_call_permission),
+                    string_to_bool(check_send_tx_permission),
+                    string_to_bool(check_create_contract_permission),
+                    string_to_bool(check_quota),
+                    string_to_bool(check_fee_back_platform),
+                    Address::from(string_to_static_str(chain_owner.to_string())),
+                    encode_string(chain_name),
+                    string_to_u64(chain_id),
+                    encode_string(operator),
+                    encode_string(website),
+                    hex_to_integer(block_interval),
+                    string_to_u64(economical_model),
+                    name.to_string(),
+                    symbol.to_string(),
+                    avatar.to_string(),
+                    string_to_bool(auto_exec),
+                );
+                let str = serde_json::to_string(&system_config).unwrap();
+                contracts_factory.register(address, str);
             } else if is_permssion_contract(address) {
                 let mut perm_name = String::default();
                 let mut conts = Vec::new();
