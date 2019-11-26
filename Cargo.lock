@@ -135,7 +135,7 @@ dependencies = [
 [[package]]
 name = "authority_manage"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#a78ffa06aba6f9e77308ee64ea228371086e7581"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#303dc619de064d996687841894a18c9cfe573807"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-types 0.1.0 (git+https://github.com/citahub/cita-common.git?branch=develop)",
@@ -694,6 +694,7 @@ dependencies = [
  "jsonrpc-types 0.1.0 (git+https://github.com/citahub/cita-common.git?branch=develop)",
  "libproto 0.6.0 (git+https://github.com/citahub/cita-common.git?branch=develop)",
  "notify 4.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "openssl 0.10.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "pubsub 0.6.0 (git+https://github.com/citahub/cita-common.git?branch=develop)",
  "rand 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1174,7 +1175,7 @@ dependencies = [
 [[package]]
 name = "engine"
 version = "0.6.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#a78ffa06aba6f9e77308ee64ea228371086e7581"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#303dc619de064d996687841894a18c9cfe573807"
 dependencies = [
  "cita-crypto 0.1.0 (git+https://github.com/citahub/cita-common.git?branch=develop)",
  "cita-types 0.1.0 (git+https://github.com/citahub/cita-common.git?branch=develop)",
@@ -1438,6 +1439,19 @@ dependencies = [
 [[package]]
 name = "fnv"
 version = "1.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "foreign-types"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "foreign-types-shared 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "foreign-types-shared"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -2352,6 +2366,19 @@ dependencies = [
 name = "opaque-debug"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "openssl"
+version = "0.10.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "foreign-types 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.46 (registry+https://github.com/rust-lang/crates.io-index)",
+ "openssl-sys 0.9.39 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "openssl-probe"
@@ -4144,6 +4171,8 @@ dependencies = [
 "checksum flatbuffers-verifier 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fb67f9057183996c00b19cd934f9e79f09aecf7c29e4424cf262288f5a2a84ae"
 "checksum flate2 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "3b0c7353385f92079524de3b7116cf99d73947c08a7472774e9b3b04bff3b901"
 "checksum fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)" = "2fad85553e09a6f881f739c29f0b00b0f01357c743266d478b68951ce23285f3"
+"checksum foreign-types 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1"
+"checksum foreign-types-shared 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 "checksum fs2 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213"
 "checksum fsevent 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)" = "c4bbbf71584aeed076100b5665ac14e3d85eeb31fdbb45fbd41ef9a682b5ec05"
 "checksum fsevent-sys 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "1a772d36c338d07a032d5375a36f15f9a7043bf0cb8ce7cee658e037c6032874"
@@ -4243,6 +4272,7 @@ dependencies = [
 "checksum num_cpus 0.2.13 (registry+https://github.com/rust-lang/crates.io-index)" = "cee7e88156f3f9e19bdd598f8d6c9db7bf4078f99f8381f43a55b09648d1a6e3"
 "checksum num_cpus 1.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c51a3322e4bca9d212ad9a158a02abc6934d005490c054a2778df73a70aa0a30"
 "checksum opaque-debug 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "93f5bb2e8e8dec81642920ccff6b61f1eb94fa3020c5a325c9851ff604152409"
+"checksum openssl 0.10.15 (registry+https://github.com/rust-lang/crates.io-index)" = "5e1309181cdcbdb51bc3b6bedb33dfac2a83b3d585033d3f6d9e22e8c1928613"
 "checksum openssl-probe 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "77af24da69f9d9341038eba93a073b1fdaaa1b788221b00a69bce9e762cb32de"
 "checksum openssl-sys 0.9.39 (registry+https://github.com/rust-lang/crates.io-index)" = "278c1ad40a89aa1e741a1eed089a2f60b18fab8089c3139b542140fc7d674106"
 "checksum ordered-float 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7eb5259643245d3f292c7a146b2df53bba24d7eab159410e648eb73dc164669d"
