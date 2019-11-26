@@ -99,7 +99,10 @@ pub fn pubsub_message_to_network_message(info: &NetMessageUnit) -> Option<Bytes>
     let length_key = info.key.len();
     // Use 1 byte to store key length.
     if length_key == 0 || length_key > u8::max_value() as usize {
-        error!("[CitaProtocol] The MQ message key is too long or empty {}.", info.key);
+        error!(
+            "[CitaProtocol] The MQ message key is too long or empty {}.",
+            info.key
+        );
         return None;
     }
     let length_full = length_key + info.data.len();
@@ -155,13 +158,20 @@ pub fn network_message_to_pubsub_message(buf: &mut BytesMut) -> Option<NetMessag
         return None;
     }
     if length_key > buf.len() {
-        error!("[CitaProtocol] Buffer is not enough for key {} > {}.", length_key, buf.len());
+        error!(
+            "[CitaProtocol] Buffer is not enough for key {} > {}.",
+            length_key,
+            buf.len()
+        );
         return None;
     }
     let key_buf = buf.split_to(length_key);
     let key_str_result = str::from_utf8(&key_buf);
     if key_str_result.is_err() {
-        error!("[CitaProtocol] Network message parse key error {:?}.", key_buf);
+        error!(
+            "[CitaProtocol] Network message parse key error {:?}.",
+            key_buf
+        );
         return None;
     }
     let key = key_str_result.unwrap().to_string();
@@ -179,7 +189,9 @@ pub fn network_message_to_pubsub_message(buf: &mut BytesMut) -> Option<NetMessag
 
 #[cfg(test)]
 mod test {
-    use super::{network_message_to_pubsub_message, pubsub_message_to_network_message, NetMessageUnit};
+    use super::{
+        network_message_to_pubsub_message, pubsub_message_to_network_message, NetMessageUnit,
+    };
     use bytes::BytesMut;
 
     #[test]

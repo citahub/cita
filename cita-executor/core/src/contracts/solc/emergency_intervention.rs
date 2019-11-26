@@ -27,7 +27,8 @@ use ethabi::{decode, ParamType};
 
 lazy_static! {
     static ref STATE_HASH: Vec<u8> = method_tools::encode_to_vec(b"state()");
-    static ref CONTRACT_ADDRESS: Address = Address::from_str(reserved_addresses::EMERGENCY_INTERVENTION).unwrap();
+    static ref CONTRACT_ADDRESS: Address =
+        Address::from_str(reserved_addresses::EMERGENCY_INTERVENTION).unwrap();
 }
 
 /// Configuration items from system contract
@@ -43,7 +44,9 @@ impl<'a> EmergencyIntervention<'a> {
     pub fn state(&self, block_tag: BlockTag) -> Option<bool> {
         self.executor
             .call_method(&*CONTRACT_ADDRESS, &*STATE_HASH.as_slice(), None, block_tag)
-            .and_then(|output| decode(&[ParamType::Bool], &output).map_err(|_| "decode value error".to_string()))
+            .and_then(|output| {
+                decode(&[ParamType::Bool], &output).map_err(|_| "decode value error".to_string())
+            })
             .ok()
             .and_then(|mut x| x.remove(0).to_bool())
     }
@@ -64,7 +67,9 @@ mod tests {
     fn test_state() {
         let executor = init_executor();
         let emergency_intervention = EmergencyIntervention::new(&executor);
-        let state = emergency_intervention.state(BlockTag::Tag(Tag::Pending)).unwrap();
+        let state = emergency_intervention
+            .state(BlockTag::Tag(Tag::Pending))
+            .unwrap();
         assert_eq!(state, false);
     }
 }

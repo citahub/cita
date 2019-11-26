@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::bloomchain::group::{BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition as BloomGroupPosition};
+use crate::bloomchain::group::{
+    BloomGroup, BloomGroupChain, BloomGroupDatabase, GroupPosition as BloomGroupPosition,
+};
 use crate::bloomchain::{Bloom, Config as BloomChainConfig, Number as BloomChainNumber};
 use crate::header::{BlockNumber, Header};
 use crate::libchain::status::Status;
@@ -22,12 +24,13 @@ use cita_merklehash;
 use hashable::Hashable;
 
 use libproto::blockchain::{
-    AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType, RichStatus as ProtoRichStatus, StateSignal,
+    AccountGasLimit as ProtoAccountGasLimit, Proof as ProtoProof, ProofType,
+    RichStatus as ProtoRichStatus, StateSignal,
 };
 
 use libproto::{
-    executor::ExecutedResult, router::MsgType, router::RoutingKey, router::SubModules, BlockTxHashes, FullTransaction,
-    Message, TryInto,
+    executor::ExecutedResult, router::MsgType, router::RoutingKey, router::SubModules,
+    BlockTxHashes, FullTransaction, Message, TryInto,
 };
 use proof::BftProof;
 use pubsub::channel::Sender;
@@ -38,14 +41,15 @@ use std::sync::Arc;
 use util::{Mutex, RwLock};
 
 use crate::db_indexes::{
-    BlockNumber2Body, BlockNumber2Header, CurrentHash, CurrentHeight, CurrentProof, Hash2BlockNumber, Hash2BlockReceipts,
-    Hash2TransactionIndex, LogGroupPosition,
+    BlockNumber2Body, BlockNumber2Header, CurrentHash, CurrentHeight, CurrentProof,
+    Hash2BlockNumber, Hash2BlockReceipts, Hash2TransactionIndex, LogGroupPosition,
 };
 
 use crate::types::block::{Block, BlockBody, OpenBlock};
 use crate::types::{
-    block_number::BlockTag, block_number::Tag, block_number::TransactionHash, block_receipts::BlockReceipts, filter::Filter,
-    log::LocalizedLog, log::Log, transaction::Action, transaction::SignedTransaction, transaction_index::TransactionIndex,
+    block_number::BlockTag, block_number::Tag, block_number::TransactionHash,
+    block_receipts::BlockReceipts, filter::Filter, log::LocalizedLog, log::Log,
+    transaction::Action, transaction::SignedTransaction, transaction_index::TransactionIndex,
 };
 use cita_types::traits::LowerHex;
 use cita_types::{Address, Bloom as LogBloom, H256, U256};
@@ -122,7 +126,8 @@ impl TxProof {
             return false;
         };
         // Use receipt_proof and receipt_root to prove the receipt in the block.
-        let receipt_merkle_proof: cita_merklehash::MerkleProof<H256> = self.receipt_proof.clone().into();
+        let receipt_merkle_proof: cita_merklehash::MerkleProof<H256> =
+            self.receipt_proof.clone().into();
         if receipt_merkle_proof.verify(
             self.block_header.receipts_root(),
             self.receipt.clone().rlp_bytes().into_vec().crypt_hash(),
@@ -173,14 +178,13 @@ impl TxProof {
             let from_chain_id = U256::from(iter.next().unwrap());
             let to_chain_id = U256::from(iter.next().unwrap());
             let dest_contract = Address::from(H256::from(iter.next().unwrap()));
-            let dest_hasher = iter.next().unwrap()[..4]
-                .iter()
-                .take(4)
-                .enumerate()
-                .fold([0u8; 4], |mut acc, (idx, val)| {
+            let dest_hasher = iter.next().unwrap()[..4].iter().take(4).enumerate().fold(
+                [0u8; 4],
+                |mut acc, (idx, val)| {
                     acc[idx] = *val;
                     acc
-                });
+                },
+            );
             let cross_chain_nonce = U256::from(iter.next().unwrap()).low_u64();
             Some(RelayInfo {
                 from_chain_id,
@@ -313,7 +317,10 @@ pub struct Chain {
 /// Get latest status
 pub fn get_chain(db: &RocksDB) -> Option<Header> {
     let res = db
-        .get(Some(cita_db::DataCategory::Extra), &CurrentHash.get_index().to_vec())
+        .get(
+            Some(cita_db::DataCategory::Extra),
+            &CurrentHash.get_index().to_vec(),
+        )
         .unwrap_or(None)
         .map(|h| decode::<H256>(&h));
 
@@ -341,12 +348,15 @@ pub fn get_chain(db: &RocksDB) -> Option<Header> {
 }
 
 pub fn get_chain_body_height(db: &RocksDB) -> Option<BlockNumber> {
-    db.get(Some(cita_db::DataCategory::Extra), &CurrentHeight.get_index())
-        .unwrap_or(None)
-        .map(|res| {
-            let block_number: BlockNumber = rlp::decode(&res);
-            block_number
-        })
+    db.get(
+        Some(cita_db::DataCategory::Extra),
+        &CurrentHeight.get_index(),
+    )
+    .unwrap_or(None)
+    .map(|res| {
+        let block_number: BlockNumber = rlp::decode(&res);
+        block_number
+    })
 }
 
 pub fn contract_address(address: &Address, nonce: &U256) -> Address {
@@ -404,7 +414,10 @@ impl Chain {
         if let Some(proto_proof) = chain.current_block_poof() {
             if let Some(ProofType::Bft) = chain.get_chain_prooftype() {
                 let proof = BftProof::from(proto_proof.clone());
-                chain.proof_map.write().insert(proof.height as u64, proto_proof);
+                chain
+                    .proof_map
+                    .write()
+                    .insert(proof.height as u64, proto_proof);
             }
         }
         chain
@@ -446,9 +459,15 @@ impl Chain {
     fn set_config(&self, ret: &ExecutedResult) {
         let conf = ret.get_config();
         let nodes = conf.get_nodes();
-        let nodes: Vec<Address> = nodes.iter().map(|vecaddr| Address::from_slice(&vecaddr[..])).collect();
+        let nodes: Vec<Address> = nodes
+            .iter()
+            .map(|vecaddr| Address::from_slice(&vecaddr[..]))
+            .collect();
         let validators = conf.get_validators();
-        let validators: Vec<Address> = validators.iter().map(|vecaddr| Address::from_slice(&vecaddr[..])).collect();
+        let validators: Vec<Address> = validators
+            .iter()
+            .map(|vecaddr| Address::from_slice(&vecaddr[..]))
+            .collect();
         let block_interval = conf.get_block_interval();
         let version = conf.get_version();
         debug!(
@@ -456,7 +475,8 @@ impl Chain {
             nodes, block_interval, version
         );
 
-        self.check_quota.store(conf.get_check_quota(), Ordering::Relaxed);
+        self.check_quota
+            .store(conf.get_check_quota(), Ordering::Relaxed);
         self.block_quota_limit
             .store(conf.get_block_quota_limit() as usize, Ordering::SeqCst);
         *self.account_quota_limit.write() = conf.get_account_quota_limit().clone();
@@ -484,7 +504,10 @@ impl Chain {
         } else {
             let group = BloomGroupChain::new(self.blooms_config, self);
             group
-                .insert(number as BloomChainNumber, Bloom::from(Into::<[u8; 256]>::into(log_bloom)))
+                .insert(
+                    number as BloomChainNumber,
+                    Bloom::from(Into::<[u8; 256]>::into(log_bloom)),
+                )
                 .into_iter()
                 .map(|p| (From::from(p.0), From::from(p.1)))
                 .collect()
@@ -510,9 +533,11 @@ impl Chain {
         if !block_transaction_indexes.is_empty() {
             for (k, v) in block_transaction_indexes.iter() {
                 let hash_key = Hash2TransactionIndex(*k).get_index();
-                let _ = self
-                    .db
-                    .insert(Some(cita_db::DataCategory::Extra), hash_key, rlp::encode(v).into_vec());
+                let _ = self.db.insert(
+                    Some(cita_db::DataCategory::Extra),
+                    hash_key,
+                    rlp::encode(v).into_vec(),
+                );
             }
         }
 
@@ -538,15 +563,19 @@ impl Chain {
 
         // Save hash -> blockNumber
         let hash_key = Hash2BlockNumber(header_hash).get_index();
-        let _ = self
-            .db
-            .insert(Some(cita_db::DataCategory::Extra), hash_key, rlp::encode(&number).into_vec());
+        let _ = self.db.insert(
+            Some(cita_db::DataCategory::Extra),
+            hash_key,
+            rlp::encode(&number).into_vec(),
+        );
 
         // Save blocks blooms
         for (k, v) in blocks_blooms.iter() {
-            let _ = self
-                .db
-                .insert(Some(cita_db::DataCategory::Extra), k.get_index(), rlp::encode(v).into_vec());
+            let _ = self.db.insert(
+                Some(cita_db::DataCategory::Extra),
+                k.get_index(),
+                rlp::encode(v).into_vec(),
+            );
         }
 
         // Save current hash
@@ -571,7 +600,10 @@ impl Chain {
         state_signal.set_height(self.get_current_height());
         let msg: Message = state_signal.into();
         ctx_pub
-            .send((routing_key!(Chain >> StateSignal).into(), msg.try_into().unwrap()))
+            .send((
+                routing_key!(Chain >> StateSignal).into(),
+                msg.try_into().unwrap(),
+            ))
             .unwrap();
     }
 
@@ -671,12 +703,16 @@ impl Chain {
 
     /// Get block by hash
     pub fn block_by_hash(&self, hash: H256) -> Option<Block> {
-        self.block_height_by_hash(hash).and_then(|h| self.block_by_height(h))
+        self.block_height_by_hash(hash)
+            .and_then(|h| self.block_by_height(h))
     }
 
     /// Get block by height
     pub fn block_by_height(&self, number: BlockNumber) -> Option<Block> {
-        match (self.block_header_by_height(number), self.block_body_by_height(number)) {
+        match (
+            self.block_header_by_height(number),
+            self.block_body_by_height(number),
+        ) {
             (Some(h), Some(b)) => Some(Block { header: h, body: b }),
             _ => None,
         }
@@ -701,7 +737,8 @@ impl Chain {
                 return Some(header.clone());
             }
         }
-        self.block_height_by_hash(hash).and_then(|h| self.block_header_by_height(h))
+        self.block_height_by_hash(hash)
+            .and_then(|h| self.block_header_by_height(h))
     }
 
     fn block_header_by_height(&self, number: BlockNumber) -> Option<Header> {
@@ -727,12 +764,14 @@ impl Chain {
     }
 
     pub fn block_hash_by_height(&self, height: BlockNumber) -> Option<H256> {
-        self.block_header_by_height(height).and_then(|hdr| Some(hdr.hash().unwrap()))
+        self.block_header_by_height(height)
+            .and_then(|hdr| Some(hdr.hash().unwrap()))
     }
 
     /// Get block body by hash
     fn block_body_by_hash(&self, hash: H256) -> Option<BlockBody> {
-        self.block_height_by_hash(hash).and_then(|h| self.block_body_by_height(h))
+        self.block_height_by_hash(hash)
+            .and_then(|h| self.block_body_by_height(h))
     }
 
     /// Get block body by height
@@ -749,7 +788,8 @@ impl Chain {
 
     /// Get block tx hashes
     pub fn block_tx_hashes(&self, number: BlockNumber) -> Option<Vec<H256>> {
-        self.block_body_by_height(number).map(|body| body.transaction_hashes())
+        self.block_body_by_height(number)
+            .map(|body| body.transaction_hashes())
     }
 
     /// Get transaction by hash
@@ -775,7 +815,8 @@ impl Chain {
 
     /// Get transaction by address
     fn transaction_by_address(&self, hash: H256, index: usize) -> Option<SignedTransaction> {
-        self.block_body_by_hash(hash).map(|body| body.transactions()[index].clone())
+        self.block_body_by_hash(hash)
+            .map(|body| body.transactions()[index].clone())
     }
 
     /// Get transaction hashes by block hash
@@ -803,7 +844,10 @@ impl Chain {
 
     pub fn get_transaction_proof(&self, hash: TransactionHash) -> Option<(Vec<u8>)> {
         self.transaction_index(hash)
-            .and_then(|addr| self.block_by_hash(addr.block_hash).map(|block| (addr, block)))
+            .and_then(|addr| {
+                self.block_by_hash(addr.block_hash)
+                    .map(|block| (addr, block))
+            })
             .and_then(|(addr, block)| {
                 self.block_receipts(addr.block_hash)
                     .map(|receipts| (addr.index, block, receipts))
@@ -833,30 +877,51 @@ impl Chain {
                     })
             })
             .and_then(|(index, block, receipt, receipt_proof)| {
-                block
-                    .body()
-                    .transactions()
-                    .get(index)
-                    .map(|tx| (tx.clone(), receipt, receipt_proof.into(), block.header().clone()))
-            })
-            .and_then(|(tx, receipt, receipt_proof, block_header)| {
-                self.block_by_height(block_header.number() + 1)
-                    .map(|next_block| (tx, receipt, receipt_proof, block_header, next_block.header().proposal()))
-            })
-            .and_then(|(tx, receipt, receipt_proof, block_header, next_proposal_header)| {
-                self.block_by_height(next_proposal_header.number() + 1).map(|third_block| {
+                block.body().transactions().get(index).map(|tx| {
                     (
-                        tx,
+                        tx.clone(),
                         receipt,
-                        receipt_proof,
-                        block_header,
-                        next_proposal_header,
-                        third_block.header().proof().clone(),
+                        receipt_proof.into(),
+                        block.header().clone(),
                     )
                 })
             })
+            .and_then(|(tx, receipt, receipt_proof, block_header)| {
+                self.block_by_height(block_header.number() + 1)
+                    .map(|next_block| {
+                        (
+                            tx,
+                            receipt,
+                            receipt_proof,
+                            block_header,
+                            next_block.header().proposal(),
+                        )
+                    })
+            })
+            .and_then(
+                |(tx, receipt, receipt_proof, block_header, next_proposal_header)| {
+                    self.block_by_height(next_proposal_header.number() + 1)
+                        .map(|third_block| {
+                            (
+                                tx,
+                                receipt,
+                                receipt_proof,
+                                block_header,
+                                next_proposal_header,
+                                third_block.header().proof().clone(),
+                            )
+                        })
+                },
+            )
             .map(
-                |(tx, receipt, receipt_proof, block_header, next_proposal_header, proposal_proof)| {
+                |(
+                    tx,
+                    receipt,
+                    receipt_proof,
+                    block_header,
+                    next_proposal_header,
+                    proposal_proof,
+                )| {
                     TxProof {
                         tx,
                         receipt,
@@ -890,7 +955,9 @@ impl Chain {
                 let log_position_block = receipts.iter().fold(0, |acc, r| acc + r.logs.len());
 
                 if last_receipt.transaction_hash == tx_hash {
-                    let stx = self.transaction_by_address(block_hash, tx_index).unwrap_or_default();
+                    let stx = self
+                        .transaction_by_address(block_hash, tx_index)
+                        .unwrap_or_default();
                     let block_number = self.block_height_by_hash(block_hash).unwrap_or(0);
                     let contract_address = match *stx.action() {
                         Action::Create if last_receipt.error.is_none() => {
@@ -960,7 +1027,8 @@ impl Chain {
 
     #[inline]
     pub fn set_max_store_height(&self, height: u64) {
-        self.max_store_height.store(height as usize, Ordering::SeqCst);
+        self.max_store_height
+            .store(height as usize, Ordering::SeqCst);
     }
 
     #[inline]
@@ -971,7 +1039,10 @@ impl Chain {
     #[inline]
     pub fn current_block_poof(&self) -> Option<ProtoProof> {
         self.db
-            .get(Some(cita_db::DataCategory::Extra), &CurrentProof.get_index())
+            .get(
+                Some(cita_db::DataCategory::Extra),
+                &CurrentProof.get_index(),
+            )
             .unwrap_or(None)
             .map(|res| {
                 let proto_proof: ProtoProof = rlp::decode(&res);
@@ -996,7 +1067,12 @@ impl Chain {
         }
     }
 
-    pub fn logs<F>(&self, mut blocks: Vec<BlockNumber>, matches: F, limit: Option<usize>) -> Vec<LocalizedLog>
+    pub fn logs<F>(
+        &self,
+        mut blocks: Vec<BlockNumber>,
+        matches: F,
+        limit: Option<usize>,
+    ) -> Vec<LocalizedLog>
     where
         F: Fn(&Log) -> bool,
         Self: Sized,
@@ -1062,7 +1138,12 @@ impl Chain {
     }
 
     /// Returns numbers of blocks containing given bloom.
-    pub fn blocks_with_bloom(&self, bloom: &LogBloom, from_block: BlockNumber, to_block: BlockNumber) -> Vec<BlockNumber> {
+    pub fn blocks_with_bloom(
+        &self,
+        bloom: &LogBloom,
+        from_block: BlockNumber,
+        to_block: BlockNumber,
+    ) -> Vec<BlockNumber> {
         let range = from_block as BloomChainNumber..to_block as BloomChainNumber;
         BloomGroupChain::new(self.blooms_config, self)
             .with_bloom(&range, &Bloom::from(Into::<[u8; 256]>::into(*bloom)))
@@ -1108,7 +1189,12 @@ impl Chain {
     }
 
     /// Delivery block tx hashes to auth
-    pub fn delivery_block_tx_hashes(&self, block_height: u64, tx_hashes: &[H256], ctx_pub: &Sender<(String, Vec<u8>)>) {
+    pub fn delivery_block_tx_hashes(
+        &self,
+        block_height: u64,
+        tx_hashes: &[H256],
+        ctx_pub: &Sender<(String, Vec<u8>)>,
+    ) {
         let ctx_pub_clone = ctx_pub.clone();
         let version_opt = self.version.read();
         if version_opt.is_none() {
@@ -1119,10 +1205,15 @@ impl Chain {
         block_tx_hashes.set_height(block_height);
         {
             block_tx_hashes.set_check_quota(self.check_quota.load(Ordering::Relaxed));
-            block_tx_hashes.set_block_quota_limit(self.block_quota_limit.load(Ordering::SeqCst) as u64);
-            block_tx_hashes.set_account_quota_limit(self.account_quota_limit.read().clone());
             block_tx_hashes
-                .set_admin_address(self.admin_address.read().map(|admin| admin.to_vec()).unwrap_or_else(Vec::new));
+                .set_block_quota_limit(self.block_quota_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes.set_account_quota_limit(self.account_quota_limit.read().clone());
+            block_tx_hashes.set_admin_address(
+                self.admin_address
+                    .read()
+                    .map(|admin| admin.to_vec())
+                    .unwrap_or_else(Vec::new),
+            );
             block_tx_hashes.set_version(version_opt.unwrap());
         }
 
@@ -1134,7 +1225,10 @@ impl Chain {
         let msg: Message = block_tx_hashes.into();
 
         ctx_pub_clone
-            .send((routing_key!(Chain >> BlockTxHashes).into(), msg.try_into().unwrap()))
+            .send((
+                routing_key!(Chain >> BlockTxHashes).into(),
+                msg.try_into().unwrap(),
+            ))
             .unwrap();
         trace!("delivery block's tx hashes for height: {}", block_height);
     }
@@ -1165,7 +1259,10 @@ impl Chain {
 
         let msg: Message = rich_status.into();
         ctx_pub
-            .send((routing_key!(Chain >> RichStatus).into(), msg.try_into().unwrap()))
+            .send((
+                routing_key!(Chain >> RichStatus).into(),
+                msg.try_into().unwrap(),
+            ))
             .unwrap();
     }
 
@@ -1258,7 +1355,10 @@ impl Chain {
         );
         let sync_msg: Message = status.into();
         ctx_pub
-            .send((routing_key!(Chain >> Status).into(), sync_msg.try_into().unwrap()))
+            .send((
+                routing_key!(Chain >> Status).into(),
+                sync_msg.try_into().unwrap(),
+            ))
             .unwrap();
     }
 

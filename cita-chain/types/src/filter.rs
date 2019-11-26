@@ -33,16 +33,19 @@ impl AddressFilter {
 
     pub fn blooms(&self) -> Vec<Bloom> {
         match self.addresses {
-            Some(ref addresses) if !addresses.is_empty() => {
-                addresses.iter().map(|ref address| Bloom::from_raw(address)).collect()
-            }
+            Some(ref addresses) if !addresses.is_empty() => addresses
+                .iter()
+                .map(|ref address| Bloom::from_raw(address))
+                .collect(),
             _ => vec![Bloom::default()],
         }
     }
 
     pub fn matches(&self, log: &Log) -> bool {
         match self.addresses {
-            Some(ref addresses) if !addresses.is_empty() => addresses.iter().any(|address| &log.address == address),
+            Some(ref addresses) if !addresses.is_empty() => {
+                addresses.iter().any(|address| &log.address == address)
+            }
             _ => true,
         }
     }
@@ -97,10 +100,15 @@ impl TopicFilter {
     }
 
     pub fn matches(&self, log: &Log) -> bool {
-        self.topics.iter().enumerate().all(|(index, topic)| match *topic {
-            Some(ref topics) if !topics.is_empty() => topics.iter().any(|topic| log.topics.get(index) == Some(topic)),
-            _ => true,
-        })
+        self.topics
+            .iter()
+            .enumerate()
+            .all(|(index, topic)| match *topic {
+                Some(ref topics) if !topics.is_empty() => topics
+                    .iter()
+                    .any(|topic| log.topics.get(index) == Some(topic)),
+                _ => true,
+            })
     }
 }
 
@@ -136,7 +144,9 @@ impl Clone for TopicFilter {
         let mut topics = [None, None, None, None];
         topics[..4].clone_from_slice(&self.topics[..4]);
 
-        TopicFilter { topics: topics.to_vec() }
+        TopicFilter {
+            topics: topics.to_vec(),
+        }
     }
 }
 
@@ -202,7 +212,8 @@ mod tests {
 
     #[test]
     fn test_zip_blooms_none() {
-        let none_filter = Filter::new_with_address_and_topic(Default::default(), Default::default());
+        let none_filter =
+            Filter::new_with_address_and_topic(Default::default(), Default::default());
 
         let blooms = none_filter.zip_blooms();
         assert_eq!(blooms.len(), 1);
@@ -214,10 +225,14 @@ mod tests {
         let topics = vec![Some(vec![H256::zero()]), None, None, None];
         let addresses = Some(vec![Address::default()]);
 
-        let filter = Filter::new_with_address_and_topic(AddressFilter::new(addresses), TopicFilter::new(topics));
+        let filter = Filter::new_with_address_and_topic(
+            AddressFilter::new(addresses),
+            TopicFilter::new(topics),
+        );
 
         let zip_blooms = filter.zip_blooms();
-        let blooms: Vec<Bloom> = vec!["0000000000000000008000000000000000000000000000000000000000000000
+        let blooms: Vec<Bloom> = vec![
+            "0000000000000000008000000000000000000000000000000000000000000000
              0000000000000000000000000000000200000000000000000000000000000000
              0000000000000000000000000000000000000000000000000000000000000000
              0000000002000000000000000000080000000000000000000000000000000000
@@ -225,7 +240,8 @@ mod tests {
              0000000000000000000000000000000000000000000000000000000000000000
              0000000000000000000000000000000000000000000000000000000000002000
              0000000000000000000000000000000000000000000000000000000000000000"
-            .into()];
+                .into(),
+        ];
         assert_eq!(zip_blooms, blooms);
     }
 
@@ -239,10 +255,14 @@ mod tests {
         ];
         let addresses = Some(vec![Address::default()]);
 
-        let filter = Filter::new_with_address_and_topic(AddressFilter::new(addresses), TopicFilter::new(topics));
+        let filter = Filter::new_with_address_and_topic(
+            AddressFilter::new(addresses),
+            TopicFilter::new(topics),
+        );
 
         let zip_blooms = filter.zip_blooms();
-        let blooms: Vec<Bloom> = vec!["0000000000000000008000000000000000000000000000000000000000000000
+        let blooms: Vec<Bloom> = vec![
+            "0000000000000000008000000000000000000000000000000000000000000000
              0000000000000000000000000000000200000000000000000000000000000000
              0000000000000000000000000000000000000000000000000000000000000000
              0000000002000000000000000000080000000000000000000000000000000000
@@ -250,7 +270,8 @@ mod tests {
              0000000000000000000000000000000000000000000000000000000000000000
              0000000000000000000000000000000000000000000000000000000000002000
              0000000000000000000000000000000000000000000000000000000000000000"
-            .into()];
+                .into(),
+        ];
         assert_eq!(zip_blooms, blooms);
     }
 
@@ -264,7 +285,10 @@ mod tests {
         ];
         let addresses = Some(vec![Address::default(), Address::default()]);
 
-        let filter = Filter::new_with_address_and_topic(AddressFilter::new(addresses), TopicFilter::new(topics));
+        let filter = Filter::new_with_address_and_topic(
+            AddressFilter::new(addresses),
+            TopicFilter::new(topics),
+        );
 
         let zip_blooms = filter.zip_blooms();
         let blooms: Vec<Bloom> = vec![
@@ -310,10 +334,18 @@ mod tests {
 
     #[test]
     fn test_matches() {
-        let topics = vec![Some(vec![H256::zero()]), Some(vec![H256::zero()]), None, None];
+        let topics = vec![
+            Some(vec![H256::zero()]),
+            Some(vec![H256::zero()]),
+            None,
+            None,
+        ];
         let addresses = Some(vec![Address::default()]);
 
-        let filter = Filter::new_with_address_and_topic(AddressFilter::new(addresses), TopicFilter::new(topics));
+        let filter = Filter::new_with_address_and_topic(
+            AddressFilter::new(addresses),
+            TopicFilter::new(topics),
+        );
 
         let entry0 = Log {
             address: Address::default(),

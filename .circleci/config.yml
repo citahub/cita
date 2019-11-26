@@ -421,9 +421,9 @@ workflows:
       #     requires:
       #     - "Check Basic"
 
-      - "Check Clippy":
-          requires:
-            - "Check Basic"
+      # - "Check Clippy":
+      #     requires:
+      #       - "Check Basic"
       - "Release":
           requires:
             - "Check Basic"
@@ -472,9 +472,9 @@ workflows:
       - "Robustness Test":
           requires:
             - "Release"
-      - "Genesis Test":
-          requires:
-            - "Release"
+      # - "Genesis Test":
+      #     requires:
+      #       - "Release"
 
       - "Unit Test (sha3 & secp256k1)":
           requires:
@@ -489,7 +489,7 @@ workflows:
       - "Passed":
           requires:
               - "Check Basic"
-              - "Check Clippy"
+              # - "Check Clippy"
               - "Release"
               - "Basic Test"
               - "Basic Tls Test"
@@ -502,7 +502,7 @@ workflows:
               - "Byzantine Test in Quota Mode"
               - "Byzantine Test in Charge Mode"
               - "Robustness Test"
-              - "Genesis Test"
+              # - "Genesis Test"
               - "Unit Test (blake2b & ed25519)"
               - "Unit Test (sm3 & sm2)"
             # - "Crosschain Test"

@@ -50,7 +50,10 @@ mod tests {
         let testdata = vec![
             ("thisIsAMethodName(uint256)", vec![0xa8, 0x67, 0x12, 0xe7]),
             ("aMethodNameAgain(bool)", vec![0xa1, 0xbe, 0xa0, 0xac]),
-            ("thisIsAlsoAMethodName(bytes32)", vec![0xb7, 0x7b, 0xc4, 0x01]),
+            (
+                "thisIsAlsoAMethodName(bytes32)",
+                vec![0xb7, 0x7b, 0xc4, 0x01],
+            ),
             ("thisIsAMethodNameToo(bytes)", vec![0x87, 0x46, 0x79, 0xca]),
         ];
         for (data, expected) in testdata.into_iter() {
@@ -58,7 +61,10 @@ mod tests {
             expected_data.copy_from_slice(&expected[0..4]);
             assert_eq!(super::encode_to_array(data.as_ref()), expected_data);
             assert_eq!(super::encode_to_vec(data.as_ref()), expected);
-            assert_eq!(super::encode_to_u32(data.as_ref()), BigEndian::read_u32(&expected[..]));
+            assert_eq!(
+                super::encode_to_u32(data.as_ref()),
+                BigEndian::read_u32(&expected[..])
+            );
         }
     }
 }

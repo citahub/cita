@@ -37,13 +37,22 @@ impl EmergContract {
         let mut a = EmergContract::default();
         a.contracts.insert(0, Some(str));
         let s = serde_json::to_string(&a).unwrap();
-        let _ = contracts_db.insert(DataCategory::Contracts, b"emerg-contract".to_vec(), s.as_bytes().to_vec());
+        let _ = contracts_db.insert(
+            DataCategory::Contracts,
+            b"emerg-contract".to_vec(),
+            s.as_bytes().to_vec(),
+        );
 
         // debug info
-        let bin_map = contracts_db.get(DataCategory::Contracts, b"emerg-contract".to_vec()).unwrap();
+        let bin_map = contracts_db
+            .get(DataCategory::Contracts, b"emerg-contract".to_vec())
+            .unwrap();
         let str = String::from_utf8(bin_map.unwrap()).unwrap();
         let contracts: EmergContract = serde_json::from_str(&str).unwrap();
-        trace!("System contract emergency intervention {:?} after init.", contracts);
+        trace!(
+            "System contract emergency intervention {:?} after init.",
+            contracts
+        );
 
         keccak256(&s.as_bytes().to_vec())
     }
@@ -92,28 +101,42 @@ impl<B: DB> Contract<B> for EmergContract {
         state: Arc<RefCell<State<B>>>,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - emerg - enter execute");
-        let (contract_map, latest_item) = self.get_latest_item(context.block_number, contracts_db.clone());
+        let (contract_map, latest_item) =
+            self.get_latest_item(context.block_number, contracts_db.clone());
         match (contract_map, latest_item) {
             (Some(mut contract_map), Some(mut latest_item)) => {
                 trace!("System contracts - emerg - params input {:?}", params.input);
                 let mut updated = false;
-                let result = extract_to_u32(&params.input[..]).and_then(|signature| match signature {
-                    0xc19d93fb => latest_item.get_state(),
-                    0xac9f0222 => latest_item.set_state(params, &mut updated, context, contracts_db.clone()),
-                    _ => panic!("Invalid function signature".to_owned()),
-                });
+                let result =
+                    extract_to_u32(&params.input[..]).and_then(|signature| match signature {
+                        0xc19d93fb => latest_item.get_state(),
+                        0xac9f0222 => latest_item.set_state(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                        ),
+                        _ => panic!("Invalid function signature".to_owned()),
+                    });
 
                 if result.is_ok() & updated {
                     let new_item = latest_item;
                     let str = serde_json::to_string(&new_item).unwrap();
-                    contract_map.contracts.insert(context.block_number, Some(str));
+                    contract_map
+                        .contracts
+                        .insert(context.block_number, Some(str));
                     let str = serde_json::to_string(&contract_map).unwrap();
                     let updated_hash = keccak256(&str.as_bytes().to_vec());
-                    let _ =
-                        contracts_db.insert(DataCategory::Contracts, b"emerg-contract".to_vec(), str.as_bytes().to_vec());
+                    let _ = contracts_db.insert(
+                        DataCategory::Contracts,
+                        b"emerg-contract".to_vec(),
+                        str.as_bytes().to_vec(),
+                    );
 
                     // debug information, can be ommited
-                    let bin_map = contracts_db.get(DataCategory::Contracts, b"emerg-contract".to_vec()).unwrap();
+                    let bin_map = contracts_db
+                        .get(DataCategory::Contracts, b"emerg-contract".to_vec())
+                        .unwrap();
                     let str = String::from_utf8(bin_map.unwrap()).unwrap();
                     let contracts: EmergContract = serde_json::from_str(&str).unwrap();
                     trace!("System contract emerg {:?} after update.", contracts);
@@ -162,10 +185,17 @@ impl EmergencyIntervention {
         let param_state = h256_to_bool(H256::from(&params.input[4..]));
         trace!("param_state {:?}, self.state {:?}", param_state, self.state);
         // Note: Only admin can change quota price
-        if check::only_admin(params, context, contracts_db.clone()).expect("only admin can invoke price setting") && param_state != self.state {
+        if check::only_admin(params, context, contracts_db.clone())
+            .expect("only admin can invoke price setting")
+            && param_state != self.state
+        {
             self.state = param_state;
             *changed = true;
-            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(1).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
         Err(ContractError::Internal("Only admin can do".to_owned()))
     }
@@ -173,9 +203,17 @@ impl EmergencyIntervention {
     pub fn get_state(&self) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - emerg - get_state");
         if self.state {
-            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), 0, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(1).0.to_vec(),
+                0,
+                vec![],
+            ));
         } else {
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), 0, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                0,
+                vec![],
+            ));
         }
     }
 }

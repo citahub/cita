@@ -13,7 +13,8 @@
 // limitations under the License.
 
 use crate::node_manager::{
-    AddRepeatedNodeReq, ConnectedSelfReq, DelConnectedNodeReq, DialedErrorReq, NodesManagerClient, PendingConnectedNodeReq,
+    AddRepeatedNodeReq, ConnectedSelfReq, DelConnectedNodeReq, DialedErrorReq, NodesManagerClient,
+    PendingConnectedNodeReq,
 };
 use tentacle::{
     context::ServiceContext,
@@ -69,9 +70,16 @@ impl ServiceHandle for SHandle {
             }
             ServiceError::ListenError { address, error } => {
                 let address = multiaddr_to_socketaddr(&address).unwrap();
-                warn!("[P2pProtocol] Listen error on {:?}, error info: {:?}", address, error);
+                warn!(
+                    "[P2pProtocol] Listen error on {:?}, error info: {:?}",
+                    address, error
+                );
             }
-            ServiceError::ProtocolError { id, proto_id, error } => {
+            ServiceError::ProtocolError {
+                id,
+                proto_id,
+                error,
+            } => {
                 // FIXME: handle protocol error later
                 warn!(
                     "[P2pProtocol] Protocol Error, stream id: {:?}, protocol id: {:?}, error: {:?}",
@@ -90,12 +98,18 @@ impl ServiceHandle for SHandle {
             }
 
             ServiceError::SessionTimeout { session_context } => {
-                warn!("[P2pProtocol] SessionTimeout Sessionid {:?} ", session_context.id);
+                warn!(
+                    "[P2pProtocol] SessionTimeout Sessionid {:?} ",
+                    session_context.id
+                );
                 let req = DelConnectedNodeReq::new(session_context.id);
                 self.nodes_mgr_client.del_connected_node(req);
             }
 
-            ServiceError::MuxerError { session_context, error } => {
+            ServiceError::MuxerError {
+                session_context,
+                error,
+            } => {
                 warn!(
                     "[P2pProtocol] ServiceError::MuxerError Sessionid {:?}--{:?}",
                     session_context.id, error
@@ -125,7 +139,11 @@ impl ServiceHandle for SHandle {
                         "[P2pProtocol] Service open on : {:?}, session id: {:?}, ty: {:?}, public_key: {:?}",
                         sock_addr, session_context.id, session_context.ty, session_context.remote_pubkey
                     );
-                    let req = PendingConnectedNodeReq::new(session_context.id, sock_addr, session_context.ty);
+                    let req = PendingConnectedNodeReq::new(
+                        session_context.id,
+                        sock_addr,
+                        session_context.ty,
+                    );
                     self.nodes_mgr_client.pending_connected_node(req);
                 } else {
                     info!(

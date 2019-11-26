@@ -37,10 +37,16 @@ impl PriceContract {
         let mut a = PriceContract::default();
         a.contracts.insert(0, Some(str));
         let s = serde_json::to_string(&a).unwrap();
-        let _ = contracts_db.insert(DataCategory::Contracts, b"price-contract".to_vec(), s.as_bytes().to_vec());
+        let _ = contracts_db.insert(
+            DataCategory::Contracts,
+            b"price-contract".to_vec(),
+            s.as_bytes().to_vec(),
+        );
 
         // debug info
-        let bin_map = contracts_db.get(DataCategory::Contracts, b"price-contract".to_vec()).unwrap();
+        let bin_map = contracts_db
+            .get(DataCategory::Contracts, b"price-contract".to_vec())
+            .unwrap();
         let str = String::from_utf8(bin_map.unwrap()).unwrap();
         let contracts: PriceContract = serde_json::from_str(&str).unwrap();
         trace!("System contract price {:?} after init.", contracts);
@@ -92,28 +98,42 @@ impl<B: DB> Contract<B> for PriceContract {
         state: Arc<RefCell<State<B>>>,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - price - enter execute");
-        let (contract_map, latest_price) = self.get_latest_item(context.block_number, contracts_db.clone());
+        let (contract_map, latest_price) =
+            self.get_latest_item(context.block_number, contracts_db.clone());
         match (contract_map, latest_price) {
             (Some(mut contract_map), Some(mut latest_price)) => {
                 trace!("System contracts - price - params input {:?}", params.input);
                 let mut updated = false;
-                let result = extract_to_u32(&params.input[..]).and_then(|signature| match signature {
-                    0x6bacc53fu32 => latest_price.get_quota_price(),
-                    0x52da800au32 => latest_price.set_quota_price(params, &mut updated, context, contracts_db.clone()),
-                    _ => panic!("Invalid function signature".to_owned()),
-                });
+                let result =
+                    extract_to_u32(&params.input[..]).and_then(|signature| match signature {
+                        0x6bacc53fu32 => latest_price.get_quota_price(),
+                        0x52da800au32 => latest_price.set_quota_price(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                        ),
+                        _ => panic!("Invalid function signature".to_owned()),
+                    });
 
                 if result.is_ok() & updated {
                     let new_price = latest_price;
                     let str = serde_json::to_string(&new_price).unwrap();
-                    contract_map.contracts.insert(context.block_number, Some(str));
+                    contract_map
+                        .contracts
+                        .insert(context.block_number, Some(str));
                     let str = serde_json::to_string(&contract_map).unwrap();
                     let updated_hash = keccak256(&str.as_bytes().to_vec());
-                    let _ =
-                        contracts_db.insert(DataCategory::Contracts, b"price-contract".to_vec(), str.as_bytes().to_vec());
+                    let _ = contracts_db.insert(
+                        DataCategory::Contracts,
+                        b"price-contract".to_vec(),
+                        str.as_bytes().to_vec(),
+                    );
 
                     // debug information, can be ommited
-                    let bin_map = contracts_db.get(DataCategory::Contracts, b"price-contract".to_vec()).unwrap();
+                    let bin_map = contracts_db
+                        .get(DataCategory::Contracts, b"price-contract".to_vec())
+                        .unwrap();
                     let str = String::from_utf8(bin_map.unwrap()).unwrap();
                     let contracts: PriceContract = serde_json::from_str(&str).unwrap();
                     trace!("System contract price {:?} after update.", contracts);
@@ -155,7 +175,8 @@ impl Price {
         trace!("System contract - Price - set_quota_price");
         let param_quota_price = U256::from(&params.input[16..36]);
         // Note: Only admin can change quota price
-        if check::only_admin(params, context, contracts_db.clone()).expect("only admin can invoke price setting")
+        if check::only_admin(params, context, contracts_db.clone())
+            .expect("only admin can invoke price setting")
             && param_quota_price > U256::zero()
         {
             self.quota_price = param_quota_price;
@@ -171,7 +192,11 @@ impl Price {
             let log = Log(params.contract.code_address, topics, vec![]);
             logs.push(log);
 
-            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, logs));
+            return Ok(InterpreterResult::Normal(
+                H256::from(1).0.to_vec(),
+                params.gas_limit,
+                logs,
+            ));
         }
 
         Err(ContractError::Internal("Only admin can do".to_owned()))
@@ -179,6 +204,10 @@ impl Price {
 
     pub fn get_quota_price(&self) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - Price - get_quota_price");
-        return Ok(InterpreterResult::Normal(H256::from(self.quota_price).to_vec(), 0, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(self.quota_price).to_vec(),
+            0,
+            vec![],
+        ));
     }
 }

@@ -192,7 +192,10 @@ impl FilterDB {
 
 /// Generate the now time
 fn now() -> u64 {
-    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
 }
 
 #[cfg(test)]

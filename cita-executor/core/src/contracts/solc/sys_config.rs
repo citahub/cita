@@ -30,12 +30,15 @@ use num::FromPrimitive;
 
 lazy_static! {
     static ref DELAY_BLOCK_NUMBER: Vec<u8> = method_tools::encode_to_vec(b"getDelayBlockNumber()");
-    static ref CALL_PERMISSION_CHECK: Vec<u8> = method_tools::encode_to_vec(b"getPermissionCheck()");
-    static ref PERMISSION_SEND_TX_CHECK: Vec<u8> = method_tools::encode_to_vec(b"getSendTxPermissionCheck()");
+    static ref CALL_PERMISSION_CHECK: Vec<u8> =
+        method_tools::encode_to_vec(b"getPermissionCheck()");
+    static ref PERMISSION_SEND_TX_CHECK: Vec<u8> =
+        method_tools::encode_to_vec(b"getSendTxPermissionCheck()");
     static ref PERMISSION_CREATE_CONTRACT_CHECK: Vec<u8> =
         method_tools::encode_to_vec(b"getCreateContractPermissionCheck()");
     static ref QUOTA_CHECK: Vec<u8> = method_tools::encode_to_vec(b"getQuotaCheck()");
-    static ref FEE_BACK_PLATFORM_CHECK: Vec<u8> = method_tools::encode_to_vec(b"getFeeBackPlatformCheck()");
+    static ref FEE_BACK_PLATFORM_CHECK: Vec<u8> =
+        method_tools::encode_to_vec(b"getFeeBackPlatformCheck()");
     static ref CHAIN_OWNER: Vec<u8> = method_tools::encode_to_vec(b"getChainOwner()");
     static ref CHAIN_NAME: Vec<u8> = method_tools::encode_to_vec(b"getChainName()");
     static ref CHAIN_ID: Vec<u8> = method_tools::encode_to_vec(b"getChainId()");
@@ -43,7 +46,8 @@ lazy_static! {
     static ref OPERATOR: Vec<u8> = method_tools::encode_to_vec(b"getOperator()");
     static ref WEBSITE: Vec<u8> = method_tools::encode_to_vec(b"getWebsite()");
     static ref BLOCK_INTERVAL: Vec<u8> = method_tools::encode_to_vec(b"getBlockInterval()");
-    static ref CONTRACT_ADDRESS: Address = Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
+    static ref CONTRACT_ADDRESS: Address =
+        Address::from_str(reserved_addresses::SYS_CONFIG).unwrap();
     static ref ECONOMICAL_MODEL: Vec<u8> = method_tools::encode_to_vec(b"getEconomicalModel()");
     static ref GET_TOKEN_INFO: Vec<u8> = method_tools::encode_to_vec(b"getTokenInfo()");
     static ref AUTO_EXEC: Vec<u8> = method_tools::encode_to_vec(b"getAutoExec()");
@@ -72,19 +76,30 @@ impl<'a> SysConfig<'a> {
         SysConfig { executor }
     }
 
-    fn get_value(&self, param_types: &[ParamType], method: &[u8], block_tag: BlockTag) -> Result<Vec<Token>, String> {
+    fn get_value(
+        &self,
+        param_types: &[ParamType],
+        method: &[u8],
+        block_tag: BlockTag,
+    ) -> Result<Vec<Token>, String> {
         let address = &*CONTRACT_ADDRESS;
-        let output = self.executor.call_method(address, method, None, block_tag)?;
+        let output = self
+            .executor
+            .call_method(address, method, None, block_tag)?;
         trace!("sys_config value output: {:?}", output);
         decode(param_types, &output).map_err(|_| "decode value error".to_string())
     }
 
     /// Delay block number before validate
     pub fn delay_block_number(&self, block_tag: BlockTag) -> Option<u64> {
-        self.get_value(&[ParamType::Uint(256)], DELAY_BLOCK_NUMBER.as_slice(), block_tag)
-            .ok()
-            .and_then(|mut x| x.remove(0).to_uint())
-            .map(|x| H256::from(x).low_u64())
+        self.get_value(
+            &[ParamType::Uint(256)],
+            DELAY_BLOCK_NUMBER.as_slice(),
+            block_tag,
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_uint())
+        .map(|x| H256::from(x).low_u64())
     }
 
     pub fn default_delay_block_number() -> u64 {
@@ -94,9 +109,13 @@ impl<'a> SysConfig<'a> {
 
     /// Whether check call permission or not
     pub fn call_permission_check(&self, block_tag: BlockTag) -> Option<bool> {
-        self.get_value(&[ParamType::Bool], CALL_PERMISSION_CHECK.as_slice(), block_tag)
-            .ok()
-            .and_then(|mut x| x.remove(0).to_bool())
+        self.get_value(
+            &[ParamType::Bool],
+            CALL_PERMISSION_CHECK.as_slice(),
+            block_tag,
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_bool())
     }
 
     pub fn default_call_permission_check() -> bool {
@@ -105,9 +124,13 @@ impl<'a> SysConfig<'a> {
     }
 
     pub fn send_tx_permission_check(&self, block_tag: BlockTag) -> Option<bool> {
-        self.get_value(&[ParamType::Bool], PERMISSION_SEND_TX_CHECK.as_slice(), block_tag)
-            .ok()
-            .and_then(|mut x| x.remove(0).to_bool())
+        self.get_value(
+            &[ParamType::Bool],
+            PERMISSION_SEND_TX_CHECK.as_slice(),
+            block_tag,
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_bool())
     }
 
     pub fn default_send_tx_permission_check() -> bool {
@@ -116,9 +139,13 @@ impl<'a> SysConfig<'a> {
     }
 
     pub fn create_contract_permission_check(&self, block_tag: BlockTag) -> Option<bool> {
-        self.get_value(&[ParamType::Bool], PERMISSION_CREATE_CONTRACT_CHECK.as_slice(), block_tag)
-            .ok()
-            .and_then(|mut x| x.remove(0).to_bool())
+        self.get_value(
+            &[ParamType::Bool],
+            PERMISSION_CREATE_CONTRACT_CHECK.as_slice(),
+            block_tag,
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_bool())
     }
 
     pub fn default_create_contract_permission_check() -> bool {
@@ -140,9 +167,13 @@ impl<'a> SysConfig<'a> {
 
     /// Check fee back to platform or node
     pub fn fee_back_platform_check(&self, block_tag: BlockTag) -> Option<bool> {
-        self.get_value(&[ParamType::Bool], FEE_BACK_PLATFORM_CHECK.as_slice(), block_tag)
-            .ok()
-            .and_then(|mut x| x.remove(0).to_bool())
+        self.get_value(
+            &[ParamType::Bool],
+            FEE_BACK_PLATFORM_CHECK.as_slice(),
+            block_tag,
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_bool())
     }
 
     pub fn default_fee_back_platform_check() -> bool {
@@ -227,11 +258,15 @@ impl<'a> SysConfig<'a> {
     /// Quota: Default config is quota
     /// Charge: Charging by gas * gasPrice and reward for proposer
     pub fn economical_model(&self, block_tag: BlockTag) -> Option<EconomicalModel> {
-        self.get_value(&[ParamType::Uint(64)], ECONOMICAL_MODEL.as_slice(), block_tag)
-            .ok()
-            .and_then(|mut x| x.remove(0).to_uint())
-            .map(|x| H256::from(x).low_u64() as u8)
-            .and_then(EconomicalModel::from_u8)
+        self.get_value(
+            &[ParamType::Uint(64)],
+            ECONOMICAL_MODEL.as_slice(),
+            block_tag,
+        )
+        .ok()
+        .and_then(|mut x| x.remove(0).to_uint())
+        .map(|x| H256::from(x).low_u64() as u8)
+        .and_then(EconomicalModel::from_u8)
     }
 
     pub fn default_economical_model() -> EconomicalModel {
@@ -241,19 +276,38 @@ impl<'a> SysConfig<'a> {
 
     pub fn token_info(&self, block_tag: BlockTag) -> Option<TokenInfo> {
         self.executor
-            .call_method(&*CONTRACT_ADDRESS, GET_TOKEN_INFO.as_slice(), None, block_tag)
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                GET_TOKEN_INFO.as_slice(),
+                None,
+                block_tag,
+            )
             .ok()
-            .and_then(|output| decode(&[ParamType::String, ParamType::String, ParamType::String], &output).ok())
+            .and_then(|output| {
+                decode(
+                    &[ParamType::String, ParamType::String, ParamType::String],
+                    &output,
+                )
+                .ok()
+            })
             .and_then(|mut token_info| {
                 if token_info.len() < 3 {
                     return None;
                 }
-                Some((token_info.remove(0), token_info.remove(0), token_info.remove(0)))
+                Some((
+                    token_info.remove(0),
+                    token_info.remove(0),
+                    token_info.remove(0),
+                ))
             })
             .and_then(|(n, s, a)| n.to_string().map(|n| (n, s, a)))
             .and_then(|(n, s, a)| s.to_string().map(|s| (n, s, a)))
             .and_then(|(n, s, a)| a.to_string().map(|a| (n, s, a)))
-            .map(|(name, symbol, avatar)| TokenInfo { name, symbol, avatar })
+            .map(|(name, symbol, avatar)| TokenInfo {
+                name,
+                symbol,
+                avatar,
+            })
     }
 
     pub fn deal_chain_id_version(&self, version_manager: &VersionManager) -> Option<ChainId> {
@@ -309,19 +363,27 @@ mod tests {
         let config = SysConfig::new(&executor);
 
         // Test delay block number
-        let number = config.delay_block_number(BlockTag::Tag(Tag::Pending)).unwrap();
+        let number = config
+            .delay_block_number(BlockTag::Tag(Tag::Pending))
+            .unwrap();
         assert_eq!(number, 1);
 
         // Test call permission_check
-        let check_call_permission = config.call_permission_check(BlockTag::Tag(Tag::Pending)).unwrap();
+        let check_call_permission = config
+            .call_permission_check(BlockTag::Tag(Tag::Pending))
+            .unwrap();
         assert_eq!(check_call_permission, false);
 
         // Test send_tx_permission_check
-        let check_send_tx_permission = config.send_tx_permission_check(BlockTag::Tag(Tag::Pending)).unwrap();
+        let check_send_tx_permission = config
+            .send_tx_permission_check(BlockTag::Tag(Tag::Pending))
+            .unwrap();
         assert_eq!(check_send_tx_permission, false);
 
         // Test create_contract_permission_check
-        let check_create_contract_permission = config.create_contract_permission_check(BlockTag::Tag(Tag::Pending)).unwrap();
+        let check_create_contract_permission = config
+            .create_contract_permission_check(BlockTag::Tag(Tag::Pending))
+            .unwrap();
         assert_eq!(check_create_contract_permission, false);
 
         // Test quota_check
@@ -329,12 +391,17 @@ mod tests {
         assert_eq!(check_quota, false);
 
         // Test fee_back_platform_check
-        let check_fee_back_platform = config.fee_back_platform_check(BlockTag::Tag(Tag::Pending)).unwrap();
+        let check_fee_back_platform = config
+            .fee_back_platform_check(BlockTag::Tag(Tag::Pending))
+            .unwrap();
         assert_eq!(check_fee_back_platform, false);
 
         // Test chain_owner
         let value = config.chain_owner(BlockTag::Tag(Tag::Pending)).unwrap();
-        assert_eq!(value, Address::from_str("0000000000000000000000000000000000000000").unwrap());
+        assert_eq!(
+            value,
+            Address::from_str("0000000000000000000000000000000000000000").unwrap()
+        );
 
         // Test chain_name
         let value = config.chain_name(BlockTag::Tag(Tag::Pending)).unwrap();
@@ -357,7 +424,9 @@ mod tests {
         assert_eq!(value, 3000);
 
         // Test economical_model
-        let value = config.economical_model(BlockTag::Tag(Tag::Pending)).unwrap();
+        let value = config
+            .economical_model(BlockTag::Tag(Tag::Pending))
+            .unwrap();
         assert_eq!(value, EconomicalModel::Quota);
 
         // Test token info

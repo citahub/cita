@@ -33,8 +33,16 @@ pub struct WsFactory {
 }
 
 impl WsFactory {
-    pub fn new(responses: RpcMap, tx: Sender<(String, ProtoRequest)>, thread_num: usize) -> WsFactory {
-        let thread_number = if thread_num == 0 { num_cpus::get() } else { thread_num };
+    pub fn new(
+        responses: RpcMap,
+        tx: Sender<(String, ProtoRequest)>,
+        thread_num: usize,
+    ) -> WsFactory {
+        let thread_number = if thread_num == 0 {
+            num_cpus::get()
+        } else {
+            thread_num
+        };
         let thread_pool = ThreadPool::with_name("ws_thread_pool".to_string(), thread_number);
         WsFactory {
             responses,
@@ -76,13 +84,17 @@ impl Handler for WsHandler {
                         let _ = tx.send((topic, req));
                         let value = (req_info.clone(), sender.clone());
                         {
-                            response.lock().insert(request_id, TransferType::WEBSOCKET(value));
+                            response
+                                .lock()
+                                .insert(request_id, TransferType::WEBSOCKET(value));
                         }
                     })
                 })
                 .map_err(|err| {
                     // TODO 错误返回
-                    sender.send(serde_json::to_string(&RpcFailure::from_options(req_info, err)).unwrap())
+                    sender.send(
+                        serde_json::to_string(&RpcFailure::from_options(req_info, err)).unwrap(),
+                    )
                 });
         });
         //

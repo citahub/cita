@@ -113,9 +113,16 @@ impl Genesis {
         }
     }
 
-    pub fn lazy_execute(&mut self, state_db: Arc<CitaTrieDB>, contracts_db: Arc<ContractsDB>) -> Result<(), String> {
-        let state = CitaState::from_existing(Arc::<CitaTrieDB>::clone(&state_db), *self.block.state_root())
-            .expect("Can not get state from db!");
+    pub fn lazy_execute(
+        &mut self,
+        state_db: Arc<CitaTrieDB>,
+        contracts_db: Arc<ContractsDB>,
+    ) -> Result<(), String> {
+        let state = CitaState::from_existing(
+            Arc::<CitaTrieDB>::clone(&state_db),
+            *self.block.state_root(),
+        )
+        .expect("Can not get state from db!");
 
         let state = Arc::new(RefCell::new(state));
         let mut contracts_factory = ContractsFactory::new(state.clone(), contracts_db.clone());
@@ -211,7 +218,10 @@ impl Genesis {
                         .set_code(&address, clean_0x(&contract.code).from_hex().unwrap())
                         .expect("init code fail");
                     if let Some(value) = contract.value {
-                        state.borrow_mut().add_balance(&address, value).expect("init balance fail");
+                        state
+                            .borrow_mut()
+                            .add_balance(&address, value)
+                            .expect("init balance fail");
                     }
                 }
                 for (key, values) in contract.storage.clone() {
@@ -229,7 +239,10 @@ impl Genesis {
         // register emergency intervention
         let emerg_contract = emergency_intervention::EmergencyIntervention::default();
         let str = serde_json::to_string(&emerg_contract).unwrap();
-        contracts_factory.register(Address::from(reserved_addresses::EMERGENCY_INTERVENTION), str);
+        contracts_factory.register(
+            Address::from(reserved_addresses::EMERGENCY_INTERVENTION),
+            str,
+        );
         // register permission_contracts
         contracts_factory.register_perms(admin, permission_contracts);
         state.borrow_mut().commit().expect("state commit error");
@@ -264,14 +277,22 @@ impl Genesis {
         let hash_key = db_indexes::Hash2Header(hash).get_index();
 
         // Need to get header in init function.
-        db.insert(Some(DataCategory::Headers), hash_key.to_vec(), self.block.header().rlp())
-            .expect("Insert block header error.");
+        db.insert(
+            Some(DataCategory::Headers),
+            hash_key.to_vec(),
+            self.block.header().rlp(),
+        )
+        .expect("Insert block header error.");
 
         // Insert [current_hash, hash]
         let current_hash_key = db_indexes::CurrentHash.get_index();
         let hash_value = encode(&hash).to_vec();
-        db.insert(Some(DataCategory::Extra), current_hash_key.to_vec(), hash_value.clone())
-            .expect("Insert block hash error.");
+        db.insert(
+            Some(DataCategory::Extra),
+            current_hash_key.to_vec(),
+            hash_value.clone(),
+        )
+        .expect("Insert block hash error.");
 
         // Insert [block_number, hash]
         let height_key = db_indexes::BlockNumber2Hash(self.block.number()).get_index();
@@ -345,7 +366,10 @@ mod test {
             "prevhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         });
         let spec = Spec {
-            prevhash: H256::from_str("0000000000000000000000000000000000000000000000000000000000000000").unwrap(),
+            prevhash: H256::from_str(
+                "0000000000000000000000000000000000000000000000000000000000000000",
+            )
+            .unwrap(),
             timestamp: 1524000000,
             alloc: [
                 (

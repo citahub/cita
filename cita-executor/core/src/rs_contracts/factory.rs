@@ -34,30 +34,41 @@ pub struct ContractsFactory<B> {
 
 impl<B: DB> ContractsFactory<B> {
     pub fn register(&mut self, address: Address, contract: String) {
-        trace!("Register system contract address {:?} contract {:?}", address, contract);
+        trace!(
+            "Register system contract address {:?} contract {:?}",
+            address,
+            contract
+        );
         let mut updated_hash = H256::from(0).0;
         if address == Address::from(reserved_addresses::ADMIN) {
-            updated_hash = self.admin_contract.init(contract, self.contracts_db.clone());
+            updated_hash = self
+                .admin_contract
+                .init(contract, self.contracts_db.clone());
         } else if address == Address::from(reserved_addresses::PRICE_MANAGEMENT) {
-            updated_hash = self.price_contract.init(contract, self.contracts_db.clone());
+            updated_hash = self
+                .price_contract
+                .init(contract, self.contracts_db.clone());
         } else if address == Address::from(reserved_addresses::EMERGENCY_INTERVENTION) {
-            updated_hash = self.emerg_contract.init(contract, self.contracts_db.clone());
+            updated_hash = self
+                .emerg_contract
+                .init(contract, self.contracts_db.clone());
         }
         trace!("===> updated hash {:?}", updated_hash);
         // new a contract account, storage(key = height, value = hash(contracts))
-        let _ = self
-            .state
-            .borrow_mut()
-            .new_contract(&address, U256::from(0), U256::from(0), vec![]);
-        let _ = self
-            .state
-            .borrow_mut()
-            .set_storage(&address, H256::from(0), H256::from(updated_hash));
+        let _ =
+            self.state
+                .borrow_mut()
+                .new_contract(&address, U256::from(0), U256::from(0), vec![]);
+        let _ =
+            self.state
+                .borrow_mut()
+                .set_storage(&address, H256::from(0), H256::from(updated_hash));
     }
 
     pub fn register_perms(&mut self, admin: Address, perm_contracts: BTreeMap<Address, String>) {
         trace!("Register permission contract {:?}", perm_contracts);
-        self.perm_store.init(admin, perm_contracts, self.contracts_db.clone());
+        self.perm_store
+            .init(admin, perm_contracts, self.contracts_db.clone());
     }
 }
 
@@ -86,29 +97,52 @@ impl<B: DB> ContractsFactory<B> {
         false
     }
 
-    pub fn works(&self, params: &InterpreterParams, context: &Context) -> Result<InterpreterResult, ContractError> {
+    pub fn works(
+        &self,
+        params: &InterpreterParams,
+        context: &Context,
+    ) -> Result<InterpreterResult, ContractError> {
         if params.contract.code_address == Address::from(reserved_addresses::ADMIN) {
-            return self
-                .admin_contract
-                .execute(&params, context, self.contracts_db.clone(), self.state.clone());
-        } else if params.contract.code_address == Address::from(reserved_addresses::PRICE_MANAGEMENT) {
-            return self
-                .price_contract
-                .execute(&params, context, self.contracts_db.clone(), self.state.clone());
-        } else if params.contract.code_address == Address::from(reserved_addresses::EMERGENCY_INTERVENTION) {
-            return self
-                .emerg_contract
-                .execute(&params, context, self.contracts_db.clone(), self.state.clone());
-        } else if params.contract.code_address == Address::from(reserved_addresses::PERMISSION_MANAGEMENT)
+            return self.admin_contract.execute(
+                &params,
+                context,
+                self.contracts_db.clone(),
+                self.state.clone(),
+            );
+        } else if params.contract.code_address
+            == Address::from(reserved_addresses::PRICE_MANAGEMENT)
+        {
+            return self.price_contract.execute(
+                &params,
+                context,
+                self.contracts_db.clone(),
+                self.state.clone(),
+            );
+        } else if params.contract.code_address
+            == Address::from(reserved_addresses::EMERGENCY_INTERVENTION)
+        {
+            return self.emerg_contract.execute(
+                &params,
+                context,
+                self.contracts_db.clone(),
+                self.state.clone(),
+            );
+        } else if params.contract.code_address
+            == Address::from(reserved_addresses::PERMISSION_MANAGEMENT)
             || params.contract.code_address == Address::from(reserved_addresses::AUTHORIZATION)
             || is_permssion_contract(params.contract.code_address)
         {
             trace!("This a permission related contract");
-            return self
-                .perm_store
-                .execute(&params, context, self.contracts_db.clone(), self.state.clone());
+            return self.perm_store.execute(
+                &params,
+                context,
+                self.contracts_db.clone(),
+                self.state.clone(),
+            );
         }
 
-        return Err(ContractError::AdminError(String::from("not a valid address")));
+        return Err(ContractError::AdminError(String::from(
+            "not a valid address",
+        )));
     }
 }

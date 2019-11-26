@@ -47,7 +47,12 @@ const GENESIS_TIMESTAMP: u64 = 1_524_000_000;
 pub fn run(config: Config) {
     let (tx_sub, rx_sub) = channel::unbounded();
     let (tx_pub, rx_pub) = channel::unbounded();
-    start_pubsub("consensus", routing_key!([Chain >> RichStatus]), tx_sub, rx_pub);
+    start_pubsub(
+        "consensus",
+        routing_key!([Chain >> RichStatus]),
+        tx_sub,
+        rx_pub,
+    );
 
     do_loop(config, &rx_sub, &tx_pub);
     info!("PASS");
@@ -137,7 +142,14 @@ fn make_transactions(config: &mut Config, rich_status: &RichStatus) -> Vec<Signe
             let quota = tx["quota"].as_u64().unwrap();
             let nonce = tx["nonce"].as_u64().unwrap() as u32;
             let valid_until_block = tx["valid_until_block"].as_u64().unwrap();
-            BuildBlock::build_tx(contract_address, data, quota, nonce, valid_until_block, &tx_private_key)
+            BuildBlock::build_tx(
+                contract_address,
+                data,
+                quota,
+                nonce,
+                valid_until_block,
+                &tx_private_key,
+            )
         })
         .collect();
     transactions

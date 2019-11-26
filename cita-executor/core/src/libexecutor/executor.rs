@@ -119,7 +119,10 @@ impl Executor {
         //            changing database when restore snapshot.
         // self.db.close();
 
-        info!("executor closed, current_height: {}", self.get_current_height());
+        info!(
+            "executor closed, current_height: {}",
+            self.get_current_height()
+        );
     }
 
     pub fn do_loop(&mut self) {
@@ -172,7 +175,11 @@ impl Executor {
             _ => unimplemented!(),
         };
         if self.get_current_height() != rollback_height {
-            warn!("executor roll back from {} to {}", self.get_current_height(), rollback_height);
+            warn!(
+                "executor roll back from {} to {}",
+                self.get_current_height(),
+                rollback_height
+            );
             let rollback_hash = self
                 .block_hash(rollback_height)
                 .expect("the target block to roll back should exist");
@@ -180,7 +187,11 @@ impl Executor {
             let current_hash_key = db_indexes::CurrentHash.get_index();
             let hash_value = encode(&rollback_hash).to_vec();
             self.db
-                .insert(Some(DataCategory::Extra), current_hash_key.to_vec(), hash_value)
+                .insert(
+                    Some(DataCategory::Extra),
+                    current_hash_key.to_vec(),
+                    hash_value,
+                )
                 .expect("Insert rollback hash error.");
         }
 
@@ -196,19 +207,32 @@ impl Executor {
         let height = block.number();
         let hash = block.hash().unwrap();
         let version = block.version();
-        trace!("commit block in db hash {:?}, height {:?}, version {}", hash, height, version);
+        trace!(
+            "commit block in db hash {:?}, height {:?}, version {}",
+            hash,
+            height,
+            version
+        );
 
         // Insert [hash : block_header].
         let hash_key = db_indexes::Hash2Header(hash).get_index();
         self.db
-            .insert(Some(DataCategory::Headers), hash_key.to_vec(), block.header().rlp())
+            .insert(
+                Some(DataCategory::Headers),
+                hash_key.to_vec(),
+                block.header().rlp(),
+            )
             .expect("Insert block header error.");
 
         // Insert [CurrentHash : hash].
         let current_hash_key = db_indexes::CurrentHash.get_index();
         let hash_value = encode(&hash).to_vec();
         self.db
-            .insert(Some(DataCategory::Extra), current_hash_key.to_vec(), hash_value.clone())
+            .insert(
+                Some(DataCategory::Extra),
+                current_hash_key.to_vec(),
+                hash_value.clone(),
+            )
             .expect("Insert block hash error.");
 
         // Insert [height : hash]
@@ -255,7 +279,8 @@ impl Executor {
                 return Some(header.clone());
             }
         }
-        self.block_hash(number).and_then(|h| self.block_header_by_hash(h))
+        self.block_hash(number)
+            .and_then(|h| self.block_header_by_hash(h))
     }
 
     /// Get block header by hash
@@ -304,12 +329,19 @@ impl Executor {
         let mut last_hashes = LastHashes::new();
         last_hashes.resize(256, H256::default());
         last_hashes[0] = parent_hash;
-        for (i, last_hash) in last_hashes.iter_mut().enumerate().take(255 as usize).skip(1) {
+        for (i, last_hash) in last_hashes
+            .iter_mut()
+            .enumerate()
+            .take(255 as usize)
+            .skip(1)
+        {
             if i >= parent_height as usize {
                 break;
             }
             let height = parent_height - i as u64;
-            *last_hash = self.block_hash(height).expect("blocks lower then parent must exist");
+            *last_hash = self
+                .block_hash(height)
+                .expect("blocks lower then parent must exist");
         }
         last_hashes
     }
@@ -333,7 +365,9 @@ impl Executor {
             .unwrap_or_default();
         let mut executed_result = ExecutedResult::new();
         executed_result.set_config(consensus_config);
-        executed_result.mut_executed_info().set_header(executed_header);
+        executed_result
+            .mut_executed_info()
+            .set_header(executed_header);
         executed_result
     }
 
@@ -382,8 +416,16 @@ pub fn get_current_header(db: Arc<CitaDB>) -> Option<Header> {
 pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
     let block_quota_limit = sys_config.block_quota_limit as u64;
     let account_quota_limit = sys_config.block_sys_config.account_quota_limit.into();
-    let node_list = sys_config.nodes.into_iter().map(|address| address.to_vec()).collect();
-    let validators = sys_config.validators.into_iter().map(|address| address.to_vec()).collect();
+    let node_list = sys_config
+        .nodes
+        .into_iter()
+        .map(|address| address.to_vec())
+        .collect();
+    let validators = sys_config
+        .validators
+        .into_iter()
+        .map(|address| address.to_vec())
+        .collect();
     let mut consensus_config = ConsensusConfig::new();
     consensus_config.set_block_quota_limit(block_quota_limit);
     consensus_config.set_account_quota_limit(account_quota_limit);
@@ -393,7 +435,11 @@ pub fn make_consensus_config(sys_config: GlobalSysConfig) -> ConsensusConfig {
     consensus_config.set_block_interval(sys_config.block_interval);
     consensus_config.set_version(sys_config.block_sys_config.chain_version);
     if sys_config.emergency_intervention {
-        let super_admin_account = sys_config.block_sys_config.super_admin_account.unwrap().to_vec();
+        let super_admin_account = sys_config
+            .block_sys_config
+            .super_admin_account
+            .unwrap()
+            .to_vec();
         consensus_config.set_admin_address(super_admin_account);
     }
 

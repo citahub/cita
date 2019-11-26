@@ -17,7 +17,9 @@ use super::executor::CitaTrieDB;
 use super::executor::{make_consensus_config, Executor};
 use super::sys_config::GlobalSysConfig;
 use crate::cita_executive::{CitaExecutive, ExecutedResult as CitaExecuted};
-use crate::contracts::solc::{sys_config::ChainId, PermissionManagement, SysConfig, VersionManager};
+use crate::contracts::solc::{
+    sys_config::ChainId, PermissionManagement, SysConfig, VersionManager,
+};
 use crate::libexecutor::block::EVMBlockDataProvider;
 pub use crate::libexecutor::block::*;
 use crate::libexecutor::call_request::CallRequest;
@@ -34,7 +36,8 @@ use cita_types::{Address, H256, U256};
 use cita_vm::state::{State as CitaState, StateObjectInfo};
 use crossbeam_channel::{Receiver, Sender};
 use jsonrpc_types::rpc_types::{
-    BlockNumber as RpcBlockNumber, BlockTag as RpcBlockTag, EconomicalModel as RpcEconomicalModel, MetaData,
+    BlockNumber as RpcBlockNumber, BlockTag as RpcBlockTag, EconomicalModel as RpcEconomicalModel,
+    MetaData,
 };
 use libproto::ExecutedResult;
 use serde_json;
@@ -160,21 +163,37 @@ impl Commander for Executor {
     fn operate(&mut self, command: Command) -> CommandResp {
         match command {
             Command::StateAt(block_tag) => CommandResp::StateAt(self.state_at(block_tag)),
-            Command::GenState(root, parent_hash) => CommandResp::GenState(self.gen_state(root, parent_hash)),
-            Command::CodeAt(address, block_tag) => CommandResp::CodeAt(self.code_at(&address, block_tag)),
-            Command::ABIAt(address, block_tag) => CommandResp::ABIAt(self.abi_at(&address, block_tag)),
-            Command::BalanceAt(address, block_tag) => CommandResp::BalanceAt(self.balance_at(&address, block_tag)),
-            Command::NonceAt(address, block_tag) => CommandResp::NonceAt(self.nonce_at(&address, block_tag)),
-            Command::ETHCall(call_request, block_tag) => CommandResp::ETHCall(self.eth_call(call_request, block_tag)),
+            Command::GenState(root, parent_hash) => {
+                CommandResp::GenState(self.gen_state(root, parent_hash))
+            }
+            Command::CodeAt(address, block_tag) => {
+                CommandResp::CodeAt(self.code_at(&address, block_tag))
+            }
+            Command::ABIAt(address, block_tag) => {
+                CommandResp::ABIAt(self.abi_at(&address, block_tag))
+            }
+            Command::BalanceAt(address, block_tag) => {
+                CommandResp::BalanceAt(self.balance_at(&address, block_tag))
+            }
+            Command::NonceAt(address, block_tag) => {
+                CommandResp::NonceAt(self.nonce_at(&address, block_tag))
+            }
+            Command::ETHCall(call_request, block_tag) => {
+                CommandResp::ETHCall(self.eth_call(call_request, block_tag))
+            }
             Command::EstimateQuota(call_request, block_tag) => {
                 CommandResp::EstimateQuota(self.estimate_quota(call_request, block_tag))
             }
             Command::SignCall(call_request) => CommandResp::SignCall(self.sign_call(call_request)),
-            Command::Call(signed_transaction, block_tag) => CommandResp::Call(self.call(&signed_transaction, block_tag)),
+            Command::Call(signed_transaction, block_tag) => {
+                CommandResp::Call(self.call(&signed_transaction, block_tag))
+            }
             Command::ChainID => CommandResp::ChainID(self.chain_id()),
             Command::Metadata(data) => CommandResp::Metadata(self.metadata(data)),
             Command::EconomicalModel => CommandResp::EconomicalModel(self.economical_model()),
-            Command::LoadExecutedResult(height) => CommandResp::LoadExecutedResult(self.load_executed_result(height)),
+            Command::LoadExecutedResult(height) => {
+                CommandResp::LoadExecutedResult(self.load_executed_result(height))
+            }
             Command::Grow(mut closed_block) => {
                 let r = self.grow(&closed_block);
                 closed_block.clear_cache();
@@ -184,7 +203,9 @@ impl Commander for Executor {
                 self.exit(rollback_id);
                 CommandResp::Exit
             }
-            Command::CloneExecutorReader => CommandResp::CloneExecutorReader(self.clone_executor_reader()),
+            Command::CloneExecutorReader => {
+                CommandResp::CloneExecutorReader(self.clone_executor_reader())
+            }
         }
     }
 
@@ -212,11 +233,13 @@ impl Commander for Executor {
 
     /// Get balance by address
     fn balance_at(&self, address: &Address, id: BlockTag) -> Option<Bytes> {
-        self.state_at(id).and_then(|mut s| s.balance(address).ok()).map(|c| {
-            let balance = &mut [0u8; 32];
-            c.to_big_endian(balance);
-            balance.to_vec()
-        })
+        self.state_at(id)
+            .and_then(|mut s| s.balance(address).ok())
+            .map(|c| {
+                let balance = &mut [0u8; 32];
+                c.to_big_endian(balance);
+                balance.to_vec()
+            })
     }
 
     fn nonce_at(&self, address: &Address, id: BlockTag) -> Option<U256> {
@@ -226,7 +249,9 @@ impl Commander for Executor {
     fn eth_call(&self, request: CallRequest, id: BlockTag) -> Result<Bytes, String> {
         let signed = self.sign_call(request);
         let result = self.call(&signed, id);
-        result.map(|b| b.output).or_else(|e| Err(format!("Call Error {}", e)))
+        result
+            .map(|b| b.output)
+            .or_else(|e| Err(format!("Call Error {}", e)))
     }
 
     fn estimate_quota(&self, request: CallRequest, id: BlockTag) -> Result<Bytes, String> {
@@ -269,9 +294,9 @@ impl Commander for Executor {
             // The same transaction will get different result in different state.
             // And the estimate action will change the state, so it should take the most primitive
             // state for each estimate.
-            let state = self
-                .state_at(id)
-                .ok_or_else(|| ExecutionError::Internal("Estimate Error CallError::StatePruned".to_owned()))?;
+            let state = self.state_at(id).ok_or_else(|| {
+                ExecutionError::Internal("Estimate Error CallError::StatePruned".to_owned())
+            })?;
             let state = Arc::new(RefCell::new(state));
 
             let clone_conf = conf.clone();
@@ -285,16 +310,18 @@ impl Commander for Executor {
             .exec(&tx, &clone_conf)
         };
         let check_quota = |quota| {
-            exec_tx(quota)
-                .ok()
-                .map_or((false, U256::from(0)), |r| (r.exception.is_none(), r.quota_used))
+            exec_tx(quota).ok().map_or((false, U256::from(0)), |r| {
+                (r.exception.is_none(), r.quota_used)
+            })
         };
 
         // Try block_quota_limit first
         let (run_ok, quota_used) = check_quota(max_quota);
         let lower = if !run_ok {
             trace!("estimate_gas failed with {}.", max_quota);
-            return Err(format!("Requires quota higher than upper limit: {}", max_quota).to_owned());
+            return Err(
+                format!("Requires quota higher than upper limit: {}", max_quota).to_owned(),
+            );
         } else {
             quota_used
         };
@@ -309,13 +336,23 @@ impl Commander for Executor {
 
         // Binary search the point between `lower` and `upper`, with the precision which means
         // the estimate quota deviation　less than precision.
-        fn binary_search<F>(mut lower: U256, mut upper: U256, mut check_quota: F, precision: U256) -> U256
+        fn binary_search<F>(
+            mut lower: U256,
+            mut upper: U256,
+            mut check_quota: F,
+            precision: U256,
+        ) -> U256
         where
             F: FnMut(U256) -> (bool, U256),
         {
             while upper - lower > precision {
                 let mid = (lower + upper) / 2;
-                trace!("estimate_gas : lower {} .. mid {} .. upper {}", lower, mid, upper);
+                trace!(
+                    "estimate_gas : lower {} .. mid {} .. upper {}",
+                    lower,
+                    mid,
+                    upper
+                );
                 let (c, _) = check_quota(mid);
                 if c {
                     upper = mid;
@@ -383,7 +420,10 @@ impl Commander for Executor {
             return Err(CallError::StatePruned);
         };
 
-        let state = match CitaState::from_existing(Arc::<TrieDB<RocksDB>>::clone(&self.state_db), state_root) {
+        let state = match CitaState::from_existing(
+            Arc::<TrieDB<RocksDB>>::clone(&self.state_db),
+            state_root,
+        ) {
             Ok(state_db) => state_db,
             Err(e) => {
                 error!("Can not get state from trie db! error: {:?}", e);
@@ -411,7 +451,8 @@ impl Commander for Executor {
 
     fn metadata(&self, data: String) -> Result<MetaData, String> {
         trace!("metadata request from jsonrpc {:?}", data);
-        let economical_model: RpcEconomicalModel = (self.sys_config.block_sys_config.economical_model).into();
+        let economical_model: RpcEconomicalModel =
+            (self.sys_config.block_sys_config.economical_model).into();
         let mut metadata = MetaData {
             chain_id: 0,
             chain_id_v1: U256::from(0).into(),
@@ -438,7 +479,10 @@ impl Commander for Executor {
                     RpcBlockNumber::Tag(RpcBlockTag::Pending) => current_height,
                 };
                 if number > current_height {
-                    Err(format!("Block number overflow: {} > {}", number, current_height))
+                    Err(format!(
+                        "Block number overflow: {} > {}",
+                        number, current_height
+                    ))
                 } else {
                     Ok(number)
                 }
@@ -463,7 +507,10 @@ impl Commander for Executor {
                     .ok_or_else(|| "Query genesis_timestamp failed".to_owned())?;
                 self.node_manager()
                     .shuffled_stake_nodes(block_tag)
-                    .map(|validators| metadata.validators = validators.into_iter().map(Into::into).collect::<Vec<_>>())
+                    .map(|validators| {
+                        metadata.validators =
+                            validators.into_iter().map(Into::into).collect::<Vec<_>>()
+                    })
                     .ok_or_else(|| "Query validators failed".to_owned())?;
                 sys_config
                     .block_interval(block_tag)
@@ -521,9 +568,11 @@ impl Commander for Executor {
         let are_permissions_changed = {
             let cache = closed_block.state.cache.clone();
             let permission_management = PermissionManagement::new(self);
-            let permissions = permission_management.permission_addresses(BlockTag::Tag(Tag::Pending));
+            let permissions =
+                permission_management.permission_addresses(BlockTag::Tag(Tag::Pending));
             cache.into_inner().iter().any(|(address, ref _a)| {
-                &address.lower_hex()[..34] == "ffffffffffffffffffffffffffffffffff" || permissions.contains(&address)
+                &address.lower_hex()[..34] == "ffffffffffffffffffffffffffffffffff"
+                    || permissions.contains(&address)
             })
         };
 
@@ -710,7 +759,10 @@ pub fn call(
     }
 }
 
-pub fn chain_id(command_req_sender: &Sender<Command>, command_resp_receiver: &Receiver<CommandResp>) -> Option<ChainId> {
+pub fn chain_id(
+    command_req_sender: &Sender<Command>,
+    command_resp_receiver: &Receiver<CommandResp>,
+) -> Option<ChainId> {
     let _ = command_req_sender.send(Command::ChainID);
     match command_resp_receiver.recv().unwrap() {
         CommandResp::ChainID(r) => r,
@@ -765,7 +817,11 @@ pub fn grow(
     }
 }
 
-pub fn exit(command_req_sender: &Sender<Command>, command_resp_receiver: &Receiver<CommandResp>, rollback_id: BlockTag) {
+pub fn exit(
+    command_req_sender: &Sender<Command>,
+    command_resp_receiver: &Receiver<CommandResp>,
+    rollback_id: BlockTag,
+) {
     let _ = command_req_sender.send(Command::Exit(rollback_id));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::Exit => {}

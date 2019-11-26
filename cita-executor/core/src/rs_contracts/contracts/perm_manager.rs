@@ -71,7 +71,10 @@ impl PermStore {
         let mut group_perms = HashSet::new();
         group_perms.insert(Address::from(build_in_perm::SEND_TX_ADDRESS));
         group_perms.insert(Address::from(build_in_perm::CREATE_CONTRACT_ADDRESS));
-        account_own_perms.insert(Address::from(build_in_perm::ROOT_GROUP_ADDRESS), group_perms);
+        account_own_perms.insert(
+            Address::from(build_in_perm::ROOT_GROUP_ADDRESS),
+            group_perms,
+        );
         perm_manager.account_own_perms = account_own_perms;
 
         let str = serde_json::to_string(&perm_manager).unwrap();
@@ -126,7 +129,10 @@ impl PermStore {
                 .expect("get contract according to height error");
 
             latest_perm_manager = serde_json::from_str(&(*bin).clone().unwrap()).unwrap();
-            trace!("System contracts latest permission {:?}", latest_perm_manager);
+            trace!(
+                "System contracts latest permission {:?}",
+                latest_perm_manager
+            );
             return (Some(contract_map), Some(latest_perm_manager));
         }
         (None, None)
@@ -142,66 +148,94 @@ impl<B: DB> Contract<B> for PermStore {
         state: Arc<RefCell<State<B>>>,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission - enter execute");
-        let (contract_map, latest_permission_manager) = self.get_latest_item(context.block_number, contracts_db.clone());
+        let (contract_map, latest_permission_manager) =
+            self.get_latest_item(context.block_number, contracts_db.clone());
         match (contract_map, latest_permission_manager) {
             (Some(mut contract_map), Some(mut latest_permission_manager)) => {
-                trace!("System contracts - permission - params input {:?}", params.input);
+                trace!(
+                    "System contracts - permission - params input {:?}",
+                    params.input
+                );
                 let mut updated = false;
-                let result = extract_to_u32(&params.input[..]).and_then(|signature| match signature {
-                    0xfc4a089c => latest_permission_manager.new_permission(
-                        params,
-                        &mut updated,
-                        context,
-                        contracts_db.clone(),
-                        state.clone(),
-                    ),
-                    0x98a05bb1 => {
-                        latest_permission_manager.del_permission(params, &mut updated, context, contracts_db.clone())
-                    }
-                    0x537bf9a3 => {
-                        latest_permission_manager.update_permission_name(params, &mut updated, context, contracts_db.clone())
-                    }
-                    0xf036ed56 => latest_permission_manager.add_permission_resources(
-                        params,
-                        &mut updated,
-                        context,
-                        contracts_db.clone(),
-                    ),
-                    0x6446ebd8 => latest_permission_manager.del_permission_resources(
-                        params,
-                        &mut updated,
-                        context,
-                        contracts_db.clone(),
-                    ),
-                    0x52c5b4cc => {
-                        latest_permission_manager.set_authorizations(params, &mut updated, context, contracts_db.clone())
-                    }
-                    0x0f5aa9f3 => {
-                        latest_permission_manager.set_authorization(params, &mut updated, context, contracts_db.clone())
-                    }
-                    0xba00ab60 => {
-                        latest_permission_manager.cancel_authorizations(params, &mut updated, context, contracts_db.clone())
-                    }
-                    0x3482e0c9 => {
-                        latest_permission_manager.cancel_authorization(params, &mut updated, context, contracts_db.clone())
-                    }
-                    0xa5925b5b => {
-                        latest_permission_manager.clear_authorization(params, &mut updated, context, contracts_db.clone())
-                    }
-                    0x1a160fe9 => latest_permission_manager.check_permission(params),
-                    0xde6afd60 => latest_permission_manager.check_resource(params),
-                    0x945a2555 => latest_permission_manager.query_permssions(params),
-                    0xd28d4e0c => latest_permission_manager.query_all_accounts(params),
-                    0xe286599b => latest_permission_manager.query_resource(params),
-                    0xdff7eafe => latest_permission_manager.query_name(params),
-                    0x9795e7e0 => latest_permission_manager.in_permission(params),
-                    _ => panic!("Invalid function signature {} ", signature),
-                });
+                let result =
+                    extract_to_u32(&params.input[..]).and_then(|signature| match signature {
+                        0xfc4a089c => latest_permission_manager.new_permission(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                            state.clone(),
+                        ),
+                        0x98a05bb1 => latest_permission_manager.del_permission(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                        ),
+                        0x537bf9a3 => latest_permission_manager.update_permission_name(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                        ),
+                        0xf036ed56 => latest_permission_manager.add_permission_resources(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                        ),
+                        0x6446ebd8 => latest_permission_manager.del_permission_resources(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                        ),
+                        0x52c5b4cc => latest_permission_manager.set_authorizations(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                        ),
+                        0x0f5aa9f3 => latest_permission_manager.set_authorization(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                        ),
+                        0xba00ab60 => latest_permission_manager.cancel_authorizations(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                        ),
+                        0x3482e0c9 => latest_permission_manager.cancel_authorization(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                        ),
+                        0xa5925b5b => latest_permission_manager.clear_authorization(
+                            params,
+                            &mut updated,
+                            context,
+                            contracts_db.clone(),
+                        ),
+                        0x1a160fe9 => latest_permission_manager.check_permission(params),
+                        0xde6afd60 => latest_permission_manager.check_resource(params),
+                        0x945a2555 => latest_permission_manager.query_permssions(params),
+                        0xd28d4e0c => latest_permission_manager.query_all_accounts(params),
+                        0xe286599b => latest_permission_manager.query_resource(params),
+                        0xdff7eafe => latest_permission_manager.query_name(params),
+                        0x9795e7e0 => latest_permission_manager.in_permission(params),
+                        _ => panic!("Invalid function signature {} ", signature),
+                    });
 
                 if result.is_ok() & updated {
                     let new_perm_manager = latest_permission_manager;
                     let str = serde_json::to_string(&new_perm_manager).unwrap();
-                    contract_map.contracts.insert(context.block_number, Some(str));
+                    contract_map
+                        .contracts
+                        .insert(context.block_number, Some(str));
                     let str = serde_json::to_string(&contract_map).unwrap();
                     let updated_hash = keccak256(&str.as_bytes().to_vec());
                     let _ = contracts_db.insert(
@@ -254,7 +288,10 @@ impl PermManager {
         let mut group_perms = HashSet::new();
         group_perms.insert(Address::from(build_in_perm::SEND_TX_ADDRESS));
         group_perms.insert(Address::from(build_in_perm::CREATE_CONTRACT_ADDRESS));
-        account_own_perms.insert(Address::from(build_in_perm::ROOT_GROUP_ADDRESS), group_perms);
+        account_own_perms.insert(
+            Address::from(build_in_perm::ROOT_GROUP_ADDRESS),
+            group_perms,
+        );
 
         PermManager {
             account_own_perms,
@@ -273,7 +310,11 @@ impl PermManager {
         trace!("System contract - permission  - new permission");
         let new_permission_build_in = Address::from(build_in_perm::BUILD_IN_PERMS[0]);
         if !self.have_permission(params.sender, new_permission_build_in) {
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
 
         let tokens = vec![
@@ -303,7 +344,11 @@ impl PermManager {
                     // len(perm_addrs) == len(perm_funcs)
                     if !check_same_length(&perm_addrs, &perm_funcs) {
                         error!("The const array length not equal to the funcs array");
-                        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+                        return Ok(InterpreterResult::Normal(
+                            H256::from(0).0.to_vec(),
+                            params.gas_limit,
+                            vec![],
+                        ));
                     }
                     trace!("perm_name {:?}", perm_name);
                     trace!("perm_addrs {:?}", perm_addrs);
@@ -343,7 +388,11 @@ impl PermManager {
                 _ => unreachable!(),
             }
         }
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(0).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     pub fn del_permission(
@@ -353,11 +402,18 @@ impl PermManager {
         _context: &Context,
         _contracts_db: Arc<ContractsDB>,
     ) -> Result<InterpreterResult, ContractError> {
-        trace!("System contract - permission  - del permission, input {:?}", params.input);
+        trace!(
+            "System contract - permission  - del permission, input {:?}",
+            params.input
+        );
 
         let delete_permission_build_in = Address::from(build_in_perm::BUILD_IN_PERMS[1]);
         if !self.have_permission(params.sender, delete_permission_build_in) {
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
 
         let perm_address = Address::from(&params.input[16..36]);
@@ -371,10 +427,21 @@ impl PermManager {
             }
 
             *changed = true;
-            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(1).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
-        warn!("permission {:?} is build in contracts, can not be deleted.", perm_address);
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+        warn!(
+            "permission {:?} is build in contracts, can not be deleted.",
+            perm_address
+        );
+        return Ok(InterpreterResult::Normal(
+            H256::from(0).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     pub fn update_permission_name(
@@ -391,20 +458,36 @@ impl PermManager {
 
         let permission_build_in = Address::from(build_in_perm::BUILD_IN_PERMS[2]);
         if !self.have_permission(params.sender, permission_build_in) {
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
         let perm_address = Address::from(&params.input[16..36]);
         let perm_name = H256::from(&params.input[36..68]).hex();
-        trace!("params decoded: perm_address: {:?}, perm_name: {:?}", perm_address, perm_name);
+        trace!(
+            "params decoded: perm_address: {:?}, perm_name: {:?}",
+            perm_address,
+            perm_name
+        );
         if let Some(perm) = self.perm_collection.get_mut(&perm_address) {
             perm.update_name(&perm_name);
         } else {
             warn!("The account not exists");
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
 
         *changed = true;
-        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(1).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     pub fn add_permission_resources(
@@ -421,7 +504,11 @@ impl PermManager {
 
         let permission_build_in = Address::from(build_in_perm::BUILD_IN_PERMS[2]);
         if !self.have_permission(params.sender, permission_build_in) {
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
 
         let tokens = vec![
@@ -458,15 +545,27 @@ impl PermManager {
                         p.add_resources(perm_conts, perm_funcs);
                     } else {
                         warn!("The account not exists");
-                        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+                        return Ok(InterpreterResult::Normal(
+                            H256::from(0).0.to_vec(),
+                            params.gas_limit,
+                            vec![],
+                        ));
                     }
                     *changed = true;
-                    return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+                    return Ok(InterpreterResult::Normal(
+                        H256::from(1).0.to_vec(),
+                        params.gas_limit,
+                        vec![],
+                    ));
                 }
                 _ => unreachable!(),
             }
         }
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(0).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     pub fn del_permission_resources(
@@ -483,7 +582,11 @@ impl PermManager {
 
         let permission_build_in = Address::from(build_in_perm::BUILD_IN_PERMS[2]);
         if !self.have_permission(params.sender, permission_build_in) {
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
 
         let tokens = vec![
@@ -520,15 +623,27 @@ impl PermManager {
                         p.delete_resources(perm_conts, perm_funcs);
                     } else {
                         warn!("The account not exists");
-                        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+                        return Ok(InterpreterResult::Normal(
+                            H256::from(0).0.to_vec(),
+                            params.gas_limit,
+                            vec![],
+                        ));
                     }
                     *changed = true;
-                    return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+                    return Ok(InterpreterResult::Normal(
+                        H256::from(1).0.to_vec(),
+                        params.gas_limit,
+                        vec![],
+                    ));
                 }
                 _ => unreachable!(),
             }
         }
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(0).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     pub fn set_authorizations(
@@ -538,14 +653,24 @@ impl PermManager {
         _context: &Context,
         _contracts_db: Arc<ContractsDB>,
     ) -> Result<InterpreterResult, ContractError> {
-        trace!("System contract - permission  - set_authorizations, input {:?}", params.input);
+        trace!(
+            "System contract - permission  - set_authorizations, input {:?}",
+            params.input
+        );
 
         let permission_build_in = Address::from(build_in_perm::BUILD_IN_PERMS[3]);
         if !self.have_permission(params.sender, permission_build_in) {
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
 
-        let tokens = vec![ParamType::Address, ParamType::Array(Box::new(ParamType::Address))];
+        let tokens = vec![
+            ParamType::Address,
+            ParamType::Array(Box::new(ParamType::Address)),
+        ];
 
         if let Ok(args) = ethabi::decode(&tokens, &&params.input[4..]) {
             match (&args[0], &args[1]) {
@@ -559,7 +684,11 @@ impl PermManager {
                         })
                         .collect::<Vec<Address>>();
 
-                    trace!("params decoded: account: {:?}, permissions: {:?}", account, perm_conts);
+                    trace!(
+                        "params decoded: account: {:?}, permissions: {:?}",
+                        account,
+                        perm_conts
+                    );
                     for p in perm_conts.iter() {
                         if let Some(perms) = self.account_own_perms.get_mut(&account) {
                             perms.insert(*p);
@@ -570,12 +699,20 @@ impl PermManager {
                         }
                     }
                     *changed = true;
-                    return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+                    return Ok(InterpreterResult::Normal(
+                        H256::from(1).0.to_vec(),
+                        params.gas_limit,
+                        vec![],
+                    ));
                 }
                 _ => unreachable!(),
             }
         }
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(0).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     pub fn cancel_authorizations(
@@ -589,10 +726,17 @@ impl PermManager {
 
         let permission_build_in = Address::from(build_in_perm::BUILD_IN_PERMS[4]);
         if !self.have_permission(params.sender, permission_build_in) {
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
 
-        let tokens = vec![ParamType::Address, ParamType::Array(Box::new(ParamType::Address))];
+        let tokens = vec![
+            ParamType::Address,
+            ParamType::Array(Box::new(ParamType::Address)),
+        ];
 
         if let Ok(args) = ethabi::decode(&tokens, &&params.input[4..]) {
             match (&args[0], &args[1]) {
@@ -605,22 +749,38 @@ impl PermManager {
                             _ => unreachable!(),
                         })
                         .collect::<Vec<Address>>();
-                    trace!("params decoded: account: {:?}, permissions: {:?}", account, perm_conts);
+                    trace!(
+                        "params decoded: account: {:?}, permissions: {:?}",
+                        account,
+                        perm_conts
+                    );
                     if let Some(perms) = self.account_own_perms.get_mut(&account) {
                         for p in perm_conts {
                             perms.remove(&p);
                         }
                         *changed = true;
-                        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+                        return Ok(InterpreterResult::Normal(
+                            H256::from(1).0.to_vec(),
+                            params.gas_limit,
+                            vec![],
+                        ));
                     } else {
                         warn!("The account not exists");
-                        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+                        return Ok(InterpreterResult::Normal(
+                            H256::from(0).0.to_vec(),
+                            params.gas_limit,
+                            vec![],
+                        ));
                     }
                 }
                 _ => unreachable!(),
             }
         }
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(0).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     pub fn set_authorization(
@@ -630,16 +790,27 @@ impl PermManager {
         _context: &Context,
         _contracts_db: Arc<ContractsDB>,
     ) -> Result<InterpreterResult, ContractError> {
-        trace!("System contract - permission  - set_authorization, input {:?}", params.input);
+        trace!(
+            "System contract - permission  - set_authorization, input {:?}",
+            params.input
+        );
 
         let permission_build_in = Address::from(build_in_perm::BUILD_IN_PERMS[3]);
         if !self.have_permission(params.sender, permission_build_in) {
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
 
         let account = Address::from(&params.input[16..36]);
         let permission = Address::from(&params.input[48..68]);
-        trace!("params decoded: account: {:?}, permission: {:?}", account, permission);
+        trace!(
+            "params decoded: account: {:?}, permission: {:?}",
+            account,
+            permission
+        );
 
         if let Some(perms) = self.account_own_perms.get_mut(&account) {
             perms.insert(permission);
@@ -649,7 +820,11 @@ impl PermManager {
             self.account_own_perms.insert(account, set);
         }
         *changed = true;
-        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(1).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     pub fn cancel_authorization(
@@ -663,7 +838,11 @@ impl PermManager {
 
         let permission_build_in = Address::from(build_in_perm::BUILD_IN_PERMS[4]);
         if !self.have_permission(params.sender, permission_build_in) {
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
 
         let account = Address::from(&params.input[16..36]);
@@ -672,9 +851,17 @@ impl PermManager {
         if let Some(perms) = self.account_own_perms.get_mut(&account) {
             perms.remove(&permission);
             *changed = true;
-            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(1).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(0).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     pub fn clear_authorization(
@@ -688,19 +875,34 @@ impl PermManager {
 
         let permission_build_in = Address::from(build_in_perm::BUILD_IN_PERMS[4]);
         if !self.have_permission(params.sender, permission_build_in) {
-            return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
 
         let account = Address::from(&params.input[16..36]);
         if let Some(perms) = self.account_own_perms.get_mut(&account) {
             perms.clear();
             *changed = true;
-            return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                H256::from(1).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
         }
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(0).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
-    pub fn query_permssions(&mut self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
+    pub fn query_permssions(
+        &mut self,
+        params: &InterpreterParams,
+    ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - query_permssions");
         let param_address = Address::from_slice(&params.input[16..36]);
         if let Some(permissions) = self.account_own_perms.get(&param_address) {
@@ -711,13 +913,20 @@ impl PermManager {
 
             let mut tokens = Vec::new();
             tokens.push(Token::Array(perms));
-            return Ok(InterpreterResult::Normal(ethabi::encode(&tokens), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                ethabi::encode(&tokens),
+                params.gas_limit,
+                vec![],
+            ));
         }
 
         return Ok(InterpreterResult::Normal(vec![], params.gas_limit, vec![]));
     }
 
-    pub fn query_all_accounts(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
+    pub fn query_all_accounts(
+        &self,
+        params: &InterpreterParams,
+    ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - query_permssions");
         let mut accounts = Vec::new();
         for k in self.account_own_perms.keys() {
@@ -727,10 +936,17 @@ impl PermManager {
         let mut tokens = Vec::new();
         tokens.push(Token::Array(accounts));
 
-        return Ok(InterpreterResult::Normal(ethabi::encode(&tokens), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            ethabi::encode(&tokens),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
-    pub fn query_resource(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
+    pub fn query_resource(
+        &self,
+        params: &InterpreterParams,
+    ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - query_resource");
         let perm_address = Address::from(&params.input[16..36]);
         if let Some(p) = self.perm_collection.get(&perm_address) {
@@ -746,12 +962,19 @@ impl PermManager {
 
             tokens.push(Token::Array(conts_return));
             tokens.push(Token::Array(funcs_return));
-            return Ok(InterpreterResult::Normal(ethabi::encode(&tokens), params.gas_limit, vec![]));
+            return Ok(InterpreterResult::Normal(
+                ethabi::encode(&tokens),
+                params.gas_limit,
+                vec![],
+            ));
         }
         return Ok(InterpreterResult::Normal(vec![], params.gas_limit, vec![]));
     }
 
-    pub fn query_name(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
+    pub fn query_name(
+        &self,
+        params: &InterpreterParams,
+    ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - query_name");
         let perm_address = Address::from(&params.input[16..36]);
         if let Some(p) = self.perm_collection.get(&perm_address) {
@@ -759,7 +982,8 @@ impl PermManager {
             trace!("permission name {:?}", name);
             // let mut res = H256::from(0);
             // res.clone_from_slice(&name.as_bytes());
-            let res = LenientTokenizer::tokenize(&ParamType::FixedBytes(32), &clean_0x(&name)).unwrap();
+            let res =
+                LenientTokenizer::tokenize(&ParamType::FixedBytes(32), &clean_0x(&name)).unwrap();
             trace!("permission name bin {:?}", name);
             return Ok(InterpreterResult::Normal(
                 res.clone().to_fixed_bytes().unwrap(),
@@ -770,7 +994,10 @@ impl PermManager {
         return Ok(InterpreterResult::Normal(vec![], params.gas_limit, vec![]));
     }
 
-    pub fn in_permission(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
+    pub fn in_permission(
+        &self,
+        params: &InterpreterParams,
+    ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - in_permission");
         let perm_address = Address::from(&params.input[16..36]);
         let resource_cont = Address::from(&params.input[48..68]);
@@ -784,14 +1011,25 @@ impl PermManager {
 
         if let Some(perm) = self.perm_collection.get(&perm_address) {
             if perm.in_permission(resource_cont, resource_func.to_vec()) {
-                return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+                return Ok(InterpreterResult::Normal(
+                    H256::from(1).0.to_vec(),
+                    params.gas_limit,
+                    vec![],
+                ));
             }
         }
 
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(0).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
-    pub fn check_resource(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
+    pub fn check_resource(
+        &self,
+        params: &InterpreterParams,
+    ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - check_resource");
         let account = Address::from(&params.input[16..36]);
         let resource_cont = Address::from(&params.input[48..68]);
@@ -807,27 +1045,50 @@ impl PermManager {
             for p in perms_address.iter() {
                 if let Some(permission) = self.perm_collection.get(p) {
                     if permission.in_permission(resource_cont, resource_func.to_vec()) {
-                        return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+                        return Ok(InterpreterResult::Normal(
+                            H256::from(1).0.to_vec(),
+                            params.gas_limit,
+                            vec![],
+                        ));
                     }
                 }
             }
         }
 
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(0).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
-    pub fn check_permission(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
+    pub fn check_permission(
+        &self,
+        params: &InterpreterParams,
+    ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - permission  - check_permission");
         let account = Address::from(&params.input[16..36]);
         let permission = Address::from(&params.input[48..68]);
 
-        trace!("Check_permission, account: {:?}, permission: {:?}", account, permission);
+        trace!(
+            "Check_permission, account: {:?}, permission: {:?}",
+            account,
+            permission
+        );
         if let Some(perms) = self.account_own_perms.get(&account) {
             if perms.contains(&permission) {
-                return Ok(InterpreterResult::Normal(H256::from(1).0.to_vec(), params.gas_limit, vec![]));
+                return Ok(InterpreterResult::Normal(
+                    H256::from(1).0.to_vec(),
+                    params.gas_limit,
+                    vec![],
+                ));
             }
         }
-        return Ok(InterpreterResult::Normal(H256::from(0).0.to_vec(), params.gas_limit, vec![]));
+        return Ok(InterpreterResult::Normal(
+            H256::from(0).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     fn have_permission(&self, sender: Address, perm_address: Address) -> bool {

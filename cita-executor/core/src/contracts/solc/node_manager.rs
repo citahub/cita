@@ -76,14 +76,24 @@ impl<'a> NodeManager<'a> {
 
     pub fn nodes(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.executor
-            .call_method(&*CONTRACT_ADDRESS, &*LIST_NODE_ENCODED.as_slice(), None, block_tag)
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*LIST_NODE_ENCODED.as_slice(),
+                None,
+                block_tag,
+            )
             .ok()
             .and_then(|output| decode_tools::to_address_vec(&output))
     }
 
     pub fn stakes(&self, block_tag: BlockTag) -> Option<Vec<u64>> {
         self.executor
-            .call_method(&*CONTRACT_ADDRESS, &*LIST_STAKE_ENCODED.as_slice(), None, block_tag)
+            .call_method(
+                &*CONTRACT_ADDRESS,
+                &*LIST_STAKE_ENCODED.as_slice(),
+                None,
+                block_tag,
+            )
             .ok()
             .and_then(|output| decode_tools::to_u64_vec(&output))
     }
@@ -102,7 +112,9 @@ impl<'a> NodeManager<'a> {
 
     pub fn stake_nodes(&self, block_tag: BlockTag) -> Option<Vec<Address>> {
         self.nodes(block_tag).and_then(|nodes| {
-            if let EconomicalModel::Quota = self.executor.sys_config.block_sys_config.economical_model {
+            if let EconomicalModel::Quota =
+                self.executor.sys_config.block_sys_config.economical_model
+            {
                 Some(nodes)
             } else {
                 self.stakes(block_tag).map(|stakes| {
@@ -155,11 +167,12 @@ mod tests {
         assert_eq!(
             items2,
             vec![
-                2, 2, 1, 3, 2, 3, 1, 2, 1, 1, 1, 1, 3, 3, 1, 3, 3, 3, 1, 2, 3, 3, 3, 1, 1, 2, 2, 2, 2, 3, 1, 3, 3, 3, 3, 1,
-                3, 3, 1, 3, 1, 2, 2, 1, 2, 2, 2, 1, 2, 3, 3, 1, 2, 2, 1, 2, 1, 3, 3, 2, 2, 1, 1, 1, 1, 2, 3, 2, 1, 3, 3, 2,
-                2, 2, 2, 2, 2, 3, 1, 1, 1, 3, 1, 1, 2, 1, 1, 2, 3, 1, 3, 3, 2, 2, 1, 2, 2, 1, 3, 3, 3, 1, 3, 3, 3, 1, 1, 1,
-                3, 1, 2, 1, 2, 2, 1, 2, 1, 3, 3, 2, 1, 2, 2, 3, 1, 2, 2, 1, 3, 1, 3, 3, 2, 1, 3, 2, 3, 1, 3, 3, 1, 3, 1, 2,
-                3, 3, 2, 2, 2, 2,
+                2, 2, 1, 3, 2, 3, 1, 2, 1, 1, 1, 1, 3, 3, 1, 3, 3, 3, 1, 2, 3, 3, 3, 1, 1, 2, 2, 2,
+                2, 3, 1, 3, 3, 3, 3, 1, 3, 3, 1, 3, 1, 2, 2, 1, 2, 2, 2, 1, 2, 3, 3, 1, 2, 2, 1, 2,
+                1, 3, 3, 2, 2, 1, 1, 1, 1, 2, 3, 2, 1, 3, 3, 2, 2, 2, 2, 2, 2, 3, 1, 1, 1, 3, 1, 1,
+                2, 1, 1, 2, 3, 1, 3, 3, 2, 2, 1, 2, 2, 1, 3, 3, 3, 1, 3, 3, 3, 1, 1, 1, 3, 1, 2, 1,
+                2, 2, 1, 2, 1, 3, 3, 2, 1, 2, 2, 3, 1, 2, 2, 1, 3, 1, 3, 3, 2, 1, 3, 2, 3, 1, 3, 3,
+                1, 3, 1, 2, 3, 3, 2, 2, 2, 2,
             ]
         );
     }

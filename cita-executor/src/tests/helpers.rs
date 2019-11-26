@@ -54,17 +54,27 @@ pub fn generate_signer() -> Signer {
 
 pub fn generate_executed_result(height: u64) -> libproto::ExecutedResult {
     let mut executed_result = libproto::ExecutedResult::new();
-    executed_result.mut_executed_info().mut_header().set_height(height);
+    executed_result
+        .mut_executed_info()
+        .mut_header()
+        .set_height(height);
     executed_result
 }
 
 pub fn generate_proof(signer: Signer, height: u64, proposal: H256) -> libproto::Proof {
     let serialized = bincode::serialize(
-        &(height as usize, PROOF_ROUND, PROOF_STEP, signer.address, proposal),
+        &(
+            height as usize,
+            PROOF_ROUND,
+            PROOF_STEP,
+            signer.address,
+            proposal,
+        ),
         bincode::Infinite,
     )
     .expect("serialize into bytes");
-    let signature = Signature::sign(signer.keypair.privkey(), &serialized.crypt_hash()).expect("signature message");
+    let signature = Signature::sign(signer.keypair.privkey(), &serialized.crypt_hash())
+        .expect("signature message");
 
     let mut commits = ::std::collections::HashMap::new();
     commits.insert(signer.address, signature);
@@ -72,7 +82,12 @@ pub fn generate_proof(signer: Signer, height: u64, proposal: H256) -> libproto::
     bft_proof.into()
 }
 
-pub fn generate_signed_transaction(to: Address, data: Vec<u8>, nonce: u32, privkey: PrivKey) -> libproto::SignedTransaction {
+pub fn generate_signed_transaction(
+    to: Address,
+    data: Vec<u8>,
+    nonce: u32,
+    privkey: PrivKey,
+) -> libproto::SignedTransaction {
     let mut transaction = libproto::Transaction::new();
     transaction.set_nonce(U256::from(nonce).lower_hex());
     transaction.set_data(data);
@@ -113,7 +128,9 @@ pub fn generate_block(
     let mut proto_block = libproto::Block::new();
     proto_block.set_body(body);
     let transactions_root = proto_block.get_body().transactions_root().to_vec();
-    proto_block.mut_header().set_transactions_root(transactions_root);
+    proto_block
+        .mut_header()
+        .set_transactions_root(transactions_root);
     proto_block.mut_header().set_prevhash(parent_hash.to_vec());
     proto_block.mut_header().set_height(height);
     proto_block.mut_header().set_timestamp(1543976147000);

@@ -22,13 +22,14 @@ use core::filters::rpc_filter::RpcFilter as FilterMethod;
 use core::libchain::chain::{BlockInQueue, Chain};
 use error::ErrorCode;
 use jsonrpc_types::rpc_types::{
-    BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter, Log as RpcLog,
-    Receipt as RpcReceipt, RpcBlock,
+    BlockNumber as RpcBlockNumber, BlockParamsByHash, BlockParamsByNumber, Filter as RpcFilter,
+    Log as RpcLog, Receipt as RpcReceipt, RpcBlock,
 };
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{
-    request, response, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq, BlockWithProof, ExecutedResult, Message,
-    OperateType, ProofType, Request_oneof_req as Request, SyncRequest, SyncResponse, TryFrom, TryInto,
+    request, response, Block as ProtobufBlock, BlockTxHashes, BlockTxHashesReq, BlockWithProof,
+    ExecutedResult, Message, OperateType, ProofType, Request_oneof_req as Request, SyncRequest,
+    SyncResponse, TryFrom, TryInto,
 };
 use proof::BftProof;
 use pubsub::channel::Sender;
@@ -48,7 +49,11 @@ pub struct Forward {
 
 // TODO: Add future client to support forward
 impl Forward {
-    pub fn new(chain: Arc<Chain>, ctx_pub: Sender<(String, Vec<u8>)>, write_sender: Sender<ExecutedResult>) -> Forward {
+    pub fn new(
+        chain: Arc<Chain>,
+        ctx_pub: Sender<(String, Vec<u8>)>,
+        write_sender: Sender<ExecutedResult>,
+    ) -> Forward {
         Forward {
             chain,
             ctx_pub,
@@ -75,7 +80,8 @@ impl Forward {
             routing_key!(Executor >> StateSignal) => {
                 if let Some(state_signal) = msg.take_state_signal() {
                     let specified_height = state_signal.get_height();
-                    let missing_blocks = (specified_height + 1..=self.chain.get_current_height()).collect();
+                    let missing_blocks =
+                        (specified_height + 1..=self.chain.get_current_height()).collect();
                     self.reply_local_syn_req(missing_blocks);
                 }
             }
@@ -123,7 +129,11 @@ impl Forward {
                         let include_txs = param.include_txs;
                         match self.chain.block_by_hash(H256::from(hash.as_slice())) {
                             Some(block) => {
-                                let rpc_block = RpcBlock::new(hash, include_txs, block.protobuf().try_into().unwrap());
+                                let rpc_block = RpcBlock::new(
+                                    hash,
+                                    include_txs,
+                                    block.protobuf().try_into().unwrap(),
+                                );
                                 let _ = serde_json::to_string(&rpc_block)
                                     .map(|data| response.set_block(data))
                                     .map_err(|err| {
@@ -142,7 +152,8 @@ impl Forward {
             }
 
             Request::block_by_height(block_height) => {
-                let block_height: BlockParamsByNumber = serde_json::from_str(&block_height).expect("Invalid param");
+                let block_height: BlockParamsByNumber =
+                    serde_json::from_str(&block_height).expect("Invalid param");
                 let include_txs = block_height.include_txs;
                 match self.chain.block(block_height.block_id.into()) {
                     Some(block) => {
@@ -164,14 +175,16 @@ impl Forward {
                 }
             }
 
-            Request::transaction(hash) => match self.chain.full_transaction(H256::from_slice(&hash)) {
-                Some(ts) => {
-                    response.set_ts(ts);
+            Request::transaction(hash) => {
+                match self.chain.full_transaction(H256::from_slice(&hash)) {
+                    Some(ts) => {
+                        response.set_ts(ts);
+                    }
+                    None => {
+                        response.set_none(true);
+                    }
                 }
-                None => {
-                    response.set_none(true);
-                }
-            },
+            }
 
             Request::transaction_proof(hash) => {
                 match self.chain.get_transaction_proof(H256::from_slice(&hash)) {
@@ -211,49 +224,64 @@ impl Forward {
 
             Request::call(call) => {
                 trace!("Chainvm Call {:?}", call);
-                self.ctx_pub.send((routing_key!(Chain >> Request).into(), imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
             Request::estimate_quota(call) => {
                 trace!("Estimate quota {:?}", call);
-                self.ctx_pub.send((routing_key!(Chain >> Request).into(), imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
             Request::transaction_count(tx_count) => {
                 trace!("transaction count request from jsonrpc {:?}", tx_count);
-                self.ctx_pub.send((routing_key!(Chain >> Request).into(), imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
             Request::meta_data(number) => {
                 trace!("metadata request from jsonrpc {:?}", number);
-                self.ctx_pub.send((routing_key!(Chain >> Request).into(), imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
             Request::code(code_content) => {
                 trace!("code request from josnrpc  {:?}", code_content);
-                self.ctx_pub.send((routing_key!(Chain >> Request).into(), imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
             Request::abi(abi_content) => {
                 trace!("abi request from josnrpc  {:?}", abi_content);
-                self.ctx_pub.send((routing_key!(Chain >> Request).into(), imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
             Request::balance(balance_content) => {
                 trace!("balance request from josnrpc  {:?}", balance_content);
-                self.ctx_pub.send((routing_key!(Chain >> Request).into(), imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
             Request::new_filter(new_filter) => {
                 trace!("new_filter {:?}", new_filter);
-                let new_filter: RpcFilter = serde_json::from_str(&new_filter).expect("Invalid param");
+                let new_filter: RpcFilter =
+                    serde_json::from_str(&new_filter).expect("Invalid param");
                 trace!("new_filter {:?}", new_filter);
                 response.set_filter_id(self.chain.new_filter(new_filter) as u64);
             }
@@ -278,19 +306,25 @@ impl Forward {
 
             Request::filter_logs(filter_id) => {
                 trace!("filter_log's id is {:?}", filter_id);
-                let log = self.chain.get_filter_logs(filter_id as usize).unwrap_or_default();
+                let log = self
+                    .chain
+                    .get_filter_logs(filter_id as usize)
+                    .unwrap_or_default();
                 trace!("Log is: {:?}", log);
                 response.set_filter_logs(serde_json::to_string(&log).unwrap());
             }
 
             Request::state_proof(state_info) => {
                 trace!("state_proof info is {:?}", state_info);
-                self.ctx_pub.send((routing_key!(Chain >> Request).into(), imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
             Request::block_header_height(block_height) => {
-                let block_height: RpcBlockNumber = serde_json::from_str(&block_height).expect("Invalid param");
+                let block_height: RpcBlockNumber =
+                    serde_json::from_str(&block_height).expect("Invalid param");
                 match self.chain.get_block_header_bytes(block_height.into()) {
                     Some(block_header_bytes) => {
                         response.set_block_header(block_header_bytes);
@@ -307,7 +341,9 @@ impl Forward {
 
             Request::storage_key(skey) => {
                 trace!("storage key info is {:?}", skey);
-                self.ctx_pub.send((routing_key!(Chain >> Request).into(), imsg)).unwrap();
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
                 return;
             }
 
@@ -317,7 +353,10 @@ impl Forward {
         };
         let msg: Message = response.into();
         self.ctx_pub
-            .send((routing_key!(Chain >> Response).into(), msg.try_into().unwrap()))
+            .send((
+                routing_key!(Chain >> Response).into(),
+                msg.try_into().unwrap(),
+            ))
             .unwrap();
     }
 
@@ -345,10 +384,10 @@ impl Forward {
         );
         if blk_height == (current_height + 1) {
             {
-                self.chain
-                    .block_map
-                    .write()
-                    .insert(blk_height as u64, BlockInQueue::ConsensusBlock(block.clone(), proof.clone()));
+                self.chain.block_map.write().insert(
+                    blk_height as u64,
+                    BlockInQueue::ConsensusBlock(block.clone(), proof.clone()),
+                );
             };
             self.chain.set_proof_with_height(blk_height as u64, &proof);
             self.chain.save_current_block_poof(&proof);
@@ -360,7 +399,10 @@ impl Forward {
     fn reply_syn_req(&self, sync_req: SyncRequest, origin: u32) {
         let mut sync_req = sync_req;
         let heights = sync_req.take_heights();
-        debug!("sync: receive sync from node {:?}, height lists = {:?}", origin, heights);
+        debug!(
+            "sync: receive sync from node {:?}, height lists = {:?}",
+            origin, heights
+        );
 
         let res_vec = self.sync_response(heights);
 
@@ -371,9 +413,16 @@ impl Forward {
         );
         if !res_vec.get_blocks().is_empty() {
             let msg = Message::init(OperateType::Single, origin, res_vec.into());
-            trace!("sync: origin {:?}, chain.blk: OperateType {:?}", origin, OperateType::Single);
+            trace!(
+                "sync: origin {:?}, chain.blk: OperateType {:?}",
+                origin,
+                OperateType::Single
+            );
             self.ctx_pub
-                .send((routing_key!(Chain >> SyncResponse).into(), msg.try_into().unwrap()))
+                .send((
+                    routing_key!(Chain >> SyncResponse).into(),
+                    msg.try_into().unwrap(),
+                ))
                 .unwrap();
         }
     }
@@ -382,9 +431,15 @@ impl Forward {
         let res_vec = self.sync_response(heights);
         if !res_vec.get_blocks().is_empty() {
             let msg = Message::init(OperateType::Single, 0, res_vec.into());
-            trace!("local_sync: chain.blk: OperateType {:?}", OperateType::Single);
+            trace!(
+                "local_sync: chain.blk: OperateType {:?}",
+                OperateType::Single
+            );
             self.ctx_pub
-                .send((routing_key!(Chain >> LocalSync).into(), msg.try_into().unwrap()))
+                .send((
+                    routing_key!(Chain >> LocalSync).into(),
+                    msg.try_into().unwrap(),
+                ))
                 .unwrap();
         }
     }
@@ -429,7 +484,10 @@ impl Forward {
 
             // Check transaction root
             if blk_height != ::std::u64::MAX && !block.check_hash() {
-                warn!("sync: transactions root isn't correct, height is {}", blk_height);
+                warn!(
+                    "sync: transactions root isn't correct, height is {}",
+                    blk_height
+                );
                 break;
             }
 
@@ -470,7 +528,9 @@ impl Forward {
                 if blk_height != ::std::usize::MAX {
                     if proof_height == chain_max_height || proof_height == chain_max_store_height {
                         // Set proof of prev sync block
-                        if let Some(prev_block_in_queue) = self.chain.block_map.write().get_mut(&proof_height) {
+                        if let Some(prev_block_in_queue) =
+                            self.chain.block_map.write().get_mut(&proof_height)
+                        {
                             if let BlockInQueue::SyncBlock(ref mut value) = *prev_block_in_queue {
                                 if value.1.is_none() {
                                     debug!("sync: set prev sync block proof {}", value.0.number());
@@ -485,7 +545,10 @@ impl Forward {
                         just deliver blockhashs when executed block*/
 
                         let saved_proof = self.chain.get_proof_with_height(height);
-                        debug!("sync: insert block-{} proof {:?} in map", height, saved_proof);
+                        debug!(
+                            "sync: insert block-{} proof {:?} in map",
+                            height, saved_proof
+                        );
                         self.chain
                             .block_map
                             .write()
@@ -498,7 +561,9 @@ impl Forward {
                         );
                     }
                 } else if proof_height > self.chain.get_current_height() {
-                    if let Some(block_in_queue) = self.chain.block_map.write().get_mut(&proof_height) {
+                    if let Some(block_in_queue) =
+                        self.chain.block_map.write().get_mut(&proof_height)
+                    {
                         if let BlockInQueue::SyncBlock(ref mut value) = *block_in_queue {
                             if value.1.is_none() {
                                 debug!("sync: insert block proof {} in map", proof_height);
@@ -506,7 +571,8 @@ impl Forward {
                             }
                         }
                     }
-                    self.chain.set_proof_with_height(proof_height, block.proof());
+                    self.chain
+                        .set_proof_with_height(proof_height, block.proof());
                     self.chain.save_current_block_poof(block.proof());
                 }
             }
@@ -520,7 +586,10 @@ impl Forward {
     fn deal_block_tx_req(&self, block_tx_hashes_req: &BlockTxHashesReq) {
         let block_height = block_tx_hashes_req.get_height();
 
-        if let Some(tx_hashes) = self.chain.transaction_hashes(BlockTag::Height(block_height)) {
+        if let Some(tx_hashes) = self
+            .chain
+            .transaction_hashes(BlockTag::Height(block_height))
+        {
             //prepare and send the block tx hashes to auth
             let mut block_tx_hashes = BlockTxHashes::new();
             block_tx_hashes.set_height(block_height);
@@ -529,11 +598,15 @@ impl Forward {
                 tx_hashes_in_u8.push(tx_hash_in_h256.to_vec());
             }
             block_tx_hashes.set_tx_hashes(tx_hashes_in_u8.into());
-            block_tx_hashes.set_block_quota_limit(self.chain.block_quota_limit.load(Ordering::SeqCst) as u64);
+            block_tx_hashes
+                .set_block_quota_limit(self.chain.block_quota_limit.load(Ordering::SeqCst) as u64);
             block_tx_hashes.set_account_quota_limit(self.chain.account_quota_limit.read().clone());
             let msg: Message = block_tx_hashes.into();
             self.ctx_pub
-                .send((routing_key!(Chain >> BlockTxHashes).into(), msg.try_into().unwrap()))
+                .send((
+                    routing_key!(Chain >> BlockTxHashes).into(),
+                    msg.try_into().unwrap(),
+                ))
                 .unwrap();
 
             trace!("response block's tx hashes for height:{}", block_height);

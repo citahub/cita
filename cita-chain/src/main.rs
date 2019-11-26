@@ -133,7 +133,10 @@ fn main() {
     let db = RocksDB::open(&nosql_path, &db_config).expect("Open DB failed unexpected.");
 
     let chain_config = libchain::chain::Config::new(config_path);
-    let chain = Arc::new(libchain::chain::Chain::init_chain(Arc::new(db), chain_config));
+    let chain = Arc::new(libchain::chain::Chain::init_chain(
+        Arc::new(db),
+        chain_config,
+    ));
 
     let (write_sender, write_receiver) = channel::unbounded();
     let forward = Forward::new(Arc::clone(&chain), ctx_pub.clone(), write_sender);
@@ -151,7 +154,9 @@ fn main() {
     // Write: add block
     let mut timeout_factor = 0u8;
     loop {
-        if let Ok(einfo) = write_receiver.recv_timeout(Duration::new(18 * (2u64.pow(u32::from(timeout_factor))), 0)) {
+        if let Ok(einfo) = write_receiver
+            .recv_timeout(Duration::new(18 * (2u64.pow(u32::from(timeout_factor))), 0))
+        {
             block_processor.set_executed_result(&einfo);
             timeout_factor = 0;
         } else if !*block_processor.chain.is_snapshot.read() {

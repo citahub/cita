@@ -58,7 +58,13 @@ fn build_proof(height: u64, sender: Address, privkey: &PrivKey) -> BftProof {
 
     let mut commits = HashMap::new();
     let message = serialize(
-        &(proof.height, proof.round, Step::Precommit, sender, Some(proof.proposal)),
+        &(
+            proof.height,
+            proof.round,
+            Step::Precommit,
+            sender,
+            Some(proof.proposal),
+        ),
         Infinite,
     )
     .unwrap();
@@ -108,9 +114,18 @@ fn send_block(
     privkey: &PrivKey,
 ) {
     // let txs = &block_txs.body.get_ref().transactions.clone().into_vec();
-    let (send_data, _block) = build_block(&block_txs.body.get_ref(), pre_block_hash, height, privkey, timestamp);
+    let (send_data, _block) = build_block(
+        &block_txs.body.get_ref(),
+        pre_block_hash,
+        height,
+        privkey,
+        timestamp,
+    );
     pub_sender
-        .send((routing_key!(Consensus >> BlockWithProof).into(), send_data.clone()))
+        .send((
+            routing_key!(Consensus >> BlockWithProof).into(),
+            send_data.clone(),
+        ))
         .unwrap();
 }
 
@@ -187,7 +202,9 @@ fn main() {
                             .expect("get timestamp error")
                             .as_secs();
 
-                        if let Some(block_txs) = received_block_txs.remove(&(rich_status.height as usize)) {
+                        if let Some(block_txs) =
+                            received_block_txs.remove(&(rich_status.height as usize))
+                        {
                             send_height = rich_status.height + 1;
                             send_block(
                                 H256::from_slice(&rich_status.hash),
@@ -198,7 +215,10 @@ fn main() {
                                 &pk_miner,
                             );
                         } else {
-                            warn!("No received block_txs at rich_status_height = {:?}", rich_status.height);
+                            warn!(
+                                "No received block_txs at rich_status_height = {:?}",
+                                rich_status.height
+                            );
                         }
                         trace!("get new local status {:?}", rich_status);
                     }

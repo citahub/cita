@@ -77,7 +77,11 @@ impl Default for SimpleStorage {
 }
 
 impl SimpleStorage {
-    fn init(&mut self, _params: &VmExecParams, _ext: &mut DataProvider) -> Result<InterpreterResult, NativeError> {
+    fn init(
+        &mut self,
+        _params: &VmExecParams,
+        _ext: &mut DataProvider,
+    ) -> Result<InterpreterResult, NativeError> {
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
@@ -88,7 +92,8 @@ impl SimpleStorage {
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let value = U256::from(params.data.get(4..36).expect("no enough data"));
-        self.uint_value.set(data_provider, &params.code_address, value)?;
+        self.uint_value
+            .set(data_provider, &params.code_address, value)?;
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
@@ -112,11 +117,16 @@ impl SimpleStorage {
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned();
         let index = U256::from(data.get(4..36).expect("no enough data")).low_u64() as usize + 4;
-        let length = U256::from(data.get(index..(index + 32)).expect("no enough data")).low_u64() as usize;
+        let length =
+            U256::from(data.get(index..(index + 32)).expect("no enough data")).low_u64() as usize;
         let index = index + 32;
-        let value = String::from_utf8(Vec::from(data.get(index..index + length).expect("no enough data"))).unwrap();
+        let value = String::from_utf8(Vec::from(
+            data.get(index..index + length).expect("no enough data"),
+        ))
+        .unwrap();
 
-        self.string_value.set_bytes(data_provider, &params.code_address, &value)?;
+        self.string_value
+            .set_bytes(data_provider, &params.code_address, &value)?;
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
@@ -126,16 +136,21 @@ impl SimpleStorage {
         data_provider: &mut DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         self.output.resize(0, 0);
-        let str = self.string_value.get_bytes::<String>(data_provider, &params.code_address)?;
+        let str = self
+            .string_value
+            .get_bytes::<String>(data_provider, &params.code_address)?;
         for i in U256::from(32).0.iter().rev() {
-            serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite).expect("failed to serialize u64");
+            serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
+                .expect("failed to serialize u64");
         }
         for i in U256::from(str.len()).0.iter().rev() {
-            serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite).expect("failed to serialize u64");
+            serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
+                .expect("failed to serialize u64");
         }
 
         for i in str.bytes() {
-            serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite).expect("failed to serialize ");
+            serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
+                .expect("failed to serialize ");
         }
         self.output
             .write(&vec![0u8; 32 - str.len() % 32])
@@ -154,7 +169,8 @@ impl SimpleStorage {
         let index = U256::from(data.get(pilot..pilot + 32).expect("no enough data")).low_u64();
         pilot += 32;
         let value = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
-        self.array_value.set(data_provider, &params.code_address, index, &value)?;
+        self.array_value
+            .set(data_provider, &params.code_address, index, &value)?;
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
@@ -172,7 +188,8 @@ impl SimpleStorage {
             .iter()
             .rev()
         {
-            serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite).expect("failed to serialize u64");
+            serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
+                .expect("failed to serialize u64");
         }
         Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
@@ -188,7 +205,8 @@ impl SimpleStorage {
         let key = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
         pilot += 32;
         let value = U256::from(data.get(pilot..pilot + 32).expect("no enough data"));
-        self.map_value.set(data_provider, &params.code_address, &key, value)?;
+        self.map_value
+            .set(data_provider, &params.code_address, &key, value)?;
         Ok(InterpreterResult::Normal(vec![], 100, vec![]))
     }
 
@@ -199,8 +217,15 @@ impl SimpleStorage {
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned();
         let key = U256::from(data.get(4..4 + 32).expect("no enough data"));
-        for i in self.map_value.get(data_provider, &params.code_address, &key)?.0.iter().rev() {
-            serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite).expect("failed to serialize u64");
+        for i in self
+            .map_value
+            .get(data_provider, &params.code_address, &key)?
+            .0
+            .iter()
+            .rev()
+        {
+            serialize_into::<_, _, _, BigEndian>(&mut self.output, &i, Infinite)
+                .expect("failed to serialize u64");
         }
         Ok(InterpreterResult::Normal(self.output.clone(), 100, vec![]))
     }
@@ -226,9 +251,11 @@ fn test_native_contract() {
         params.code_address = Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523");
         let mut input = Vec::new();
         let index = 0xaa91543eu32;
-        serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite).expect("failed to serialize u32");
+        serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite)
+            .expect("failed to serialize u32");
         for i in value.0.iter().rev() {
-            serialize_into::<_, _, _, BigEndian>(&mut input, &i, Infinite).expect("failed to serialize u64");
+            serialize_into::<_, _, _, BigEndian>(&mut input, &i, Infinite)
+                .expect("failed to serialize u64");
         }
         params.data = input;
         let mut contract = factory.new_contract(native_addr).unwrap();
@@ -241,7 +268,8 @@ fn test_native_contract() {
         let mut params = VmExecParams::default();
         params.code_address = Address::from("0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523");
         let index = 0x832b4580u32;
-        serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite).expect("failed to serialize u32");
+        serialize_into::<_, _, _, BigEndian>(&mut input, &index, Infinite)
+            .expect("failed to serialize u32");
         params.data = input;
 
         let mut contract = factory.new_contract(native_addr).unwrap();

@@ -14,7 +14,9 @@
 
 use futures::future::{Future, FutureResult};
 use jsonrpc_proto::complete::CompleteInto;
-use jsonrpc_types::rpc_request::{PartialRequest, Request as JsonRequest, RpcRequest as JsonrpcRequest};
+use jsonrpc_types::rpc_request::{
+    PartialRequest, Request as JsonRequest, RpcRequest as JsonrpcRequest,
+};
 use libproto::request::Request as ProtoRequest;
 
 use crate::mq_publisher::{HybridRequest, MQRequest};
@@ -46,7 +48,10 @@ impl FutExtractor<JsonrpcRequest> for hyper::Request<hyper::Body> {
             .into_body()
             .concat2()
             .map_err(ServiceError::BodyConcatError)
-            .and_then(|chunk| serde_json::from_slice::<JsonrpcRequest>(&chunk).map_err(ServiceError::JsonrpcSerdeError));
+            .and_then(|chunk| {
+                serde_json::from_slice::<JsonrpcRequest>(&chunk)
+                    .map_err(ServiceError::JsonrpcSerdeError)
+            });
 
         Box::new(fut_resp)
     }
@@ -73,9 +78,8 @@ impl FutExtractor<MQRequest> for JsonrpcRequest {
 
     fn extract_from(self) -> Self::Fut {
         let fut_ret: FutureResult<MQRequest, ServiceError> = match self {
-            JsonrpcRequest::Single(part_req) => {
-                Extractor::<HybridRequest>::extract_from(part_req).map(|hybrid_req| MQRequest::Single(Box::new(hybrid_req)))
-            }
+            JsonrpcRequest::Single(part_req) => Extractor::<HybridRequest>::extract_from(part_req)
+                .map(|hybrid_req| MQRequest::Single(Box::new(hybrid_req))),
             JsonrpcRequest::Batch(part_reqs) => part_reqs
                 .into_iter()
                 .map(Extractor::<HybridRequest>::extract_from)

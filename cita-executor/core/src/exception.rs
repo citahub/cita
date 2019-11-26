@@ -32,7 +32,9 @@ impl fmt::Display for ExecutedException {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let printable = match *self {
             ExecutedException::VM(ref err) => format!("exception in vm: {:?}", err),
-            ExecutedException::NativeContract(ref err) => format!("exception in native contract: {:?}", err),
+            ExecutedException::NativeContract(ref err) => {
+                format!("exception in native contract: {:?}", err)
+            }
             ExecutedException::Reverted => "execution reverted".to_owned(),
         };
         write!(f, "{}", printable)

@@ -93,7 +93,12 @@ pub fn init_executor() -> Executor {
     let (fsm_resp_sender, _fsm_resp_receiver) = crossbeam_channel::unbounded();
     let (_command_req_sender, command_req_receiver) = crossbeam_channel::bounded(0);
     let (command_resp_sender, _command_resp_receiver) = crossbeam_channel::bounded(0);
-    init_executor2(fsm_req_receiver, fsm_resp_sender, command_req_receiver, command_resp_sender)
+    init_executor2(
+        fsm_req_receiver,
+        fsm_resp_sender,
+        command_req_receiver,
+        command_resp_sender,
+    )
 }
 
 pub fn init_executor2(
@@ -121,7 +126,13 @@ pub fn init_executor2(
     executor
 }
 
-pub fn create_block(executor: &Executor, to: Address, data: &Vec<u8>, nonce: (u32, u32), privkey: &PrivKey) -> OpenBlock {
+pub fn create_block(
+    executor: &Executor,
+    to: Address,
+    data: &Vec<u8>,
+    nonce: (u32, u32),
+    privkey: &PrivKey,
+) -> OpenBlock {
     let mut block = OpenBlock::default();
 
     block.set_parent_hash(executor.get_current_hash());

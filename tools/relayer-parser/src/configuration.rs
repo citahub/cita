@@ -64,6 +64,10 @@ impl Config {
 pub fn parse_configfile(path: &str) -> Config {
     let config = FileConfig::load(path);
     let pkey = config.private_key;
-    let servers = config.chains.into_iter().map(|c| (c.id, c.servers)).collect();
+    let servers = config
+        .chains
+        .into_iter()
+        .map(|c| (c.id, c.servers))
+        .collect();
     Config { pkey, servers }
 }

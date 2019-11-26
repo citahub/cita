@@ -50,9 +50,15 @@ mod test {
     #[test]
     fn test_get_topic() {
         assert_eq!(select_topic("peerCount"), "jsonrpc.request_net".to_string());
-        assert_eq!(select_topic("sendTransaction"), "jsonrpc.request_new_tx".to_string());
+        assert_eq!(
+            select_topic("sendTransaction"),
+            "jsonrpc.request_new_tx".to_string()
+        );
         assert_eq!(select_topic("blockNumber"), "jsonrpc.request".to_string());
-        assert_eq!(select_topic("getBlockByNumber"), "jsonrpc.request".to_string());
+        assert_eq!(
+            select_topic("getBlockByNumber"),
+            "jsonrpc.request".to_string()
+        );
         assert_eq!(select_topic("error"), "jsonrpc.request".to_string());
     }
 }

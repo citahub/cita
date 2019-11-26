@@ -51,18 +51,25 @@ impl Decodable for Log {
 
 impl Log {
     pub fn bloom(&self) -> Bloom {
-        self.topics.iter().fold(Bloom::from_raw(&self.address), |bloom, topic| {
-            let mut bloom = bloom;
-            bloom.accrue_raw(&topic);
-            bloom
-        })
+        self.topics
+            .iter()
+            .fold(Bloom::from_raw(&self.address), |bloom, topic| {
+                let mut bloom = bloom;
+                bloom.accrue_raw(&topic);
+                bloom
+            })
     }
 
     pub fn protobuf(&self) -> ProtoLog {
         let mut proto_log = ProtoLog::new();
 
         proto_log.set_address(self.address.to_vec());
-        proto_log.topics = self.topics.clone().into_iter().map(|topic| topic.to_vec()).collect();
+        proto_log.topics = self
+            .topics
+            .clone()
+            .into_iter()
+            .map(|topic| topic.to_vec())
+            .collect();
         proto_log.set_data(self.data.clone());
         proto_log
     }
@@ -173,7 +180,11 @@ mod tests {
         let address = Address::default();
         let topics = vec![H256::zero()];
         let data = b"test".to_vec();
-        let log = Log { address, topics, data };
+        let log = Log {
+            address,
+            topics,
+            data,
+        };
         let bloom: Bloom = "
             0000000000000000008000000000000000000000000000000000000000000000
             0000000000000000000000000000000200000000000000000000000000000000

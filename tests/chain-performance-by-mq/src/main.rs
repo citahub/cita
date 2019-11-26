@@ -77,10 +77,22 @@ fn create_contract(
     };
     let mut txs = Vec::new();
     for _ in 0..block_tx_num - 1 {
-        let tx = Generateblock::generate_tx(code, contract_address.to_string().clone(), quota, flag_multi_sender, pk);
+        let tx = Generateblock::generate_tx(
+            code,
+            contract_address.to_string().clone(),
+            quota,
+            flag_multi_sender,
+            pk,
+        );
         txs.push(tx);
     }
-    let tx = Generateblock::generate_tx(code, contract_address.to_string().clone(), quota, flag_multi_sender, pk);
+    let tx = Generateblock::generate_tx(
+        code,
+        contract_address.to_string().clone(),
+        quota,
+        flag_multi_sender,
+        pk,
+    );
     txs.push(tx);
 
     // 构造block
@@ -89,7 +101,10 @@ fn create_contract(
     let mut sys_time_lock = sys_time.lock().unwrap();
     *sys_time_lock = time::SystemTime::now();
     pub_sender
-        .send((routing_key!(Consensus >> BlockWithProof).into(), send_data.clone()))
+        .send((
+            routing_key!(Consensus >> BlockWithProof).into(),
+            send_data.clone(),
+        ))
         .unwrap();
 }
 
@@ -102,17 +117,41 @@ fn main() {
         .author("Cryptape")
         .about("CITA Chain Performance by MQ powered by Rust")
         .arg_from_usage("--totaltx=[20000] 'transation num in one block'")
-        .arg_from_usage("--times=[0] 'how many times to send block, i.e. block-height. 0 means limitless'")
+        .arg_from_usage(
+            "--times=[0] 'how many times to send block, i.e. block-height. 0 means limitless'",
+        )
         .arg_from_usage("--quota=[1000] 'transation quota'")
         .arg_from_usage("--flag_multi_sender=[0] 'Multi sender or not'")
-        .arg_from_usage("--flag_tx_type=[1] 'tx type: 0 is store, 1 is creating contract, 2 is call contract'")
+        .arg_from_usage(
+            "--flag_tx_type=[1] 'tx type: 0 is store, 1 is creating contract, 2 is call contract'",
+        )
         .get_matches();
 
-    let totaltx = matches.value_of("totaltx").unwrap_or("40000").parse::<u64>().unwrap();
-    let times = matches.value_of("times").unwrap_or("0").parse::<u64>().unwrap();
-    let flag_multi_sender = matches.value_of("flag_multi_sender").unwrap_or("0").parse::<i32>().unwrap();
-    let quota = matches.value_of("quota").unwrap_or("1000").parse::<u64>().unwrap();
-    let flag_tx_type = matches.value_of("flag_tx_type").unwrap_or("0").parse::<i32>().unwrap();
+    let totaltx = matches
+        .value_of("totaltx")
+        .unwrap_or("40000")
+        .parse::<u64>()
+        .unwrap();
+    let times = matches
+        .value_of("times")
+        .unwrap_or("0")
+        .parse::<u64>()
+        .unwrap();
+    let flag_multi_sender = matches
+        .value_of("flag_multi_sender")
+        .unwrap_or("0")
+        .parse::<i32>()
+        .unwrap();
+    let quota = matches
+        .value_of("quota")
+        .unwrap_or("1000")
+        .parse::<u64>()
+        .unwrap();
+    let flag_tx_type = matches
+        .value_of("flag_tx_type")
+        .unwrap_or("0")
+        .parse::<i32>()
+        .unwrap();
 
     let mut send_flag = true;
     let mut height = 0;
@@ -121,7 +160,12 @@ fn main() {
     let keypair = KeyPair::gen_keypair();
     let pk = keypair.privkey();
 
-    start_pubsub("consensus", routing_key!([Chain >> RichStatus]), tx_sub, rx_pub);
+    start_pubsub(
+        "consensus",
+        routing_key!([Chain >> RichStatus]),
+        tx_sub,
+        rx_pub,
+    );
     let sys_time = Arc::new(Mutex::new(time::SystemTime::now()));
 
     let mut count_times: u64 = 0;
@@ -142,9 +186,16 @@ fn main() {
                 let mut secs = diff.as_secs();
                 let nanos = diff.subsec_nanos();
                 secs = secs * 1000 + u64::from(nanos / 1_000_000);
-                let tps = if secs > 0 { totaltx * 1000 / secs } else { totaltx };
+                let tps = if secs > 0 {
+                    totaltx * 1000 / secs
+                } else {
+                    totaltx
+                };
 
-                info!("tx_num = {}, use time = {} ms, tps = {}", totaltx, secs, tps);
+                info!(
+                    "tx_num = {}, use time = {} ms, tps = {}",
+                    totaltx, secs, tps
+                );
 
                 if times != 0 {
                     count_times += 1;
@@ -181,6 +232,9 @@ mod test {
 
     #[test]
     fn test_used_store_address() {
-        assert_eq!(common_types::reserved_addresses::STORE_ADDRESS, super::STORE_ADDRESS);
+        assert_eq!(
+            common_types::reserved_addresses::STORE_ADDRESS,
+            super::STORE_ADDRESS
+        );
     }
 }

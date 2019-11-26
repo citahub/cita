@@ -14,8 +14,8 @@
 
 use super::executor::Executor;
 use crate::contracts::solc::{
-    AccountQuotaLimit, EmergencyIntervention, NodeManager, PermissionManagement, PriceManagement, QuotaManager, Resource,
-    SysConfig, UserManagement, VersionManager, AUTO_EXEC_QL_VALUE,
+    AccountQuotaLimit, EmergencyIntervention, NodeManager, PermissionManagement, PriceManagement,
+    QuotaManager, Resource, SysConfig, UserManagement, VersionManager, AUTO_EXEC_QL_VALUE,
 };
 use crate::libexecutor::economical_model::EconomicalModel;
 use crate::types::block_number::BlockTag;
@@ -68,21 +68,25 @@ impl GlobalSysConfig {
         let quota_manager = QuotaManager::new(executor);
         conf.block_quota_limit = quota_manager
             .block_quota_limit(block_tag)
-            .unwrap_or_else(QuotaManager::default_block_quota_limit) as usize;
+            .unwrap_or_else(QuotaManager::default_block_quota_limit)
+            as usize;
         conf.block_sys_config.auto_exec_quota_limit = quota_manager
             .auto_exec_quota_limit(block_tag)
             .unwrap_or_else(QuotaManager::default_auto_exec_quota_limit);
         let sys_config = SysConfig::new(executor);
         conf.delay_active_interval = sys_config
             .delay_block_number(block_tag)
-            .unwrap_or_else(SysConfig::default_delay_block_number) as usize;
+            .unwrap_or_else(SysConfig::default_delay_block_number)
+            as usize;
         conf.block_sys_config.check_options.call_permission = sys_config
             .call_permission_check(block_tag)
             .unwrap_or_else(SysConfig::default_call_permission_check);
         conf.block_sys_config.check_options.send_tx_permission = sys_config
             .send_tx_permission_check(block_tag)
             .unwrap_or_else(SysConfig::default_send_tx_permission_check);
-        conf.block_sys_config.check_options.create_contract_permission = sys_config
+        conf.block_sys_config
+            .check_options
+            .create_contract_permission = sys_config
             .create_contract_permission_check(block_tag)
             .unwrap_or_else(SysConfig::default_create_contract_permission_check);
         conf.block_sys_config.check_options.quota = sys_config
@@ -97,11 +101,15 @@ impl GlobalSysConfig {
         conf.block_interval = sys_config
             .block_interval(block_tag)
             .unwrap_or_else(SysConfig::default_block_interval);
-        conf.block_sys_config.auto_exec = sys_config.auto_exec(block_tag).unwrap_or_else(SysConfig::default_auto_exec);
+        conf.block_sys_config.auto_exec = sys_config
+            .auto_exec(block_tag)
+            .unwrap_or_else(SysConfig::default_auto_exec);
 
         let permission_manager = PermissionManagement::new(executor);
-        conf.block_sys_config.account_permissions = permission_manager.load_account_permissions(block_tag);
-        conf.block_sys_config.super_admin_account = permission_manager.get_super_admin_account(block_tag);
+        conf.block_sys_config.account_permissions =
+            permission_manager.load_account_permissions(block_tag);
+        conf.block_sys_config.super_admin_account =
+            permission_manager.get_super_admin_account(block_tag);
 
         let user_manager = UserManagement::new(executor);
         conf.block_sys_config.group_accounts = user_manager.load_group_accounts(block_tag);
@@ -117,7 +125,9 @@ impl GlobalSysConfig {
         conf.block_sys_config
             .account_quota_limit
             .set_common_quota_limit(common_quota_limit);
-        conf.block_sys_config.account_quota_limit.set_specific_quota_limit(specific);
+        conf.block_sys_config
+            .account_quota_limit
+            .set_specific_quota_limit(specific);
         conf.changed_height = executor.get_current_height() as usize;
 
         let emergency_manager = EmergencyIntervention::new(executor);

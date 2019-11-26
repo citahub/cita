@@ -71,18 +71,27 @@ fn main() {
         .expect("Open mock data file error")
         .read_to_string(&mut mock_data_string)
         .expect("Read mock data file error");
-    let mut mock_data: serde_yaml::Value = serde_yaml::from_str(mock_data_string.as_str()).expect("Parse mock data error");
+    let mut mock_data: serde_yaml::Value =
+        serde_yaml::from_str(mock_data_string.as_str()).expect("Parse mock data error");
 
     info!("mock-data-path={}", mock_data_path);
     let (tx_sub, rx_sub) = channel::unbounded();
     let (tx_pub, rx_pub) = channel::unbounded();
 
-    start_pubsub("consensus", routing_key!([Chain >> RichStatus]), tx_sub, rx_pub);
+    start_pubsub(
+        "consensus",
+        routing_key!([Chain >> RichStatus]),
+        tx_sub,
+        rx_pub,
+    );
     let amqp_url = std::env::var("AMQP_URL").expect("AMQP_URL empty");
     info!("AMQP_URL={}", amqp_url);
     let sys_time = Arc::new(Mutex::new(time::SystemTime::now()));
 
-    let privkey = mock_data["privkey"].as_str().and_then(|p| PrivKey::from_str(p).ok()).unwrap();
+    let privkey = mock_data["privkey"]
+        .as_str()
+        .and_then(|p| PrivKey::from_str(p).ok())
+        .unwrap();
     let mut mock_blocks: HashMap<u64, &serde_yaml::Value> = HashMap::new();
     for block in mock_data["blocks"].as_sequence_mut().unwrap() {
         let block_number = block["number"].as_u64().unwrap();
@@ -177,17 +186,35 @@ fn send_block(
                 sender.lower_hex(),
                 BuildBlock::build_contract_address(&sender, &U256::from(nonce)).lower_hex()
             );
-            info!("address={}, quota={}, nonce={}", contract_address, quota, nonce);
-            BuildBlock::build_tx(contract_address, data, quota, nonce, valid_until_block, &tx_privkey)
+            info!(
+                "address={}, quota={}, nonce={}",
+                contract_address, quota, nonce
+            );
+            BuildBlock::build_tx(
+                contract_address,
+                data,
+                quota,
+                nonce,
+                valid_until_block,
+                &tx_privkey,
+            )
         })
         .collect();
 
     // Build block
-    let (send_data, _block) =
-        BuildBlock::build_block_with_proof(&txs[..], pre_hash, height, privkey, GENESIS_TIMESTAMP + height * 3);
+    let (send_data, _block) = BuildBlock::build_block_with_proof(
+        &txs[..],
+        pre_hash,
+        height,
+        privkey,
+        GENESIS_TIMESTAMP + height * 3,
+    );
     info!("send block ({} transactions)", txs.len());
     *sys_time.lock().unwrap() = time::SystemTime::now();
     pub_sender
-        .send((routing_key!(Consensus >> BlockWithProof).into(), send_data.clone()))
+        .send((
+            routing_key!(Consensus >> BlockWithProof).into(),
+            send_data.clone(),
+        ))
         .unwrap();
 }

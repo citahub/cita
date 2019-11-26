@@ -93,7 +93,9 @@ use crate::config::{AddressConfig, NetConfig};
 use crate::mq_agent::MqAgent;
 use crate::network::Network;
 use crate::node_manager::{NodesManager, DEFAULT_PORT};
-use crate::p2p_protocol::{node_discovery::create_discovery_meta, transfer::create_transfer_meta, SHandle};
+use crate::p2p_protocol::{
+    node_discovery::create_discovery_meta, transfer::create_transfer_meta, SHandle,
+};
 use crate::synchronizer::Synchronizer;
 use clap::App;
 use dotenv;
@@ -130,7 +132,11 @@ fn main() {
     let config_file = matches.value_of("config").unwrap_or("network.toml");
 
     let config_path = Path::new(config_file);
-    let mut dir = config_path.parent().unwrap_or_else(|| Path::new("")).to_str().unwrap();
+    let mut dir = config_path
+        .parent()
+        .unwrap_or_else(|| Path::new(""))
+        .to_str()
+        .unwrap();
     if dir.is_empty() {
         dir = ".";
     }
@@ -155,16 +161,24 @@ fn main() {
     let mut nodes_mgr = NodesManager::from_config(config.clone(), own_addr.addr);
     let mut mq_agent = MqAgent::default();
     let mut synchronizer_mgr = Synchronizer::new(mq_agent.client(), nodes_mgr.client());
-    let mut network_mgr = Network::new(mq_agent.client(), nodes_mgr.client(), synchronizer_mgr.client());
+    let mut network_mgr = Network::new(
+        mq_agent.client(),
+        nodes_mgr.client(),
+        synchronizer_mgr.client(),
+    );
     mq_agent.set_nodes_mgr_client(nodes_mgr.client());
     mq_agent.set_network_client(network_mgr.client());
 
-    let transfer_meta = create_transfer_meta(network_mgr.client(), nodes_mgr.client(), own_addr.addr);
-    let mut service_cfg = ServiceBuilder::default().insert_protocol(transfer_meta).forever(true);
+    let transfer_meta =
+        create_transfer_meta(network_mgr.client(), nodes_mgr.client(), own_addr.addr);
+    let mut service_cfg = ServiceBuilder::default()
+        .insert_protocol(transfer_meta)
+        .forever(true);
 
     let discovery_flag = config.enable_discovery.unwrap_or(true);
     let (tx, rx) = channel();
-    let mut watcher: RecommendedWatcher = Watcher::new(tx, std::time::Duration::from_secs(NOTIFY_DELAY_SECS)).unwrap();
+    let mut watcher: RecommendedWatcher =
+        Watcher::new(tx, std::time::Duration::from_secs(NOTIFY_DELAY_SECS)).unwrap();
     if discovery_flag {
         let discovery_meta = create_discovery_meta(nodes_mgr.client());
         service_cfg = service_cfg.insert_protocol(discovery_meta);

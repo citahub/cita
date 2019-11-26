@@ -17,7 +17,8 @@ use std::time::Duration;
 use futures::{future::Future, stream::FuturesOrdered, sync::oneshot};
 use hyper::HeaderMap as Headers;
 use jsonrpc_types::{
-    rpc_request::Request as JsonRequest, rpc_response::Output as JsonrpcResponse, rpc_types::Id as JsonrpcId,
+    rpc_request::Request as JsonRequest, rpc_response::Output as JsonrpcResponse,
+    rpc_types::Id as JsonrpcId,
 };
 use libproto::request::Request as ProtoRequest;
 use pubsub::channel::Sender;
@@ -41,8 +42,13 @@ pub enum MQRequest {
 }
 
 pub enum AccessLog {
-    Single { id: JsonrpcId, method: Option<String> },
-    Batch { count: Option<usize> },
+    Single {
+        id: JsonrpcId,
+        method: Option<String>,
+    },
+    Batch {
+        count: Option<usize>,
+    },
 }
 
 impl MQRequest {
@@ -93,7 +99,10 @@ impl Publisher {
                     .map(|req| self.send_request(req))
                     .collect::<Vec<oneshot::Receiver<JsonrpcResponse>>>();
 
-                let resp = BatchFutureResponse::new(FuturesOrdered::from_iter(rxs).collect(), self.headers.clone());
+                let resp = BatchFutureResponse::new(
+                    FuturesOrdered::from_iter(rxs).collect(),
+                    self.headers.clone(),
+                );
                 PublishFutResponse::Batch(resp)
             }
         }
@@ -104,9 +113,10 @@ impl Publisher {
         let (tx, rx) = oneshot::channel();
         let topic = select_topic(json_req.get_method());
 
-        self.responses
-            .lock()
-            .insert(proto_req.request_id.clone(), TransferType::HTTP((json_req.get_info(), tx)));
+        self.responses.lock().insert(
+            proto_req.request_id.clone(),
+            TransferType::HTTP((json_req.get_info(), tx)),
+        );
 
         // NOTE: send failure is handled as timeout error
         let _ = self.sender.send((topic, proto_req));
@@ -146,22 +156,31 @@ impl TimeoutPublisher {
             ),
             MQRequest::Batch(ref hybrid_reqs) => (
                 None,
-                hybrid_reqs.iter().map(|ref req| req.proto_req.request_id.clone()).collect(),
+                hybrid_reqs
+                    .iter()
+                    .map(|ref req| req.proto_req.request_id.clone())
+                    .collect(),
             ),
         };
 
-        let fut_resp = self.publisher.publish(req).select2(timeout).then(move |res| match res {
-            Ok(Either::A((mq_resp, _timeout))) => Ok(mq_resp),
-            Ok(Either::B((_reach_timeout, _no_resp))) => {
-                let mut guard = timeout_responses.lock();
-                for id in req_ids {
-                    guard.remove(&id);
+        let fut_resp = self
+            .publisher
+            .publish(req)
+            .select2(timeout)
+            .then(move |res| match res {
+                Ok(Either::A((mq_resp, _timeout))) => Ok(mq_resp),
+                Ok(Either::B((_reach_timeout, _no_resp))) => {
+                    let mut guard = timeout_responses.lock();
+                    for id in req_ids {
+                        guard.remove(&id);
+                    }
+                    Err(ServiceError::MQRpcTimeout(req_info))
                 }
-                Err(ServiceError::MQRpcTimeout(req_info))
-            }
-            Err(Either::A((mq_rpc_err, _timeout))) => Err(mq_rpc_err),
-            Err(Either::B((_timeout_err, _mq_rpc_err))) => Err(ServiceError::InternalServerError),
-        });
+                Err(Either::A((mq_rpc_err, _timeout))) => Err(mq_rpc_err),
+                Err(Either::B((_timeout_err, _mq_rpc_err))) => {
+                    Err(ServiceError::InternalServerError)
+                }
+            });
 
         Box::new(fut_resp)
     }

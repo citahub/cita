@@ -44,9 +44,11 @@ pub fn call_pure<B: DB + 'static>(
     );
     // Transfer value
     if !request.disable_transfer_value {
-        state_provider
-            .borrow_mut()
-            .transfer_balance(&request.sender, &request.receiver, request.value)?;
+        state_provider.borrow_mut().transfer_balance(
+            &request.sender,
+            &request.receiver,
+            request.value,
+        )?;
     }
 
     // Execute pre-compiled contracts.
@@ -59,14 +61,23 @@ pub fn call_pure<B: DB + 'static>(
         let r = c.run(&request.input);
         match r {
             Ok(ok) => {
-                return Ok(evm::InterpreterResult::Normal(ok, request.gas_limit - gas, vec![]));
+                return Ok(evm::InterpreterResult::Normal(
+                    ok,
+                    request.gas_limit - gas,
+                    vec![],
+                ));
             }
             Err(e) => return Err(e),
         }
     }
 
     // Run
-    let mut evm_it = evm::Interpreter::new(evm_context, evm_cfg, Box::new(evm_data_provider), evm_params);
+    let mut evm_it = evm::Interpreter::new(
+        evm_context,
+        evm_cfg,
+        Box::new(evm_data_provider),
+        evm_params,
+    );
     Ok(evm_it.run()?)
 }
 

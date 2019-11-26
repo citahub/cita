@@ -56,9 +56,9 @@ impl BlockDataProvider for BlockDataProviderMock {
 /// Store storages shared datas.
 #[derive(Clone, Default, Debug)]
 pub struct Store {
-    pub refund: HashMap<Address, u64>,                 // For record refunds
+    pub refund: HashMap<Address, u64>, // For record refunds
     pub origin: HashMap<Address, HashMap<H256, H256>>, // For record origin value
-    pub selfdestruct: HashSet<Address>,                // For self destruct
+    pub selfdestruct: HashSet<Address>, // For self destruct
     // Field inused used for garbage collection.
     //
     // Test:
@@ -142,15 +142,25 @@ impl<B: DB + 'static> evm::DataProvider for DataProvider<B> {
     }
 
     fn get_refund(&self, address: &Address) -> u64 {
-        self.store.borrow_mut().refund.get(address).map_or(0, |v| *v)
+        self.store
+            .borrow_mut()
+            .refund
+            .get(address)
+            .map_or(0, |v| *v)
     }
 
     fn get_code_size(&self, address: &Address) -> u64 {
-        self.state_provider.borrow_mut().code_size(address).unwrap_or(0) as u64
+        self.state_provider
+            .borrow_mut()
+            .code_size(address)
+            .unwrap_or(0) as u64
     }
 
     fn get_code(&self, address: &Address) -> Vec<u8> {
-        self.state_provider.borrow_mut().code(address).unwrap_or_else(|_| vec![])
+        self.state_provider
+            .borrow_mut()
+            .code(address)
+            .unwrap_or_else(|_| vec![])
     }
 
     fn get_code_hash(&self, address: &Address) -> H256 {
@@ -180,7 +190,11 @@ impl<B: DB + 'static> evm::DataProvider for DataProvider<B> {
             .or_insert_with(HashMap::new)
             .entry(key)
             .or_insert(a);
-        if let Err(e) = self.state_provider.borrow_mut().set_storage(address, key, value) {
+        if let Err(e) = self
+            .state_provider
+            .borrow_mut()
+            .set_storage(address, key, value)
+        {
             panic!("{}", e);
         }
     }
@@ -215,7 +229,10 @@ impl<B: DB + 'static> evm::DataProvider for DataProvider<B> {
                 .unwrap();
         } else {
             // Must ensure that the balance of address which is suicide is zero.
-            self.state_provider.borrow_mut().sub_balance(address, b).unwrap();
+            self.state_provider
+                .borrow_mut()
+                .sub_balance(address, b)
+                .unwrap();
         }
         true
     }
@@ -225,16 +242,29 @@ impl<B: DB + 'static> evm::DataProvider for DataProvider<B> {
     }
 
     fn is_empty(&self, address: &Address) -> bool {
-        self.state_provider.borrow_mut().is_empty(address).unwrap_or(false)
+        self.state_provider
+            .borrow_mut()
+            .is_empty(address)
+            .unwrap_or(false)
     }
 
     fn exist(&self, address: &Address) -> bool {
-        self.state_provider.borrow_mut().exist(address).unwrap_or(false)
+        self.state_provider
+            .borrow_mut()
+            .exist(address)
+            .unwrap_or(false)
     }
 
-    fn call(&self, opcode: evm::OpCode, params: evm::InterpreterParams) -> (Result<evm::InterpreterResult, evm::Error>) {
+    fn call(
+        &self,
+        opcode: evm::OpCode,
+        params: evm::InterpreterParams,
+    ) -> (Result<evm::InterpreterResult, evm::Error>) {
         match opcode {
-            evm::OpCode::CALL | evm::OpCode::CALLCODE | evm::OpCode::DELEGATECALL | evm::OpCode::STATICCALL => {
+            evm::OpCode::CALL
+            | evm::OpCode::CALLCODE
+            | evm::OpCode::DELEGATECALL
+            | evm::OpCode::STATICCALL => {
                 let r = ext_call(
                     self.block_provider.clone(),
                     self.state_provider.clone(),

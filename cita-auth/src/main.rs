@@ -112,7 +112,11 @@ fn profiler(flag_prof_start: u64, flag_prof_duration: u64) {
         let duration = flag_prof_duration;
         thread::spawn(move || {
             thread::sleep(std::time::Duration::new(start, 0));
-            PROFILER.lock().unwrap().start("./auth.profiler").expect("Couldn't start");
+            PROFILER
+                .lock()
+                .unwrap()
+                .start("./auth.profiler")
+                .expect("Couldn't start");
             thread::sleep(std::time::Duration::new(duration, 0));
             PROFILER.lock().unwrap().stop().unwrap();
         });
@@ -180,7 +184,8 @@ fn main() {
     let tx_pub_forward = tx_pub.clone();
     let (tx_request, rx_request) = channel::unbounded();
     thread::spawn(move || {
-        let mut batch_forward = BatchForward::new(count_per_batch, buffer_duration, rx_request, tx_pub_forward);
+        let mut batch_forward =
+            BatchForward::new(count_per_batch, buffer_duration, rx_request, tx_pub_forward);
         batch_forward.run();
     });
 

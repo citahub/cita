@@ -276,13 +276,20 @@ impl Contracts {
         contracts
     }
 
-    pub fn as_params(&self, normal_contracts: &NormalContracts, name: &str) -> BTreeMap<String, String> {
+    pub fn as_params(
+        &self,
+        normal_contracts: &NormalContracts,
+        name: &str,
+    ) -> BTreeMap<String, String> {
         let mut params = BTreeMap::new();
         if let Some(info) = self.list().get(name) {
             let (conts, funcs) = info.get_contract_info(normal_contracts);
             println!("===> conts {:?} funcs {:?}", conts, funcs);
             for i in 0..conts.len() {
-                params.insert(funcs.get(i).unwrap().to_string(), conts.get(i).unwrap().to_string());
+                params.insert(
+                    funcs.get(i).unwrap().to_string(),
+                    conts.get(i).unwrap().to_string(),
+                );
             }
             params.insert("perm_name".to_string(), name.to_string());
         }
@@ -298,7 +305,10 @@ pub struct ContractsInfo {
 }
 
 impl ContractsInfo {
-    pub fn get_contract_info(&self, normal_contracts: &NormalContracts) -> (Vec<String>, Vec<String>) {
+    pub fn get_contract_info(
+        &self,
+        normal_contracts: &NormalContracts,
+    ) -> (Vec<String>, Vec<String>) {
         let mut conts = Vec::new();
         let mut funcs = Vec::new();
         let reference = normal_contracts.list();
@@ -562,7 +572,10 @@ mod tests {
             contracts.normal_contracts.auto_exec.address,
             String::from("0xffffffffffffffffffffffffffffffffff020013")
         );
-        assert_eq!(contracts.normal_contracts.auto_exec.file, String::from("system/AutoExec.sol"));
+        assert_eq!(
+            contracts.normal_contracts.auto_exec.file,
+            String::from("system/AutoExec.sol")
+        );
 
         assert_eq!(
             contracts.permission_contracts.file,
@@ -574,7 +587,11 @@ mod tests {
         );
 
         assert_eq!(
-            contracts.permission_contracts.contracts.new_permission.address,
+            contracts
+                .permission_contracts
+                .contracts
+                .new_permission
+                .address,
             String::from("0xffffffffffffffffffffffffffffffffff021010")
         );
     }

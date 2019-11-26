@@ -118,13 +118,20 @@ impl Postman {
             .get_completed_result(current_height)
             .expect("loaded from the previous step above; qed");
         let msg: Message = bootstrap_executed_result.clone().into();
-        self.response_mq(routing_key!(Executor >> ExecutedResult).into(), msg.try_into().unwrap());
+        self.response_mq(
+            routing_key!(Executor >> ExecutedResult).into(),
+            msg.try_into().unwrap(),
+        );
     }
 
     // make sure executor exit also
     fn close(&self, rollback_id: BlockTag) {
         if rollback_id != BlockTag::Height(::std::usize::MAX as u64) {
-            command::exit(&self.command_req_sender, &self.command_resp_receiver, rollback_id);
+            command::exit(
+                &self.command_req_sender,
+                &self.command_resp_receiver,
+                rollback_id,
+            );
         }
     }
 
@@ -264,7 +271,10 @@ impl Postman {
         trace!("send {}-th ExecutedResult", height);
         let executed_result = executed_result.unwrap().clone();
         let msg: Message = executed_result.into();
-        self.response_mq(routing_key!(Executor >> ExecutedResult).into(), msg.try_into().unwrap());
+        self.response_mq(
+            routing_key!(Executor >> ExecutedResult).into(),
+            msg.try_into().unwrap(),
+        );
         Ok(())
     }
 
@@ -284,7 +294,8 @@ impl Postman {
                 let mut proofed = msg.take_block_with_proof().unwrap();
                 let open_block = OpenBlock::from(proofed.take_blk());
                 let present_proof = proofed.take_proof();
-                self.backlogs.insert_block_with_proof(open_block, &present_proof)
+                self.backlogs
+                    .insert_block_with_proof(open_block, &present_proof)
             }
 
             // SyncBlock{block: {body, previous_proof}}
@@ -304,8 +315,13 @@ impl Postman {
     }
 
     fn load_executed_result(&mut self, height: u64) {
-        let executed_result = command::load_executed_result(&self.command_req_sender, &self.command_resp_receiver, height);
-        self.backlogs.insert_completed_result(height, executed_result);
+        let executed_result = command::load_executed_result(
+            &self.command_req_sender,
+            &self.command_resp_receiver,
+            height,
+        );
+        self.backlogs
+            .insert_completed_result(height, executed_result);
     }
 
     // Grow up if current block executed completely,
@@ -319,8 +335,13 @@ impl Postman {
             Ok(closed_block) => {
                 trace!("postman notice executor to grow up to {}", next_height);
                 self.pub_black_list(&closed_block);
-                let executed_result = command::grow(&self.command_req_sender, &self.command_resp_receiver, closed_block);
-                self.backlogs.insert_completed_result(next_height, executed_result);
+                let executed_result = command::grow(
+                    &self.command_req_sender,
+                    &self.command_resp_receiver,
+                    closed_block,
+                );
+                self.backlogs
+                    .insert_completed_result(next_height, executed_result);
                 self.send_executed_info_to_chain(next_height).unwrap();
             }
             Err(reason) => trace!("{}", reason),
@@ -394,7 +415,9 @@ impl Postman {
             clear_list.extend(black_list_cache.lru().iter());
         }
 
-        let black_list = BlackList::new().set_black_list(blacklist).set_clear_list(clear_list);
+        let black_list = BlackList::new()
+            .set_black_list(blacklist)
+            .set_clear_list(clear_list);
 
         if !black_list.is_empty() {
             let black_list_bytes: Message = black_list.protobuf().into();
@@ -430,7 +453,10 @@ impl Postman {
         }
 
         let msg: Message = miscellaneous.into();
-        self.response_mq(routing_key!(Executor >> Miscellaneous).into(), msg.try_into().unwrap());
+        self.response_mq(
+            routing_key!(Executor >> Miscellaneous).into(),
+            msg.try_into().unwrap(),
+        );
     }
 
     fn reply_chain_request(&self, mut req: request::Request) {
@@ -580,8 +606,11 @@ impl Postman {
             }
 
             Request::meta_data(data) => {
-                match command::metadata(&self.command_req_sender, &self.command_resp_receiver, data) {
-                    Ok(metadata) => response.set_meta_data(serde_json::to_string(&metadata).unwrap()),
+                match command::metadata(&self.command_req_sender, &self.command_resp_receiver, data)
+                {
+                    Ok(metadata) => {
+                        response.set_meta_data(serde_json::to_string(&metadata).unwrap())
+                    }
                     Err(error_msg) => {
                         response.set_code(ErrorCode::query_error());
                         response.set_error_msg(error_msg);
@@ -593,15 +622,19 @@ impl Postman {
                 trace!("state_proof info is {:?}", state_info);
                 let _ = serde_json::from_str::<BlockNumber>(&state_info.height)
                     .map(|block_id| {
-                        match command::state_at(&self.command_req_sender, &self.command_resp_receiver, block_id.into())
-                            .and_then(|state| {
-                                state
-                                    .get_storage_proof(
-                                        &Address::from(state_info.get_address()),
-                                        &H256::from(state_info.get_position()),
-                                    )
-                                    .ok()
-                            }) {
+                        match command::state_at(
+                            &self.command_req_sender,
+                            &self.command_resp_receiver,
+                            block_id.into(),
+                        )
+                        .and_then(|state| {
+                            state
+                                .get_storage_proof(
+                                    &Address::from(state_info.get_address()),
+                                    &H256::from(state_info.get_position()),
+                                )
+                                .ok()
+                        }) {
                             Some(state_proof_bs) => {
                                 let buf: Vec<u8> = state_proof_bs.into_iter().flatten().collect();
                                 response.set_state_proof(buf);
@@ -622,18 +655,26 @@ impl Postman {
                 trace!("storage key info is {:?}", skey);
                 let _ = serde_json::from_str::<BlockNumber>(&skey.height)
                     .map(|block_id| {
-                        match command::state_at(&self.command_req_sender, &self.command_resp_receiver, block_id.into())
-                            .and_then(|mut state| {
-                                state
-                                    .get_storage(&Address::from(skey.get_address()), &H256::from(skey.get_position()))
-                                    .ok()
-                            }) {
+                        match command::state_at(
+                            &self.command_req_sender,
+                            &self.command_resp_receiver,
+                            block_id.into(),
+                        )
+                        .and_then(|mut state| {
+                            state
+                                .get_storage(
+                                    &Address::from(skey.get_address()),
+                                    &H256::from(skey.get_position()),
+                                )
+                                .ok()
+                        }) {
                             Some(storage_val) => {
                                 response.set_storage_value(storage_val.to_vec());
                             }
                             None => {
                                 response.set_code(ErrorCode::query_error());
-                                response.set_error_msg("get storage at something failed".to_string());
+                                response
+                                    .set_error_msg("get storage at something failed".to_string());
                             }
                         }
                     })
@@ -648,14 +689,20 @@ impl Postman {
             }
         };
         let msg: Message = response.into();
-        self.response_mq(routing_key!(Executor >> Response).into(), msg.try_into().unwrap());
+        self.response_mq(
+            routing_key!(Executor >> Response).into(),
+            msg.try_into().unwrap(),
+        );
     }
 
     fn signal_to_chain(&self) {
         let mut state_signal = StateSignal::new();
         state_signal.set_height(self.get_current_height());
         let msg: Message = state_signal.into();
-        self.response_mq(routing_key!(Executor >> StateSignal).into(), msg.try_into().unwrap());
+        self.response_mq(
+            routing_key!(Executor >> StateSignal).into(),
+            msg.try_into().unwrap(),
+        );
     }
 
     fn get_current_height(&self) -> u64 {
@@ -688,9 +735,9 @@ mod tests {
         ::std::thread::spawn(move || {
             let command = command_req_receiver.recv().unwrap();
             match command {
-                command::Command::LoadExecutedResult(0) => {
-                    command_resp_sender.send(command::CommandResp::LoadExecutedResult(libproto::ExecutedResult::new()))
-                }
+                command::Command::LoadExecutedResult(0) => command_resp_sender.send(
+                    command::CommandResp::LoadExecutedResult(libproto::ExecutedResult::new()),
+                ),
                 _ => panic!("received should be Command::LoadExecutedResult(0)"),
             }
         });
@@ -701,7 +748,10 @@ mod tests {
         assert!(postman.backlogs.get_completed_result(1).is_none());
 
         let (key, _message) = mq_resp_receiver.recv().unwrap();
-        assert_eq!(routing_key!(Executor >> ExecutedResult), RoutingKey::from(key));
+        assert_eq!(
+            routing_key!(Executor >> ExecutedResult),
+            RoutingKey::from(key)
+        );
     }
 
     #[test]
@@ -718,16 +768,17 @@ mod tests {
             let command = command_req_receiver.recv().unwrap();
             match command {
                 command::Command::LoadExecutedResult(3) => {
-                    let _ =
-                        command_resp_sender.send(command::CommandResp::LoadExecutedResult(libproto::ExecutedResult::new()));
+                    let _ = command_resp_sender.send(command::CommandResp::LoadExecutedResult(
+                        libproto::ExecutedResult::new(),
+                    ));
                 }
                 _ => panic!("received should be Command::LoadExecutedResult(3)"),
             }
             let command = command_req_receiver.recv().unwrap();
             match command {
-                command::Command::LoadExecutedResult(2) => {
-                    command_resp_sender.send(command::CommandResp::LoadExecutedResult(libproto::ExecutedResult::new()))
-                }
+                command::Command::LoadExecutedResult(2) => command_resp_sender.send(
+                    command::CommandResp::LoadExecutedResult(libproto::ExecutedResult::new()),
+                ),
                 _ => panic!("received should be Command::LoadExecutedResult(2)"),
             }
         });
@@ -740,7 +791,10 @@ mod tests {
         assert!(postman.backlogs.get_completed_result(3).is_some());
 
         let (key, _message) = mq_resp_receiver.recv().unwrap();
-        assert_eq!(routing_key!(Executor >> ExecutedResult), RoutingKey::from(key));
+        assert_eq!(
+            routing_key!(Executor >> ExecutedResult),
+            RoutingKey::from(key)
+        );
     }
 
     #[test]
@@ -751,10 +805,13 @@ mod tests {
         let mut postman = helpers::generate_postman(current_height, current_hash);
 
         let completed_result_3 = helpers::generate_executed_result(3);
-        postman.backlogs.insert_completed_result(3, completed_result_3);
+        postman
+            .backlogs
+            .insert_completed_result(3, completed_result_3);
 
         // generate 2 equal BlockWithProof but with different timestamp
-        let mut block_with_proof = helpers::generate_block_with_proof(current_height + 1, parent_hash);
+        let mut block_with_proof =
+            helpers::generate_block_with_proof(current_height + 1, parent_hash);
         block_with_proof.mut_blk().mut_header().set_timestamp(1);
         let message_a: Message = block_with_proof.clone().into();
         let message_b: Message = {
@@ -796,11 +853,18 @@ mod tests {
         let mut postman = helpers::generate_postman(current_height, current_hash);
 
         let completed_result_3 = helpers::generate_executed_result(3);
-        postman.backlogs.insert_completed_result(3, completed_result_3);
+        postman
+            .backlogs
+            .insert_completed_result(3, completed_result_3);
 
         // generate SignedProposal
-        let mut signed_proposal = helpers::generate_signed_proposal(current_height + 1, parent_hash.clone());
-        signed_proposal.mut_proposal().mut_block().mut_header().set_timestamp(1);
+        let mut signed_proposal =
+            helpers::generate_signed_proposal(current_height + 1, parent_hash.clone());
+        signed_proposal
+            .mut_proposal()
+            .mut_block()
+            .mut_header()
+            .set_timestamp(1);
         let message_a: Message = signed_proposal.into();
         let routing_key = routing_key!(Consensus >> SignedProposal).to_string();
 
@@ -824,7 +888,8 @@ mod tests {
         }
 
         // generate BlockWithProof
-        let mut block_with_proof = helpers::generate_block_with_proof(current_height + 1, parent_hash);
+        let mut block_with_proof =
+            helpers::generate_block_with_proof(current_height + 1, parent_hash);
         block_with_proof.mut_blk().mut_header().set_timestamp(2);
         let message_b: Message = block_with_proof.into();
         let routing_key = routing_key!(Consensus >> BlockWithProof).to_string();
@@ -856,10 +921,13 @@ mod tests {
         let mut postman = helpers::generate_postman(current_height, current_hash);
 
         let completed_result_3 = helpers::generate_executed_result(3);
-        postman.backlogs.insert_completed_result(3, completed_result_3);
+        postman
+            .backlogs
+            .insert_completed_result(3, completed_result_3);
 
         // generate BlockWithProof
-        let mut block_with_proof = helpers::generate_block_with_proof(current_height + 1, parent_hash);
+        let mut block_with_proof =
+            helpers::generate_block_with_proof(current_height + 1, parent_hash);
         block_with_proof.mut_blk().mut_header().set_timestamp(1);
         let message_a: Message = block_with_proof.into();
         let routing_key = routing_key!(Consensus >> BlockWithProof).to_string();
@@ -885,8 +953,13 @@ mod tests {
         }
 
         // generate SignedProposal
-        let mut signed_proposal = helpers::generate_signed_proposal(current_height + 1, parent_hash.clone());
-        signed_proposal.mut_proposal().mut_block().mut_header().set_timestamp(2);
+        let mut signed_proposal =
+            helpers::generate_signed_proposal(current_height + 1, parent_hash.clone());
+        signed_proposal
+            .mut_proposal()
+            .mut_block()
+            .mut_header()
+            .set_timestamp(2);
         let message_b: Message = signed_proposal.into();
         let routing_key = routing_key!(Consensus >> SignedProposal).to_string();
 
@@ -925,7 +998,10 @@ mod tests {
         let mut msg = Message::try_from(msg_vec).unwrap();
         let chain_state_signal: StateSignal = msg.take_state_signal().unwrap();
         let chain_height = chain_state_signal.get_height();
-        assert_eq!(chain_height, 2, "mock chain will rececive executor's height, then sync local");
+        assert_eq!(
+            chain_height, 2,
+            "mock chain will rececive executor's height, then sync local"
+        );
     }
 
     #[test]
@@ -941,9 +1017,15 @@ mod tests {
         let execute_result_4 = generate_executed_result(4);
         let execute_result_5 = generate_executed_result(5);
 
-        postman.backlogs.insert_completed_result(3, execute_result_3);
-        postman.backlogs.insert_completed_result(4, execute_result_4);
-        postman.backlogs.insert_completed_result(5, execute_result_5);
+        postman
+            .backlogs
+            .insert_completed_result(3, execute_result_3);
+        postman
+            .backlogs
+            .insert_completed_result(4, execute_result_4);
+        postman
+            .backlogs
+            .insert_completed_result(5, execute_result_5);
 
         // chain height = 2 < executor height = 5
         let mut state_signal = StateSignal::new();
@@ -953,10 +1035,16 @@ mod tests {
         // chain is lower than executor and have cached 3, 4, 5 executed result
         for i in 3..6 {
             let (key, msg_vec) = mq_resp_receiver.recv().unwrap();
-            assert_eq!(routing_key!(Executor >> ExecutedResult), RoutingKey::from(key));
+            assert_eq!(
+                routing_key!(Executor >> ExecutedResult),
+                RoutingKey::from(key)
+            );
             let mut msg = Message::try_from(msg_vec).unwrap();
             let execute_result: libproto::ExecutedResult = msg.take_executed_result().unwrap();
-            assert_eq!(execute_result.get_executed_info().get_header().get_height(), i);
+            assert_eq!(
+                execute_result.get_executed_info().get_header().get_height(),
+                i
+            );
         }
     }
 
@@ -1132,11 +1220,23 @@ mod tests {
         let execute_result_4 = generate_executed_result(4);
         let execute_result_5 = generate_executed_result(5);
 
-        postman.backlogs.insert_completed_result(0, execute_result_0);
-        postman.backlogs.insert_completed_result(1, execute_result_1);
-        postman.backlogs.insert_completed_result(2, execute_result_2);
-        postman.backlogs.insert_completed_result(3, execute_result_3);
-        postman.backlogs.insert_completed_result(4, execute_result_4);
-        postman.backlogs.insert_completed_result(5, execute_result_5);
+        postman
+            .backlogs
+            .insert_completed_result(0, execute_result_0);
+        postman
+            .backlogs
+            .insert_completed_result(1, execute_result_1);
+        postman
+            .backlogs
+            .insert_completed_result(2, execute_result_2);
+        postman
+            .backlogs
+            .insert_completed_result(3, execute_result_3);
+        postman
+            .backlogs
+            .insert_completed_result(4, execute_result_4);
+        postman
+            .backlogs
+            .insert_completed_result(5, execute_result_5);
     }
 }

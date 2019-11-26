@@ -38,7 +38,11 @@ where
     T: AsRef<str> + SafeHeaderValue,
 {
     fn from_vec(values: Vec<T>) -> HeaderValue {
-        let joined_str = values.iter().map(AsRef::<str>::as_ref).collect::<Vec<&str>>().join(", ");
+        let joined_str = values
+            .iter()
+            .map(AsRef::<str>::as_ref)
+            .collect::<Vec<&str>>()
+            .join(", ");
 
         HeaderValue::from_str(&joined_str).unwrap()
     }
@@ -89,7 +93,9 @@ mod test {
     #[test]
     fn test_content_type_plain_text() {
         assert_eq!(
-            HeaderValue::from_static(CONTENT_TYPE_PLAIN_TEXT_STR).to_str().unwrap(),
+            HeaderValue::from_static(CONTENT_TYPE_PLAIN_TEXT_STR)
+                .to_str()
+                .unwrap(),
             CONTENT_TYPE_PLAIN_TEXT_STR
         );
     }
@@ -97,14 +103,19 @@ mod test {
     #[test]
     fn test_content_type_json() {
         assert_eq!(
-            HeaderValue::from_static(CONTENT_TYPE_JSON_STR).to_str().unwrap(),
+            HeaderValue::from_static(CONTENT_TYPE_JSON_STR)
+                .to_str()
+                .unwrap(),
             CONTENT_TYPE_JSON_STR
         );
     }
 
     #[test]
     fn test_header_name_x_requested_with_str() {
-        assert_eq!(HeaderName::from_static(X_REQUESTED_WITH_STR).as_str(), X_REQUESTED_WITH_STR);
+        assert_eq!(
+            HeaderName::from_static(X_REQUESTED_WITH_STR).as_str(),
+            X_REQUESTED_WITH_STR
+        );
     }
 
     #[test]
@@ -165,7 +176,10 @@ mod test {
 
     #[test]
     fn test_origin_from_str() {
-        assert_eq!(Origin::from_str("cyber").unwrap(), HeaderValue::from_static("cyber"));
+        assert_eq!(
+            Origin::from_str("cyber").unwrap(),
+            HeaderValue::from_static("cyber")
+        );
 
         assert!(Origin::from_str("\n").is_err());
     }

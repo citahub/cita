@@ -74,7 +74,14 @@ fn main() {
     );
 
     // 4. Create a postman and start serving
-    let mut postman = Postman::new(mq_req_receiver, mq_resp_sender, command, start_height, end_height, file);
+    let mut postman = Postman::new(
+        mq_req_receiver,
+        mq_resp_sender,
+        command,
+        start_height,
+        end_height,
+        file,
+    );
     postman.clear_message_bus();
     match postman.serve() {
         Ok(()) => info!("successful to {}", postman.command),
@@ -92,7 +99,9 @@ fn lock() -> File {
         .create(true)
         .open(SNAPSHOT_LOCK)
         .unwrap_or_else(|_| panic!("failed to open lock-file {}", SNAPSHOT_LOCK));
-    locker.try_lock_exclusive().expect("snapshot already started.");
+    locker
+        .try_lock_exclusive()
+        .expect("snapshot already started.");
     locker
 }
 

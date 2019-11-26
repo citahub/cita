@@ -18,7 +18,9 @@ use crate::transaction_index::TransactionIndex;
 use cita_types::H256;
 use std::collections::HashMap;
 
-use libproto::blockchain::{Block as ProtoBlock, BlockBody as ProtoBlockBody, SignedTransaction as ProtoSignedTransaction};
+use libproto::blockchain::{
+    Block as ProtoBlock, BlockBody as ProtoBlockBody, SignedTransaction as ProtoSignedTransaction,
+};
 use rlp::*;
 use std::ops::{Deref, DerefMut};
 
@@ -197,7 +199,11 @@ impl BlockBody {
 
     pub fn protobuf(&self) -> ProtoBlockBody {
         let mut body = ProtoBlockBody::new();
-        let txs: Vec<ProtoSignedTransaction> = self.transactions.iter().map(SignedTransaction::protobuf).collect();
+        let txs: Vec<ProtoSignedTransaction> = self
+            .transactions
+            .iter()
+            .map(SignedTransaction::protobuf)
+            .collect();
         body.set_transactions(txs.into());
         body
     }

@@ -50,7 +50,8 @@ pub fn check_permission(
         }
         Action::Call(address) => {
             if options.call_permission {
-                let group_management_addr = Address::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
+                let group_management_addr =
+                    Address::from_str(reserved_addresses::GROUP_MANAGEMENT).unwrap();
                 trace!("t.data {:?}", t.data);
 
                 if t.data.is_empty() {
@@ -75,7 +76,13 @@ pub fn check_permission(
                     )?;
                 }
 
-                check_call_contract(group_accounts, account_permissions, &sender, &address, &t.data[0..4])?;
+                check_call_contract(
+                    group_accounts,
+                    account_permissions,
+                    &sender,
+                    &address,
+                    &t.data[0..4],
+                )?;
             }
         }
         _ => {}
@@ -92,9 +99,19 @@ fn check_send_tx(
 ) -> Result<(), AuthenticationError> {
     let cont = Address::from_str(reserved_addresses::PERMISSION_SEND_TX).unwrap();
     let func = vec![0; 4];
-    let has_permission = has_resource(group_accounts, account_permissions, account, &cont, &func[..]);
+    let has_permission = has_resource(
+        group_accounts,
+        account_permissions,
+        account,
+        &cont,
+        &func[..],
+    );
 
-    trace!("Account {:?} has send tx permission: {:?}", account, has_permission);
+    trace!(
+        "Account {:?} has send tx permission: {:?}",
+        account,
+        has_permission
+    );
 
     if !has_permission {
         return Err(AuthenticationError::NoTransactionPermission);
@@ -111,7 +128,13 @@ fn check_create_contract(
 ) -> Result<(), AuthenticationError> {
     let cont = Address::from_str(reserved_addresses::PERMISSION_CREATE_CONTRACT).unwrap();
     let func = vec![0; 4];
-    let has_permission = has_resource(group_accounts, account_permissions, account, &cont, &func[..]);
+    let has_permission = has_resource(
+        group_accounts,
+        account_permissions,
+        account,
+        &cont,
+        &func[..],
+    );
 
     trace!("has create contract permission: {:?}", has_permission);
 
