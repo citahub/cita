@@ -1,7 +1,7 @@
 use super::check;
 use super::utils::{extract_to_u32, get_latest_key, h256_to_bool};
 
-use cita_types::{Address, H256};
+use cita_types::{Address, H256, U256};
 use cita_vm::evm::{InterpreterParams, InterpreterResult};
 use common_types::context::Context;
 use common_types::errors::ContractError;
@@ -173,11 +173,11 @@ impl<B: DB> Contract<B> for NodeStore {
 pub struct NodeManager {
     status: HashMap<Address, bool>, // false -> closed, false -> open
     nodes: Vec<Address>,
-    stakes: HashMap<Address, u64>,
+    stakes: HashMap<Address, U256>,
 }
 
 impl NodeManager {
-    pub fn new(nodes: Vec<Address>, stakes: Vec<u64>) -> Self {
+    pub fn new(nodes: Vec<Address>, stakes: Vec<U256>) -> Self {
         let mut stakes_map = HashMap::new();
         let mut status_map = HashMap::new();
         for i in 0..nodes.len() {
@@ -203,7 +203,7 @@ impl NodeManager {
             .expect("only admin can invoke price setting")
         {
             let param_address = Address::from_slice(&params.input[16..36]);
-            let param_stake = 20;
+            let param_stake = U256::from(20);
             trace!("param address decoded is {:?}", param_address);
             trace!("param stake decoded is {:?}", param_stake);
             if let Some(stake) = self.stakes.get_mut(&param_address) {
@@ -268,7 +268,7 @@ impl NodeManager {
                     *s = false;
                 }
                 if let Some(s) = self.stakes.get_mut(&param_address) {
-                    *s = 0;
+                    *s = U256::zero();
                 }
                 *changed = true;
                 return Ok(InterpreterResult::Normal(
@@ -305,8 +305,17 @@ impl NodeManager {
         params: &InterpreterParams,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("Node contract list_stake, params {:?}", params.input);
-
-        Err(ContractError::Internal("Only admin can do".to_owned()))
+        let mut tokens = Vec::new();
+        let mut stakes = Vec::new();
+        for (_key, value) in self.stakes.iter() {
+            stakes.push(Token::Uint(H256::from(value).0));
+        }
+        tokens.push(ethabi::Token::Array(stakes));
+        return Ok(InterpreterResult::Normal(
+            ethabi::encode(&tokens),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     pub fn get_status(
@@ -315,7 +324,7 @@ impl NodeManager {
     ) -> Result<InterpreterResult, ContractError> {
         trace!("Node contract get_status, params {:?}", params.input);
         let param_address = Address::from_slice(&params.input[16..36]);
-        if self.status.get(&param_address).unwrap_or(&false) {
+        if *self.status.get(&param_address).unwrap_or(&false) {
             return Ok(InterpreterResult::Normal(
                 H256::from(1).0.to_vec(),
                 params.gas_limit,
@@ -334,7 +343,30 @@ impl NodeManager {
         &self,
         params: &InterpreterParams,
     ) -> Result<InterpreterResult, ContractError> {
+        // only in charge mode
         trace!("Node contract stake_permillage, params {:?}", params.input);
-        Err(ContractError::Internal("Only admin can do".to_owned()))
+        let param_address = Address::from_slice(&params.input[16..36]);
+        let node_stakes = self.stakes.get(&param_address).unwrap();
+
+        let total = U256::zero();
+        for i in self.stakes.values() {
+            total.overflowing_add(*i);
+        }
+
+        if total == U256::zero() {
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
+        } else {
+            let extend_stake = node_stakes.overflowing_mul(U256::from(1000)).0;
+            let res = extend_stake.checked_div(total).unwrap();
+            return Ok(InterpreterResult::Normal(
+                H256::from(res).to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
+        }
     }
 }

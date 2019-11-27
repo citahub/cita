@@ -24,7 +24,7 @@ use crate::miner::Miner;
 use crate::params::InitData;
 use crate::solc::Solc;
 
-use cita_types::{clean_0x, U256};
+use cita_types::{clean_0x, Address, U256};
 use ethabi::Contract;
 use ethabi::Token;
 use json;
@@ -175,6 +175,40 @@ impl<'a> GenesisCreator<'a> {
                         value: U256::from(0),
                     };
                     self.accounts.insert((*address).clone(), admin_contract);
+                } else if *contract_name == "NodeManager" {
+                    match (params.get(0), params.get(1)) {
+                        (Some(Token::Array(n)), Some(Token::Array(s))) => {
+                            let nodes = n
+                                .iter()
+                                .map(|i| match i {
+                                    Token::Address(x) => Address::from_slice(x),
+                                    _ => unreachable!(),
+                                })
+                                .collect::<Vec<Address>>();
+
+                            let stakes: Vec<U256> = s
+                                .iter()
+                                .map(|i| match i {
+                                    Token::Uint(x) => *x,
+                                    _ => unreachable!(),
+                                })
+                                .collect::<Vec<_>>();
+
+                            let mut param = BTreeMap::new();
+                            for i in 0..nodes.len() {
+                                param.insert(nodes[i].hex(), stakes[i].to_string());
+                            }
+
+                            let contract = Account {
+                                nonce: U256::from(1),
+                                code: "".to_string(),
+                                storage: param,
+                                value: U256::from(0),
+                            };
+                            self.accounts.insert((*address).clone(), contract);
+                        }
+                        _ => unimplemented!(),
+                    }
                 } else if *contract_name == "SysConfig" {
                     let mut param = BTreeMap::new();
                     let delay_block_number = match params.get(0) {

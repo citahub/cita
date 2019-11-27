@@ -13,6 +13,7 @@ use std::sync::Arc;
 use crate::rs_contracts::contracts::admin::AdminContract;
 use crate::rs_contracts::contracts::contract::Contract;
 use crate::rs_contracts::contracts::emergency_intervention::EmergContract;
+use crate::rs_contracts::contracts::node_manager::NodeStore;
 use crate::rs_contracts::contracts::perm_manager::PermStore;
 use crate::rs_contracts::contracts::price::PriceContract;
 use crate::rs_contracts::contracts::sys_config::SystemContract;
@@ -32,6 +33,7 @@ pub struct ContractsFactory<B> {
     perm_store: PermStore,
     emerg_contract: EmergContract,
     system_contract: SystemContract,
+    nodes_store: NodeStore,
 }
 
 impl<B: DB> ContractsFactory<B> {
@@ -58,17 +60,19 @@ impl<B: DB> ContractsFactory<B> {
             updated_hash = self
                 .system_contract
                 .init(contract, self.contracts_db.clone());
+        } else if address == Address::from(reserved_addresses::NODE_MANAGER) {
+            updated_hash = self.nodes_store.init(contract, self.contracts_db.clone());
         }
         trace!("===> updated hash {:?}", updated_hash);
         // new a contract account, storage(key = height, value = hash(contracts))
-        let _ =
-            self.state
-                .borrow_mut()
-                .new_contract(&address, U256::from(0), U256::from(0), vec![]);
-        let _ =
-            self.state
-                .borrow_mut()
-                .set_storage(&address, H256::from(0), H256::from(updated_hash));
+        // let _ =
+        //     self.state
+        //         .borrow_mut()
+        //         .new_contract(&address, U256::from(0), U256::from(0), vec![]);
+        // let _ =
+        //     self.state
+        //         .borrow_mut()
+        //         .set_storage(&address, H256::from(0), H256::from(updated_hash));
     }
 
     pub fn register_perms(&mut self, admin: Address, perm_contracts: BTreeMap<Address, String>) {
@@ -88,6 +92,7 @@ impl<B: DB> ContractsFactory<B> {
             perm_store: PermStore::default(),
             emerg_contract: EmergContract::default(),
             system_contract: SystemContract::default(),
+            nodes_store: NodeStore::default(),
         }
     }
 
@@ -98,6 +103,7 @@ impl<B: DB> ContractsFactory<B> {
             || *addr == Address::from(reserved_addresses::AUTHORIZATION)
             || *addr == Address::from(reserved_addresses::EMERGENCY_INTERVENTION)
             || *addr == Address::from(reserved_addresses::SYS_CONFIG)
+            || *addr == Address::from(reserved_addresses::NODE_MANAGER)
             || is_permssion_contract(*addr)
         {
             return true;
@@ -137,6 +143,13 @@ impl<B: DB> ContractsFactory<B> {
             );
         } else if params.contract.code_address == Address::from(reserved_addresses::SYS_CONFIG) {
             return self.system_contract.execute(
+                &params,
+                context,
+                self.contracts_db.clone(),
+                self.state.clone(),
+            );
+        } else if params.contract.code_address == Address::from(reserved_addresses::NODE_MANAGER) {
+            return self.nodes_store.execute(
                 &params,
                 context,
                 self.contracts_db.clone(),

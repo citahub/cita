@@ -37,9 +37,11 @@ use std::u64;
 
 use crate::rs_contracts::contracts::admin::Admin;
 use crate::rs_contracts::contracts::emergency_intervention;
+use crate::rs_contracts::contracts::node_manager::NodeManager;
 use crate::rs_contracts::contracts::perm::Permission;
 use crate::rs_contracts::contracts::price::Price;
 use crate::rs_contracts::contracts::sys_config::Sysconfig;
+
 use crate::rs_contracts::contracts::utils::{
     encode_string, hex_to_integer, string_to_bool, string_to_static_str, string_to_u64,
 };
@@ -185,6 +187,17 @@ impl Genesis {
                         contracts_factory.register(address, str);
                     }
                 }
+            } else if address == Address::from(reserved_addresses::NODE_MANAGER) {
+                let mut nodes = Vec::new();
+                let mut stakes = Vec::new();
+                for (key, value) in contract.storage.clone() {
+                    nodes.push(Address::from_unaligned(&key).unwrap());
+                    stakes.push(U256::from_dec_str(&value).unwrap());
+                }
+
+                let node_manager = NodeManager::new(nodes, stakes);
+                let str = serde_json::to_string(&node_manager).unwrap();
+                contracts_factory.register(address, str);
             } else if address == Address::from(reserved_addresses::SYS_CONFIG) {
                 let auto_exec = contract
                     .storage
