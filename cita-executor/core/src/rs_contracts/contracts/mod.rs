@@ -5,6 +5,7 @@ pub mod utils;
 
 pub mod admin;
 pub mod emergency_intervention;
+pub mod node_manager;
 pub mod perm;
 pub mod perm_manager;
 pub mod price;
