@@ -133,7 +133,7 @@ impl<'a> GenesisCreator<'a> {
                 );
                 let bytes = constructor.encode_input(input_data, &params).unwrap();
 
-                if *contract_name == "Admin" {
+                if *contract_name == "Admin" || *contract_name == "QuotaManager" {
                     let mut param = BTreeMap::new();
                     let addr = match params.get(0) {
                         Some(Token::Address(addr)) => addr,

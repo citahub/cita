@@ -9,6 +9,7 @@ pub mod node_manager;
 pub mod perm;
 pub mod perm_manager;
 pub mod price;
+pub mod quota_manager;
 pub mod sys_config;
 
 pub use admin::Admin;

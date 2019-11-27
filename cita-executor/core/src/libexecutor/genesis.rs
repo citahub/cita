@@ -40,6 +40,7 @@ use crate::rs_contracts::contracts::emergency_intervention;
 use crate::rs_contracts::contracts::node_manager::NodeManager;
 use crate::rs_contracts::contracts::perm::Permission;
 use crate::rs_contracts::contracts::price::Price;
+use crate::rs_contracts::contracts::quota_manager::QuotaManager;
 use crate::rs_contracts::contracts::sys_config::Sysconfig;
 
 use crate::rs_contracts::contracts::utils::{
@@ -154,6 +155,18 @@ impl Genesis {
                         let admin = Address::from_unaligned(value.as_str()).unwrap();
                         trace!("===> admin contract value {:?}", admin);
                         let contract_admin = Admin::init(admin);
+                        let str = serde_json::to_string(&contract_admin).unwrap();
+                        contracts_factory.register(address, str);
+                    }
+                }
+            } else if address == Address::from(reserved_addresses::QUOTA_MANAGER) {
+                // admin contract
+                for (key, value) in contract.storage.clone() {
+                    trace!("===> quota contract key {:?}", key);
+                    if *key == "admin".to_string() {
+                        let admin = Address::from_unaligned(value.as_str()).unwrap();
+                        trace!("===> admin contract value {:?}", admin);
+                        let contract_admin = QuotaManager::new(admin);
                         let str = serde_json::to_string(&contract_admin).unwrap();
                         contracts_factory.register(address, str);
                     }
