@@ -15,6 +15,7 @@ use crate::rs_contracts::storage::db_trait::DataCategory;
 use cita_trie::DB;
 use cita_vm::state::State;
 use ethabi::Token;
+use num_traits::checked_pow;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
@@ -24,6 +25,8 @@ use tiny_keccak::keccak256;
 const BQL_VALUE: u64 = 1_073_741_824;
 const AQL_VALUE: u64 = 268_435_456;
 pub const AUTO_EXEC_QL_VALUE: u64 = 1_048_576;
+const MAX_LIMIT: u64 = 9_223_372_036_854_775_808;   // 2 ** 63
+const MIN_LIMIT: u64 = 4_194_304;   // 2 ** 22
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct QuotaContract {
@@ -65,9 +68,6 @@ impl QuotaContract {
         current_height: u64,
         contracts_db: Arc<ContractsDB>,
     ) -> (Option<QuotaContract>, Option<QuotaManager>) {
-        // let mut latest_item = EmergencyIntervention::default();
-        // let mut contract_map = EmergContract::default();
-
         if let Some(emerg_map) = contracts_db
             .get(DataCategory::Contracts, b"quota-contract".to_vec())
             .expect("get emerg error")
@@ -112,7 +112,7 @@ impl<B: DB> Contract<B> for QuotaContract {
                 let mut updated = false;
                 let result =
                     extract_to_u32(&params.input[..]).and_then(|signature| match signature {
-                        0xb107ea12 => latest_item.set_defaul_aql(
+                        0xb107ea12 => latest_item.set_default_aql(
                             params,
                             &mut updated,
                             context,
@@ -191,7 +191,7 @@ impl QuotaManager {
         }
     }
 
-    pub fn set_defaul_aql(
+    pub fn set_default_aql(
         &mut self,
         params: &InterpreterParams,
         changed: &mut bool,
@@ -199,7 +199,25 @@ impl QuotaManager {
         contracts_db: Arc<ContractsDB>,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - quota - set_defaul_aql");
-        Err(ContractError::Internal("Only admin can do".to_owned()))
+        let param_default_aql = U256::from(&params.input[4..]);
+        if check::only_admin(params, context, contracts_db.clone())
+            .expect("only admin can invoke price setting")
+            && self.check_base_limit(param_default_aql)
+        {
+            self.default_account_quota_limit = param_default_aql;
+            *changed = true;
+            return Ok(InterpreterResult::Normal(
+                H256::from(1).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
+        } else {
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
+        }
     }
 
     pub fn set_aql(
@@ -209,8 +227,35 @@ impl QuotaManager {
         context: &Context,
         contracts_db: Arc<ContractsDB>,
     ) -> Result<InterpreterResult, ContractError> {
-        trace!("System contract - quota - set_defaul_bql");
-        Err(ContractError::Internal("Only admin can do".to_owned()))
+        trace!(
+            "System contract - quota - set_aql, input {:?}",
+            params.input
+        );
+        let param_address = Address::from(&params.input[16..36]);
+        let param_aql = U256::from(&params.input[36..]);
+        if check::only_admin(params, context, contracts_db.clone())
+            .expect("only admin can invoke price setting")
+            && self.check_base_limit(param_aql)
+        {
+            trace!("param address is {:?}", param_address);
+            trace!("param param_aql is {:?}", param_aql);
+            trace!("account quota before {:?}", self.account_quota);
+            self.account_quota.entry(param_address).or_insert(param_aql);
+            trace!("account quota after {:?}", self.account_quota);
+
+            *changed = true;
+            return Ok(InterpreterResult::Normal(
+                H256::from(1).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
+        } else {
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
+        }
     }
 
     pub fn set_bql(
@@ -221,7 +266,26 @@ impl QuotaManager {
         contracts_db: Arc<ContractsDB>,
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - quota - set_defaul_bql");
-        Err(ContractError::Internal("Only admin can do".to_owned()))
+        let param_default_bql = U256::from(&params.input[4..]);
+        if check::only_admin(params, context, contracts_db.clone())
+            .expect("only admin can invoke price setting")
+            && self.check_block_limit(param_default_bql)
+            && self.check_base_limit(param_default_bql)
+        {
+            self.default_block_quota_limit = param_default_bql;
+            *changed = true;
+            return Ok(InterpreterResult::Normal(
+                H256::from(1).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
+        } else {
+            return Ok(InterpreterResult::Normal(
+                H256::from(0).0.to_vec(),
+                params.gas_limit,
+                vec![],
+            ));
+        }
     }
 
     pub fn get_accounts(
@@ -267,7 +331,7 @@ impl QuotaManager {
     pub fn get_bql(&self, params: &InterpreterParams) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - quota - get_bql");
         return Ok(InterpreterResult::Normal(
-            H256::from(U256::from(BQL_VALUE)).0.to_vec(),
+            H256::from(self.default_block_quota_limit).0.to_vec(),
             params.gas_limit,
             vec![],
         ));
@@ -279,7 +343,7 @@ impl QuotaManager {
     ) -> Result<InterpreterResult, ContractError> {
         trace!("System contract - quota - get_default_aql");
         return Ok(InterpreterResult::Normal(
-            H256::from(U256::from(AQL_VALUE)).0.to_vec(),
+            H256::from(self.default_account_quota_limit).0.to_vec(),
             params.gas_limit,
             vec![],
         ));
@@ -294,7 +358,7 @@ impl QuotaManager {
         if let Some(quota) = self.account_quota.get(&param_address) {
             if *quota == U256::zero() {
                 return Ok(InterpreterResult::Normal(
-                    H256::from(U256::from(AQL_VALUE)).0.to_vec(),
+                    H256::from(self.default_account_quota_limit).0.to_vec(),
                     params.gas_limit,
                     vec![],
                 ));
@@ -306,7 +370,11 @@ impl QuotaManager {
                 ));
             }
         }
-        Err(ContractError::Internal("Only admin can do".to_owned()))
+        return Ok(InterpreterResult::Normal(
+            H256::from(self.default_account_quota_limit).0.to_vec(),
+            params.gas_limit,
+            vec![],
+        ));
     }
 
     pub fn get_auto_exec_ql(
@@ -320,5 +388,19 @@ impl QuotaManager {
             params.gas_limit,
             vec![],
         ));
+    }
+
+    pub fn check_base_limit(&self, param_limit: U256) -> bool {
+        if param_limit < U256::from(MAX_LIMIT) && param_limit > U256::from(MIN_LIMIT) {
+            return true;
+        }
+        false
+    }
+
+    pub fn check_block_limit(&self, param_limit: U256) -> bool {
+        if param_limit >= self.default_account_quota_limit {
+            return true;
+        }
+        false
     }
 }

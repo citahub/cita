@@ -35,6 +35,7 @@ tiny-keccak = { version="1.4", optional=true }
 hashbrown = { version = "0.3", features = ["rayon"] }
 hasher = { version="0.1" }
 rocksdb = "0.12.2"
+num-traits = "0.2.10"   
 
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
