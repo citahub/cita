@@ -15,7 +15,6 @@ use crate::rs_contracts::storage::db_trait::DataCategory;
 use cita_trie::DB;
 use cita_vm::state::State;
 use ethabi::Token;
-use num_traits::checked_pow;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::HashMap;

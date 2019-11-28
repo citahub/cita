@@ -40,7 +40,9 @@ pub fn get_latest_key(target: u64, keys: Vec<&u64>) -> u64 {
     }
 
     for i in 0..keys.len() {
-        if *keys[i] >= target {
+        if *keys[i] == target {
+            return *keys[i];
+        } else if *keys[i] > target {
             return *keys[i - 1];
         } else if i == keys.len() - 1 {
             return *keys[i];
