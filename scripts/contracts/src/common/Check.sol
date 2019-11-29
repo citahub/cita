@@ -6,7 +6,7 @@ import "../../interaction/interface/IGroup.sol";
 import "./ReservedAddrPublic.sol";
 
 /// @title The modifier for checking permission
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 contract Check is ReservedAddrPublic {
 
     modifier hasPermission(address _permission) {

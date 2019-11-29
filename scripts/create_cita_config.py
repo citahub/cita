@@ -170,7 +170,7 @@ class ChainInfo():
         self.enable_tls = False
         self.enable_version = False
         self.stdout = False
-        self.prefix_subj = '/C=CN/ST=ZJ/O=Cryptape, Inc./CN='
+        self.prefix_subj = '/C=CN/ST=ZJ/O=Rivtower, Inc./CN='
 
     def template_create_from_arguments(self, args, contracts_dir_src,
                                        configs_dir_src):

@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ fn main() {
     // 2. Parse command-line options
     let matches = App::new("snapshot")
         .version("2.0")
-        .author("Cryptape")
+        .author("Rivtower")
         .about("CITA Block Chain Node powered by Rust")
         .arg_from_usage("-m, --cmd=[snapshot] 'snapshot or restore'")
         .arg_from_usage("-f, --file=[snapshot] 'the file of snapshot'") //snap file path

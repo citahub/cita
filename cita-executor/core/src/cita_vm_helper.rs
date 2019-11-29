@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ use std::sync::Arc;
 
 /// Function call_pure enters into the specific contract with no check or checkpoints.
 pub fn call_pure<B: DB + 'static>(
-    block_provider: Arc<BlockDataProvider>,
+    block_provider: Arc<dyn BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
     store: Arc<RefCell<VMSubState>>,
     request: &InterpreterParams,

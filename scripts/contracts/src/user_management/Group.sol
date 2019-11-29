@@ -4,7 +4,7 @@ import "../lib/AddressArray.sol";
 import "../common/ReservedAddrPublic.sol";
 
 /// @title Group contract
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: Created by permissionCreator
 ///         The interface can be called: Only query type
 contract Group is ReservedAddrPublic {

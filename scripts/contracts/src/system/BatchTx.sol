@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "../../interaction/interface/IBatchTx.sol";
 
 /// @title Batch tx
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @dev TODO use native contract
 contract BatchTx is IBatchTx {
 

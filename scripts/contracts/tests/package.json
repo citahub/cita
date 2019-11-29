@@ -33,10 +33,10 @@
     "lint-fix": "eslint --fix test"
   },
   "repository": {},
-  "author": "Cryptape Technologies <contact@cryptape.com>",
+  "author": "Rivtower Technologies <contact@rivtower.com>",
   "license": "Apache 2.0",
   "dependencies": {
-    "@cryptape/cita-sdk": "^0.25.1",
+    "@citahub/cita-sdk": "^0.25.1",
     "chai": "^4.2.0",
     "log4js": "^4.1.0",
     "mocha": "^6.1.4"

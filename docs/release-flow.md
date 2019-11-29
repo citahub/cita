@@ -143,7 +143,7 @@ git push origin merge-master-into-develop
 
 4. 合并入 `develop`
 
-通过 https://github.com/cryptape/cita/compare/develop...master 提 pr。
+通过 https://github.com/citahub/cita/compare/develop...master 提 pr。
 
 ## 6. 发布
 

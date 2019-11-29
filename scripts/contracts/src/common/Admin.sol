@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "./Error.sol";
 
 /// @title A common contract about admin
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 contract Admin is Error {
 
     address public admin;

@@ -6,7 +6,7 @@ import "../../interaction/interface/ISysConfig.sol";
 import "../../interaction/interface/IAuthorization.sol";
 
 /// @title Authorization about the permission and account
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020006
 ///         The interface can be called: Only query type
 contract Authorization is IAuthorization, ReservedAddrPublic {

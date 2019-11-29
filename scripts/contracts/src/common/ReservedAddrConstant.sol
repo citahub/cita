@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 /* solium-disable */
 
 /// @title The address of system contract
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @dev TODO all the address
 contract ReservedAddrConstant {
     address constant sysConfigAddr = 0xFFfffFFfFfFffFFfFFfffFffFfFFFffFFf020000;

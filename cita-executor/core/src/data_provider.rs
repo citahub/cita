@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ impl Store {
 
 /// An implemention for evm::DataProvider
 pub struct DataProvider<B> {
-    pub block_provider: Arc<BlockDataProvider>,
+    pub block_provider: Arc<dyn BlockDataProvider>,
     pub state_provider: Arc<RefCell<State<B>>>,
     pub store: Arc<RefCell<Store>>,
 }
@@ -97,7 +97,7 @@ pub struct DataProvider<B> {
 impl<B: DB> DataProvider<B> {
     /// Create a new instance. It's obvious.
     pub fn new(
-        b: Arc<BlockDataProvider>,
+        b: Arc<dyn BlockDataProvider>,
         s: Arc<RefCell<State<B>>>,
         store: Arc<RefCell<Store>>,
     ) -> Self {

@@ -5,7 +5,7 @@ import "../common/ReservedAddrConstant.sol";
 import "../../interaction/interface/IAllGroups.sol";
 
 /// @title User management using group struct
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: 0xfFFffFFFfffFfFFFfFfFFfffffffFfFfFf020012
 ///         The interface the can be called: All
 contract AllGroups is IAllGroups, ReservedAddrConstant {
