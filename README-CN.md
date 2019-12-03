@@ -86,7 +86,7 @@ Apache 2.0 license
 
 ## 权益归属
 
-<img src="https://github.com/citahub/assets/blob/master/citahub-logo-square.png?raw=true" width="256">
+<img src="https://github.com/citahub/assets/blob/master/rivtower-logo-square.png?raw=true" width="256">
 
 秘猿科技团队 :heart:
 
