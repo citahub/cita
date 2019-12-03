@@ -144,7 +144,6 @@ impl GlobalSysConfig {
         conf.block_sys_config.quota_price = price_management
             .quota_price(block_tag)
             .unwrap_or_else(PriceManagement::default_quota_price);
-
         conf
     }
 }

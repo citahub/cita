@@ -177,6 +177,7 @@ fn main() {
             Consensus >> BlockWithProof,
             Consensus >> SignedProposal,
             Net >> SyncResponse,
+            Net >> GetCrl,
             Snapshot >> SnapshotReq,
             Auth >> MiscellaneousReq,
         ]),
