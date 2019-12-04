@@ -10,7 +10,7 @@ import "../../interaction/interface/INodeManager.sol";
 import "../../interaction/interface/ISysConfig.sol";
 
 /// @title Node manager contract
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020001
 contract NodeManager is INodeManager, Error, Check, EconomicalType {
 

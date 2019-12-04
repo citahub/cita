@@ -11,10 +11,10 @@ release:
 	scripts/release.sh release
 
 test:
-	RUST_BACKTRACE=full $(CARGO) test --all 2>&1
+	RUST_BACKTRACE=full $(CARGO) test -j 1 --all 2>&1
 
 test-release:
-	RUST_BACKTRACE=full $(CARGO) test --release --all
+	RUST_BACKTRACE=full $(CARGO) test -j 1 --release --all
 
 bench:
 	-rm target/bench.log

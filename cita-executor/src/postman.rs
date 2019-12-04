@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -409,7 +409,7 @@ impl Postman {
                     **address,
                     BlockTag::Tag(Tag::Latest),
                 )
-                .and_then(|x| Some(U256::from(x.as_slice()) >= U256::from(bm_value)))
+                .map(|x| U256::from(x.as_slice()) >= U256::from(bm_value))
                 .unwrap_or(false)
             })
             .cloned()

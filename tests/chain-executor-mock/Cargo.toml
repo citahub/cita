@@ -1,7 +1,7 @@
 [package]
 name = "chain-executor-mock"
 version = "0.1.0"
-authors = ["Cryptape Technologies <contact@cryptape.com>"]
+authors = ["Rivtower Technologies <contact@rivtower.com>"]
 license = "Apache-2.0"
 edition = "2018"
 
@@ -14,13 +14,13 @@ rustc-serialize = "0.3"
 dotenv = "0.13.0"
 bincode = "0.8.0"
 cita-logger = "0.1.0"
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+cita-crypto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+hashable = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+proof = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+rlp = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]

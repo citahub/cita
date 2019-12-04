@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -142,7 +142,7 @@ fn main() {
     let matches = App::new("executor")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))
-        .author("Cryptape")
+        .author("Rivtower")
         .about("CITA Block Chain Node powered by Rust")
         .args_from_usage(
             "-c, --config=[FILE] 'Sets a switch config file'

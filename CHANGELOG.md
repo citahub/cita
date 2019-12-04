@@ -841,13 +841,13 @@ Fixed a bug that Network could not process domain names.
 
 Release the first version of CITA.
 
-[#201]: https://github.com/cryptape/cita/issues/201
-[#206]: https://github.com/cryptape/cita/issues/206
-[#588]: https://github.com/cryptape/cita/issues/588
-[Account model based zero-knowledge proof transaction.]: https://github.com/cryptape/cita/blob/develop/cita-executor/core/src/native/zk_privacy.md
+[#201]: https://github.com/citahub/cita/issues/201
+[#206]: https://github.com/citahub/cita/issues/206
+[#588]: https://github.com/citahub/cita/issues/588
+[Account model based zero-knowledge proof transaction.]: https://github.com/citahub/cita/blob/develop/cita-executor/core/src/native/zk_privacy.md
 [CITA docker images]: https://hub.docker.com/r/cita/
 [Emergency braking system contract]: https://docs.citahub.com/zh-CN/cita/system/emergency-brake
-[Executor service]: https://github.com/cryptape/cita/tree/develop/cita-executor
+[Executor service]: https://github.com/citahub/cita/tree/develop/cita-executor
 [Get peer information]: https://docs.citahub.com/zh-CN/next/cita/rpc-guide/rpc#peersinfo
 [Get software version]: https://docs.citahub.com/zh-CN/next/cita/rpc-guide/rpc#getversion
 [GetMetaData]: https://docs.citahub.com/zh-CN/cita/rpc-guide/rpc#getmetadata
@@ -858,36 +858,36 @@ Release the first version of CITA.
 [`BlockTag`]: https://docs.citahub.com/zh-CN/cita/rpc-guide/rpc-types#tag
 [`getMetaData`]: https://docs.nervos.org/cita/#/rpc_guide/rpc?id=getmetadata&version=v0.20
 [`sendRawTransaction`]: https://docs.citahub.com/zh-CN/cita/rpc-guide/rpc#sendrawtransaction
-[cita-cli]: https://github.com/cryptape/cita-cli
+[cita-cli]: https://github.com/citahub/cita-cli
 [documentation website]: https://docs.citahub.com/en-US/cita/cita-intro
 [quota price manager system contract]: https://docs.citahub.com/zh-CN/cita/system/price
 [return to the certain address]: https://docs.citahub.com/zh-CN/cita/system/fee-back
 [set quota price]: https://docs.citahub.com/zh-CN/cita/system/price
 [sidechain exit mechanism]: https://docs.nervos.org/cita/#/crosschain/crosschain_contract_example
 
-[Unreleased]: https://github.com/cryptape/cita/compare/v0.25.1...HEAD
-[v0.25.1]: https://github.com/cryptape/cita/compare/v0.25.0...v0.25.1
-[v0.25.0]: https://github.com/cryptape/cita/compare/v0.24.1...v0.25.0
-[v0.24.1]: https://github.com/cryptape/cita/compare/v0.24.0...v0.24.1
-[v0.24.0]: https://github.com/cryptape/cita/compare/v0.23.0...v0.24.0
-[v0.23.1]: https://github.com/cryptape/cita/compare/v0.23.0...v0.23.1
-[v0.23.0]: https://github.com/cryptape/cita/compare/v0.22.0...v0.23.0
-[v0.22.0]: https://github.com/cryptape/cita/compare/v0.21...v0.22.0
-[v0.21.1]: https://github.com/cryptape/cita/compare/v0.21...v0.21.1
-[v0.21.0]: https://github.com/cryptape/cita/compare/v0.20...v0.21
-[v0.20.3]: https://github.com/cryptape/cita/compare/v0.20.2...v0.20.3
-[v0.20.2]: https://github.com/cryptape/cita/compare/v0.20.1...v0.20.2
-[v0.20.1]: https://github.com/cryptape/cita/compare/v0.20...v0.20.1
-[v0.20.0]: https://github.com/cryptape/cita/compare/v0.19...v0.20
-[v0.19.1]: https://github.com/cryptape/cita/compare/v0.19...v0.19.1
-[v0.19.0]: https://github.com/cryptape/cita/compare/v0.18...v0.19
-[v0.18.0]: https://github.com/cryptape/cita/compare/v0.17...v0.18
-[v0.17.0]: https://github.com/cryptape/cita/compare/v0.16...v0.17
-[v0.16.0]: https://github.com/cryptape/cita/compare/v0.15...v0.16
-[v0.15.0]: https://github.com/cryptape/cita/compare/v0.13...v0.15
-[v0.13.0]: https://github.com/cryptape/cita/compare/v0.12...v0.13
-[v0.12.0]: https://github.com/cryptape/cita/compare/v0.10...v0.12
-[v0.10.0]: https://github.com/cryptape/cita/releases/tag/v0.10
+[Unreleased]: https://github.com/citahub/cita/compare/v0.25.1...HEAD
+[v0.25.1]: https://github.com/citahub/cita/compare/v0.25.0...v0.25.1
+[v0.25.0]: https://github.com/citahub/cita/compare/v0.24.1...v0.25.0
+[v0.24.1]: https://github.com/citahub/cita/compare/v0.24.0...v0.24.1
+[v0.24.0]: https://github.com/citahub/cita/compare/v0.23.0...v0.24.0
+[v0.23.1]: https://github.com/citahub/cita/compare/v0.23.0...v0.23.1
+[v0.23.0]: https://github.com/citahub/cita/compare/v0.22.0...v0.23.0
+[v0.22.0]: https://github.com/citahub/cita/compare/v0.21...v0.22.0
+[v0.21.1]: https://github.com/citahub/cita/compare/v0.21...v0.21.1
+[v0.21.0]: https://github.com/citahub/cita/compare/v0.20...v0.21
+[v0.20.3]: https://github.com/citahub/cita/compare/v0.20.2...v0.20.3
+[v0.20.2]: https://github.com/citahub/cita/compare/v0.20.1...v0.20.2
+[v0.20.1]: https://github.com/citahub/cita/compare/v0.20...v0.20.1
+[v0.20.0]: https://github.com/citahub/cita/compare/v0.19...v0.20
+[v0.19.1]: https://github.com/citahub/cita/compare/v0.19...v0.19.1
+[v0.19.0]: https://github.com/citahub/cita/compare/v0.18...v0.19
+[v0.18.0]: https://github.com/citahub/cita/compare/v0.17...v0.18
+[v0.17.0]: https://github.com/citahub/cita/compare/v0.16...v0.17
+[v0.16.0]: https://github.com/citahub/cita/compare/v0.15...v0.16
+[v0.15.0]: https://github.com/citahub/cita/compare/v0.13...v0.15
+[v0.13.0]: https://github.com/citahub/cita/compare/v0.12...v0.13
+[v0.12.0]: https://github.com/citahub/cita/compare/v0.10...v0.12
+[v0.10.0]: https://github.com/citahub/cita/releases/tag/v0.10
 
 [@77liyan]: https://github.com/77liyan
 [@EighteenZi]: https://github.com/EighteenZi

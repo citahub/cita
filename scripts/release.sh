@@ -32,7 +32,6 @@ for binary in \
         cita-network \
         create-key-addr \
         create-genesis \
-        cita-relayer-parser \
         snapshot-tool \
         consensus-mock \
         chain-executor-mock \

@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ fn main() {
 
     let matches = App::new("Chain executor mock")
         .version("0.1.0")
-        .author("Cryptape")
+        .author("Rivtower")
         .arg(
             clap::Arg::with_name("mock-data")
                 .short("m")

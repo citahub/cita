@@ -1,5 +1,5 @@
 FROM cita/cita-run:ubuntu-18.04-20190829
-LABEL maintainer="Cryptape Technologies <contact@cryptape.com>"
+LABEL maintainer="Rivtower Technologies <contact@rivtower.com>"
 
 ## Install CITA release here
 ARG ENCRYPTION_ALG=secp256k1

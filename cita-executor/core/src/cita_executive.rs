@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ const MAX_CREATE_CODE_SIZE: u64 = std::u64::MAX;
 
 // FIXME: CITAExecutive need rename to Executive after all works ready.
 pub struct CitaExecutive<'a, B> {
-    block_provider: Arc<BlockDataProvider>,
+    block_provider: Arc<dyn BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
     context: &'a Context,
     economical_model: EconomicalModel,
@@ -66,7 +66,7 @@ pub struct CitaExecutive<'a, B> {
 
 impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
     pub fn new(
-        block_provider: Arc<BlockDataProvider>,
+        block_provider: Arc<dyn BlockDataProvider>,
         state: Arc<RefCell<State<B>>>,
         context: &'a Context,
         economical_model: EconomicalModel,
@@ -108,7 +108,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             Action::Create => tx_gas_schedule.tx_create_gas,
             _ => tx_gas_schedule.tx_gas,
         } + match t.version {
-            0...2 => 0,
+            0..=2 => 0,
             _ => t.data.len() * tx_gas_schedule.tx_data_non_zero_gas,
         };
         if sender != Address::zero() && t.gas < U256::from(base_gas_required) {
@@ -555,7 +555,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
 /// Function create creates a new contract.
 pub fn create<B: DB + 'static>(
-    block_provider: Arc<BlockDataProvider>,
+    block_provider: Arc<dyn BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
     store: Arc<RefCell<VMSubState>>,
     request: &InterpreterParams,
@@ -656,7 +656,7 @@ pub fn create<B: DB + 'static>(
 
 /// Function call enters into the specific contract.
 pub fn call<B: DB + 'static>(
-    block_provider: Arc<BlockDataProvider>,
+    block_provider: Arc<dyn BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
     store: Arc<RefCell<VMSubState>>,
     request: &InterpreterParams,
