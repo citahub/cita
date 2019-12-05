@@ -26,6 +26,7 @@ rand = "0.4.5"
 dotenv = "0.13.0"
 fnv = "1.0.6"
 notify = "4.0.10"
+openssl = "0.10"
 
 [dev-dependencies]
 tempfile = "3.0.5"
