@@ -14,13 +14,13 @@ rustc-serialize = "0.3"
 dotenv = "0.13.0"
 bincode = "0.8.0"
 cita-logger = "0.1.0"
-libproto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-cita-types = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-hashable = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-proof = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-rlp = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-pubsub = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+libproto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-crypto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+hashable = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+proof = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+rlp = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+pubsub = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]
