@@ -1,28 +1,28 @@
 [submodule "cita-forever"]
 	path = cita-forever
-	url = https://github.com/citahub/cita-forever.git
+	url = git@git.rivtower.com:cita/cita-forever.git
 	branch = develop
 [submodule "cita-bft"]
 	path = cita-bft
-	url = https://github.com/citahub/cita-bft.git
+	url = git@git.rivtower.com:cita/cita-bft.git
 	branch = develop
 [submodule "scripts/txtool/txtool/proto"]
 	path = scripts/txtool/txtool/proto
-	url = https://github.com/citahub/cita-proto.git
+	url = git@git.rivtower.com:cita/cita-proto.git
 	branch = master
 [submodule "tests/contracts"]
 	path = tests/contracts
-	url = https://github.com/citahub/test-contracts.git
+	url = git@git.rivtower.com:cita/test-contracts.git
 	branch = master
 [submodule "scripts/contracts/interaction"]
 	path = scripts/contracts/interaction
-	url = https://github.com/citahub/cita-sys-interaction.git
+	url = git@git.rivtower.com:cita/cita-sys-interaction.git
 	branch = master
 [submodule "scripts/config_tool/genesis"]
 	path = scripts/config_tool/genesis
-	url = https://github.com/citahub/genesis.git
+	url = git@git.rivtower.com:cita/genesis.git
 	branch = master
 [submodule "tests/jsondata"]
 	path = tests/jsondata
-	url = https://github.com/citahub/cita-testdata.git
+	url = git@git.rivtower.com:cita/cita-testdata.git
 	branch = master

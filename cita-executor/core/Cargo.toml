@@ -37,22 +37,22 @@ hasher = { version="0.1" }
 
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
-cita-merklehash = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-snappy = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-hashable = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-util = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-rlp = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-libproto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-proof = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-jsonrpc-types = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+cita-merklehash = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+snappy = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+hashable = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+util = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+rlp = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+libproto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+proof = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 zktx = { git = "https://github.com/citahub/zktx.git", optional = true }
 cita-database = "0.1"
 
-cita-ed25519 = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-cita-secp256k1 = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-cita-types = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
-cita-crypto-trait = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+cita-ed25519 = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-secp256k1 = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-crypto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-crypto-trait = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 
 [dependencies.cita-vm]
 git = "https://github.com/citahub/cita-vm.git"
