@@ -158,8 +158,8 @@ fn main() {
     debug!("Node address is {:?}", own_addr.addr);
     // End init config
 
-    let mut nodes_mgr = NodesManager::from_config(config.clone(), own_addr.addr);
     let mut mq_agent = MqAgent::default();
+    let mut nodes_mgr = NodesManager::from_config(config.clone(), own_addr.addr, mq_agent.client());
     let mut synchronizer_mgr = Synchronizer::new(mq_agent.client(), nodes_mgr.client());
     let mut network_mgr = Network::new(
         mq_agent.client(),

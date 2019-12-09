@@ -11,11 +11,14 @@ tentacle = "0.2.3"
 tokio = "0.1.14"
 futures = "0.1.25"
 cita-logger = "0.1.1"
+common-types = { path = "../cita-chain/types" }
 cita-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 util = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 libproto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 pubsub = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 jsonrpc-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+uuid = { version = "0.7", features = ["v4"] }
+lazy_static = "1.4.0"
 serde = "1.0.84"
 serde_json = "1.0"
 serde_derive = "1.0.84"
@@ -27,6 +30,7 @@ dotenv = "0.13.0"
 fnv = "1.0.6"
 notify = "4.0.10"
 openssl = "0.10"
+ethabi = "4.2.0"
 
 [dev-dependencies]
 tempfile = "3.0.5"

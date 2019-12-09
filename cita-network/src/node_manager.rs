@@ -16,10 +16,16 @@ use crate::cita_protocol::{
     pubsub_message_to_network_message, NetMessageUnit, CONSENSUS_STR, CONSENSUS_TTL_NUM,
 };
 use crate::config::NetConfig;
+use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::p2p_protocol::transfer::TRANSFER_PROTOCOL_ID;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use cita_types::Address;
+use common_types::reserved_addresses::CERT_REVOKE_MANAGER;
 use fnv::FnvHashMap as HashMap;
+use libproto::request::Request as ProtoRequest;
+use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::Call;
+use libproto::{routing_key, Message};
 use libproto::{Message as ProtoMessage, TryInto};
 use notify::DebouncedEvent;
 use openssl::nid::Nid;
@@ -44,6 +50,8 @@ use tentacle::{
     utils::socketaddr_to_multiaddr,
     SessionId,
 };
+use util::sha3;
+use uuid::Uuid;
 
 pub const DEFAULT_MAX_CONNECTS: usize = 666;
 pub const DEFAULT_MAX_KNOWN_ADDRS: usize = 1000;
@@ -51,6 +59,8 @@ pub const DEFAULT_PORT: usize = 4000;
 pub const CHECK_CONNECTED_NODES: Duration = Duration::from_secs(3);
 // Check the certificate time validity in each 12 hour.
 pub const CHECK_CERT_PERIOD: Duration = Duration::from_secs(12 * 3600);
+// Update Certificate Revoke List for each 100 block period.
+pub const UPDATE_CRL_PERIOD: u64 = 100;
 
 // Score uses to manage known_nodes list. If a node has too low score, do not dial it again.
 // Maybe some complex algorithm can be designed later. But for now, just keeps as simple as below:
@@ -76,6 +86,18 @@ pub const REFUSED_SCORE: i32 = 20;
 pub const DIALED_ERROR_SCORE: i32 = 25;
 // A node is dialed error by client, should need DIALED_ERROR_SCORE each time.
 pub const KEEP_ON_LINE_SCORE: i32 = 5;
+
+fn encode_to_vec(name: &[u8]) -> Vec<u8> {
+    sha3::keccak256(name)[0..4].to_vec()
+}
+
+fn create_request() -> ProtoRequest {
+    let request_id = Uuid::new_v4().as_bytes().to_vec();
+    let mut request = ProtoRequest::new();
+
+    request.set_request_id(request_id);
+    request
+}
 
 #[derive(Debug, PartialEq)]
 pub enum NodeSource {
@@ -192,6 +214,7 @@ impl ConsensusNodeTopology {
 }
 
 pub struct NodesManager {
+    mq_client: MqAgentClient,
     known_addrs: HashMap<SocketAddr, NodeStatus>,
     config_addrs: BTreeMap<String, Option<SocketAddr>>,
 
@@ -219,16 +242,19 @@ pub struct NodesManager {
     root_crt: Option<X509>,
     node_crt: Option<Vec<u8>>,
     enable_ca: bool,
+    get_crl_point: u64,
+    crl: Vec<Address>,
 }
 
 impl NodesManager {
-    fn new(peer_key: Address) -> NodesManager {
+    fn new(peer_key: Address, mq_client: MqAgentClient) -> NodesManager {
         let (tx, rx) = unbounded();
         let ticker = tick(CHECK_CONNECTED_NODES);
         let check_cert_ticker = tick(CHECK_CERT_PERIOD);
         let client = NodesManagerClient { sender: tx };
 
         NodesManager {
+            mq_client,
             check_connected_nodes: ticker,
             check_cert: check_cert_ticker,
             known_addrs: HashMap::default(),
@@ -249,11 +275,13 @@ impl NodesManager {
             root_crt: None,
             node_crt: None,
             enable_ca: false,
+            get_crl_point: 0,
+            crl: Vec::default(),
         }
     }
 
-    pub fn from_config(cfg: NetConfig, key: Address) -> Self {
-        let mut node_mgr = NodesManager::new(key);
+    pub fn from_config(cfg: NetConfig, key: Address, mq_client: MqAgentClient) -> Self {
+        let mut node_mgr = NodesManager::new(key, mq_client);
         let max_connects = cfg.max_connects.unwrap_or(DEFAULT_MAX_CONNECTS);
         node_mgr.max_connects = max_connects;
         node_mgr.peer_key = key;
@@ -574,6 +602,10 @@ impl NodesManagerClient {
         self.send_req(NodesManagerMessage::DealRichStatus(req));
     }
 
+    pub fn update_crl(&self, req: UpdateCrlReq) {
+        self.send_req(NodesManagerMessage::UpdateCrl(req));
+    }
+
     fn send_req(&self, req: NodesManagerMessage) {
         if let Err(e) = self.sender.try_send(req) {
             warn!(
@@ -602,6 +634,7 @@ pub enum NodesManagerMessage {
     GetPeersInfo(GetPeersInfoReq),
     ModifiedConfigPeers(ModifiedConfigPeersReq),
     DealRichStatus(DealRichStatusReq),
+    UpdateCrl(UpdateCrlReq),
 }
 
 impl NodesManagerMessage {
@@ -623,6 +656,7 @@ impl NodesManagerMessage {
             NodesManagerMessage::ModifiedConfigPeers(req) => req.handle(service),
             NodesManagerMessage::RetransNetMsg(req) => req.handle(service),
             NodesManagerMessage::DealRichStatus(req) => req.handle(service),
+            NodesManagerMessage::UpdateCrl(req) => req.handle(service),
         }
     }
 }
@@ -697,13 +731,9 @@ fn verify_crt(root_crt: &X509, node_crt: &X509) -> Result<bool, String> {
     Ok(true)
 }
 
-// Also need to verify Common Name in CITA.
-fn cita_verify_crt(root_crt: &X509, node_crt: &X509, claim_addr: &Address) -> Result<bool, String> {
-    // verify cerificate
-    verify_crt(root_crt, node_crt)?;
-
+fn get_common_name(crt: &X509) -> Result<Address, String> {
     // Verify Common Name, should be equal to node address
-    let subject = node_crt.subject_name();
+    let subject = crt.subject_name();
     if subject.entries_by_nid(Nid::COMMONNAME).next().is_none() {
         return Err("Get common name error".to_owned());
     }
@@ -717,9 +747,21 @@ fn cita_verify_crt(root_crt: &X509, node_crt: &X509, claim_addr: &Address) -> Re
             .as_slice(),
     )
     .map_err(|e| format!("Can not get Comman Name String: {:?}", e))?;
-    let addr = Address::from_str(cn_str)
-        .map_err(|e| format!("Can not get node address from Comman Name String: {:?}", e))?;
+    Ok(Address::from_str(cn_str)
+        .map_err(|e| format!("Can not get node address from Comman Name String: {:?}", e))?)
+}
 
+// Also need to verify Common Name in CITA.
+fn cita_verify_crt(
+    root_crt: &X509,
+    node_crt: &X509,
+    claim_addr: &Address,
+    crl: &[Address],
+) -> Result<bool, String> {
+    // Verify cerificate
+    verify_crt(root_crt, node_crt)?;
+
+    let addr = get_common_name(node_crt)?;
     if *claim_addr != addr {
         return Err(format!(
             "Address in common name({:?}) does not equal to self address({:?})",
@@ -727,6 +769,12 @@ fn cita_verify_crt(root_crt: &X509, node_crt: &X509, claim_addr: &Address) -> Re
         ));
     }
 
+    // Check for certificate revoke list
+    for crl_addr in crl.iter() {
+        if crl_addr.contains(&addr) {
+            return Err("The certificate has been revoked!".to_owned());
+        }
+    }
     Ok(true)
 }
 
@@ -830,9 +878,12 @@ impl AddConnectedNodeReq {
                         .expect("The client's  certificate file format error! Needs X509 format.");
 
                     if let Some(ref root_crt) = service.root_crt {
-                        if let Err(e) =
-                            cita_verify_crt(root_crt, &node_crt, &self.init_msg.peer_key)
-                        {
+                        if let Err(e) = cita_verify_crt(
+                            root_crt,
+                            &node_crt,
+                            &self.init_msg.peer_key,
+                            &service.crl,
+                        ) {
                             error!("Failed to verify certificate: {:?}.", e);
                             error!("Disconnet this session: {}", self.session_id);
                             if let Some(ref mut ctrl) = service.service_ctrl {
@@ -1230,6 +1281,24 @@ impl RetransNetMsgReq {
     }
 }
 
+// Call the system contract "CERT_REVOKE_MANAGER" to getCrl.
+fn get_crl(service: &mut NodesManager) {
+    let mut request = create_request();
+    let mut call = Call::new();
+
+    let get_crl_hash: Vec<u8> = encode_to_vec(b"getCrl()");
+    let contract_address: Address = Address::from_str(CERT_REVOKE_MANAGER).unwrap();
+    call.set_from(Address::default().to_vec());
+    call.set_to(contract_address.to_vec());
+    call.set_data(get_crl_hash);
+    call.set_height(("\"latest\"").to_owned());
+    request.set_call(call);
+
+    let data: Message = request.into();
+    let msg = PubMessage::new(routing_key!(Net >> GetCrl).into(), data.try_into().unwrap());
+    service.mq_client.get_crl(msg);
+}
+
 #[derive(Debug)]
 pub struct DealRichStatusReq {
     msg: ProtoMessage,
@@ -1243,6 +1312,16 @@ impl DealRichStatusReq {
     pub fn handle(mut self, service: &mut NodesManager) {
         let rich_status = self.msg.take_rich_status().unwrap();
         info!("DealRichStatusReq rich status {:?}", rich_status);
+
+        if service.enable_ca {
+            let current_hight = rich_status.get_height();
+            // service.get_crl_point init as 0, if current_hight > UPDATE_CRL_PERIOD, network will get the CRL for its each reset.
+            if current_hight - service.get_crl_point > UPDATE_CRL_PERIOD {
+                info!("Get Certificate Revoke List from Executor!");
+                get_crl(service);
+                service.get_crl_point = current_hight;
+            }
+        }
 
         let validators: BTreeSet<Address> = rich_status
             .get_validators()
@@ -1430,6 +1509,38 @@ impl ModifiedConfigPeersReq {
         }
         for peer in self.peers {
             service.config_addrs.entry(peer).or_insert(None);
+        }
+    }
+}
+
+pub struct UpdateCrlReq {
+    crl: Vec<Address>,
+}
+
+impl UpdateCrlReq {
+    pub fn new(crl: Vec<Address>) -> Self {
+        UpdateCrlReq { crl }
+    }
+
+    pub fn handle(self, service: &mut NodesManager) {
+        // update crl in NodesManager
+        info!("Update Certificate Revoke List as : {:?}", self.crl);
+        service.crl = self.crl;
+        for addr in service.crl.iter() {
+            for (key, value) in service.connected_addrs.iter() {
+                if let Some(ref crt) = value.node_crt {
+                    // It can can definitely get the address from crt. So it is ok to use unwrap here.
+                    let cn_addr = get_common_name(crt).unwrap();
+
+                    // Find a connecting node in CRL, disconnect it!
+                    if addr.contains(&cn_addr) {
+                        info!("Find connecting node {:?} in CRL, disconnect it!", addr);
+                        if let Some(ref mut ctrl) = service.service_ctrl {
+                            let _ = ctrl.disconnect(*key);
+                        }
+                    }
+                }
+            }
         }
     }
 }

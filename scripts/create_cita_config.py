@@ -168,6 +168,7 @@ class ChainInfo():
                                              'authorities.list')
         self.nodes = NetworkAddressList()
         self.enable_tls = False
+        self.enable_ca = False
         self.enable_version = False
         self.stdout = False
         self.prefix_subj = '/C=CN/ST=ZJ/O=Rivtower, Inc./CN='
@@ -202,6 +203,8 @@ class ChainInfo():
         network_data = toml.loads('')
         if args.enable_tls:
             network_data['enable_tls'] = True
+        if args.enable_ca:
+            network_data['enable_ca'] = True
         network_data['peers'] = list()
         with open(network_config, 'wt') as stream:
             toml.dump(network_data, stream)
@@ -328,6 +331,8 @@ class ChainInfo():
             network_data['port'] = node['port']
             if self.enable_tls:
                 network_data['enable_tls'] = True
+            if self.enable_ca:
+                network_data['enable_ca'] = True
         with open(network_config, 'wt') as stream:
             current_ip = config[node_id]['ip']
             stream.write(f'# Current node ip is {current_ip}\n')
@@ -354,6 +359,7 @@ def run_subcmd_append(args, work_dir):
     info = ChainInfo(args.chain_name, work_dir)
     info.template_load_from_existed()
     info.enable_tls = args.enable_tls
+    info.enable_ca = args.enable_ca
     info.enable_version = args.enable_version
     info.stdout = args.stdout
     info.append_node(args.node)
@@ -423,6 +429,12 @@ def parse_arguments():
         action='store_true',
         help='The data is encrypted and transmitted on the network')
 
+    # enable encrypted
+    pcreate.add_argument(
+        '--enable_ca',
+        action='store_true',
+        help='The data is encrypted and transmitted on the network')
+
     # enable get version
     pcreate.add_argument(
         '--enable_version',
@@ -466,6 +478,12 @@ def parse_arguments():
     # enable encrypted
     pappend.add_argument(
         '--enable_tls',
+        action='store_true',
+        help='The data is encrypted and transmitted on the network')
+
+    # enable encrypted
+    pappend.add_argument(
+        '--enable_ca',
         action='store_true',
         help='The data is encrypted and transmitted on the network')
 

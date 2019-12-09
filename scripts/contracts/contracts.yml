@@ -59,6 +59,9 @@ NormalContracts:
   AutoExec:
     address: '0xffffffffffffffffffffffffffffffffff020013'
     file: system/AutoExec.sol
+  CertRevokeManager:
+    address: '0xffffffffffffffffffffffffffffffffff020030'
+    file: system/CertRevokeManager.sol
 
 
 PermissionContracts:
