@@ -207,9 +207,7 @@ impl Postman {
                 self.grow_up();
                 self.execute_next_block();
             }
-
             _ => {
-                error!("Get routing key: {} !!!!", routing_key!(Net >> GetCrl));
                 error!("receive unknown key: {} !!!!", RoutingKey::from(key));
             }
         }
