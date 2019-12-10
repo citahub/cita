@@ -16,7 +16,7 @@ if test -f "${SOURCE_DIR}/Cargo.toml"; then
     readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20191128'
 else
     readonly CONTAINER_NAME='cita_run_container'
-    readonly DOCKER_IMAGE='cita/cita-run:ubuntu-18.04-20190829'
+    readonly DOCKER_IMAGE='cita/cita-run:ubuntu-18.04-20191128'
     readonly SOURCE_DIR="$(dirname "$SOURCE_DIR")"
 fi
 
