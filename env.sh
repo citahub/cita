@@ -56,7 +56,7 @@ readonly INIT_CMD='sleep infinity'
 if ! docker ps | grep "${CONTAINER_NAME}" > '/dev/null' 2>&1; then
     echo "Start docker container ${CONTAINER_NAME} ..."
     docker rm "${CONTAINER_NAME}" > '/dev/null' 2>&1
-    docker run -d \
+    docker run -d --init \
            --net="${SYSTEM_NET}" \
            --volume "${SOURCE_DIR}:${WORKDIR}" \
            --volume "${DOCKER_CARGO}/git:${CARGO_HOME}/git" \
