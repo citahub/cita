@@ -16,7 +16,7 @@ if test -f "${SOURCE_DIR}/Cargo.toml"; then
     readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20191128'
 else
     readonly CONTAINER_NAME='cita_run_container'
-    readonly DOCKER_IMAGE='cita/cita-run:ubuntu-18.04-20190829'
+    readonly DOCKER_IMAGE='cita/cita-run:ubuntu-18.04-20191128'
     readonly SOURCE_DIR="$(dirname "$SOURCE_DIR")"
 fi
 
@@ -56,7 +56,7 @@ readonly INIT_CMD='sleep infinity'
 if ! docker ps | grep "${CONTAINER_NAME}" > '/dev/null' 2>&1; then
     echo "Start docker container ${CONTAINER_NAME} ..."
     docker rm "${CONTAINER_NAME}" > '/dev/null' 2>&1
-    docker run -d \
+    docker run -d --init \
            --net="${SYSTEM_NET}" \
            --volume "${SOURCE_DIR}:${WORKDIR}" \
            --volume "${DOCKER_CARGO}/git:${CARGO_HOME}/git" \
