@@ -3,7 +3,7 @@
 # ex: ts=4 sw=4 et
 
 # Exit immediately if a command exits with a non-zero status
-set -e
+# set -e
 
 # Commands Paths
 if [[ $(uname) == 'Darwin' ]]; then
