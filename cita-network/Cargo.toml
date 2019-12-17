@@ -11,7 +11,6 @@ tentacle = "0.2.3"
 tokio = "0.1.14"
 futures = "0.1.25"
 cita-logger = "0.1.1"
-common-types = { path = "../cita-chain/types" }
 cita-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 util = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 libproto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
