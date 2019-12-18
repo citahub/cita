@@ -12,10 +12,10 @@ else
 fi
 
 if test -f "${SOURCE_DIR}/Cargo.toml"; then
-    readonly CONTAINER_NAME='cita_build_container'
+    readonly CONTAINER_NAME="cita_build${SOURCE_DIR//\//_}"
     readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20191128'
 else
-    readonly CONTAINER_NAME='cita_run_container'
+    readonly CONTAINER_NAME="cita_run${SOURCE_DIR//\//_}"
     readonly DOCKER_IMAGE='cita/cita-run:ubuntu-18.04-20191128'
     readonly SOURCE_DIR="$(dirname "$SOURCE_DIR")"
 fi
@@ -50,7 +50,16 @@ cp '/etc/localtime' "${SOURCE_DIR}/localtime"
 readonly LOCALTIME_PATH="${SOURCE_DIR}/localtime"
 [[ "${USER_ID}" = '0' ]] && USER_NAME='root'
 
-readonly INIT_CMD='sleep infinity'
+
+# test network and set init cmd
+timeout=3
+target=www.google.com
+ret_code=`curl -I -s --connect-timeout $timeout $target -w %{http_code} | tail -n1`
+if [ "x$ret_code" = "x200" ]; then
+    readonly INIT_CMD="sleep infinity"
+else
+    readonly INIT_CMD="echo -e '[source.crates-io]\nreplace-with = \"rustcc\"\n[source.rustcc]\nregistry = \"https://code.aliyun.com/rustcc/crates.io-index.git\"' | sudo tee /opt/.cargo/config;sleep infinity"
+fi
 
 # Run Docker
 if ! docker ps | grep "${CONTAINER_NAME}" > '/dev/null' 2>&1; then
