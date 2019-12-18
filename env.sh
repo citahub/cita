@@ -63,8 +63,8 @@ fi
 PUB_KEY_PATH="${HOME}/.ssh/id_rsa"
 # Run Docker
 if ! docker ps | grep "${CONTAINER_NAME}" > '/dev/null' 2>&1; then
-    docker rm "${CONTAINER_NAME}" > '/dev/null' 2>&1
     echo "Start docker container ${CONTAINER_NAME} ..."
+    docker rm "${CONTAINER_NAME}" > '/dev/null' 2>&1
 
     eval $(ssh-agent)
     ssh-add

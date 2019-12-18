@@ -24,5 +24,13 @@ pipeline {
         sh './env.sh make release'
       }
     }
+
+    stage('Basic Test') {
+      steps {
+          sh 'rm -rf target/install/test'
+          sh './env.sh ./tests/integrate_test/cita_basic.sh'
+      }
+    }
+
   }
 }
