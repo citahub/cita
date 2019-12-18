@@ -11,11 +11,12 @@ else
     SOURCE_DIR="$(dirname "$(readlink -f "$0")")"
 fi
 
+readonly CONTAINER_NAME_HASH=`echo ${SOURCE_DIR} | md5sum | cut -d " " -f 1`
 if test -f "${SOURCE_DIR}/Cargo.toml"; then
-    readonly CONTAINER_NAME="cita_build${SOURCE_DIR//\//_}"
+    readonly CONTAINER_NAME="cita_build${CONTAINER_NAME_HASH}"
     readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20191128'
 else
-    readonly CONTAINER_NAME="cita_run${SOURCE_DIR//\//_}"
+    readonly CONTAINER_NAME="cita_run${CONTAINER_NAME_HASH}"
     readonly DOCKER_IMAGE='cita/cita-run:ubuntu-18.04-20191128'
     readonly SOURCE_DIR="$(dirname "$SOURCE_DIR")"
 fi
