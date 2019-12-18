@@ -624,7 +624,6 @@ dependencies = [
  "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-types 0.1.0 (git+ssh://git.rivtower.com/cita/cita-common.git?branch=develop)",
  "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "common-types 0.1.0",
  "dotenv 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethabi 4.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",

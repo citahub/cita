@@ -28,6 +28,7 @@ cov:
 	cargo cov test --all
 	cargo cov report --open
 
+
 clean:
 	rm -rf target/debug/
 	rm -rf target/release/

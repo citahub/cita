@@ -20,7 +20,6 @@ use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::p2p_protocol::transfer::TRANSFER_PROTOCOL_ID;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use cita_types::Address;
-use common_types::reserved_addresses::CERT_REVOKE_MANAGER;
 use fnv::FnvHashMap as HashMap;
 use libproto::request::Request as ProtoRequest;
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -1287,7 +1286,9 @@ fn get_crl(service: &mut NodesManager) {
     let mut call = Call::new();
 
     let get_crl_hash: Vec<u8> = encode_to_vec(b"getCrl()");
-    let contract_address: Address = Address::from_str(CERT_REVOKE_MANAGER).unwrap();
+    // Todo: use CERT_REVOKE_MANAGER address in cita-type
+    let contract_address: Address =
+        Address::from_str("ffffffffffffffffffffffffffffffffff020030").unwrap();
     call.set_from(Address::default().to_vec());
     call.set_to(contract_address.to_vec());
     call.set_data(get_crl_hash);

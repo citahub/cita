@@ -32,10 +32,6 @@ for binary in \
         cita-network \
         create-key-addr \
         create-genesis \
-        snapshot-tool \
-        consensus-mock \
-        chain-executor-mock \
-        box-executor \
         ; do
     cp -rf "target/${type}/${binary}" target/install/bin/
 done

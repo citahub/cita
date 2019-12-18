@@ -341,3 +341,21 @@ create_config() {
     # shellcheck disable=SC2086
     config_script $param
 }
+
+# Clean up only when it successes
+cleanup() {
+    for pid in cita-forever cita-jsonrpc cita-auth cita-chain cita-network cita-bft trans_evm cita-executor; do
+        ps ax | grep ${pid} | grep -v grep | awk '{print $1}' | xargs -n 1 -I %  kill -9 % 2>&1 >/dev/null ||true
+    done
+
+    rm -rf ${BINARY_DIR}/${1:-node}*
+    rm -rf ${BINARY_DIR}/*.json
+    sudo tc qdisc del dev lo root> /dev/null 2>&1||true
+
+    pid_file=/tmp/cita_basic-trans_evm.pid
+    if [ -e ${pid_file} ] ; then
+        for pid in $(cat ${pid_file}) ; do
+            kill -9 ${pid}  2>&1 > /dev/null || true
+        done
+    fi
+}
