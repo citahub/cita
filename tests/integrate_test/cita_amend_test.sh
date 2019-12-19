@@ -79,6 +79,7 @@ main() {
     # shellcheck source=/dev/null
     source "${SOURCE_DIR}/tests/integrate_test/util.sh"
     cd "${BINARY_DIR}"
+    cleanup
     echo "DONE"
 
     echo "1) Generate configurations ..."
@@ -99,14 +100,21 @@ main() {
     echo "4) Amend chain name ..."
     amend_chain_name
     echo "DONE"
+
     echo "5) Amend abi ..."
     amend_abi
     echo "DONE"
+
     echo "6) Amend balance ..."
     amend_balance
     echo "DONE"
+
     echo "7) Amend code ..."
     amend_code
+    echo "DONE"
+
+    echo "8) Cleanup ..."
+    cleanup
     echo "DONE"
 }
 
