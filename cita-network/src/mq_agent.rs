@@ -51,7 +51,7 @@ impl MqAgent {
         let (ctx_pub_consensus, crx_pub_consensus) = unbounded();
         start_pubsub(
             "network_consensus",
-            routing_key!([Consensus >> CompactSignedProposal, Consensus >> RawBytes]),
+            routing_key!([Consensus >> SignedProposal, Consensus >> RawBytes]),
             ctx_sub_consensus,
             crx_pub_consensus,
         );

@@ -321,9 +321,14 @@ impl RemoteMessage {
                     self.data,
                 ));
             }
-            routing_key!(Consensus >> CompactSignedProposal) => {
+            routing_key!(Consensus >> SignedProposal) => {
                 let msg =
-                    PubMessage::new(routing_key!(Net >> CompactSignedProposal).into(), self.data);
+                    PubMessage::new(routing_key!(Net >> SignedProposal).into(), self.data);
+                service.mq_client.forward_msg_to_consensus(msg);
+            }
+            routing_key!(Consensus >> SignedProposal) => {
+                let msg =
+                    PubMessage::new(routing_key!(Net >> SignedProposal).into(), self.data);
                 service.mq_client.forward_msg_to_consensus(msg);
             }
             routing_key!(Consensus >> RawBytes) => {

@@ -124,7 +124,7 @@ impl Backlog {
         }
 
         // check proof.height
-        if let Some(ref proof) = proof {
+        /*if let Some(ref proof) = proof {
             let bft_proof = proof::BftProof::from(proof.clone());
             let proof_height = wrap_height(bft_proof.height);
             if proof_height + 1 != height {
@@ -135,7 +135,7 @@ impl Backlog {
                 );
                 return false;
             }
-        }
+        }*/
 
         self.priority = Some(priority);
         self.open_block = Some(open_block);
@@ -229,17 +229,17 @@ impl Backlogs {
         }
         let previous_proof = open_block.proof().clone();
         let previous_bft_proof: proof::BftProof = previous_proof.clone().into();
-        assert_eq!(
+  /*      assert_eq!(
             block_height - 1,
             wrap_height(previous_bft_proof.height),
             "{}-th block's height != {}-th previous_proof.height",
             block_height - 1,
             wrap_height(previous_bft_proof.height)
         );
-
+*/
         let present_bft_proof: proof::BftProof = present_proof.clone().into();
         let present_bft_height = present_bft_proof.height;
-        assert_eq!(
+    /*    assert_eq!(
             block_height,
             wrap_height(present_bft_height),
             "{}-th block's height != {}-th present_proof.height",
@@ -254,7 +254,7 @@ impl Backlogs {
             );
             return false;
         }
-
+*/
         self.insert_open(
             block_height,
             Priority::BlockWithProof,
@@ -306,12 +306,12 @@ impl Backlogs {
             ));
         }
         let proof = backlog.get_proof().unwrap();
-        if !self.is_proof_ok(height - 1, proof) {
+        /*if !self.is_proof_ok(height - 1, proof) {
             return Err(format!(
                 "{}-th is not completed cause backlog.proof is invalid",
                 height
             ));
-        }
+        }*/
 
         Ok(())
     }
