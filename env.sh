@@ -4,21 +4,25 @@
 
 # OS
 if [[ "$(uname)" == 'Darwin' ]]; then
-    readonly SYSTEM_NET='bridge'
-    SOURCE_DIR="$(dirname "$(realpath "$0")")"
+    readonly SOURCE_DIR="$(dirname "$(realpath "$0")")"
 else
-    readonly SYSTEM_NET="host"
-    SOURCE_DIR="$(dirname "$(readlink -f "$0")")"
+    readonly SOURCE_DIR="$(dirname "$(readlink -f "$0")")"
 fi
 
 readonly CONTAINER_NAME_HASH=$(echo "${SOURCE_DIR}" | md5sum | cut -d " " -f 1)
 if test -f "${SOURCE_DIR}/Cargo.toml"; then
+    readonly SYSTEM_NET='bridge'
     readonly CONTAINER_NAME="cita_build${CONTAINER_NAME_HASH}"
     readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20191128'
 else
+    if [[ "$(uname)" == 'Darwin' ]]; then
+        readonly SYSTEM_NET='bridge'
+        EXPOSE='1337:1337'
+    else
+        readonly SYSTEM_NET="host"
+    fi
     readonly CONTAINER_NAME="cita_run${CONTAINER_NAME_HASH}"
     readonly DOCKER_IMAGE='cita/cita-run:ubuntu-18.04-20191128'
-    readonly SOURCE_DIR="$(dirname "$SOURCE_DIR")"
 fi
 
 # Patch from crates.io.
@@ -28,7 +32,6 @@ mkdir -p "${DOCKER_CARGO}/git"
 mkdir -p "${DOCKER_CARGO}/registry"
 
 # Docker Port
-EXPOSE='1337:1337'
 if [[ "$3" == "port" ]]; then
     EXPOSE=( "${@:4}" )
     [[ "${EXPOSE[*]}" == "" ]] && EXPOSE=('1337:1337')
