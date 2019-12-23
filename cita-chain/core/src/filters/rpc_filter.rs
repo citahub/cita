@@ -138,7 +138,7 @@ impl RpcFilter for Chain {
         filterdb
             .try_lock()
             .unwrap()
-            .gen_block_filter(id, current_number + 1);
+            .gen_block_filter(id, current_number);
         drop(filterdb);
         changes
     }
