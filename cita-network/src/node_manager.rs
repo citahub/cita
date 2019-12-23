@@ -19,7 +19,7 @@ use crate::config::NetConfig;
 use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::p2p_protocol::transfer::TRANSFER_PROTOCOL_ID;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use cita_types::Address;
+use cita_types::{clean_0x, Address};
 use fnv::FnvHashMap as HashMap;
 use libproto::request::Request as ProtoRequest;
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -746,7 +746,7 @@ fn get_common_name(crt: &X509) -> Result<Address, String> {
             .as_slice(),
     )
     .map_err(|e| format!("Can not get Comman Name String: {:?}", e))?;
-    Ok(Address::from_str(cn_str)
+    Ok(Address::from_str(clean_0x(&cn_str))
         .map_err(|e| format!("Can not get node address from Comman Name String: {:?}", e))?)
 }
 
