@@ -385,7 +385,7 @@ dependencies = [
 
 [[package]]
 name = "cita-auth"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "cita-crypto 0.1.0 (git+ssh://git.rivtower.com/cita/cita-common.git?branch=develop)",
  "cita-database 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -415,7 +415,7 @@ dependencies = [
 
 [[package]]
 name = "cita-bft"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "authority_manage 0.1.0 (git+ssh://git.rivtower.com/cita/cita-common.git?branch=develop)",
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -442,7 +442,7 @@ dependencies = [
 
 [[package]]
 name = "cita-chain"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "cita-database 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-directories 0.1.0 (git+ssh://git.rivtower.com/cita/cita-common.git?branch=develop)",
@@ -513,7 +513,7 @@ dependencies = [
 
 [[package]]
 name = "cita-executor"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "bincode 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-crypto 0.1.0 (git+ssh://git.rivtower.com/cita/cita-common.git?branch=develop)",
@@ -544,7 +544,7 @@ dependencies = [
 
 [[package]]
 name = "cita-forever"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -556,7 +556,7 @@ dependencies = [
 
 [[package]]
 name = "cita-jsonrpc"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "cita-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -617,7 +617,7 @@ dependencies = [
 
 [[package]]
 name = "cita-network"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
