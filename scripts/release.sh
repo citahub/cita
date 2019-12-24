@@ -49,10 +49,13 @@ cp -f   scripts/create_cita_config.py      target/install/scripts/
 
 # 5) txtool
 cp -rf scripts/txtool                      target/install/scripts/
-cp -rf scripts/upgrade                     target/install/scripts/
 
 # 6) docker env
 cp -f  env.sh                              target/install/bin/cita-env
 cp -f  scripts/cita_config.sh              target/install/bin/cita-config
+
+# 7) amend info of system contract
+cp -f scripts/amend_system_contracts.sh    target/install/scripts/
+cp -f scripts/amend_system_contracts.py    target/install/scripts/
 
 exit 0

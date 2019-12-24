@@ -109,13 +109,6 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddrPublic {
         chainName = _chainName;
     }
 
-    function setBlockInterval(uint64 _blockInterval)
-        external
-        onlyAdmin
-    {
-        blockInterval = _blockInterval;
-    }
-
     function updateToChainIdV1()
         external
         onlyAdmin
