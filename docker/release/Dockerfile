@@ -1,4 +1,4 @@
-FROM cita/cita-run:ubuntu-18.04-20190829
+FROM cita/cita-run:ubuntu-18.04-20191128
 LABEL maintainer="Rivtower Technologies <contact@rivtower.com>"
 
 ## Install CITA release here
