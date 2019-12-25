@@ -4,9 +4,9 @@
 
 # OS
 if [[ "$(uname)" == 'Darwin' ]]; then
-    readonly SOURCE_DIR="$(dirname "$(realpath "$0")")"
+    SOURCE_DIR="$(dirname "$(realpath "$0")")"
 else
-    readonly SOURCE_DIR="$(dirname "$(readlink -f "$0")")"
+    SOURCE_DIR="$(dirname "$(readlink -f "$0")")"
 fi
 
 readonly CONTAINER_NAME_HASH=$(echo "${SOURCE_DIR}" | md5sum | cut -d " " -f 1)
@@ -23,6 +23,7 @@ else
     fi
     readonly CONTAINER_NAME="cita_run${CONTAINER_NAME_HASH}"
     readonly DOCKER_IMAGE='cita/cita-run:ubuntu-18.04-20191128'
+    readonly SOURCE_DIR="$(dirname "$SOURCE_DIR")"
 fi
 
 # Patch from crates.io.
