@@ -88,7 +88,7 @@ Apache 2.0 license
 
 <img src="https://github.com/citahub/assets/blob/master/rivtower-logo-square.png?raw=true" width="256">
 
-秘猿科技团队 :heart:
+溪塔科技团队 :heart:
 
 ## 联系我们
 
