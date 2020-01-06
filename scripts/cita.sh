@@ -446,7 +446,7 @@ parse_command() {
 
 # Test CITA is running in docker.
 cita_in_docker() {
-    if [ ! -d /proc/1/cgroup ] ; then
+    if [ ! -f /proc/1/cgroup ] ; then
         return 1
     fi
     if grep docker /proc/1/cgroup -qa; then
