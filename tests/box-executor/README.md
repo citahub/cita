@@ -1,7 +1,7 @@
 ## 相关记录：
 
-* https://cryptape.atlassian.net/browse/CITA-1491
-* https://cryptape.atlassian.net/browse/CITA-1537
+* https://citahub.atlassian.net/browse/CITA-1491
+* https://citahub.atlassian.net/browse/CITA-1537
 
 ## 测试目的：
 

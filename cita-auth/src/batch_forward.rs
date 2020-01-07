@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,9 +52,7 @@ impl BatchForward {
 
     pub fn run(&mut self) {
         loop {
-            let ret = self.rx_request.try_recv();
-            if ret.is_ok() {
-                let tx_req = ret.unwrap();
+            if let Ok(tx_req) = self.rx_request.try_recv() {
                 self.request_buffer.push(tx_req);
                 if self.request_buffer.len() > self.batch_size {
                     self.batch_forward();

@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -114,7 +114,7 @@ fn main() {
 
     let matches = App::new("Chain Performance by MQ")
         .version("0.1")
-        .author("Cryptape")
+        .author("Rivtower")
         .about("CITA Chain Performance by MQ powered by Rust")
         .arg_from_usage("--totaltx=[20000] 'transation num in one block'")
         .arg_from_usage(

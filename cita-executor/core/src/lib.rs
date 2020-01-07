@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,7 +37,9 @@ pub extern crate common_types as types;
 pub extern crate core;
 
 pub mod cita_executive;
+pub mod cita_vm_helper;
 pub mod contracts;
+pub mod data_provider;
 pub mod libexecutor;
 pub mod storage;
 pub mod tx_gas_schedule;

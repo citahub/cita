@@ -16,6 +16,7 @@ main() {
     # shellcheck source=/dev/null
     . "${SOURCE_DIR}"/tests/integrate_test/util.sh
     cd "${BINARY_DIR}"
+    cleanup
     echo "DONE"
 
     echo -n "1) generate config ... "
@@ -83,6 +84,10 @@ main() {
                                          echo "error msg: ${timeout}"
                                          exit 1)
     echo "${timeout}s DONE"
+
+    echo -n "11) cleanup ..."
+    cleanup
+    echo "DONE"
 }
 
 main "$@"

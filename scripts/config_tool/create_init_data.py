@@ -24,7 +24,7 @@ Contracts:
     economicalModel: 0
     name: CITA Test Token
     symbol: CTT
-    avatar: https://cdn.cryptape.com/icon_cita.png
+    avatar: https://cdn.citahub.com/icon_cita.png
     autoExec: false
   QuotaManager:
     admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'

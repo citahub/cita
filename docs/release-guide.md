@@ -1,3 +1,9 @@
+[Release Guide](#release-guide)
+
+[发版指引](#发版指引)
+
+---
+
 # Release Guide
 
 The code repository has two main branches:
@@ -11,11 +17,11 @@ More details will be explained in the following sections.
 
 The specific process follows the following steps:
 
-1. [Prepare Branch] (#Prepare Branch)
-2. [Test and Update Log] (#Test and Update Log)
-3. [Merge Branch] (#Merge Branch)
-4. [Release] (#Release)
-5. [Other Notes] (#Other Notes)
+1. [Prepare the Branch](#prepare-the-branch)
+2. [Test and ChangeLog](#test-and-changelog)
+3. [Merge Branch](#merge-branch)
+4. [Release](#release)
+5. [Other Notes](#other-notes)
 
 ## Prepare the Branch
 

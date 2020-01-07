@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,14 +15,18 @@
 use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::node_manager::{
     BroadcastReq, DealRichStatusReq, GetPeerCountReq, GetPeersInfoReq, NodesManagerClient,
-    SingleTxReq,
+    SingleTxReq, UpdateCrlReq,
 };
 use crate::synchronizer::{SynchronizerClient, SynchronizerMessage};
+use cita_types::Address;
+use ethabi::{decode, ParamType, Token};
 use jsonrpc_types::rpc_types::PeersInfo;
 use jsonrpc_types::ErrorCode;
+use libproto::response::Response_oneof_data;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::routing_key;
 use libproto::snapshot::{Cmd, Resp, SnapshotResp};
+use libproto::Message;
 use libproto::{Message as ProtoMessage, OperateType, Response};
 use libproto::{TryFrom, TryInto};
 use pubsub::channel::{unbounded, Receiver, Sender};
@@ -30,6 +34,29 @@ use serde_json;
 use std::iter::FromIterator;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+
+/// Parse solidity return data `address[]` to rust `Vec<Address>`
+pub fn to_address_vec(output: &[u8]) -> Option<Vec<Address>> {
+    if output.is_empty() {
+        Some(Vec::new())
+    } else {
+        decode(&[ParamType::Array(Box::new(ParamType::Address))], output)
+            .ok()
+            .and_then(|decoded| decoded.first().cloned())
+            .and_then(Token::to_array)
+            .and_then(|addrs| {
+                let mut v = Vec::new();
+                for x in addrs {
+                    if let Some(x) = x.to_address() {
+                        v.push(Address::from(x))
+                    } else {
+                        return None;
+                    }
+                }
+                Some(v)
+            })
+    }
+}
 
 pub struct Network {
     is_pause: Arc<AtomicBool>,
@@ -157,6 +184,16 @@ impl LocalMessage {
             routing_key!(Snapshot >> SnapshotReq) => {
                 info!("[Network] Set disconnect and response");
                 self.snapshot_req(&self.data, service);
+            }
+            routing_key!(Executor >> GetCrlResp) => {
+                let mut msg = Message::try_from(self.data).expect("Try from message error!");
+                let resp = msg.take_response().unwrap();
+                if let Response_oneof_data::call_result(crl_data) = resp.data.unwrap() {
+                    if let Some(crl) = to_address_vec(&crl_data) {
+                        let req = UpdateCrlReq::new(crl);
+                        service.nodes_mgr_client.update_crl(req);
+                    }
+                }
             }
             _ => {
                 error!("[Network] Unexpected key {} from Local", self.key);

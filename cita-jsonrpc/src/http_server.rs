@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -152,7 +152,7 @@ impl Service for Jsonrpc {
     type ReqBody = Body;
     type ResBody = Body;
     type Error = hyper::Error;
-    type Future = Box<Future<Item = Response<Self::ResBody>, Error = Self::Error> + Send>;
+    type Future = Box<dyn Future<Item = Response<Self::ResBody>, Error = Self::Error> + Send>;
 
     fn call(&mut self, http_req: Request<Self::ReqBody>) -> Self::Future {
         let sender = { self.inner.tx.lock().clone() };
@@ -416,7 +416,7 @@ mod integration_test {
 
         let client = hyper::Client::builder().keep_alive(true).build_http();
 
-        let mut works: Vec<Box<Future<Item = (), Error = _>>> = vec![];
+        let mut works: Vec<Box<dyn Future<Item = (), Error = _>>> = vec![];
         let uri = hyper::Uri::from_str(
             format!("http://{}:{}/", serve.addr.ip(), serve.addr.port()).as_str(),
         )

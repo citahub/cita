@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -101,6 +101,7 @@ pub const PRICE_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020010";
 pub const VERSION_MANAGEMENT: &str = "ffffffffffffffffffffffffffffffffff020011";
 pub const ALL_GROUPS: &str = "ffffffffffffffffffffffffffffffffff020012";
 pub const AUTO_EXEC: &str = "ffffffffffffffffffffffffffffffffff020013";
+pub const CERT_REVOKE_MANAGER: &str = "ffffffffffffffffffffffffffffffffff020030";
 // Permission System Contracts
 pub const PERMISSION_SEND_TX: &str = "ffffffffffffffffffffffffffffffffff021000";
 pub const PERMISSION_CREATE_CONTRACT: &str = "ffffffffffffffffffffffffffffffffff021001";

@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ use super::executor::CitaTrieDB;
 use super::executor::{make_consensus_config, Executor};
 use super::sys_config::GlobalSysConfig;
 use crate::cita_executive::{CitaExecutive, ExecutedResult as CitaExecuted};
-use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::contracts::solc::{
     sys_config::ChainId, PermissionManagement, SysConfig, VersionManager,
 };
@@ -28,6 +27,7 @@ use crate::trie_db::TrieDB;
 use crate::types::block_number::{BlockTag, Tag};
 use crate::types::context::Context;
 use crate::types::errors::CallError;
+use crate::types::errors::ExecutionError;
 use crate::types::transaction::{Action, SignedTransaction, Transaction};
 pub use byteorder::{BigEndian, ByteOrder};
 use cita_database::RocksDB;
@@ -57,6 +57,7 @@ pub enum Command {
     BalanceAt(Address, BlockTag),
     NonceAt(Address, BlockTag),
     ETHCall(CallRequest, BlockTag),
+    EstimateQuota(CallRequest, BlockTag),
     SignCall(CallRequest),
     Call(SignedTransaction, BlockTag),
     ChainID,
@@ -77,6 +78,7 @@ pub enum CommandResp {
     BalanceAt(Option<Bytes>),
     NonceAt(Option<U256>),
     ETHCall(Result<Bytes, String>),
+    EstimateQuota(Result<Bytes, String>),
     SignCall(SignedTransaction),
     Call(Result<CitaExecuted, CallError>),
     ChainID(Option<ChainId>),
@@ -98,6 +100,7 @@ impl fmt::Display for Command {
             Command::BalanceAt(_, _) => write!(f, "Command::BalanceAt"),
             Command::NonceAt(_, _) => write!(f, "Command::NonceAt"),
             Command::ETHCall(_, _) => write!(f, "Command::ETHCall"),
+            Command::EstimateQuota(_, _) => write!(f, "Command::EstimateQuota"),
             Command::SignCall(_) => write!(f, "Command::SignCall"),
             Command::Call(_, _) => write!(f, "Command::Call"),
             Command::ChainID => write!(f, "Command::ChainID "),
@@ -121,6 +124,7 @@ impl fmt::Display for CommandResp {
             CommandResp::BalanceAt(_) => write!(f, "CommandResp::BalanceAt"),
             CommandResp::NonceAt(_) => write!(f, "CommandResp::NonceAt"),
             CommandResp::ETHCall(_) => write!(f, "CommandResp::ETHCall"),
+            CommandResp::EstimateQuota(_) => write!(f, "CommandResp::EstimateQuota"),
             CommandResp::SignCall(_) => write!(f, "CommandResp::SignCall"),
             CommandResp::Call(_) => write!(f, "CommandResp::Call"),
             CommandResp::ChainID(_) => write!(f, "CommandResp::ChainID "),
@@ -143,6 +147,7 @@ pub trait Commander {
     fn balance_at(&self, address: &Address, block_tag: BlockTag) -> Option<Bytes>;
     fn nonce_at(&self, address: &Address, block_tag: BlockTag) -> Option<U256>;
     fn eth_call(&self, request: CallRequest, block_tag: BlockTag) -> Result<Bytes, String>;
+    fn estimate_quota(&self, request: CallRequest, block_tag: BlockTag) -> Result<Bytes, String>;
     fn sign_call(&self, request: CallRequest) -> SignedTransaction;
     fn call(&self, t: &SignedTransaction, block_tag: BlockTag) -> Result<CitaExecuted, CallError>;
     fn chain_id(&self) -> Option<ChainId>;
@@ -175,6 +180,9 @@ impl Commander for Executor {
             }
             Command::ETHCall(call_request, block_tag) => {
                 CommandResp::ETHCall(self.eth_call(call_request, block_tag))
+            }
+            Command::EstimateQuota(call_request, block_tag) => {
+                CommandResp::EstimateQuota(self.estimate_quota(call_request, block_tag))
             }
             Command::SignCall(call_request) => CommandResp::SignCall(self.sign_call(call_request)),
             Command::Call(signed_transaction, block_tag) => {
@@ -246,6 +254,121 @@ impl Commander for Executor {
             .or_else(|e| Err(format!("Call Error {}", e)))
     }
 
+    fn estimate_quota(&self, request: CallRequest, id: BlockTag) -> Result<Bytes, String> {
+        // The estimated transaction cost cannot exceed BQL
+        let max_quota = U256::from(self.sys_config.block_quota_limit);
+        let precision = U256::from(1024);
+
+        let signed = self.sign_call(request);
+        let header = self
+            .block_header(id)
+            .ok_or_else(|| "Estimate Error CallError::StatePruned".to_owned())?;
+        let last_hashes = self.build_last_hashes(Some(header.hash().unwrap()), header.number());
+
+        let context = Context {
+            block_number: header.number(),
+            coin_base: *header.proposer(),
+            timestamp: if self.eth_compatibility {
+                header.timestamp() / 1000
+            } else {
+                header.timestamp()
+            },
+            difficulty: U256::default(),
+            last_hashes: ::std::sync::Arc::new(last_hashes),
+            quota_used: *header.quota_used(),
+            block_quota_limit: max_quota,
+            account_quota_limit: u64::max_value().into(),
+        };
+        let block_data_provider = Arc::new(EVMBlockDataProvider::new(context.clone()));
+
+        let mut conf = self.sys_config.block_sys_config.clone();
+        conf.exempt_checking();
+        let sender = *signed.sender();
+
+        // Try different quota to run tx.
+        let exec_tx = |quota| {
+            let mut tx = signed.as_unsigned().clone();
+            tx.gas = quota;
+            let tx = tx.fake_sign(sender);
+
+            // The same transaction will get different result in different state.
+            // And the estimate action will change the state, so it should take the most primitive
+            // state for each estimate.
+            let state = self.state_at(id).ok_or_else(|| {
+                ExecutionError::Internal("Estimate Error CallError::StatePruned".to_owned())
+            })?;
+            let state = Arc::new(RefCell::new(state));
+
+            let clone_conf = conf.clone();
+            CitaExecutive::new(
+                block_data_provider.clone(),
+                state,
+                &context.clone(),
+                clone_conf.economical_model,
+            )
+            .exec(&tx, &clone_conf)
+        };
+        let check_quota = |quota| {
+            exec_tx(quota).ok().map_or((false, U256::from(0)), |r| {
+                (r.exception.is_none(), r.quota_used)
+            })
+        };
+
+        // Try block_quota_limit first
+        let (run_ok, quota_used) = check_quota(max_quota);
+        let lower = if !run_ok {
+            trace!("estimate_quota failed with {}.", max_quota);
+            return Err(format!(
+                "Requires quota higher than upper limit({}) or some internal errors",
+                max_quota
+            )
+            .to_owned());
+        } else {
+            quota_used
+        };
+
+        //Try lower (quota_used)
+        let estimate_quota = &mut [0u8; 32];
+        let (run_ok, quota_used) = check_quota(lower);
+        if run_ok {
+            quota_used.to_big_endian(estimate_quota);
+            return Ok(estimate_quota.to_vec());
+        }
+
+        // Binary search the point between `lower` and `upper`, with the precision which means
+        // the estimate quota deviation　less than precision.
+        fn binary_search<F>(
+            mut lower: U256,
+            mut upper: U256,
+            mut check_quota: F,
+            precision: U256,
+        ) -> U256
+        where
+            F: FnMut(U256) -> (bool, U256),
+        {
+            while upper - lower > precision {
+                let mid = (lower + upper) / 2;
+                trace!(
+                    "estimate_quota : lower {} .. mid {} .. upper {}",
+                    lower,
+                    mid,
+                    upper
+                );
+                let (c, _) = check_quota(mid);
+                if c {
+                    upper = mid;
+                } else {
+                    lower = mid;
+                }
+            }
+            upper
+        }
+
+        let quota_used = binary_search(lower, max_quota, check_quota, precision);
+        quota_used.to_big_endian(estimate_quota);
+        Ok(estimate_quota.to_vec())
+    }
+
     fn sign_call(&self, request: CallRequest) -> SignedTransaction {
         let from = request.from.unwrap_or_else(Address::zero);
         Transaction {
@@ -290,7 +413,6 @@ impl Commander for Executor {
         conf.exempt_checking();
 
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
-        let native_factory = NativeFactory::default();
 
         let state_root = if let Some(h) = self.block_header(block_tag) {
             (*h.state_root())
@@ -314,7 +436,6 @@ impl Commander for Executor {
         CitaExecutive::new(
             Arc::new(block_data_provider),
             state,
-            &native_factory,
             &context,
             conf.economical_model,
         )
@@ -593,6 +714,19 @@ pub fn eth_call(
     let _ = command_req_sender.send(Command::ETHCall(call_request, block_tag));
     match command_resp_receiver.recv().unwrap() {
         CommandResp::ETHCall(r) => r,
+        _ => unimplemented!(),
+    }
+}
+
+pub fn estimate_quota(
+    command_req_sender: &Sender<Command>,
+    command_resp_receiver: &Receiver<CommandResp>,
+    call_request: CallRequest,
+    block_tag: BlockTag,
+) -> Result<Bytes, String> {
+    let _ = command_req_sender.send(Command::EstimateQuota(call_request, block_tag));
+    match command_resp_receiver.recv().unwrap() {
+        CommandResp::EstimateQuota(r) => r,
         _ => unimplemented!(),
     }
 }

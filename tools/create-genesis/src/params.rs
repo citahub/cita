@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -363,7 +363,7 @@ mod tests {
             admin: '0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523'
         SysConfig:
             autoExec: false
-            avatar: https://cdn.cryptape.com/icon_cita.png
+            avatar: https://cdn.citahub.com/icon_cita.png
             blockInterval: 3000
             chainId: 1
             chainName: test-chain
@@ -390,7 +390,7 @@ mod tests {
         assert_eq!(config.contracts.sys_config.check_call_permission, false);
         assert_eq!(
             config.contracts.sys_config.avatar,
-            "https://cdn.cryptape.com/icon_cita.png".to_string()
+            "https://cdn.citahub.com/icon_cita.png".to_string()
         );
         assert_eq!(
             config.contracts.quota_manager.admin,

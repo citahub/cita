@@ -6,7 +6,7 @@ import "../../interaction/interface/IPermissionManagement.sol";
 import "../../interaction/interface/IAuthorization.sol";
 
 /// @title Permission management contract
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: 0xffFffFffFFffFFFFFfFfFFfFFFFfffFFff020004
 ///         The interface the can be called: All
 /// @dev TODO check address is contract

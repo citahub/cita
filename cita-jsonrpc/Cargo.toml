@@ -1,7 +1,7 @@
 [package]
 name = "cita-jsonrpc"
-version = "0.1.0"
-authors = ["Cryptape Technologies <contact@cryptape.com>"]
+version = "1.1.0"
+authors = ["Rivtower Technologies <contact@rivtower.com>"]
 license = "Apache-2.0"
 edition = "2018"
 
@@ -17,12 +17,12 @@ cpuprofiler = "0.0.3"
 dotenv = "0.13.0"
 clap = "2"
 cita-logger = "0.1.1"
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-error = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc-proto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+error = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+pubsub = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+libproto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+jsonrpc-proto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 http = "0.1"
 httparse = "1.0"
 bytes = "0.4"
@@ -39,7 +39,7 @@ tokio = "0.1.13"
 tokio-executor = "0.1.5"
 
 [build-dependencies]
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]

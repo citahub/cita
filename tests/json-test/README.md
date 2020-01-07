@@ -1,6 +1,6 @@
 # Json Test
 
-Test CITA using [Tests](https://github.com/cryptape/cita-testdata/)
+Test CITA using [Tests](https://github.com/citahub/cita-testdata/)
 
 ## Usage
 

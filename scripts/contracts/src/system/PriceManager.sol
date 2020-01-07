@@ -5,7 +5,7 @@ import "../common/ReservedAddrPublic.sol";
 import "../../interaction/interface/IPriceManager.sol";
 
 /// @title Quota Price Manager
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 contract PriceManager is IPriceManager, ReservedAddrPublic {
     uint quotaPrice = 1;
 

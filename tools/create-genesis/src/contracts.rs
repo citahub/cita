@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -98,6 +98,9 @@ pub struct NormalContracts {
 
     #[serde(rename = "AutoExec")]
     pub auto_exec: Info,
+
+    #[serde(rename = "CertRevokeManager")]
+    pub cert_revoke_manager: Info,
 }
 
 impl NormalContracts {
@@ -123,6 +126,7 @@ impl NormalContracts {
         normal_contracts.insert("VersionManager", self.version_manager.clone());
         normal_contracts.insert("AllGroups", self.all_groups.clone());
         normal_contracts.insert("AutoExec", self.auto_exec.clone());
+        normal_contracts.insert("CertRevokeManager", self.cert_revoke_manager.clone());
         normal_contracts
     }
 }
@@ -384,6 +388,9 @@ mod tests {
             AutoExec:
                 address: '0xffffffffffffffffffffffffffffffffff020013'
                 file: system/AutoExec.sol
+            CertRevokeManager:
+                address: '0xffffffffffffffffffffffffffffffffff020030'
+                file: system/CertRevokeManager.sol
 
         PermissionContracts:
             file: permission_management/Permission.sol

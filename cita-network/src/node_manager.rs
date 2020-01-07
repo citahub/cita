@@ -16,14 +16,26 @@ use crate::cita_protocol::{
     pubsub_message_to_network_message, NetMessageUnit, CONSENSUS_STR, CONSENSUS_TTL_NUM,
 };
 use crate::config::NetConfig;
+use crate::mq_agent::{MqAgentClient, PubMessage};
 use crate::p2p_protocol::transfer::TRANSFER_PROTOCOL_ID;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use cita_types::Address;
+use cita_types::{clean_0x, Address};
 use fnv::FnvHashMap as HashMap;
+use libproto::request::Request as ProtoRequest;
+use libproto::router::{MsgType, RoutingKey, SubModules};
+use libproto::Call;
+use libproto::{routing_key, Message};
 use libproto::{Message as ProtoMessage, TryInto};
 use notify::DebouncedEvent;
+use openssl::nid::Nid;
+use openssl::stack::Stack;
+use openssl::x509::{store::X509StoreBuilder, X509StoreContext, X509};
 use pubsub::channel::{select, tick, unbounded, Receiver, Sender};
 use rand::{thread_rng, Rng};
+use std::fs::File;
+use std::io::Read;
+use std::str;
+use std::str::FromStr;
 use std::sync::mpsc::Receiver as StdReceiver;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -37,11 +49,17 @@ use tentacle::{
     utils::socketaddr_to_multiaddr,
     SessionId,
 };
+use util::sha3;
+use uuid::Uuid;
 
 pub const DEFAULT_MAX_CONNECTS: usize = 666;
 pub const DEFAULT_MAX_KNOWN_ADDRS: usize = 1000;
 pub const DEFAULT_PORT: usize = 4000;
 pub const CHECK_CONNECTED_NODES: Duration = Duration::from_secs(3);
+// Check the certificate time validity in each 12 hour.
+pub const CHECK_CERT_PERIOD: Duration = Duration::from_secs(12 * 3600);
+// Update Certificate Revoke List for each 100 block period.
+pub const UPDATE_CRL_PERIOD: u64 = 100;
 
 // Score uses to manage known_nodes list. If a node has too low score, do not dial it again.
 // Maybe some complex algorithm can be designed later. But for now, just keeps as simple as below:
@@ -67,6 +85,18 @@ pub const REFUSED_SCORE: i32 = 20;
 pub const DIALED_ERROR_SCORE: i32 = 25;
 // A node is dialed error by client, should need DIALED_ERROR_SCORE each time.
 pub const KEEP_ON_LINE_SCORE: i32 = 5;
+
+fn encode_to_vec(name: &[u8]) -> Vec<u8> {
+    sha3::keccak256(name)[0..4].to_vec()
+}
+
+fn create_request() -> ProtoRequest {
+    let request_id = Uuid::new_v4().as_bytes().to_vec();
+    let mut request = ProtoRequest::new();
+
+    request.set_request_id(request_id);
+    request
+}
 
 #[derive(Debug, PartialEq)]
 pub enum NodeSource {
@@ -108,19 +138,24 @@ impl SessionInfo {
     }
 }
 
-#[derive(Debug)]
-pub struct TransformAddr {
+pub struct ConnectedInfo {
     // Real linked addr
     pub conn_addr: SocketAddr,
     // Outbound addr transformed from Inbound addr
     pub trans_addr: Option<SocketAddr>,
+    pub node_crt: Option<X509>,
 }
 
-impl TransformAddr {
-    pub fn new(conn_addr: SocketAddr, trans_addr: Option<SocketAddr>) -> Self {
-        TransformAddr {
+impl ConnectedInfo {
+    pub fn new(
+        conn_addr: SocketAddr,
+        trans_addr: Option<SocketAddr>,
+        node_crt: Option<X509>,
+    ) -> Self {
+        ConnectedInfo {
             conn_addr,
             trans_addr,
+            node_crt,
         }
     }
 }
@@ -178,15 +213,17 @@ impl ConsensusNodeTopology {
 }
 
 pub struct NodesManager {
+    mq_client: MqAgentClient,
     known_addrs: HashMap<SocketAddr, NodeStatus>,
     config_addrs: BTreeMap<String, Option<SocketAddr>>,
 
-    connected_addrs: BTreeMap<SessionId, TransformAddr>,
+    connected_addrs: BTreeMap<SessionId, ConnectedInfo>,
     pending_connected_addrs: BTreeMap<SessionId, SessionInfo>,
 
     connected_peer_keys: BTreeMap<Address, SessionId>,
 
     check_connected_nodes: Receiver<Instant>,
+    check_cert: Receiver<Instant>,
     max_connects: usize,
     nodes_manager_client: NodesManagerClient,
     nodes_manager_service_receiver: Receiver<NodesManagerMessage>,
@@ -200,17 +237,25 @@ pub struct NodesManager {
 
     dialing_node: Option<SocketAddr>,
     self_addr: Option<SocketAddr>,
+
+    root_crt: Option<X509>,
+    node_crt: Option<Vec<u8>>,
+    enable_ca: bool,
+    get_crl_point: u64,
+    crl: Vec<Address>,
 }
 
 impl NodesManager {
-    fn new(peer_key: Address) -> NodesManager {
+    fn new(peer_key: Address, mq_client: MqAgentClient) -> NodesManager {
         let (tx, rx) = unbounded();
         let ticker = tick(CHECK_CONNECTED_NODES);
+        let check_cert_ticker = tick(CHECK_CERT_PERIOD);
         let client = NodesManagerClient { sender: tx };
 
-        // Set enable_tls = false as default.
         NodesManager {
+            mq_client,
             check_connected_nodes: ticker,
+            check_cert: check_cert_ticker,
             known_addrs: HashMap::default(),
             config_addrs: BTreeMap::default(),
             connected_addrs: BTreeMap::default(),
@@ -226,14 +271,39 @@ impl NodesManager {
             gossip_key_version: HashMap::default(),
             self_version: 0,
             consensus_topology: ConsensusNodeTopology::new(peer_key),
+            root_crt: None,
+            node_crt: None,
+            enable_ca: false,
+            get_crl_point: 0,
+            crl: Vec::default(),
         }
     }
 
-    pub fn from_config(cfg: NetConfig, key: Address) -> Self {
-        let mut node_mgr = NodesManager::new(key);
+    pub fn from_config(cfg: NetConfig, key: Address, mq_client: MqAgentClient) -> Self {
+        let mut node_mgr = NodesManager::new(key, mq_client);
         let max_connects = cfg.max_connects.unwrap_or(DEFAULT_MAX_CONNECTS);
         node_mgr.max_connects = max_connects;
         node_mgr.peer_key = key;
+        node_mgr.enable_ca = cfg.enable_ca.unwrap_or(false);
+
+        // If enable certificate authority, try to read root_ca and node_ca
+        if node_mgr.enable_ca {
+            let mut file = File::open("root.crt".to_owned())
+                .expect("Needs a root certificate file in CA mode!");
+            let mut cert = vec![];
+            file.read_to_end(&mut cert)
+                .expect("Root certificate file reads error!");
+            let root_cert = X509::from_pem(cert.as_ref())
+                .expect("Root certificate to X509 struct error! Changes the file to X509 format?");
+            node_mgr.root_crt = Some(root_cert);
+
+            file = File::open("node.crt".to_owned())
+                .expect("Needs a node certificate file in CA mode!");
+            cert = vec![];
+            file.read_to_end(&mut cert)
+                .expect("Node certificate file reads error!");
+            node_mgr.node_crt = Some(cert);
+        }
 
         if let Some(cfg_addrs) = cfg.peers {
             for addr in cfg_addrs {
@@ -302,12 +372,40 @@ impl NodesManager {
                 recv(self.check_connected_nodes) -> _ => {
                     self.dial_nodes();
                 }
+                recv(self.check_cert) -> _ => {
+                    self.check_cert();
+                }
             }
         }
     }
 
     pub fn client(&self) -> NodesManagerClient {
         self.nodes_manager_client.clone()
+    }
+
+    pub fn check_cert(&mut self) {
+        if self.enable_ca {
+            info!("Check each certifcate in connecting nodes for its time validity.");
+
+            for (key, value) in self.connected_addrs.iter() {
+                if let Some(ref root_crt) = self.root_crt {
+                    // make sure the certificate has been writen
+                    if let Some(ref cert) = value.node_crt {
+                        if let Err(e) = verify_crt(root_crt, cert) {
+                            error!(
+                                "Cerificate verified error: {:?}, and disconnect the session: {:?}",
+                                e, key
+                            );
+                            error!("check if the certificate has expired!");
+
+                            if let Some(ref mut ctrl) = self.service_ctrl {
+                                let _ = ctrl.disconnect(*key);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     pub fn dial_nodes(&mut self) {
@@ -389,10 +487,6 @@ impl NodesManager {
             }
         }
 
-        debug!(
-            "[NodeManager] connected_addrs info: {:?}",
-            self.connected_addrs
-        );
         debug!("[NodeManager] known_addrs info: {:?}", self.known_addrs);
         debug!(
             "[NodeManager] Address in connected : {:?}",
@@ -507,6 +601,10 @@ impl NodesManagerClient {
         self.send_req(NodesManagerMessage::DealRichStatus(req));
     }
 
+    pub fn update_crl(&self, req: UpdateCrlReq) {
+        self.send_req(NodesManagerMessage::UpdateCrl(req));
+    }
+
     fn send_req(&self, req: NodesManagerMessage) {
         if let Err(e) = self.sender.try_send(req) {
             warn!(
@@ -535,6 +633,7 @@ pub enum NodesManagerMessage {
     GetPeersInfo(GetPeersInfoReq),
     ModifiedConfigPeers(ModifiedConfigPeersReq),
     DealRichStatus(DealRichStatusReq),
+    UpdateCrl(UpdateCrlReq),
 }
 
 impl NodesManagerMessage {
@@ -556,6 +655,7 @@ impl NodesManagerMessage {
             NodesManagerMessage::ModifiedConfigPeers(req) => req.handle(service),
             NodesManagerMessage::RetransNetMsg(req) => req.handle(service),
             NodesManagerMessage::DealRichStatus(req) => req.handle(service),
+            NodesManagerMessage::UpdateCrl(req) => req.handle(service),
         }
     }
 }
@@ -564,6 +664,7 @@ impl NodesManagerMessage {
 pub struct InitMsg {
     pub chain_id: u64,
     pub peer_key: Address,
+    pub node_crt: Option<Vec<u8>>,
 }
 
 impl Into<Vec<u8>> for InitMsg {
@@ -576,6 +677,9 @@ impl Into<Vec<u8>> for InitMsg {
 
         out.extend_from_slice(&chain_id_data);
         out.extend_from_slice(&key_data);
+        if let Some(cert) = self.node_crt {
+            out.extend_from_slice(&cert);
+        }
         out
     }
 }
@@ -586,9 +690,147 @@ impl From<Vec<u8>> for InitMsg {
         chain_id_data.copy_from_slice(&data[..8]);
         let mut chain_id_data = Cursor::new(chain_id_data);
         let chain_id = chain_id_data.read_u64::<BigEndian>().unwrap();
-        let peer_key = Address::from_slice(&data[8..]);
+        let peer_key = Address::from_slice(&data[8..28]);
 
-        InitMsg { chain_id, peer_key }
+        info!("InitMsg data lenght : {}", data.len());
+        if data.len() > 28 {
+            InitMsg {
+                chain_id,
+                peer_key,
+                node_crt: Some(data[28..].to_vec()),
+            }
+        } else {
+            InitMsg {
+                chain_id,
+                peer_key,
+                node_crt: None,
+            }
+        }
+    }
+}
+
+fn verify_crt(root_crt: &X509, node_crt: &X509) -> Result<bool, String> {
+    // Verify cerificate, see https://www.openssl.org/docs/man1.0.2/man1/verify.html
+    let chain = Stack::new().unwrap();
+    let mut store_bldr = X509StoreBuilder::new().unwrap();
+    store_bldr.add_cert(root_crt.clone()).unwrap();
+    let store = store_bldr.build();
+    let mut context = X509StoreContext::new().unwrap();
+
+    // verify_cert is an unsafe function, so allow the clippy error.
+    #[allow(clippy::redundant_closure)]
+    match context.init(&store, node_crt, &chain, |c| c.verify_cert()) {
+        Ok(ret) => {
+            if !ret {
+                return Err("Verifty cerificate failed with unkown reason".to_owned());
+            }
+        }
+        Err(e) => return Err(format!("Verifty cerificate failed with error : {:?}", e)),
+    }
+    Ok(true)
+}
+
+fn get_common_name(crt: &X509) -> Result<Address, String> {
+    // Verify Common Name, should be equal to node address
+    let subject = crt.subject_name();
+    if subject.entries_by_nid(Nid::COMMONNAME).next().is_none() {
+        return Err("Get common name error".to_owned());
+    }
+
+    let cn_str = str::from_utf8(
+        subject
+            .entries_by_nid(Nid::COMMONNAME)
+            .next()
+            .unwrap()
+            .data()
+            .as_slice(),
+    )
+    .map_err(|e| format!("Can not get Comman Name String: {:?}", e))?;
+    Ok(Address::from_str(clean_0x(&cn_str))
+        .map_err(|e| format!("Can not get node address from Comman Name String: {:?}", e))?)
+}
+
+// Also need to verify Common Name in CITA.
+fn cita_verify_crt(
+    root_crt: &X509,
+    node_crt: &X509,
+    claim_addr: &Address,
+    crl: &[Address],
+) -> Result<bool, String> {
+    // Verify cerificate
+    verify_crt(root_crt, node_crt)?;
+
+    let addr = get_common_name(node_crt)?;
+    if *claim_addr != addr {
+        return Err(format!(
+            "Address in common name({:?}) does not equal to self address({:?})",
+            addr, *claim_addr
+        ));
+    }
+
+    // Check for certificate revoke list
+    for crl_addr in crl.iter() {
+        if crl_addr.contains(&addr) {
+            return Err("The certificate has been revoked!".to_owned());
+        }
+    }
+    Ok(true)
+}
+
+fn handle_repeated_connect(
+    session_id: SessionId,
+    ty: SessionType,
+    peer_key: &Address,
+    service: &mut NodesManager,
+) -> bool {
+    if let Some(repeated_id) = service.connected_peer_keys.get(peer_key) {
+        info!(
+            "[NodeManager] New session [{:?}] repeated with [{:?}], disconnect this session.",
+            session_id, *repeated_id
+        );
+
+        // It is a repeated_session, but not a repeated node.
+        if let Some(dialing_addr) = service.dialing_node {
+            if ty == SessionType::Outbound {
+                if let Some(ref mut node_status) = service.known_addrs.get_mut(&dialing_addr) {
+                    node_status.session_id = Some(*repeated_id);
+                    node_status.score += SUCCESS_DIALING_SCORE;
+
+                    let _ = service.connected_addrs.entry(*repeated_id).and_modify(|v| {
+                        v.trans_addr = Some(dialing_addr);
+                    });
+                }
+            }
+        }
+
+        if let Some(ref mut ctrl) = service.service_ctrl {
+            let _ = ctrl.disconnect(session_id);
+        }
+        true
+    } else {
+        false
+    }
+}
+
+fn handle_connect_self(
+    session_id: SessionId,
+    peer_key: &Address,
+    service: &mut NodesManager,
+) -> bool {
+    if service.peer_key == *peer_key {
+        if let Some(dialing_node) = service.dialing_node {
+            debug!(
+                "[NodeManager] Connected Self, Delete {:?} from know_addrs",
+                dialing_node
+            );
+            service.self_addr = Some(dialing_node);
+            if let Some(ref mut ctrl) = service.service_ctrl {
+                let _ = ctrl.disconnect(session_id);
+            }
+        }
+        true
+    } else {
+        false
     }
 }
 
@@ -608,63 +850,72 @@ impl AddConnectedNodeReq {
     }
 
     pub fn handle(self, service: &mut NodesManager) {
-        if let Some(repeated_id) = service.connected_peer_keys.get(&self.init_msg.peer_key) {
-            // Repeated connected, it can a duplicated connected to the same node, or a duplicated
-            // node connected to this server. But in either case, disconnect this session.
-            // In P2P encrypted communication mode, the repeated connection will be detected by
-            // P2P framework, handling this situation by sending a `AddRepeatedNodeReq` message to
-            // NodesManager. See the `handle` in `AddRepeatedNodeReq` for more detail.
-            info!(
-                "[NodeManager] New session [{:?}] repeated with [{:?}], disconnect this session.",
-                self.session_id, *repeated_id
-            );
+        // Repeated connected, it can a duplicated connected to the same node, or a duplicated
+        // node connected to this server. But in either case, disconnect this session.
+        // In P2P encrypted communication mode, the repeated connection will be detected by
+        // P2P framework, handling this situation by sending a `AddRepeatedNodeReq` message to
+        // NodesManager. See the `handle` in `AddRepeatedNodeReq` for more detail.
+        let repeated_connect =
+            handle_repeated_connect(self.session_id, self.ty, &self.init_msg.peer_key, service);
 
-            // It is a repeated_session, but not a repeated node.
-            if let Some(dialing_addr) = service.dialing_node {
-                if self.ty == SessionType::Outbound {
-                    if let Some(ref mut node_status) = service.known_addrs.get_mut(&dialing_addr) {
-                        node_status.session_id = Some(*repeated_id);
-                        node_status.score += SUCCESS_DIALING_SCORE;
+        // Connected self, disconnected the session.
+        // In P2P encrypted communication mode, the `connected self` will be detected by
+        // P2P framework, handling this situation by sending a `ConnectedSelfReq` message to
+        // NodesManager. See the `handle` in `ConnectedSelfReq` for more detail.
+        // This logic would be entry twice:
+        // one as server, and the other one as client.
+        let connect_self = handle_connect_self(self.session_id, &self.init_msg.peer_key, service);
 
-                        let _ = service.connected_addrs.entry(*repeated_id).and_modify(|v| {
-                            v.trans_addr = Some(dialing_addr);
-                        });
+        // Found a successful connection after exchanging `init message`.
+        // FIXME: If have reached to max_connects, disconnected this node.
+        // Add connected address.
+        let mut node_cert: Option<X509> = None;
+        if !repeated_connect && !connect_self {
+            if service.enable_ca {
+                if let Some(cert) = self.init_msg.node_crt {
+                    let node_crt = X509::from_pem(cert.as_ref())
+                        .expect("The client's  certificate file format error! Needs X509 format.");
+
+                    if let Some(ref root_crt) = service.root_crt {
+                        if let Err(e) = cita_verify_crt(
+                            root_crt,
+                            &node_crt,
+                            &self.init_msg.peer_key,
+                            &service.crl,
+                        ) {
+                            error!("Failed to verify certificate: {:?}.", e);
+                            error!("Disconnet this session: {}", self.session_id);
+                            if let Some(ref mut ctrl) = service.service_ctrl {
+                                let _ = ctrl.disconnect(self.session_id);
+                            }
+                        } else {
+                            node_cert = Some(node_crt);
+                            info!("Cerificate verify OK");
+                        }
+                    }
+                } else {
+                    error!("The client do not contains a node certificate file in CA mode!");
+                    error!("Disconnet this session: {}", self.session_id);
+                    if let Some(ref mut ctrl) = service.service_ctrl {
+                        let _ = ctrl.disconnect(self.session_id);
                     }
                 }
             }
 
-            if let Some(ref mut ctrl) = service.service_ctrl {
-                let _ = ctrl.disconnect(self.session_id);
-            }
-        } else if service.peer_key == self.init_msg.peer_key {
-            // Connected self, disconnected the session.
-            // In P2P encrypted communication mode, the `connected self` will be detected by
-            // P2P framework, handling this situation by sending a `ConnectedSelfReq` message to
-            // NodesManager. See the `handle` in `ConnectedSelfReq` for more detail.
-            // This logic would be entry twice:
-            // one as server, and the other one as client.
-            if let Some(dialing_node) = service.dialing_node {
-                debug!(
-                    "[NodeManager] Connected Self, Delete {:?} from know_addrs",
-                    dialing_node
-                );
-                service.self_addr = Some(dialing_node);
-                if let Some(ref mut ctrl) = service.service_ctrl {
-                    let _ = ctrl.disconnect(self.session_id);
-                }
-            }
-        } else {
-            // Found a successful connection after exchanging `init message`.
-            // FIXME: If have reached to max_connects, disconnected this node.
-            // Add connected address.
             if let Some(session_info) = service.pending_connected_addrs.remove(&self.session_id) {
                 info!(
                     "[NodeManager] Add session [{:?}], address: {:?} to Connected_addrs.",
                     self.session_id, session_info.addr
                 );
-                let _ = service
+                // If the session have been writen in handle AddRepeatedNodeReq, just update the info.
+                service
                     .connected_addrs
-                    .insert(self.session_id, TransformAddr::new(session_info.addr, None));
+                    .entry(self.session_id)
+                    .and_modify(|v| {
+                        v.conn_addr = session_info.addr;
+                        v.node_crt = node_cert.clone();
+                    })
+                    .or_insert_with(|| ConnectedInfo::new(session_info.addr, None, node_cert));
 
                 // If it is an active connection, need to set this node in known_addrs has been connected.
                 if self.ty == SessionType::Outbound {
@@ -686,10 +937,28 @@ impl AddConnectedNodeReq {
                 .consensus_topology
                 .add_linked_nodes(self.init_msg.peer_key);
 
-            info!(
-                "[NodeManager] connected_addrs info: {:?}",
-                service.connected_addrs
-            );
+            for (key, value) in service.connected_addrs.iter() {
+                let crt_cn = if let Some(ref cert) = value.node_crt {
+                    let subject = cert.subject_name();
+                    let cn_str = str::from_utf8(
+                        subject
+                            .entries_by_nid(Nid::COMMONNAME)
+                            .next()
+                            .unwrap()
+                            .data()
+                            .as_slice(),
+                    )
+                    .unwrap();
+                    Some(cn_str)
+                } else {
+                    None
+                };
+
+                info!(
+                    "[NodeManager] connected_addrs info: [key: {:?}, connected address: {:?}, certificate common name: {:?}]",
+                    key, value.conn_addr, crt_cn
+                );
+            }
             info!("[NodeManager] known_addrs info: {:?}", service.known_addrs);
 
             info!(
@@ -697,7 +966,6 @@ impl AddConnectedNodeReq {
                 service.connected_peer_keys
             );
         }
-
         // End of dealing node for this round.
         if self.ty == SessionType::Outbound {
             service.dialing_node = None;
@@ -718,11 +986,15 @@ impl NetworkInitReq {
     pub fn handle(self, service: &mut NodesManager) {
         let peer_key = service.peer_key;
 
-        let init_msg = InitMsg {
+        let mut init_msg = InitMsg {
             chain_id: 0,
             peer_key,
+            node_crt: None,
         };
 
+        if service.enable_ca {
+            init_msg.node_crt = service.node_crt.clone();
+        }
         let mut msg_unit = NetMessageUnit::default();
         msg_unit.key = "network.init".to_string();
         msg_unit.data = init_msg.into();
@@ -805,19 +1077,20 @@ impl AddRepeatedNodeReq {
             node_status.session_id = Some(self.session_id);
             node_status.score += SUCCESS_DIALING_SCORE;
 
-            if let Some(session_info) = service.pending_connected_addrs.remove(&self.session_id) {
-                let _ = service.connected_addrs.insert(
-                    self.session_id,
-                    TransformAddr::new(session_info.addr, Some(self.addr)),
-                );
-            } else {
-                let _ = service
-                    .connected_addrs
-                    .entry(self.session_id)
-                    .and_modify(|v| {
-                        v.trans_addr = Some(self.addr);
-                    });
-            }
+            // Just save the trans_addr for this session, other field will be writen in hanld AddConnectedNodeReq.
+            service
+                .connected_addrs
+                .entry(self.session_id)
+                .and_modify(|v| {
+                    v.trans_addr = Some(self.addr);
+                })
+                .or_insert_with(|| {
+                    ConnectedInfo::new(
+                        SocketAddr::from_str("0.0.0.0:0").unwrap(),
+                        Some(self.addr),
+                        None,
+                    )
+                });
         } else {
             warn!("[NodeManager] Cant find repeated sock addr in known addrs");
         }
@@ -1007,6 +1280,26 @@ impl RetransNetMsgReq {
     }
 }
 
+// Call the system contract "CERT_REVOKE_MANAGER" to getCrl.
+fn get_crl(service: &mut NodesManager) {
+    let mut request = create_request();
+    let mut call = Call::new();
+
+    let get_crl_hash: Vec<u8> = encode_to_vec(b"getCrl()");
+    // Todo: use CERT_REVOKE_MANAGER address in cita-type
+    let contract_address: Address =
+        Address::from_str("ffffffffffffffffffffffffffffffffff020030").unwrap();
+    call.set_from(Address::default().to_vec());
+    call.set_to(contract_address.to_vec());
+    call.set_data(get_crl_hash);
+    call.set_height(("\"latest\"").to_owned());
+    request.set_call(call);
+
+    let data: Message = request.into();
+    let msg = PubMessage::new(routing_key!(Net >> GetCrl).into(), data.try_into().unwrap());
+    service.mq_client.get_crl(msg);
+}
+
 #[derive(Debug)]
 pub struct DealRichStatusReq {
     msg: ProtoMessage,
@@ -1020,6 +1313,16 @@ impl DealRichStatusReq {
     pub fn handle(mut self, service: &mut NodesManager) {
         let rich_status = self.msg.take_rich_status().unwrap();
         info!("DealRichStatusReq rich status {:?}", rich_status);
+
+        if service.enable_ca {
+            let current_hight = rich_status.get_height();
+            // service.get_crl_point init as 0, if current_hight > UPDATE_CRL_PERIOD, network will get the CRL for its each reset.
+            if current_hight - service.get_crl_point > UPDATE_CRL_PERIOD {
+                info!("Get Certificate Revoke List from Executor!");
+                get_crl(service);
+                service.get_crl_point = current_hight;
+            }
+        }
 
         let validators: BTreeSet<Address> = rich_status
             .get_validators()
@@ -1207,6 +1510,38 @@ impl ModifiedConfigPeersReq {
         }
         for peer in self.peers {
             service.config_addrs.entry(peer).or_insert(None);
+        }
+    }
+}
+
+pub struct UpdateCrlReq {
+    crl: Vec<Address>,
+}
+
+impl UpdateCrlReq {
+    pub fn new(crl: Vec<Address>) -> Self {
+        UpdateCrlReq { crl }
+    }
+
+    pub fn handle(self, service: &mut NodesManager) {
+        // update crl in NodesManager
+        info!("Update Certificate Revoke List as : {:?}", self.crl);
+        service.crl = self.crl;
+        for addr in service.crl.iter() {
+            for (key, value) in service.connected_addrs.iter() {
+                if let Some(ref crt) = value.node_crt {
+                    // It can can definitely get the address from crt. So it is ok to use unwrap here.
+                    let cn_addr = get_common_name(crt).unwrap();
+
+                    // Find a connecting node in CRL, disconnect it!
+                    if addr.contains(&cn_addr) {
+                        info!("Find connecting node {:?} in CRL, disconnect it!", addr);
+                        if let Some(ref mut ctrl) = service.service_ctrl {
+                            let _ = ctrl.disconnect(*key);
+                        }
+                    }
+                }
+            }
         }
     }
 }

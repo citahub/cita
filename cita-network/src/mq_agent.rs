@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,7 +67,8 @@ impl MqAgent {
                 Chain >> SyncResponse,
                 Jsonrpc >> RequestNet,
                 Jsonrpc >> RequestPeersInfo,
-                Snapshot >> SnapshotReq
+                Snapshot >> SnapshotReq,
+                Executor >> GetCrlResp,
             ]),
             ctx_sub_other_modules,
             crx_pub_other_modules,
@@ -193,6 +194,12 @@ impl MqAgentClient {
     pub fn pub_sync_blocks(&self, msg: PubMessage) {
         if let Err(e) = self.pub_other_modules.send((msg.key, msg.data)) {
             warn!("[MqAgent] Publish synchronize blocks failed: {:?}", e);
+        }
+    }
+
+    pub fn get_crl(&self, msg: PubMessage) {
+        if let Err(e) = self.pub_other_modules.send((msg.key, msg.data)) {
+            warn!("[MqAgent] Get certificat revoke list failed: {:?}", e);
         }
     }
 }

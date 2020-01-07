@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -601,8 +601,13 @@ impl MsgHandler {
             .get_clear_list()
             .iter()
             .for_each(|clear_list: &Vec<u8>| {
-                self.black_list_cache
-                    .remove(&Address::from_slice(clear_list.as_slice()));
+                let address = Address::from_slice(clear_list.as_slice());
+                if address == Address::default() {
+                    debug!("Clean blacklist when cita-executor restarts ");
+                    self.black_list_cache.clear();
+                    return;
+                }
+                self.black_list_cache.remove(&address);
             });
 
         black_list
@@ -621,7 +626,7 @@ impl MsgHandler {
             });
     }
 
-    #[allow(unknown_lints, clippy::cyclomatic_complexity)] // TODO clippy
+    #[allow(unknown_lints, clippy::cognitive_complexity)] // TODO clippy
     fn deal_request(&mut self, is_local: bool, newtx_req: Request) {
         if newtx_req.has_batch_req() {
             let batch_new_tx = newtx_req.get_batch_req().get_new_tx_requests();
@@ -708,11 +713,10 @@ impl MsgHandler {
                 .into_iter()
                 .filter(|(_tx_hash, (_req, _tx_req, flag))| *flag)
                 .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
-                    let ret = self.verify_black_list(&req);
-                    if ret.is_err() {
+                    if let Err(e) = self.verify_black_list(&req) {
                         if is_local {
                             let request_id = tx_req.get_request_id().to_vec();
-                            self.publish_tx_failed_result(request_id, &ret.unwrap_err());
+                            self.publish_tx_failed_result(request_id, &e);
                         }
                         false
                     } else {
@@ -720,11 +724,10 @@ impl MsgHandler {
                     }
                 })
                 .filter(|(_tx_hash, (ref _req, ref tx_req, _flag))| {
-                    let ret = self.verify_request(tx_req);
-                    if ret.is_err() {
+                    if let Err(e) = self.verify_request(tx_req) {
                         if is_local {
                             let request_id = tx_req.get_request_id().to_vec();
-                            self.publish_tx_failed_result(request_id, &ret.unwrap_err());
+                            self.publish_tx_failed_result(request_id, &e);
                         }
                         false
                     } else {
@@ -732,11 +735,10 @@ impl MsgHandler {
                     }
                 })
                 .filter(|(_tx_hash, (ref req, ref tx_req, _flag))| {
-                    let ret = self.verify_tx_req(&req);
-                    if ret.is_err() {
+                    if let Err(e) = self.verify_tx_req(&req) {
                         if is_local {
                             let request_id = tx_req.get_request_id().to_vec();
-                            self.publish_tx_failed_result(request_id, &ret.unwrap_err());
+                            self.publish_tx_failed_result(request_id, &e);
                         }
                         false
                     } else {
@@ -807,27 +809,24 @@ impl MsgHandler {
             }
 
             // black verify
-            let ret = self.verify_black_list(&req);
-            if ret.is_err() {
+            if let Err(e) = self.verify_black_list(&req) {
                 if is_local {
-                    self.publish_tx_failed_result(request_id, &ret.unwrap_err());
+                    self.publish_tx_failed_result(request_id, &e);
                 }
                 return;
             }
 
-            let ret = self.verify_request(&newtx_req);
-            if ret.is_err() {
+            if let Err(e) = self.verify_request(&newtx_req) {
                 if is_local {
-                    self.publish_tx_failed_result(request_id, &ret.unwrap_err());
+                    self.publish_tx_failed_result(request_id, &e);
                 }
                 return;
             }
 
             // other verify
-            let ret = self.verify_tx_req(&req);
-            if ret.is_err() {
+            if let Err(e) = self.verify_tx_req(&req) {
                 if is_local {
-                    self.publish_tx_failed_result(request_id, &ret.unwrap_err());
+                    self.publish_tx_failed_result(request_id, &e);
                 }
                 return;
             }
@@ -1069,21 +1068,24 @@ impl MsgHandler {
                         let un_tx = tx.get_transaction_with_sig();
                         self.save_ret_to_cache(
                             H256::from_slice(tx.get_tx_hash()),
-                            Some(un_tx.get_signature().to_vec()),
+                            Some(un_tx.clone().get_signature().to_vec()),
                         );
-                    }
 
-                    self.dispatcher.add_txs_to_pool(signed_txn);
-                    return true;
+                        let req = un_tx.tx_verify_req_msg();
+                        if self.verify_tx_req(&req).is_ok() {
+                            self.dispatcher.add_tx_to_pool(tx);
+                        }
+                    }
+                    true
                 }
                 Err(error) => {
                     info!("Validate BlockTxn error: {}", error);
-                    return false;
+                    false
                 }
             }
         } else {
             info!("Could not find cached block_txn_req");
-            return false;
+            false
         }
     }
 }
@@ -1106,7 +1108,7 @@ fn snapshot_response(sender: &Sender<(String, Vec<u8>)>, ack: Resp, flag: bool) 
 // only verify if tx.version > 2
 pub fn verify_base_quota_required(tx: &Transaction) -> bool {
     match tx.get_version() {
-        0...2 => true,
+        0..=2 => true,
         _ => {
             let to = tx.get_to_v1();
             if to.is_empty() || Address::from(to) == Address::zero() {

@@ -17,6 +17,7 @@ main() {
     # shellcheck source=/dev/null
     source "${SOURCE_DIR}/tests/integrate_test/util.sh"
     cd "${BINARY_DIR}"
+    cleanup
     echo "DONE"
 
     echo "1) Generate CITA configurations ..."
@@ -64,6 +65,10 @@ main() {
     timeout=$(check_height_growth_normal 0 $wait_timeout) || (echo "FAILED"
                                                               echo "error msg: ${timeout}"
                                                               exit 1)
+    echo "DONE"
+
+    echo "5) Cleanup ..."
+    cleanup
     echo "DONE"
 }
 
