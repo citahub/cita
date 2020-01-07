@@ -19,7 +19,9 @@ CHAIN_NAME="mock-chain"
 
 main() {
     echo -n "0) prepare  ...  "
+    . "${SOURCE_DIR}"/tests/integrate_test/util.sh
     cd "${BINARY_DIR}"
+    cleanup
     echo "DONE"
 
     echo -n "1) generate config  ...  "
@@ -50,6 +52,10 @@ main() {
     python3 "${SOURCE_DIR}"/tests/interfaces/rpc_test_runner.py \
             --rpc-url http://127.0.0.1:1337 \
             --directory "${SOURCE_DIR}"/tests/jsondata/rpc/
+    echo "DONE"
+
+    echo -n "5) cleanup ..."
+    cleanup
     echo "DONE"
 }
 

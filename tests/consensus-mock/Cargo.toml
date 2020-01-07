@@ -1,7 +1,7 @@
 [package]
 name = "consensus-mock"
 version = "0.1.0"
-authors = ["Cryptape Technologies <arch@cryptape.com>"]
+authors = ["Rivtower Technologies <arch@citahub.com>"]
 license = "Apache-2.0"
 edition = "2018"
 
@@ -10,13 +10,13 @@ serde = "1.0"
 serde_derive = "1.0"
 bincode = "0.8.0"
 cita-logger = "0.1.0"
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+hashable = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 clap = "2"
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+pubsub = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-crypto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+proof = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 chrono = "0.4.2"
 
 [features]

@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -136,7 +136,7 @@ fn main() {
     // set up the clap to receive info from CLI
     let matches = App::new("consensus mock")
         .version("0.1")
-        .author("Cryptape")
+        .author("Rivtower")
         .about("Mock the process of consensus")
         .arg(
             clap::Arg::with_name("interval")

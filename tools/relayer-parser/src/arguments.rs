@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ impl ::std::fmt::Display for AppArgs {
 pub fn build_commandline<'a>() -> clap::ArgMatches<'a> {
     let matches = clap_app!(RelayerParser =>
         (version: "0.1")
-        (author: "Cryptape Technologies")
+        (author: "Rivtower Technologies")
         (about: "CITA Relay Info Parser by Rust")
         (@arg ConfigFile: -f --config_file +takes_value +required "Input a toml configuration file.")
         (@arg ChainId: -c --chain_id +takes_value +required "Input a chain id for the transaction hash.")

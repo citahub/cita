@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -224,6 +224,14 @@ impl Forward {
 
             Request::call(call) => {
                 trace!("Chainvm Call {:?}", call);
+                self.ctx_pub
+                    .send((routing_key!(Chain >> Request).into(), imsg))
+                    .unwrap();
+                return;
+            }
+
+            Request::estimate_quota(call) => {
+                trace!("Estimate quota {:?}", call);
                 self.ctx_pub
                     .send((routing_key!(Chain >> Request).into(), imsg))
                     .unwrap();

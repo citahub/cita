@@ -5,7 +5,7 @@ import "../common/ReservedAddrPublic.sol";
 import "../../interaction/interface/IRole.sol";
 
 /// @title Role contract
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: Created by roleCreator
 ///         The interface can be called: Only query type
 contract Role is IRole, ReservedAddrPublic {

@@ -7,7 +7,7 @@ debug:
 	scripts/release.sh debug
 
 release:
-	$(CARGO) build --all  --release
+	$(CARGO) build --all --release
 	scripts/release.sh release
 
 test:
@@ -27,6 +27,7 @@ fmt:
 cov:
 	cargo cov test --all
 	cargo cov report --open
+
 
 clean:
 	rm -rf target/debug/

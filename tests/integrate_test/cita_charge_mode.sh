@@ -42,6 +42,7 @@ main() {
     # shellcheck source=/dev/null
     . ${SOURCE_DIR}/tests/integrate_test/util.sh
     cd "${BINARY_DIR}"
+    cleanup
     echo "DONE"
 
     echo -n "1) generate config  ...  "
@@ -78,6 +79,10 @@ main() {
 
     echo -n "7) Run charge mode tests in v1 ...  "
     test_charge_mode 1
+    echo "DONE"
+
+    echo -n "8) cleanup ..."
+    cleanup
     echo "DONE"
 }
 

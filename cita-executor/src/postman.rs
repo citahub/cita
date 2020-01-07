@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ use crate::core::contracts::solc::sys_config::ChainId;
 use crate::core::libexecutor::block::{ClosedBlock, OpenBlock};
 use crate::core::libexecutor::call_request::CallRequest;
 use crate::core::tx_gas_schedule::TxGasSchedule;
-use crate::types::block_number::BlockTag;
+use crate::types::block_number::{BlockTag, Tag};
 use crate::types::errors::ReceiptError;
 use cita_types::U256;
 use cita_types::{Address, H256};
@@ -122,6 +122,8 @@ impl Postman {
             routing_key!(Executor >> ExecutedResult).into(),
             msg.try_into().unwrap(),
         );
+
+        self.pub_init_black_list();
     }
 
     // make sure executor exit also
@@ -169,6 +171,7 @@ impl Postman {
     fn handle_mq_message(&mut self, key: &str, msg_vec: Vec<u8>) -> Result<(), BlockTag> {
         let mut msg = Message::try_from(msg_vec).unwrap();
         trace!("receive {} from RabbitMQ", key);
+
         match RoutingKey::from(key) {
             routing_key!(Auth >> MiscellaneousReq) => {
                 self.reply_auth_miscellaneous();
@@ -177,6 +180,11 @@ impl Postman {
             routing_key!(Chain >> Request) => {
                 let req = msg.take_request().unwrap();
                 self.reply_chain_request(req);
+            }
+
+            routing_key!(Net >> GetCrl) => {
+                let req = msg.take_request().unwrap();
+                self.reply_network_crl(req);
             }
 
             routing_key!(Chain >> RichStatus) => {
@@ -199,9 +207,8 @@ impl Postman {
                 self.grow_up();
                 self.execute_next_block();
             }
-
             _ => {
-                error!("receive unknown key: {} !!!!", key);
+                error!("receive unknown key: {} !!!!", RoutingKey::from(key));
             }
         }
         Ok(())
@@ -359,6 +366,21 @@ impl Postman {
         }
     }
 
+    /// First notify jsonrpc clear blacklist
+    fn pub_init_black_list(&self) {
+        let mut init_list = Vec::new();
+        init_list.push(Address::default());
+        let black_list = BlackList::new()
+            .set_black_list(init_list.clone())
+            .set_clear_list(init_list);
+
+        let black_list_bytes: Message = black_list.protobuf().into();
+        self.response_mq(
+            routing_key!(Executor >> BlackList).into(),
+            black_list_bytes.try_into().unwrap(),
+        );
+    }
+
     /// Find the public key of all senders that caused the specified error message, and then publish it
     // TODO: I think it is not necessary to distinguish economical_model, maybe remove
     //       this opinion in the future.
@@ -369,7 +391,7 @@ impl Postman {
             .receipts
             .iter()
             .filter(|ref receipt| match receipt.error {
-                Some(ReceiptError::NotEnoughCash) => true,
+                Some(ReceiptError::NotEnoughCash) | Some(ReceiptError::NotEnoughBaseQuota) => true,
                 _ => false,
             })
             .map(|receipt| receipt.transaction_hash)
@@ -390,9 +412,9 @@ impl Postman {
                     &self.command_req_sender,
                     &self.command_resp_receiver,
                     **address,
-                    BlockTag::Height(close_block.block.header.number()),
+                    BlockTag::Tag(Tag::Latest),
                 )
-                .and_then(|x| Some(U256::from(x.as_slice()) >= U256::from(bm_value)))
+                .map(|x| U256::from(x.as_slice()) >= U256::from(bm_value))
                 .unwrap_or(false)
             })
             .cloned()
@@ -459,6 +481,39 @@ impl Postman {
         );
     }
 
+    fn reply_network_crl(&self, mut req: request::Request) {
+        let mut response = response::Response::new();
+        response.set_request_id(req.take_request_id());
+        if let Request::call(call) = req.req.unwrap() {
+            let _ = serde_json::from_str::<BlockNumber>(&call.height)
+                .map(|block_id| {
+                    let call_request = CallRequest::from(call);
+                    command::eth_call(
+                        &self.command_req_sender,
+                        &self.command_resp_receiver,
+                        call_request,
+                        block_id.into(),
+                    )
+                    .map(|ok| {
+                        response.set_call_result(ok);
+                    })
+                    .map_err(|err| {
+                        response.set_code(ErrorCode::query_error());
+                        response.set_error_msg(err);
+                    })
+                })
+                .map_err(|err| {
+                    response.set_code(ErrorCode::query_error());
+                    response.set_error_msg(format!("{:?}", err));
+                });
+        }
+        let msg: Message = response.into();
+        self.response_mq(
+            routing_key!(Executor >> GetCrlResp).into(),
+            msg.try_into().unwrap(),
+        );
+    }
+
     fn reply_chain_request(&self, mut req: request::Request) {
         let mut response = response::Response::new();
         response.set_request_id(req.take_request_id());
@@ -470,6 +525,31 @@ impl Postman {
                     .map(|block_id| {
                         let call_request = CallRequest::from(call);
                         command::eth_call(
+                            &self.command_req_sender,
+                            &self.command_resp_receiver,
+                            call_request,
+                            block_id.into(),
+                        )
+                        .map(|ok| {
+                            response.set_call_result(ok);
+                        })
+                        .map_err(|err| {
+                            response.set_code(ErrorCode::query_error());
+                            response.set_error_msg(err);
+                        })
+                    })
+                    .map_err(|err| {
+                        response.set_code(ErrorCode::query_error());
+                        response.set_error_msg(format!("{:?}", err));
+                    });
+            }
+
+            Request::estimate_quota(call) => {
+                trace!("Estimate quota with params: {:?}", call);
+                let _ = serde_json::from_str::<BlockNumber>(&call.height)
+                    .map(|block_id| {
+                        let call_request = CallRequest::from(call);
+                        command::estimate_quota(
                             &self.command_req_sender,
                             &self.command_resp_receiver,
                             call_request,

@@ -1,7 +1,7 @@
 [package]
 name = "create-genesis"
 version = "0.1.0"
-authors = ["Cryptape Technologies <contact@cryptape.com>"]
+authors = ["Rivtower Technologies <contact@rivtower.com>"]
 license = "Apache-2.0"
 edition = "2018"
 
@@ -18,11 +18,11 @@ libsecp256k1 = "0.2.2"
 clap = "2.33.0"
 cita_trie = "2.0"
 
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+libproto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 
 [dependencies.cita-vm]
-git = "https://github.com/cryptape/cita-vm.git"
+git = "https://github.com/citahub/cita-vm.git"
 branch = "cita"
 default-features = false
 features = ["sha3hash"]

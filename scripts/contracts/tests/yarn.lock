@@ -18,18 +18,18 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@cryptape/cita-sdk@^0.25.1":
+"@citahub/cita-sdk@^0.25.1":
   version "0.25.1"
-  resolved "https://registry.yarnpkg.com/@cryptape/cita-sdk/-/cita-sdk-0.25.1.tgz#b4d7e95a40a977775634a3773a5190297e5188e3"
+  resolved "https://registry.yarnpkg.com/@citahub/cita-sdk/-/cita-sdk-0.25.1.tgz#b4d7e95a40a977775634a3773a5190297e5188e3"
   integrity sha512-2R224eRYA4qxFVv62LckqBByvWOWqK9xTKjzzDOYEXEgLDSLOP6sRAF5sndxrbAj8WHMUgWH9YPmKITQ9XFZmw==
   dependencies:
-    "@cryptape/cita-signer" "^2.5.2"
+    "@citahub/cita-signer" "^2.5.2"
     fstream "1.0.12"
     web3 "1.0.0-beta.37"
 
-"@cryptape/cita-signer@^2.5.2":
+"@citahub/cita-signer@^2.5.2":
   version "2.5.2"
-  resolved "https://registry.yarnpkg.com/@cryptape/cita-signer/-/cita-signer-2.5.2.tgz#b6fd68d6ab19483499526fe13205e3acf024d350"
+  resolved "https://registry.yarnpkg.com/@citahub/cita-signer/-/cita-signer-2.5.2.tgz#b6fd68d6ab19483499526fe13205e3acf024d350"
   integrity sha512-j3DsO4i5DQxwuGev+eiKZkbGYl/3PkwlxUGqLzLHPNAbejVwNdiXg5K+zL6AAPXch8Ci3YQ4cUexLjSWB1sYqQ==
   dependencies:
     elliptic "^6.4.0"

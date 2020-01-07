@@ -14,4 +14,4 @@ cargo build --release --features "privatetx"
 ```
 ***
 ### 使用说明
-[zktx_example](https://github.com/cryptape/zktx_example)
+[zktx_example](https://github.com/citahub/zktx_example)

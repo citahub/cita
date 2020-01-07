@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,19 +18,9 @@ use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
-use cita_merklehash;
-use cita_types::{Address, Bloom as LogBloom, H256, U256};
-use cita_vm::{
-    evm::Error as EVMError, state::State as CitaState, state::StateObjectInfo, BlockDataProvider,
-    Error as VMError,
-};
-use hashable::Hashable;
-use libproto::executor::{ExecutedInfo, ReceiptWithOption};
-use rlp::Encodable;
-
 use crate::cita_executive::CitaExecutive;
-use crate::contracts::native::factory::Factory as NativeFactory;
 use crate::core::context::{Context, LastHashes};
+use crate::data_provider::BlockDataProvider;
 use crate::exception::ExecutedException;
 use crate::libexecutor::auto_exec::auto_exec;
 use crate::libexecutor::economical_model::EconomicalModel;
@@ -44,6 +34,14 @@ use crate::types::errors::Error;
 use crate::types::errors::ReceiptError;
 use crate::types::errors::{AuthenticationError, ExecutionError};
 use crate::types::transaction::SignedTransaction;
+use cita_merklehash;
+use cita_types::{Address, Bloom as LogBloom, H256, U256};
+use cita_vm::{
+    evm::Error as EVMError, state::State as CitaState, state::StateObjectInfo, Error as VMError,
+};
+use hashable::Hashable;
+use libproto::executor::{ExecutedInfo, ReceiptWithOption};
+use rlp::Encodable;
 
 lazy_static! {
     /// Block Reward
@@ -159,12 +157,10 @@ impl ExecutedBlock {
             }
         }
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
-        let native_factory = NativeFactory::default();
 
         let tx_quota_used = match CitaExecutive::new(
             Arc::new(block_data_provider),
             self.state.clone(),
-            &native_factory,
             &context,
             conf.economical_model,
         )
@@ -199,12 +195,14 @@ impl ExecutedBlock {
                     _ => Some(ReceiptError::Internal),
                 });
 
-                let tx_quota_used =
-                    if receipt_error.is_some() && receipt_error != Some(ReceiptError::Internal) {
-                        t.gas
-                    } else {
-                        ret.quota_used
-                    };
+                let tx_quota_used = if receipt_error.is_some()
+                    && receipt_error != Some(ReceiptError::Internal)
+                    && receipt_error != Some(ReceiptError::Reverted)
+                {
+                    t.gas
+                } else {
+                    ret.quota_used
+                };
 
                 // Note: quota_used in Receipt is self.current_quota_used, this will be
                 // handled by get_rich_receipt() while getting a single transaction receipt.

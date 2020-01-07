@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ pub type CitaDB = RocksDB;
 pub struct Executor {
     pub current_header: RwLock<Header>,
     pub state_db: Arc<CitaTrieDB>,
-    pub db: Arc<Database>,
+    pub db: Arc<dyn Database>,
     pub sys_config: GlobalSysConfig,
 
     pub fsm_req_receiver: Receiver<OpenBlock>,

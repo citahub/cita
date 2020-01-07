@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ pub use self::quota_manager::{AccountQuotaLimit, QuotaManager, AUTO_EXEC_QL_VALU
 pub use self::sys_config::SysConfig;
 pub use self::user_management::UserManagement;
 pub use self::version_management::VersionManager;
-
 use crate::libexecutor::call_request::CallRequest;
 use crate::libexecutor::command::Commander;
 use crate::libexecutor::executor::Executor;

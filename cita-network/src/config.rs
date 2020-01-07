@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,9 @@ pub struct NetConfig {
     pub max_connects: Option<usize>,
     pub enable_tls: Option<bool>,
     pub enable_discovery: Option<bool>,
+
+    /// Enable certificate authority, so that it needs a digital certificate to connect to the blockchain.
+    pub enable_ca: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -73,6 +76,7 @@ mod tests {
         enable_tls = true
         max_connects = 4
         id_card = 9
+        enable_ca = true
         [[peers]]
             ip = "127.0.0.1"
             port = 4001
@@ -92,5 +96,6 @@ mod tests {
         assert_eq!(config.enable_tls, Some(true));
         assert_eq!(config.peers.unwrap().len(), 2);
         assert_eq!(config.enable_discovery, None);
+        assert_eq!(config.enable_ca, Some(true));
     }
 }

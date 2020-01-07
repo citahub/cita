@@ -7,7 +7,7 @@ import "../lib/AddressArray.sol";
 import "../../interaction/interface/IRoleAuth.sol";
 
 /// @title Authorization about role and account
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff02000d
 ///         The interface can be called: Only query type
 contract RoleAuth is IRoleAuth, ReservedAddrPublic {

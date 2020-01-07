@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "../common/Error.sol";
 
 /// @title Chain Manager
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 contract ChainManager is Error {
 
     address sysConfigAddr = 0xFFfffFFfFfFffFFfFFfffFffFfFFFffFFf020000;

@@ -23,11 +23,19 @@ test_perm_denied() {
     cd ../../..
 }
 
+test_change_block_interval() {
+    local version=$1
+    cd ./scripts/txtool/txtool
+    python3 "${SOURCE_DIR}"/tests/integrate_test/test_block_interval.py --version="$version"
+    cd ../../..
+}
+
 main() {
     echo -n "0) prepare  ...  "
     # shellcheck source=/dev/null
     . ${SOURCE_DIR}/tests/integrate_test/util.sh
     cd "${BINARY_DIR}"
+    cleanup
     echo "DONE"
 
     echo -n "1) generate config  ...  "
@@ -55,6 +63,17 @@ main() {
     echo -n "5) Check permission denied ... "
     test_perm_denied 2
     echo "Done"
+
+    echo -e "6) Run block interval tests ...\n"
+    test_change_block_interval 2
+    timeout=$(check_height_growth_normal 0 60) && (echo "FAILED"
+                                                    echo "failed to change block interval"
+                                                    exit 1)
+    echo "Done"
+
+    echo -n "7) Cleanup ..."
+    cleanup
+    echo "DONE"
 }
 
 main "$@"

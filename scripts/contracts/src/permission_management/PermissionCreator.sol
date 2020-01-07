@@ -4,7 +4,7 @@ import "./Permission.sol";
 import "../common/ReservedAddrPublic.sol";
 
 /// @title Permission factory contract to create permission contract
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address:0xffFFFffFfFFffffFffffFFfFffffFfFFFF020005
 ///         The interface: None
 contract PermissionCreator is ReservedAddrPublic {
