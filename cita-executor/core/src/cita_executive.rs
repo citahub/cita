@@ -253,8 +253,8 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
         match result {
             Ok(InterpreterResult::Normal(output, gas_left, logs)) => {
+                let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
                 if self.payment_required() {
-                    let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
                     if let Err(e) = liquidtion(
                         self.state_provider.clone(),
                         store.clone(),
@@ -273,6 +273,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 for e in store.borrow_mut().selfdestruct.drain() {
                     self.state_provider.borrow_mut().kill_contract(&e);
                 }
+                let gas_left = gas_left + refund;
                 self.state_provider
                     .borrow_mut()
                     .kill_garbage(&store.borrow().inused.clone());
@@ -280,7 +281,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 finalize_result.quota_left = U256::from(gas_left);
                 finalize_result.logs = transform_logs(logs);
                 finalize_result.logs_bloom = logs_to_bloom(&finalize_result.logs);
-
                 trace!(
                     "Get data after executed the transaction [Normal]: {:?}",
                     output
