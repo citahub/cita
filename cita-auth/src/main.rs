@@ -175,6 +175,7 @@ fn main() {
             Executor >> Miscellaneous,
             Net >> GetBlockTxn,
             Net >> BlockTxn,
+            Chain >> InvalidLicense,
         ]),
         tx_sub,
         rx_pub,

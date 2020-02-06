@@ -1,0 +1,6 @@
+# Free trial less than free_trial_time blocks.
+# Set about 30 days free trial (30 * 24 * 3600 / 3)
+free_trial_time = "864000"
+
+# Secp256k1 's public key address.
+issuer_address = "0x69144e9b845fadd41ee0c14e3127c1df87f2500e"
