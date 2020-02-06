@@ -65,6 +65,7 @@ impl MqAgent {
                 Chain >> Status,
                 Chain >> RichStatus,
                 Chain >> SyncResponse,
+                Chain >> InvalidLicense,
                 Jsonrpc >> RequestNet,
                 Jsonrpc >> RequestPeersInfo,
                 Snapshot >> SnapshotReq,

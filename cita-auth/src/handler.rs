@@ -38,6 +38,7 @@ use rayon::ThreadPoolBuilder;
 use serde_json;
 use std::collections::{HashMap, HashSet};
 use std::convert::Into;
+use std::process::exit;
 use std::str::FromStr;
 use std::time::Duration;
 use util::BLOCKLIMIT;
@@ -452,6 +453,14 @@ impl MsgHandler {
                     } else {
                         error!("Can not get block tx hashes from message {:?}.", msg);
                     }
+                }
+                routing_key!(Chain >> InvalidLicense) => {
+                    error!(
+                        "CITA license Invalid: {}",
+                        String::from_utf8(payload)
+                            .expect("Cannot convert license error to string!")
+                    );
+                    exit(1);
                 }
                 routing_key!(Executor >> BlackList) => {
                     if let Some(black_list) = msg.take_black_list() {

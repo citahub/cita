@@ -1,0 +1,21 @@
+[package]
+name = "license"
+description = "CITA license check"
+version = "0.1.0"
+authors = ["Rivtower Technologies <contact@rivtower.com>"]
+license = "Apache-2.0"
+edition = "2018"
+
+[dependencies]
+cita-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-crypto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+libproto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+pubsub = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-logger = "0.1.1"
+chrono = "0.4"
+base64 = "0.11"
+lazy_static = "^1.0"
+ethereum-secp256k1 = { version = "0.15.0", package = "secp256k1", features = ["recovery"]}
+hex = "0.4"
+tiny-keccak = { version = "2.0", features = ["keccak"] }
+
