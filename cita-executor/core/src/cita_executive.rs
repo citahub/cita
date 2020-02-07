@@ -254,6 +254,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         match result {
             Ok(InterpreterResult::Normal(output, gas_left, logs)) => {
                 let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
+                let gas_left = gas_left + refund;
                 if self.payment_required() {
                     if let Err(e) = liquidtion(
                         self.state_provider.clone(),
@@ -262,7 +263,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                         gas_price,
                         gas_limit.as_u64(),
                         gas_left,
-                        refund,
                     ) {
                         finalize_result.exception = Some(ExecutedException::VM(e));
                         return finalize_result;
@@ -273,7 +273,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 for e in store.borrow_mut().selfdestruct.drain() {
                     self.state_provider.borrow_mut().kill_contract(&e);
                 }
-                let gas_left = gas_left + refund;
                 self.state_provider
                     .borrow_mut()
                     .kill_garbage(&store.borrow().inused.clone());
@@ -288,6 +287,8 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 finalize_result.output = output;
             }
             Ok(InterpreterResult::Revert(output, gas_left)) => {
+                let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
+                let gas_left = gas_left + refund;
                 if self.payment_required() {
                     if let Err(e) = liquidtion(
                         self.state_provider.clone(),
@@ -296,7 +297,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                         gas_price,
                         gas_limit.as_u64(),
                         gas_left,
-                        0,
                     ) {
                         finalize_result.exception = Some(ExecutedException::VM(e));
                         return finalize_result;
@@ -315,8 +315,9 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 );
             }
             Ok(InterpreterResult::Create(output, gas_left, logs, addr)) => {
+                let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
+                let gas_left = gas_left + refund;
                 if self.payment_required() {
-                    let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
                     if let Err(e) = liquidtion(
                         self.state_provider.clone(),
                         store.clone(),
@@ -324,7 +325,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                         gas_price,
                         gas_limit.as_u64(),
                         gas_left,
-                        refund,
                     ) {
                         finalize_result.exception = Some(ExecutedException::VM(e));
                         return finalize_result;
@@ -356,7 +356,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                         sender,
                         gas_price,
                         gas_limit.as_u64(),
-                        0,
                         0,
                     ) {
                         finalize_result.exception = Some(ExecutedException::VM(e));
@@ -753,21 +752,19 @@ fn liquidtion<B: DB + 'static>(
     gas_price: U256,
     gas_limit: u64,
     gas_left: u64,
-    refund: u64,
 ) -> Result<(), VMError> {
     trace!(
-        "gas_price: {:?}, gas limit:{:?}, gas left: {:?}, refund: {:?}",
+        "gas_price: {:?}, gas limit:{:?}, gas left: {:?}",
         gas_price,
         gas_limit,
         gas_left,
-        refund
     );
     state_provider
         .borrow_mut()
-        .add_balance(&sender, gas_price * (gas_left + refund))?;
+        .add_balance(&sender, gas_price * gas_left)?;
     state_provider.borrow_mut().add_balance(
         &store.borrow().evm_context.coinbase,
-        gas_price * (gas_limit - gas_left - refund),
+        gas_price * (gas_limit - gas_left),
     )?;
     Ok(())
 }
