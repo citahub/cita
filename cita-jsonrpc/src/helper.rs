@@ -38,7 +38,7 @@ pub fn select_topic(method: &str) -> String {
         "peerCount" => routing_key!(Jsonrpc >> RequestNet).into(),
         "peersInfo" => routing_key!(Jsonrpc >> RequestPeersInfo).into(),
         "sendRawTransaction" | "sendTransaction" => routing_key!(Jsonrpc >> RequestNewTx).into(),
-        "getVersion" => routing_key!(Jsonrpc >> RequestRpc).into(),
+        "getVersion" | "estimateQuota" => routing_key!(Jsonrpc >> RequestRpc).into(),
         _ => routing_key!(Jsonrpc >> Request).into(),
     }
 }
