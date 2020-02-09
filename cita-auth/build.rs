@@ -18,7 +18,7 @@ use std::env;
 
 use util::build_info::gen_build_info;
 
-const VERSION: &str = "1.0.0";
+const VERSION: &str = "20.2.0";
 
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();

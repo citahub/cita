@@ -1,6 +1,6 @@
 [package]
 name = "cita-network"
-version = "1.0.0"
+version = "20.2.0"
 authors = ["Rivtower Technologies <contact@rivtower.com>"]
 license = "Apache-2.0"
 edition = "2018"
