@@ -91,6 +91,13 @@ impl Default for Factory {
                 Box::new(CrossChainVerify::default()),
             );
         }
+        {
+            use super::hello::HelloWorld;
+            factory.register(
+                Address::from_str("0000000000000000000000000000000000000500").unwrap(),
+                Box::new(HelloWorld::default()),
+            );
+        }
         #[cfg(test)]
         {
             use super::simple_storage::SimpleStorage;

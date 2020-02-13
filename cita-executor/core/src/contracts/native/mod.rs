@@ -14,6 +14,7 @@
 
 mod crosschain_verify;
 pub mod factory;
+pub mod hello;
 #[cfg(test)]
 mod simple_storage;
 
