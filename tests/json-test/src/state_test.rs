@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@ use crate::helper::{secret_2_address, string_2_bytes, string_2_h256, string_2_u2
 use crate::json::state::Test;
 
 use core_executor::cita_executive::CitaExecutive;
-use core_executor::contracts::native::factory::Factory as NativeFactory;
 use core_executor::libexecutor::sys_config::BlockSysConfig;
 use core_executor::libexecutor::{block::EVMBlockDataProvider, economical_model::EconomicalModel};
 use core_executor::types::{context::Context, transaction::Transaction}; //,Action,SignedTransaction};
@@ -85,11 +84,9 @@ pub fn test_json_file(p: &str) {
             evm_context.last_hashes = Arc::new(vec![string_2_h256(str_prev_hash)]);
 
             let block_data_provider = EVMBlockDataProvider::new(evm_context.clone());
-            let native_factory = NativeFactory::default();
             let mut exepinst = CitaExecutive::new(
                 Arc::new(block_data_provider),
                 state_provider.clone(),
-                &native_factory,
                 &evm_context,
                 EconomicalModel::Charge,
             );

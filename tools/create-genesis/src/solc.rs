@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,12 @@ impl Solc {
             .arg("abi,bin,userdoc,hashes,devdoc")
             .output()
             .expect("solc command fail to execute");
+
+        if !output.status.success() {
+            let msg = String::from_utf8(output.stderr).unwrap_or_else(|_| "unknown".to_owned());
+            panic!("solc command exeuction error: {}", msg);
+        }
+
         let output = String::from_utf8(output.stdout).unwrap();
         let compiled = json::parse(&output).unwrap();
         let index = [&file_path, ":", contract_name].concat();

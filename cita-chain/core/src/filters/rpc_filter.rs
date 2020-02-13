@@ -1,4 +1,4 @@
-// Copyrighttape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -138,7 +138,7 @@ impl RpcFilter for Chain {
         filterdb
             .try_lock()
             .unwrap()
-            .gen_block_filter(id, current_number + 1);
+            .gen_block_filter(id, current_number);
         drop(filterdb);
         changes
     }

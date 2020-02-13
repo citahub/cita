@@ -32,11 +32,6 @@ for binary in \
         cita-network \
         create-key-addr \
         create-genesis \
-        cita-relayer-parser \
-        snapshot-tool \
-        consensus-mock \
-        chain-executor-mock \
-        box-executor \
         ; do
     cp -rf "target/${type}/${binary}" target/install/bin/
 done
@@ -62,9 +57,5 @@ cp -f  scripts/cita_config.sh              target/install/bin/cita-config
 # 7) amend info of system contract
 cp -f scripts/amend_system_contracts.sh    target/install/scripts/
 cp -f scripts/amend_system_contracts.py    target/install/scripts/
-
-# 8) delete building container
-docker container stop cita_build_container > /dev/null 2>&1
-docker container rm cita_build_container > /dev/null 2>&1
 
 exit 0

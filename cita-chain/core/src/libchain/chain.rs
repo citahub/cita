@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -765,7 +765,7 @@ impl Chain {
 
     pub fn block_hash_by_height(&self, height: BlockNumber) -> Option<H256> {
         self.block_header_by_height(height)
-            .and_then(|hdr| Some(hdr.hash().unwrap()))
+            .map(|hdr| hdr.hash().unwrap())
     }
 
     /// Get block body by hash
@@ -1341,7 +1341,7 @@ impl Chain {
             Some(ProofType::Bft) => {
                 // TODO: use CONSTANT to replace the '1'.
                 self.block_by_height(height + 1)
-                    .and_then(|block| Some(block.header.proof().clone()))
+                    .map(|block| block.header.proof().clone())
             }
             _ => None,
         }

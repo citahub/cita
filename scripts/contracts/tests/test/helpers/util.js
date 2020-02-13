@@ -1,4 +1,4 @@
-const CITASDK = require('@cryptape/cita-sdk').default;
+const CITASDK = require('@citahub/cita-sdk').default;
 const log4js = require('log4js');
 const config = require('../config');
 

@@ -8,7 +8,7 @@ import "../../interaction/interface/IGroupManagement.sol";
 import "../../interaction/interface/IAllGroups.sol";
 
 /// @title User management using group struct
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: 0xFFFffFFfffffFFfffFFffffFFFffFfFffF02000a
 ///         The interface the can be called: All
 ///         Origin: One group choosed by sender from all his groups

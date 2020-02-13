@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -199,7 +199,7 @@ mod tests {
         let mut ext_headers = HeaderMap::new();
         let mut resp = Response::default();
 
-        headers.insert(HOST, HeaderValue::from_static("cryptape.com"));
+        headers.insert(HOST, HeaderValue::from_static("citahub.com"));
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
         ext_headers.insert_vec(
@@ -226,8 +226,8 @@ mod tests {
         let mut resp = HyperResponse::new("");
         assert_eq!(resp.body(), &"");
 
-        resp = resp.with_body("cryptape");
-        assert_eq!(resp.body(), &"cryptape");
+        resp = resp.with_body("citahub");
+        assert_eq!(resp.body(), &"citahub");
     }
 
     #[test]

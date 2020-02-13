@@ -1,7 +1,7 @@
 [package]
 name = "core-executor"
 version = "0.1.0"
-authors = ["Cryptape Technologies <contact@cryptape.com>"]
+authors = ["Rivtower Technologies <contact@rivtower.com>"]
 license = "Apache-2.0"
 edition = "2018"
 
@@ -15,7 +15,7 @@ serde_json = "1.0"
 rustc-hex = "1.0"
 rustc-serialize = "0.3"
 lru-cache = "0.1.1"
-lazy_static = "0.2"
+lazy_static = "1.4.0"
 bit-set = "0.4"
 rust-crypto = "0.2.34"
 num = "0.1"
@@ -32,28 +32,30 @@ cita_trie = "2.0"
 ethbloom = "0.6"
 sha3 = { version="0.8", optional=true }
 tiny-keccak = { version="1.4", optional=true }
+hashbrown = { version = "0.3", features = ["rayon"] }
+hasher = { version="0.1" }
 
 common-types = { path = "../../cita-chain/types" }
 core = { path = "../../cita-chain/core" }
-cita-merklehash = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-snappy = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-rlp = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-zktx = { git = "https://github.com/cryptape/zktx.git", optional = true }
-cita-database = { git = "https://github.com/cryptape/cita-database.git", branch = "develop" }
+cita-merklehash = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+snappy = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+hashable = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+rlp = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+proof = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+zktx = { git = "https://github.com/citahub/zktx.git", optional = true }
+cita-database = "0.1"
 
-cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-secp256k1 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto-trait = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-ed25519 = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+cita-secp256k1 = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+cita-crypto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+cita-crypto-trait = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
 
 [dependencies.cita-vm]
-git = "https://github.com/cryptape/cita-vm.git"
+git = "https://github.com/citahub/cita-vm.git"
 branch = "cita"
 default-features = false
 features = ["sha3hash"]

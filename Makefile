@@ -3,18 +3,18 @@ CARGO=RUSTFLAGS='-F warnings' cargo
 .PHONY: debug release test test-release bench fmt cov clean clippy security_audit
 
 debug:
-	$(CARGO) build --all
+	$(CARGO) build -j 1 --all
 	scripts/release.sh debug
 
 release:
-	$(CARGO) build --all  --release
+	$(CARGO) build -j 1 --all  --release
 	scripts/release.sh release
 
 test:
-	RUST_BACKTRACE=full $(CARGO) test --all 2>&1
+	RUST_BACKTRACE=full $(CARGO) test -j 1 --all 2>&1
 
 test-release:
-	RUST_BACKTRACE=full $(CARGO) test --release --all
+	RUST_BACKTRACE=full $(CARGO) test -j 1 --release --all
 
 bench:
 	-rm target/bench.log
@@ -33,7 +33,7 @@ clean:
 	rm -rf target/release/
 
 clippy:
-	$(CARGO) clippy --all
+	$(CARGO) clippy -j 1 --all
 
 # use cargo-audit to audit Cargo.lock for crates with security vulnerabilities
 # expecting to see "Success No vulnerable packages found"

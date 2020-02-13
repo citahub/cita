@@ -1,4 +1,4 @@
-// Copyrighttape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@ use std::env;
 
 use util::build_info::gen_build_info;
 
+const VERSION: &str = "20.2.0";
+
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
-    gen_build_info(out_dir.as_ref(), "build_info.rs");
+    gen_build_info(out_dir.as_ref(), "build_info.rs", VERSION.to_owned());
 }

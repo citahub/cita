@@ -1,0 +1,73 @@
+version: '3'
+
+services:
+  config:
+    container_name: config
+    environment:
+      - USER_ID
+      - SUPER_ADMIN=0x4b5ae4567ad5d9fb92bc9afd6a657e6fa13a2523
+      - NODES_CONFIG=node0:4000, node1:4001
+    image: cita/cita-release:1.0.0-secp256k1-sha3
+    hostname: config
+    networks:
+      main:
+        aliases:
+          - config
+    volumes:
+      - ./:/opt/cita-run
+    command: |
+      bash -c '
+      echo "Create config files...";
+      cita create --super_admin "$$SUPER_ADMIN" --nodes "$$NODES_CONFIG";
+      echo "Done config"'
+  
+  node0:
+    container_name: node0
+    depends_on:
+      - config
+    environment:
+      - USER_ID
+    image: cita/cita-release:1.0.0-secp256k1-sha3
+    hostname: node0
+    networks:
+      main:
+        aliases:
+          - node0
+    volumes:
+      - ./:/opt/cita-run
+    ports:
+      - "1337:1337"
+    command: |
+      bash -c '
+      while [[ ! -d /opt/cita-run/test-chain ]]; do sleep 1; done;
+      sleep 10;
+      cita setup test-chain/0;
+      cita start test-chain/0;
+      sleep infinity'
+
+  node1:
+    container_name: node1
+    depends_on:
+      - config
+    environment:
+      - USER_ID
+    image: cita/cita-release:1.0.0-secp256k1-sha3
+    hostname: node1
+    networks:
+      main:
+        aliases:
+          - node1
+    volumes:
+      - ./:/opt/cita-run
+    ports:
+      - "1338:1338"
+    command: |
+      bash -c '
+      while [[ ! -d /opt/cita-run/test-chain ]]; do sleep 1; done;
+      sleep 10;
+      cita setup test-chain/1;
+      cita start test-chain/1;
+      sleep infinity'
+
+networks:
+  main:

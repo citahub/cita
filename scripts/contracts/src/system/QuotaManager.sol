@@ -8,7 +8,7 @@ import "../../interaction/interface/IQuotaManager.sol";
 import "../../interaction/interface/IAuthorization.sol";
 
 /// @title Node manager contract
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020003
 contract QuotaManager is IQuotaManager, Error, Check {
 
