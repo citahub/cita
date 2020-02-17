@@ -45,7 +45,6 @@ rlp = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" 
 libproto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 proof = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 jsonrpc-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
-zktx = { git = "https://github.com/citahub/zktx.git", optional = true }
 cita-database = "0.1"
 
 cita-ed25519 = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
@@ -73,6 +72,5 @@ sm2 = ["cita-crypto/sm2", "libproto/sm2", "proof/sm2"]
 sha3hash = ["hashable/sha3hash", "libproto/sha3hash", "proof/sha3hash"]
 blake2bhash = ["hashable/blake2bhash", "libproto/blake2bhash", "proof/blake2bhash"]
 sm3hash = ["hashable/sm3hash", "libproto/sm3hash", "proof/sm3hash"]
-privatetx = ["zktx"]
 hashlib-keccak = ["tiny-keccak"]
 hashlib-sha3 = ["sha3"]
