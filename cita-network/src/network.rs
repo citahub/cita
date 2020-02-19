@@ -32,6 +32,7 @@ use libproto::{TryFrom, TryInto};
 use pubsub::channel::{unbounded, Receiver, Sender};
 use serde_json;
 use std::iter::FromIterator;
+use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -161,6 +162,13 @@ impl LocalMessage {
                 service
                     .sync_client
                     .handle_local_status(SynchronizerMessage::new(self.key, self.data));
+            }
+            routing_key!(Chain >> InvalidLicense) => {
+                error!(
+                    "CITA license Invalid: {}",
+                    String::from_utf8(self.data).expect("Cannot convert license error to string!")
+                );
+                exit(1);
             }
             routing_key!(Chain >> RichStatus) => {
                 let msg = ProtoMessage::try_from(&self.data).unwrap();

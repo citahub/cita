@@ -12,13 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use config_struct::StructOptions;
 use std::env;
-
 use util::build_info::gen_build_info;
 
-const VERSION: &str = "1.1.0";
+const VERSION: &str = "1.2.0";
 
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
     gen_build_info(out_dir.as_ref(), "build_info.rs", VERSION.to_owned());
+
+    // Generate a config file from lic_cfg.toml
+    let mut opt = StructOptions::default();
+    opt.const_name = Some("LICENSE_CONFIG".to_owned());
+    config_struct::create_config("lic_cfg.toml", "./license/src/lic_cfg.rs", &opt).unwrap();
 }

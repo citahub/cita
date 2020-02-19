@@ -14,20 +14,74 @@
 
 use crate::config::Config;
 use crate::get_build_info_str;
-use jsonrpc_types::rpc_types::SoftwareVersion;
+use jsonrpc_types::rpc_types::{LicenseInfo as ProtoLicenseInfo, SoftwareVersion};
 use jsonrpc_types::ErrorCode;
 use libproto::protos::response::Response;
 use libproto::Message;
-use libproto::Request_oneof_req::software_version;
+use libproto::Request_oneof_req::{license_info, software_version};
+use license::lic_info::LicenseInfo as CitaLicenseInfo;
 use serde_json;
+use std::fs::File;
+use std::io::prelude::Read;
+use std::io::ErrorKind;
 
 pub struct Soliloquy {
     config: Config,
+    lic_info: ProtoLicenseInfo,
 }
 
 impl Soliloquy {
     pub fn new(config: Config) -> Self {
-        Soliloquy { config }
+        // Get license info from license file.
+        let lic_info = match File::open("cita.lic") {
+            Ok(mut file) => {
+                let mut buffer = String::new();
+                if let Err(e) = file.read_to_string(&mut buffer) {
+                    ProtoLicenseInfo {
+                        license_type: "Unknow".to_owned(),
+                        finger_print: None,
+                        expiration_date: None,
+                        issuer: None,
+                        error_message: Some(format!("Read license file error: {}", e)),
+                    }
+                } else {
+                    match CitaLicenseInfo::from(buffer) {
+                        Ok(info) => ProtoLicenseInfo {
+                            license_type: format!("{:?}", info.lic_type),
+                            finger_print: Some(format!("{:?}", info.finger_print).to_string()),
+                            expiration_date: Some(info.end_time.to_string()),
+                            issuer: Some(format!("{:?}", info.issuer).to_string()),
+                            error_message: None,
+                        },
+                        Err(e) => ProtoLicenseInfo {
+                            license_type: "Unknow".to_owned(),
+                            finger_print: None,
+                            expiration_date: None,
+                            issuer: None,
+                            error_message: Some(format!("Parse license file error: {}", e)),
+                        },
+                    }
+                }
+            }
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => ProtoLicenseInfo {
+                    license_type: "Free Trial".to_owned(),
+                    finger_print: None,
+                    expiration_date: None,
+                    issuer: None,
+                    error_message: None,
+                },
+                _ => ProtoLicenseInfo {
+                    license_type: "Unknow".to_owned(),
+                    finger_print: None,
+                    expiration_date: None,
+                    issuer: None,
+                    error_message: Some(format!("Open license file error: {}", e)),
+                },
+            },
+        };
+
+        Soliloquy { config, lic_info }
     }
 
     pub fn handle(&self, msg_bytes: &[u8]) -> Message {
@@ -46,6 +100,14 @@ impl Soliloquy {
                     let version = vec[0].to_string();
                     if let Ok(json_ver) = serde_json::to_value(SoftwareVersion::new(version)) {
                         response.set_software_version(json_ver.to_string());
+                    } else {
+                        response.set_code(ErrorCode::InternalError.code());
+                        response.set_error_msg(ErrorCode::InternalError.description());
+                    }
+                }
+                Some(license_info(_)) => {
+                    if let Ok(json_license_info) = serde_json::to_value(self.lic_info.clone()) {
+                        response.set_license_info(json_license_info.to_string());
                     } else {
                         response.set_code(ErrorCode::InternalError.code());
                         response.set_error_msg(ErrorCode::InternalError.description());

@@ -13,8 +13,11 @@
 // limitations under the License.
 
 use crate::core::contracts::solc::sys_config::ChainId;
+use crate::core::libexecutor::blacklist::BlackList;
 use crate::core::libexecutor::block::{ClosedBlock, OpenBlock};
 use crate::core::libexecutor::call_request::CallRequest;
+use crate::core::libexecutor::command;
+use crate::core::libexecutor::lru_cache::LRUCache;
 use crate::core::tx_gas_schedule::TxGasSchedule;
 use crate::types::block_number::{BlockTag, Tag};
 use crate::types::errors::ReceiptError;
@@ -31,11 +34,8 @@ use libproto::{request, response, Message};
 use libproto::{TryFrom, TryInto};
 use serde_json;
 use std::convert::Into;
+use std::process::exit;
 use std::u8;
-
-use crate::core::libexecutor::blacklist::BlackList;
-use crate::core::libexecutor::command;
-use crate::core::libexecutor::lru_cache::LRUCache;
 
 use std::sync::RwLock;
 
@@ -168,8 +168,10 @@ impl Postman {
         self.backlogs.insert_closed(height, closed_block);
     }
 
+    // For clippy
+    #[allow(clippy::cognitive_complexity)]
     fn handle_mq_message(&mut self, key: &str, msg_vec: Vec<u8>) -> Result<(), BlockTag> {
-        let mut msg = Message::try_from(msg_vec).unwrap();
+        let mut msg = Message::try_from(msg_vec.clone()).unwrap();
         trace!("receive {} from RabbitMQ", key);
 
         match RoutingKey::from(key) {
@@ -181,7 +183,13 @@ impl Postman {
                 let req = msg.take_request().unwrap();
                 self.reply_chain_request(req);
             }
-
+            routing_key!(Chain >> InvalidLicense) => {
+                error!(
+                    "CITA license Invalid: {}",
+                    String::from_utf8(msg_vec).expect("Cannot convert license error to string!")
+                );
+                exit(1);
+            }
             routing_key!(Net >> GetCrl) => {
                 let req = msg.take_request().unwrap();
                 self.reply_network_crl(req);

@@ -87,7 +87,10 @@ use cita_directories::DataPath;
 use clap::App;
 use core::libchain;
 use libproto::router::{MsgType, RoutingKey, SubModules};
+use license::lic_cfg::LICENSE_CONFIG;
+use license::lic_verify::LicVerify;
 use pubsub::{channel, start_pubsub};
+use std::process::exit;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 
@@ -138,10 +141,18 @@ fn main() {
         chain_config,
     ));
 
+    let mut lic_verify = LicVerify::new(LICENSE_CONFIG, ctx_pub.clone()).unwrap_or_else(|e| {
+        error!("New license verify error: {}", e);
+        exit(1);
+    });
+
     let (write_sender, write_receiver) = channel::unbounded();
     let forward = Forward::new(Arc::clone(&chain), ctx_pub.clone(), write_sender);
 
-    let block_processor = BlockProcessor::new(Arc::clone(&chain), ctx_pub);
+    let block_processor = BlockProcessor::new(Arc::clone(&chain), ctx_pub, lic_verify.client());
+
+    // Run verify cita license
+    thread::spawn(move || lic_verify.run());
 
     // Two threads, one for reading, one for writing
     // Read: dispatch msg

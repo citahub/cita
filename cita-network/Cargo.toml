@@ -1,6 +1,6 @@
 [package]
 name = "cita-network"
-version = "1.1.0"
+version = "1.2.0"
 authors = ["Rivtower Technologies <contact@rivtower.com>"]
 license = "Apache-2.0"
 edition = "2018"
@@ -12,6 +12,7 @@ tokio = "0.1.14"
 futures = "0.1.25"
 cita-logger = "0.1.1"
 cita-types = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
+cita-crypto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 util = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 libproto = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }
 pubsub = { git = "ssh://git.rivtower.com/cita/cita-common.git", branch = "develop" }

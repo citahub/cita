@@ -7,11 +7,12 @@ pipeline {
         success {
             updateGitlabCommitStatus name: 'CI Test', state: 'success'
         }
-        always {
+        cleanup {
             // Clear tested container anyway
             sh '''
                 readonly COMMIT_ID=$(git rev-parse --short HEAD)
-                readonly CONTAINER_NAME="cita_build_${COMMIT_ID}"
+                readonly TIME_ID=$(date '+%Y_%m_%d_%H_%M_%S')
+                readonly CONTAINER_NAME="cita_build_${TIME_ID}_${COMMIT_ID}"
 
                 if docker ps | grep "${CONTAINER_NAME}" > '/dev/null' 2>&1; then
                     docker rm "${CONTAINER_NAME}" > '/dev/null' 2>&1

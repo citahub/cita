@@ -174,6 +174,7 @@ fn main() {
             Chain >> RichStatus,
             Chain >> StateSignal,
             Chain >> LocalSync,
+            Chain >> InvalidLicense,
             Consensus >> BlockWithProof,
             Consensus >> SignedProposal,
             Net >> SyncResponse,
