@@ -58,7 +58,7 @@ ret_code=`curl -I -s --connect-timeout $timeout $target -w %{http_code} | tail -
 if [ "x$ret_code" = "x200" ]; then
     readonly INIT_CMD="sleep infinity"
 else
-    readonly INIT_CMD="echo -e '[source.crates-io]\nreplace-with = \"rustcc\"\n[source.rustcc]\nregistry = \"https://code.aliyun.com/rustcc/crates.io-index.git\"' | sudo tee /opt/.cargo/config;sleep infinity"
+    readonly INIT_CMD="echo -e '[source.crates-io]\nreplace-with = \"rustcc\"\n[source.rustcc]\nregistry = \"git://mirrors.ustc.edu.cn/crates.io-index\"' | sudo tee /opt/.cargo/config;sleep infinity"
 fi
 
 PUB_KEY_PATH="${HOME}/.ssh/id_rsa"

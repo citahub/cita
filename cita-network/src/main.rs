@@ -123,6 +123,7 @@ fn main() {
                         -a, --address=[FILE] 'Sets an address file'
                         -s, --stdout 'Log to console'",
         )
+        .args_from_usage("-p, --private=[FILE] 'Sets a private key file'")
         .get_matches();
 
     let stdout = matches.is_present("stdout");
@@ -153,9 +154,9 @@ fn main() {
     let config = NetConfig::new(&config_file);
     debug!("Network config is {:?}", config_file);
 
-    let addr_path = matches.value_of("address").unwrap_or("address");
-    let own_addr = AddressConfig::new(&addr_path);
-    debug!("Node address is {:?}", own_addr.addr);
+    let private_key_path = matches.value_of("private").unwrap_or("privkey");
+    let own_addr = AddressConfig::new(&private_key_path);
+    info!("Node address is {:?}", own_addr.addr);
     // End init config
 
     let mut mq_agent = MqAgent::default();

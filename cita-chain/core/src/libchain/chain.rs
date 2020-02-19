@@ -752,6 +752,12 @@ impl Chain {
             })
     }
 
+    /// Get genesis block hash
+    pub fn genesis_block_hash(&self) -> Option<H256> {
+        self.block_header_by_height(0)
+            .and_then(|header| header.hash())
+    }
+
     /// Get block body by BlockTag
     pub fn block_body(&self, tag: BlockTag) -> Option<BlockBody> {
         match tag {

@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-extern crate util;
+#[macro_use]
+extern crate cita_logger as logger;
 
-use std::env;
+#[macro_use]
+extern crate libproto;
 
-use util::build_info::gen_build_info;
-
-const VERSION: &str = "1.2.0";
-
-fn main() {
-    let out_dir = env::var("OUT_DIR").unwrap();
-    gen_build_info(out_dir.as_ref(), "build_info.rs", VERSION.to_owned());
-}
+pub mod crypto;
+pub mod lic_cfg;
+pub mod lic_info;
+pub mod lic_verify;

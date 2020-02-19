@@ -2,7 +2,8 @@
 
 readonly SOURCE_DIR="$(dirname "$(readlink -f "$0")")"
 readonly COMMIT_ID=$(git rev-parse --short HEAD)
-readonly CONTAINER_NAME="cita_build_${COMMIT_ID}"
+readonly TIME_ID=$(date '+%Y_%m_%d_%H_%M_%S')
+readonly CONTAINER_NAME="cita_build_${TIME_ID}_${COMMIT_ID}"
 readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20191128'
 readonly PUB_KEY_PATH="${HOME}/.ssh/id_rsa"
 

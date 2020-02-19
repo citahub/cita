@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use cita_crypto::{CreateKey, KeyPair, PrivKey};
 use cita_types::{clean_0x, Address};
 use serde_derive::Deserialize;
 use std::fs::File;
@@ -50,16 +51,32 @@ pub struct AddressConfig {
 
 impl AddressConfig {
     pub fn new(path: &str) -> Self {
-        let mut buffer = String::new();
-        let addr = match File::open(path).and_then(|mut f| f.read_to_string(&mut buffer)) {
-            Ok(_) => Address::from_str(clean_0x(&buffer)).unwrap(),
-            Err(_) => {
-                info!("[Config] Cannot find address file, using a random Address instead.");
+        // Get node address from private key file.
+        let addr = match get_node_addr(path) {
+            Ok(ret) => ret,
+            Err(e) => {
+                warn!("[Config] Cannot get address from config file with error {}, using a random Address instead.", e);
                 Address::random()
             }
         };
 
         AddressConfig { addr }
+    }
+}
+
+pub fn get_node_addr(path: &str) -> Result<Address, String> {
+    match File::open(path) {
+        Ok(mut file) => {
+            let mut buffer = String::new();
+            file.read_to_string(&mut buffer)
+                .map_err(|e| format!("Read private key file error: {:?}", e))?;
+            let priv_key = PrivKey::from_str(clean_0x(buffer.as_ref()))
+                .map_err(|e| format!("Parse private key error: {:?}", e))?;
+            let key_pair = KeyPair::from_privkey(priv_key)
+                .map_err(|e| format!("Create key pair from private key error: {:?}", e))?;
+            Ok(key_pair.address())
+        }
+        Err(e) => Err(format!("Open private key file error: {:?}", e)),
     }
 }
 
