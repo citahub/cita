@@ -142,7 +142,7 @@ fn main() {
     ));
 
     let mut lic_verify = LicVerify::new(LICENSE_CONFIG, ctx_pub.clone()).unwrap_or_else(|e| {
-        error!("New license verify error: {:?}", e);
+        error!("New license verify error: {}", e);
         exit(1);
     });
 

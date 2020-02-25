@@ -59,7 +59,12 @@ impl LicenseInfo {
             decode(&data).map_err(|e| format!("Decode license file error: {:?}", e))?;
 
         // Get license data, not include fingerprint and sign
-        let license_data_len = license_bytes.len() - HASH_BYTES_LEN - SIGNATURE_BYTES_LEN;
+        let len = HASH_BYTES_LEN + SIGNATURE_BYTES_LEN;
+        let license_data_len = if let Some(data_len) = license_bytes.len().checked_sub(len) {
+            data_len
+        } else {
+            return Err("License data len less than required!".to_owned());
+        };
         let mut license_data: Vec<u8> = Vec::new();
         license_data.extend_from_slice(&license_bytes[..license_data_len]);
         // Get license data hash

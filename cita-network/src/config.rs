@@ -76,7 +76,7 @@ pub fn get_node_addr(path: &str) -> Result<Address, String> {
                 .map_err(|e| format!("Create key pair from private key error: {:?}", e))?;
             Ok(key_pair.address())
         }
-        Err(e) => return Err(format!("Open private key file error: {:?}", e)),
+        Err(e) => Err(format!("Open private key file error: {:?}", e)),
     }
 }
 
