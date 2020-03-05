@@ -1,21 +1,18 @@
-"""
-Amend the code of [System contract](0xffffffffffffffffffffffffffffffffff020000).
-"""
 
 import argparse
 import json
-from utils import rpc_request, get_receipt, amend_code, send_tx, amend_storage
+from utils import amend_code, amend_storage
 
 SYS_CONF = '0xffffffffffffffffffffffffffffffffff020000'
 Cert_Revoke_Manager = '0xffffffffffffffffffffffffffffffffff020030'
 
 def parse_arguments():
-    """ parse the arguments: privkey, url """
+    """ parse the arguments: privkey, url, """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--privkey', required=True, help='The admin private key.')
     parser.add_argument('--url', required=True, help='The url of the chain.')
-
+    parser.add_argument('--algorithm', required=True, help='The algorithm of the chain. Can be secp256k1, ed25519 or sm2')
     args = parser.parse_args()
     return args
 
@@ -31,22 +28,17 @@ def main():
     for addr in alloc:
         if addr == SYS_CONF:
             # amend code
-            args.value = 2
             amend_code(addr, alloc[addr]['code'], args)
             print(f'amend system config contract code successfully')
         if addr == Cert_Revoke_Manager:
             # amend code
-            args.value = 2
             amend_code(addr, alloc[addr]['code'], args)
 
             # amend storage
-            args.value = 3
             storage = alloc[addr]['storage']
             for key in storage:
                 amend_storage(addr, key, storage[key], args)
             print(f'amend cert remoke contract code successfully')
-
-
 
 
 if __name__ == '__main__':
