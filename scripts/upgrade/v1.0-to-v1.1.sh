@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This is a updrade helper for CITA from version 1.0.0 to version 1.1.0.
+# This is a updrade helper for CITA from version 1.0.0 to version 1.2.0.
 #
 # 1. why this bash needed?
 #
@@ -17,7 +17,7 @@
 
 #          ./scripts/upgrade/v1.0-to-v1.1.sh \
 #                0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \
-#                http://127.0.0.1:1337  \
+#                http://127.0.0.1:1337  sm2\
 set -e
 
 if [[ $(uname) == 'Darwin' ]]
@@ -28,11 +28,11 @@ else
 fi
 
 if [ "$1" = "help" ]; then
-    echo "Admin private key, url as the params.
+    echo "Admin private key, url, algorithml as the params.
         For example: \\
         bin/cita scripts/upgrade/v1.0-to-v1.1.sh \\
             0x5f0258a4778057a8a7d97809bd209055b2fbafa654ce7d31ec7191066b9225e6 \\
-            http://127.0.0.1:1337"
+            http://127.0.0.1:1337 sm2"
     exit 0
 fi
 
@@ -50,7 +50,7 @@ cp tmp/0/genesis.json scripts/
 
 echo "==> Send tx to amend code"
 cd ./scripts/txtool/txtool
-python3 "${SOURCE_DIR}"/upgrade/v1.0-to-v1.1.py --privkey "$1" --url "$2"
+python3 "${SOURCE_DIR}"/upgrade/v1.0-to-v1.1.py --privkey "$1" --url "$2" --algorithm "$3"
 cd -
 
 echo "==> Clean temp data"
