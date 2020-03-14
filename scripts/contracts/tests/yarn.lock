@@ -18,23 +18,24 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@citahub/cita-sdk@^0.25.1":
-  version "0.25.1"
-  resolved "https://registry.yarnpkg.com/@citahub/cita-sdk/-/cita-sdk-0.25.1.tgz#b4d7e95a40a977775634a3773a5190297e5188e3"
-  integrity sha512-2R224eRYA4qxFVv62LckqBByvWOWqK9xTKjzzDOYEXEgLDSLOP6sRAF5sndxrbAj8WHMUgWH9YPmKITQ9XFZmw==
+"@citahub/cita-sdk@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@citahub/cita-sdk/-/cita-sdk-1.0.1.tgz#4ad0696c0d3bb88c6b42f35b82cdd176eaf1f7b1"
+  integrity sha512-mJQ0swYOAsuMul8imulVH1eT85e2YkHpBwM0XC97WRsU5yRt5w8XE4MhzHqmeaqBZevDj5FsoaJaR0z9T3EVkQ==
   dependencies:
-    "@citahub/cita-signer" "^2.5.2"
+    "@citahub/cita-signer" "^2.6.0"
     fstream "1.0.12"
     web3 "1.0.0-beta.37"
 
-"@citahub/cita-signer@^2.5.2":
-  version "2.5.2"
-  resolved "https://registry.yarnpkg.com/@citahub/cita-signer/-/cita-signer-2.5.2.tgz#b6fd68d6ab19483499526fe13205e3acf024d350"
-  integrity sha512-j3DsO4i5DQxwuGev+eiKZkbGYl/3PkwlxUGqLzLHPNAbejVwNdiXg5K+zL6AAPXch8Ci3YQ4cUexLjSWB1sYqQ==
+"@citahub/cita-signer@^2.6.0":
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/@citahub/cita-signer/-/cita-signer-2.6.0.tgz#82de46dd8a6d24bdd450a48e76b388fd29848242"
+  integrity sha512-M8F707AQez3UMqtWpshPuseslDLqgSUEziUN/LXio0p2YYC/rZGDSO8LjKJXc/rfneVC+55cD6Y1inAo4LAw6w==
   dependencies:
     elliptic "^6.4.0"
     fstream "1.0.12"
     google-protobuf "^3.5.0"
+    sm-series-crypto "^0.2.1"
     web3 "1.0.0-beta.37"
 
 "@types/node@^10.3.2":
@@ -56,9 +57,9 @@ acorn-jsx@^5.0.0:
   integrity sha512-HJ7CfNHrfJLlNTzIEUTj43LNWGkqpRLxm3YjAlcD0ACydk9XynzYsCBHxut+iqt+1aBXkx9UP/w/ZqMr13XIzg==
 
 acorn@^6.0.7:
-  version "6.2.0"
-  resolved "https://registry.yarnpkg.com/acorn/-/acorn-6.2.0.tgz#67f0da2fc339d6cfb5d6fb244fd449f33cd8bbe3"
-  integrity sha512-8oe72N3WPMjA+2zVG71Ia0nXZ8DpQH+QyyHO+p06jT8eg8FGG3FbcUIi8KziHlAfheJQZeoqbvq1mQSQHXKYLw==
+  version "6.4.1"
+  resolved "https://registry.yarnpkg.com/acorn/-/acorn-6.4.1.tgz#531e58ba3f51b9dacb9a6646ca4debf5b14ca474"
+  integrity sha512-ZVA9k326Nwrj3Cj9jlh3wGFutC2ZornPNARZwsNYqQYgN0EsV2d53w5RN/co65Ohn4sUAUtb1rSUAOD6XN9idA==
 
 aes-js@3.0.0:
   version "3.0.0"
@@ -1546,7 +1547,7 @@ he@1.2.0:
   resolved "https://registry.yarnpkg.com/he/-/he-1.2.0.tgz#84ae65fa7eafb165fddb61566ae14baf05664f0f"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
 
-hmac-drbg@^1.0.0:
+hmac-drbg@^1.0.0, hmac-drbg@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/hmac-drbg/-/hmac-drbg-1.0.1.tgz#d2745701025a6c775a6c545793ed502fc0c649a1"
   integrity sha1-0nRXAQJabHdabFRXk+1QL8DGSaE=
@@ -2927,6 +2928,18 @@ slice-ansi@^2.1.0:
     ansi-styles "^3.2.0"
     astral-regex "^1.0.0"
     is-fullwidth-code-point "^2.0.0"
+
+sm-series-crypto@^0.2.1:
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/sm-series-crypto/-/sm-series-crypto-0.2.1.tgz#509a4aaaa2d2dfbc9661c840ae7e554fe3f3234d"
+  integrity sha512-JXBYpD/wHaD9RGpA/MOwF+5Nb7PbkNGvRKaqFmEGZQc4TUtEkf+mmkEFEEPz0LO8S019Yh4rkEgd5gaEytHF2g==
+  dependencies:
+    bn.js "^4.11.6"
+    buffer "^5.2.1"
+    elliptic "^6.4.0"
+    hash.js "^1.0.3"
+    hmac-drbg "^1.0.1"
+    inherits "^2.0.3"
 
 spdx-correct@^3.0.0:
   version "3.1.0"
