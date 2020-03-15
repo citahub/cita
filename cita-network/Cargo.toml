@@ -6,8 +6,8 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-tentacle-discovery = "0.2.5"
-tentacle = "0.2.3"
+tentacle-discovery = { version = "0.2.9", features = ["molc"] }
+tentacle = { version = "0.2.7", features = ["molc"] }
 tokio = "0.1.14"
 futures = "0.1.25"
 cita-logger = "0.1.1"
