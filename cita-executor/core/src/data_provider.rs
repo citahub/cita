@@ -254,7 +254,7 @@ impl<B: DB + 'static> evm::DataProvider for DataProvider<B> {
         &self,
         opcode: evm::OpCode,
         params: evm::InterpreterParams,
-    ) -> (Result<evm::InterpreterResult, evm::Error>) {
+    ) -> Result<evm::InterpreterResult, evm::Error> {
         match opcode {
             evm::OpCode::CALL
             | evm::OpCode::CALLCODE

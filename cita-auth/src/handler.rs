@@ -98,7 +98,7 @@ pub struct MsgHandler {
     black_list_cache: HashMap<Address, i8>,
     is_need_proposal_new_block: bool,
     config_info: SysConfigInfo,
-    block_txn_req: Option<(BlockTxnReq)>,
+    block_txn_req: Option<BlockTxnReq>,
     verify_block_req: Option<VerifyBlockReq>,
 }
 
