@@ -399,6 +399,16 @@ jobs:
           name: Genesis Test
           command: ./tests/compatibility/check_genesis.sh
 
+  "Timestamp Test":
+    <<: *job-default
+    steps:
+      - restore_cache: *restore-source-codes-cache
+      - restore_cache: *restore-release-cache
+      - run: *after-restore-release-cache
+      - run:
+          name: Timestamp Test
+          command: ./tests/integrate_test/cita_timestamp.sh
+
   "Passed":
     docker:
       - image: alpine:latest
@@ -475,6 +485,10 @@ workflows:
           requires:
             - "Release"
 
+      - "Timestamp Test":
+          requires:
+            - "Release"
+
       - "Unit Test (sha3 & secp256k1)":
           requires:
             - "Release"
@@ -502,6 +516,7 @@ workflows:
               - "Byzantine Test in Charge Mode"
               - "Robustness Test"
               - "Genesis Test"
+              - "Timestamp Test"
               - "Unit Test (blake2b & ed25519)"
               - "Unit Test (sm3 & sm2)"
             # - "Crosschain Test"

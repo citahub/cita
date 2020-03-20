@@ -1253,6 +1253,7 @@ impl Chain {
         let nodes: Vec<Address> = self.nodes.read().clone();
         let validators: Vec<Address> = self.validators.read().clone();
         let block_interval = self.block_interval.read();
+        let current_timestamp = header.timestamp();
 
         let mut rich_status = ProtoRichStatus::new();
         rich_status.set_hash(current_hash.0.to_vec());
@@ -1261,6 +1262,7 @@ impl Chain {
         rich_status.set_validators(validators.into_iter().map(|a| a.to_vec()).collect());
         rich_status.set_interval(*block_interval);
         rich_status.set_version(version_opt.unwrap());
+        rich_status.set_timestamp(current_timestamp);
 
         let msg: Message = rich_status.into();
         ctx_pub

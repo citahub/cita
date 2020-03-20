@@ -243,6 +243,51 @@ check_height_stopped() {
     return 1
 }
 
+check_proposer() {
+    if [ $# -ne 4 ] ; then
+        echo "check proposer need 4 args <id> <proposer> <times> <timeout>"
+        return 1
+    fi
+    local id=$1
+    local proposer=$2
+    local target_times=$3
+    local timeout=$4
+    local times=$target_times
+    local height
+
+    if height=$(get_height "${id}"); then
+        start=$(date +%s)
+        while [ $((times)) != 0 ]; do
+            now=$(date +%s)
+            if [ $((now-start)) -gt "${timeout}" ] ; then
+                echo "$((now-start))"
+                return 1
+            fi
+            if response=$(curl -s -X POST -d "$(printf '{"jsonrpc":"2.0","method":"getBlockByNumber","params":["%s",false],"id":2}' "${height}")" 127.0.0.1:$((1337+"${id}"))); then
+                block_proposer=$(echo "${response}" |jq ".result.header.proposer"|sed 's/\"//g')
+                if [ "$block_proposer" == null ]; then
+                    continue
+                fi
+                if [ "$proposer" == "$block_proposer" ]; then
+                    echo -n "check_proposer proposer ${proposer} be same to block_proposer ${block_proposer}"
+                    return 1
+                fi
+#                echo "${height}"
+#                echo "${block_proposer}"
+                times=$((times-1))
+                height=$((height+1))
+                sleep 1
+                continue
+            fi
+            sleep 1
+        done
+        echo "propose ${proposer} not appear in next ${target_times} blocks."
+        return 0
+    fi
+    echo "get_height failed"
+    return 1
+}
+
 set_delay_at_port() {
     if [ $# -ne 2 ] ; then
         echo "usage: set_delay_at_port port delay"
