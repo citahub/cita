@@ -507,6 +507,14 @@ impl MsgHandler {
                         self.deal_signed_proposal(msg);
                     }
                 }
+                routing_key!(Consensus >> GetTxList) => {
+                    if !self.is_ready() {
+                        info!("Net/Consensus >> CompactProposal: auth is not ready");
+                    } else {
+                        // Consensus request new block
+                        self.is_need_proposal_new_block = true;
+                    }
+                }
                 routing_key!(Net >> BlockTxn) => {
                     if !self.is_ready() || self.verify_block_req.is_none() {
                         info!("Net >> BlockTxn: auth is not ready");

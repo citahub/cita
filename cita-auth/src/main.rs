@@ -167,6 +167,7 @@ fn main() {
         "auth",
         routing_key!([
             Consensus >> VerifyBlockReq,
+            Consensus >> GetTxList,
             Chain >> BlockTxHashes,
             Executor >> BlackList,
             Jsonrpc >> RequestNewTxBatch,
