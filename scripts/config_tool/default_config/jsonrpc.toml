@@ -1,11 +1,6 @@
 backlog_capacity = 1000
 enable_version = false
 
-[profile_config]
-flag_prof_start = 0
-enable = false
-flag_prof_duration = 0
-
 [http_config]
 allow_origin = "*"
 timeout = 60
