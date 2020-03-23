@@ -4,11 +4,19 @@ CARGO=RUSTFLAGS='-F warnings -A deprecated' cargo
 
 debug:
 	$(CARGO) build -j 1 --all
-	scripts/release.sh debug
+	scripts/release.sh x86 debug
 
 release:
 	$(CARGO) build -j 1 --all  --release
-	scripts/release.sh release
+	scripts/release.sh x86 release
+
+aarch64_debug:
+	$(CARGO) build --all --target aarch64-unknown-linux-gnu
+	scripts/release.sh aarch64 debug
+
+aarch64_release:
+	$(CARGO) build --all  --release --target aarch64-unknown-linux-gnu
+	scripts/release.sh aarch64 release
 
 test:
 	RUST_BACKTRACE=full $(CARGO) test -j 1 --all 2>&1
