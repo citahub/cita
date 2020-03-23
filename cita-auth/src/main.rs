@@ -84,7 +84,6 @@ extern crate hashable;
 use batch_forward::BatchForward;
 use clap::App;
 use config::Config;
-use cpuprofiler::PROFILER;
 use dispatcher::Dispatcher;
 use handler::MsgHandler;
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -104,24 +103,6 @@ mod transaction_verify;
 pub mod txwal;
 
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
-
-fn profiler(flag_prof_start: u64, flag_prof_duration: u64) {
-    //start profiling
-    if flag_prof_duration != 0 {
-        let start = flag_prof_start;
-        let duration = flag_prof_duration;
-        thread::spawn(move || {
-            thread::sleep(std::time::Duration::new(start, 0));
-            PROFILER
-                .lock()
-                .unwrap()
-                .start("./auth.profiler")
-                .expect("Couldn't start");
-            thread::sleep(std::time::Duration::new(duration, 0));
-            PROFILER.lock().unwrap().stop().unwrap();
-        });
-    }
-}
 
 fn main() {
     // init app
@@ -150,11 +131,6 @@ fn main() {
     let tx_verify_cache_size = config.tx_verify_cache_size;
     let tx_pool_limit = config.tx_pool_limit;
     let wal_enable = config.wal_enable;
-
-    // start profiler
-    let flag_prof_start = config.prof_start;
-    let flag_prof_duration = config.prof_duration;
-    profiler(flag_prof_start, flag_prof_duration);
 
     // Start publish and subcribe message from MQ.
     // The CITA system runs in a logic nodes, and it contains some components
