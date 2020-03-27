@@ -415,7 +415,7 @@ impl Commander for Executor {
         let block_data_provider = EVMBlockDataProvider::new(context.clone());
 
         let state_root = if let Some(h) = self.block_header(block_tag) {
-            (*h.state_root())
+            *h.state_root()
         } else {
             error!("Can not get state root from trie db!");
             return Err(CallError::StatePruned);
