@@ -4,7 +4,7 @@ import "./Group.sol";
 import "../common/ReservedAddrPublic.sol";
 
 /// @title Group factory contract to create group contract
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: 0xfFFffFfFFFFfFFFfFfffffFFfffffffffF02000B
 ///         The interface: None
 contract GroupCreator is ReservedAddrPublic {

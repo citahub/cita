@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,5 @@ mod crosschain_verify;
 pub mod factory;
 #[cfg(test)]
 mod simple_storage;
-
-#[cfg(feature = "privatetx")]
-mod zk_privacy;
 
 pub use factory::Contract;

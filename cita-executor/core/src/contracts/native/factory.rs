@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,21 +26,21 @@ use cita_vm::evm::InterpreterResult;
 
 pub type Signature = u32;
 pub trait ContractClone {
-    fn clone_box(&self) -> Box<Contract>;
+    fn clone_box(&self) -> Box<dyn Contract>;
 }
 
 impl<T> ContractClone for T
 where
     T: 'static + Contract + Clone,
 {
-    fn clone_box(&self) -> Box<Contract> {
+    fn clone_box(&self) -> Box<dyn Contract> {
         Box::new(self.clone())
     }
 }
 
 // We can now implement Clone manually by forwarding to clone_box.
-impl Clone for Box<Contract> {
-    fn clone(&self) -> Box<Contract> {
+impl Clone for Box<dyn Contract> {
+    fn clone(&self) -> Box<dyn Contract> {
         self.clone_box()
     }
 }
@@ -51,26 +51,26 @@ pub trait Contract: Sync + Send + ContractClone {
         &mut self,
         params: &VmExecParams,
         context: &Context,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError>;
 
-    fn create(&self) -> Box<Contract>;
+    fn create(&self) -> Box<dyn Contract>;
 }
 
 #[derive(Clone)]
 pub struct Factory {
-    contracts: HashMap<Address, Box<Contract>>,
+    contracts: HashMap<Address, Box<dyn Contract>>,
 }
 
 impl Factory {
-    pub fn new_contract(&self, address: Address) -> Option<Box<Contract>> {
+    pub fn new_contract(&self, address: Address) -> Option<Box<dyn Contract>> {
         if let Some(contract) = self.contracts.get(&address) {
             Some(contract.create())
         } else {
             None
         }
     }
-    pub fn register(&mut self, address: Address, contract: Box<Contract>) {
+    pub fn register(&mut self, address: Address, contract: Box<dyn Contract>) {
         self.contracts.insert(address, contract);
     }
     pub fn unregister(&mut self, address: Address) {

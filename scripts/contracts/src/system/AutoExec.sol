@@ -6,7 +6,7 @@ import "../../interaction/interface/IAutoExec.sol";
 import "../lib/ContractCheck.sol";
 
 /// @title Manage the scheduled executing contract.
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 contract AutoExec is IAutoExec, ReservedAddrConstant {
 
     address public contAddr;

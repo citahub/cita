@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ use ws::Settings;
 pub struct Config {
     pub backlog_capacity: usize,
     pub enable_version: Option<bool>,
-    pub profile_config: ProfileConfig,
     pub http_config: HttpConfig,
     pub ws_config: WsConfig,
     pub new_tx_flow_config: NewTxFlowConfig,
@@ -35,13 +34,6 @@ impl Config {
 pub struct NewTxFlowConfig {
     pub count_per_batch: usize,
     pub buffer_duration: u32, //in unit of ns
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-pub struct ProfileConfig {
-    pub enable: bool,
-    pub flag_prof_start: u64,
-    pub flag_prof_duration: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

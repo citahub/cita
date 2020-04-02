@@ -1,7 +1,7 @@
 [package]
 name = "snapshot-tool"
 version = "0.2.0"
-authors = ["Cryptape Technologies <contact@cryptape.com>"]
+authors = ["Rivtower Technologies <contact@rivtower.com>"]
 license = "Apache-2.0"
 edition = "2018"
 
@@ -10,10 +10,10 @@ dotenv = "0.13.0"
 clap = "2"
 fs2 = "0.4.3"
 cita-logger = "0.1.0"
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-error =  { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+error =  { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
 
 [features]
 default = ["secp256k1", "sha3hash", "rabbitmq"]

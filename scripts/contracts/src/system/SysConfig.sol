@@ -6,7 +6,7 @@ import "../common/ReservedAddrPublic.sol";
 import "../../interaction/interface/ISysConfig.sol";
 
 /// @title System config contract
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 contract SysConfig is ISysConfig, EconomicalType, ReservedAddrPublic {
 
     /// @notice only chain_name, operator, website can be updated
@@ -107,13 +107,6 @@ contract SysConfig is ISysConfig, EconomicalType, ReservedAddrPublic {
         onlyAdmin
     {
         chainName = _chainName;
-    }
-
-    function setBlockInterval(uint64 _blockInterval)
-        external
-        onlyAdmin
-    {
-        blockInterval = _blockInterval;
     }
 
     function updateToChainIdV1()

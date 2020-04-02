@@ -1,7 +1,7 @@
 [package]
 name = "cita-executor"
-version = "1.0.0"
-authors = ["Cryptape Technologies <contact@cryptape.com>"]
+version = "20.2.0"
+authors = ["Rivtower Technologies <contact@rivtower.com>"]
 license = "Apache-2.0"
 edition = "2018"
 
@@ -17,28 +17,28 @@ itertools = "0.5"
 
 core-executor = { path = "./core" }
 common-types = { path = "../cita-chain/types" }
-cita-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-directories = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-hashable = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-pubsub = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-libproto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-error =  { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-proof = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-jsonrpc-types = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-types = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+cita-directories = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+hashable = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+pubsub = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+libproto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+error =  { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+proof = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+jsonrpc-types = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
 cita-database = "0.1"
 
 [build-dependencies]
-util = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+util = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
 
 [dev-dependencies]
 bincode = "0.8.0"
-cita-ed25519 = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
-cita-crypto = { git = "https://github.com/cryptape/cita-common.git", branch = "develop" }
+cita-ed25519 = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
+cita-crypto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
 tempdir = "0.3.7"
 
 [dependencies.cita-vm]
-git = "https://github.com/cryptape/cita-vm.git"
+git = "https://github.com/citahub/cita-vm.git"
 branch = "cita"
 default-features = false
 features = ["sha3hash"]
@@ -54,4 +54,3 @@ sm3hash = ["hashable/sm3hash", "libproto/sm3hash", "proof/sm3hash"]
 rabbitmq = ["pubsub/rabbitmq"]
 zeromq = ["pubsub/zeromq"]
 kafka = ["pubsub/kafka"]
-privatetx = ["core-executor/privatetx"]

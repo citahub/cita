@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,13 +74,12 @@ mod service_error;
 mod soliloquy;
 mod ws_handler;
 
-use crate::config::{NewTxFlowConfig, ProfileConfig};
+use crate::config::NewTxFlowConfig;
 use crate::fdlimit::set_fd_limit;
 use crate::http_server::Server;
 use crate::soliloquy::Soliloquy;
 use crate::ws_handler::WsFactory;
 use clap::App;
-use cpuprofiler::PROFILER;
 use futures::Future;
 use libproto::request::{self as reqlib, BatchRequest};
 use libproto::router::{MsgType, RoutingKey, SubModules};
@@ -101,7 +100,7 @@ fn main() {
     let matches = App::new("JsonRpc")
         .version(get_build_info_str(true))
         .long_version(get_build_info_str(false))
-        .author("Cryptape")
+        .author("Rivtower")
         .about("CITA JSON-RPC by Rust")
         .args_from_usage(
             "-c, --config=[FILE] 'Sets a custom config file'
@@ -123,8 +122,6 @@ fn main() {
         error!("Please at least enable one of HTTP and WebSocket server!");
         std::process::exit(2);
     }
-
-    start_profile(&config.profile_config);
 
     // set fd
     set_fd_limit();
@@ -320,22 +317,5 @@ fn forward_service(
         {
             batch_forward_new_tx(new_tx_request_buffer, time_stamp, tx_pub);
         }
-    }
-}
-
-fn start_profile(config: &ProfileConfig) {
-    if config.enable && config.flag_prof_start != 0 && config.flag_prof_duration != 0 {
-        let start = config.flag_prof_start;
-        let duration = config.flag_prof_duration;
-        thread::spawn(move || {
-            thread::sleep(Duration::new(start, 0));
-            PROFILER
-                .lock()
-                .unwrap()
-                .start("./jsonrpc.profile")
-                .expect("Couldn't start");
-            thread::sleep(Duration::new(duration, 0));
-            PROFILER.lock().unwrap().stop().unwrap();
-        });
     }
 }

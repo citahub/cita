@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ pub fn select_topic(method: &str) -> String {
         "peerCount" => routing_key!(Jsonrpc >> RequestNet).into(),
         "peersInfo" => routing_key!(Jsonrpc >> RequestPeersInfo).into(),
         "sendRawTransaction" | "sendTransaction" => routing_key!(Jsonrpc >> RequestNewTx).into(),
-        "getVersion" => routing_key!(Jsonrpc >> RequestRpc).into(),
+        "getVersion" | "estimateQuota" => routing_key!(Jsonrpc >> RequestRpc).into(),
         _ => routing_key!(Jsonrpc >> Request).into(),
     }
 }

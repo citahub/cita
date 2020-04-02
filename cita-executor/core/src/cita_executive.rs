@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ const MAX_CREATE_CODE_SIZE: u64 = std::u64::MAX;
 
 // FIXME: CITAExecutive need rename to Executive after all works ready.
 pub struct CitaExecutive<'a, B> {
-    block_provider: Arc<BlockDataProvider>,
+    block_provider: Arc<dyn BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
     context: &'a Context,
     economical_model: EconomicalModel,
@@ -66,7 +66,7 @@ pub struct CitaExecutive<'a, B> {
 
 impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
     pub fn new(
-        block_provider: Arc<BlockDataProvider>,
+        block_provider: Arc<dyn BlockDataProvider>,
         state: Arc<RefCell<State<B>>>,
         context: &'a Context,
         economical_model: EconomicalModel,
@@ -94,19 +94,21 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             (*conf).check_options.call_permission
         );
 
-        check_permission(
-            &conf.group_accounts,
-            &conf.account_permissions,
-            t,
-            conf.check_options,
-        )?;
+        if conf.super_admin_account.is_none() || sender != conf.super_admin_account.unwrap() {
+            check_permission(
+                &conf.group_accounts,
+                &conf.account_permissions,
+                t,
+                conf.check_options,
+            )?;
+        }
 
         let tx_gas_schedule = TxGasSchedule::default();
         let base_gas_required = match t.action {
             Action::Create => tx_gas_schedule.tx_create_gas,
             _ => tx_gas_schedule.tx_gas,
         } + match t.version {
-            0...2 => 0,
+            0..=2 => 0,
             _ => t.data.len() * tx_gas_schedule.tx_data_non_zero_gas,
         };
         if sender != Address::zero() && t.gas < U256::from(base_gas_required) {
@@ -251,8 +253,9 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
         match result {
             Ok(InterpreterResult::Normal(output, gas_left, logs)) => {
+                let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
+                let gas_left = gas_left + refund;
                 if self.payment_required() {
-                    let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
                     if let Err(e) = liquidtion(
                         self.state_provider.clone(),
                         store.clone(),
@@ -260,7 +263,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                         gas_price,
                         gas_limit.as_u64(),
                         gas_left,
-                        refund,
                     ) {
                         finalize_result.exception = Some(ExecutedException::VM(e));
                         return finalize_result;
@@ -278,7 +280,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 finalize_result.quota_left = U256::from(gas_left);
                 finalize_result.logs = transform_logs(logs);
                 finalize_result.logs_bloom = logs_to_bloom(&finalize_result.logs);
-
                 trace!(
                     "Get data after executed the transaction [Normal]: {:?}",
                     output
@@ -286,6 +287,8 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 finalize_result.output = output;
             }
             Ok(InterpreterResult::Revert(output, gas_left)) => {
+                let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
+                let gas_left = gas_left + refund;
                 if self.payment_required() {
                     if let Err(e) = liquidtion(
                         self.state_provider.clone(),
@@ -294,7 +297,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                         gas_price,
                         gas_limit.as_u64(),
                         gas_left,
-                        0,
                     ) {
                         finalize_result.exception = Some(ExecutedException::VM(e));
                         return finalize_result;
@@ -313,8 +315,9 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 );
             }
             Ok(InterpreterResult::Create(output, gas_left, logs, addr)) => {
+                let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
+                let gas_left = gas_left + refund;
                 if self.payment_required() {
-                    let refund = get_refund(store.clone(), sender, gas_limit.as_u64(), gas_left);
                     if let Err(e) = liquidtion(
                         self.state_provider.clone(),
                         store.clone(),
@@ -322,7 +325,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                         gas_price,
                         gas_limit.as_u64(),
                         gas_left,
-                        refund,
                     ) {
                         finalize_result.exception = Some(ExecutedException::VM(e));
                         return finalize_result;
@@ -354,7 +356,6 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                         sender,
                         gas_price,
                         gas_limit.as_u64(),
-                        0,
                         0,
                     ) {
                         finalize_result.exception = Some(ExecutedException::VM(e));
@@ -553,7 +554,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
 
 /// Function create creates a new contract.
 pub fn create<B: DB + 'static>(
-    block_provider: Arc<BlockDataProvider>,
+    block_provider: Arc<dyn BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
     store: Arc<RefCell<VMSubState>>,
     request: &InterpreterParams,
@@ -654,7 +655,7 @@ pub fn create<B: DB + 'static>(
 
 /// Function call enters into the specific contract.
 pub fn call<B: DB + 'static>(
-    block_provider: Arc<BlockDataProvider>,
+    block_provider: Arc<dyn BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
     store: Arc<RefCell<VMSubState>>,
     request: &InterpreterParams,
@@ -751,21 +752,19 @@ fn liquidtion<B: DB + 'static>(
     gas_price: U256,
     gas_limit: u64,
     gas_left: u64,
-    refund: u64,
 ) -> Result<(), VMError> {
     trace!(
-        "gas_price: {:?}, gas limit:{:?}, gas left: {:?}, refund: {:?}",
+        "gas_price: {:?}, gas limit:{:?}, gas left: {:?}",
         gas_price,
         gas_limit,
         gas_left,
-        refund
     );
     state_provider
         .borrow_mut()
-        .add_balance(&sender, gas_price * (gas_left + refund))?;
+        .add_balance(&sender, gas_price * gas_left)?;
     state_provider.borrow_mut().add_balance(
         &store.borrow().evm_context.coinbase,
-        gas_price * (gas_limit - gas_left - refund),
+        gas_price * (gas_limit - gas_left),
     )?;
     Ok(())
 }

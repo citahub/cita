@@ -6,7 +6,7 @@ import "../../interaction/interface/IRoleAuth.sol";
 import "../../interaction/interface/IRoleManagement.sol";
 
 /// @title Role management contract
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020007
 ///         The interface the can be called: All
 contract RoleManagement is IRoleManagement, Check {

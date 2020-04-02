@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -765,7 +765,7 @@ impl Chain {
 
     pub fn block_hash_by_height(&self, height: BlockNumber) -> Option<H256> {
         self.block_header_by_height(height)
-            .and_then(|hdr| Some(hdr.hash().unwrap()))
+            .map(|hdr| hdr.hash().unwrap())
     }
 
     /// Get block body by hash
@@ -842,7 +842,7 @@ impl Chain {
         })
     }
 
-    pub fn get_transaction_proof(&self, hash: TransactionHash) -> Option<(Vec<u8>)> {
+    pub fn get_transaction_proof(&self, hash: TransactionHash) -> Option<Vec<u8>> {
         self.transaction_index(hash)
             .and_then(|addr| {
                 self.block_by_hash(addr.block_hash)
@@ -1253,6 +1253,7 @@ impl Chain {
         let nodes: Vec<Address> = self.nodes.read().clone();
         let validators: Vec<Address> = self.validators.read().clone();
         let block_interval = self.block_interval.read();
+        let current_timestamp = header.timestamp();
 
         let mut rich_status = ProtoRichStatus::new();
         rich_status.set_hash(current_hash.0.to_vec());
@@ -1261,6 +1262,7 @@ impl Chain {
         rich_status.set_validators(validators.into_iter().map(|a| a.to_vec()).collect());
         rich_status.set_interval(*block_interval);
         rich_status.set_version(version_opt.unwrap());
+        rich_status.set_timestamp(current_timestamp);
 
         let msg: Message = rich_status.into();
         ctx_pub
@@ -1341,7 +1343,7 @@ impl Chain {
             Some(ProofType::Bft) => {
                 // TODO: use CONSTANT to replace the '1'.
                 self.block_by_height(height + 1)
-                    .and_then(|block| Some(block.header.proof().clone()))
+                    .map(|block| block.header.proof().clone())
             }
             _ => None,
         }

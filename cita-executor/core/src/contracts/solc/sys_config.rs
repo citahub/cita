@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -436,7 +436,7 @@ mod tests {
             TokenInfo {
                 name: "CITA Test Token".to_owned(),
                 symbol: "CTT".to_owned(),
-                avatar: "https://cdn.cryptape.com/icon_cita.png".to_owned()
+                avatar: "https://cdn.citahub.com/icon_cita.png".to_owned()
             }
         );
 

@@ -15,7 +15,7 @@ fi
 # Add cita scripts into system executable paths
 export PATH=$CITA_BIN:$PATH
 CITA_SCRIPTS=$(dirname "$CITA_BIN")/scripts
-SERVICES=( forever auth bft chain executor jsonrpc network )
+SERVICES=(forever auth bft chain executor jsonrpc network)
 SCRIPT=$(basename "$0")
 # DIAGNOSTIC COMMANDS
 PING_STATUS=""
@@ -23,7 +23,7 @@ PING_STATUS=""
 sudo() {
     set -o noglob
 
-    if [ "$(whoami)" == "root" ] ; then
+    if [ "$(whoami)" == "root" ]; then
         "$@"
     else
         /usr/bin/sudo "$@"
@@ -115,17 +115,16 @@ config() {
 # SERVICE CONTROL COMMANDS
 start_rabbitmq() {
     # Config and start RabbitMQ
-    if [[ $(uname) == 'Darwin' ]]
-    then
-        pgrep -f rabbitmq-server > /dev/null || brew services restart rabbitmq > /dev/null
+    if [[ $(uname) == 'Darwin' ]]; then
+        pgrep -f rabbitmq-server >/dev/null || brew services restart rabbitmq >/dev/null
         RABBITMQ_USER=cita_monitor
         RABBITMQ_PASSWD=cita_monitor
-        sudo rabbitmqctl list_vhosts | grep "${NODE_NAME}" > /dev/null || sudo rabbitmqctl add_vhost "${NODE_NAME}" > /dev/null
-        sudo rabbitmqctl set_permissions -p "${NODE_NAME}" guest '.*' '.*' '.*'       > /dev/null
-        sudo rabbitmq-plugins enable rabbitmq_management                       > /dev/null
-        sudo rabbitmqctl  list_users | grep ${RABBITMQ_USER}                   > /dev/null || sudo rabbitmqctl add_user ${RABBITMQ_USER} ${RABBITMQ_PASSWD} > /dev/null
-        sudo rabbitmqctl  set_user_tags  ${RABBITMQ_USER} monitoring           > /dev/null
-        sudo rabbitmqctl set_permissions -p "${NODE_NAME}"  ${RABBITMQ_USER} '.*' '.*' '.*'      > /dev/null
+        sudo rabbitmqctl list_vhosts | grep "${NODE_NAME}" >/dev/null || sudo rabbitmqctl add_vhost "${NODE_NAME}" >/dev/null
+        sudo rabbitmqctl set_permissions -p "${NODE_NAME}" guest '.*' '.*' '.*' >/dev/null
+        sudo rabbitmq-plugins enable rabbitmq_management >/dev/null
+        sudo rabbitmqctl list_users | grep ${RABBITMQ_USER} >/dev/null || sudo rabbitmqctl add_user ${RABBITMQ_USER} ${RABBITMQ_PASSWD} >/dev/null
+        sudo rabbitmqctl set_user_tags ${RABBITMQ_USER} monitoring >/dev/null
+        sudo rabbitmqctl set_permissions -p "${NODE_NAME}" ${RABBITMQ_USER} '.*' '.*' '.*' >/dev/null
     else
         flock -x -w 30 /tmp/rabbitmq.lock -c "ps -C rabbitmq-server > /dev/null || sudo /etc/init.d/rabbitmq-server restart > /dev/null"
         RABBITMQ_USER=cita_monitor
@@ -140,10 +139,9 @@ start_rabbitmq() {
 }
 
 do_setup() {
-    for i in {1..3}
-    do
+    for i in {1..3}; do
         start_rabbitmq
-        if curl http://localhost:15672/ > /dev/null 2>&1; then
+        if curl http://localhost:15672/ >/dev/null 2>&1; then
             return 0
         fi
     done
@@ -170,15 +168,15 @@ do_start() {
     if [ -z "${debug}" ]; then
         cita-forever -c "${config}" start 2>&1
     else
-        RUST_LOG=cita_auth=${debug},cita_chain=${debug},cita_executor=${debug},cita_jsonrpc=${debug},cita_network=${debug},cita_bft=${debug},\
-core_executor=${debug},engine=${debug},jsonrpc_types=${debug},libproto=${debug},proof=${debug},txpool=${debug},core=${debug} \
-        cita-forever -c "${config}" start 2>&1
+        RUST_LOG=cita_auth=${debug},cita_chain=${debug},cita_executor=${debug},cita_jsonrpc=${debug},cita_network=${debug},cita_bft=${debug},core_executor=${debug},engine=${debug},jsonrpc_types=${debug},libproto=${debug},proof=${debug},txpool=${debug},core=${debug} \
+            cita-forever \
+            -c "${config}" start 2>&1
     fi
 
     # Wait for the node to come up
     WAIT=3
     while [ $WAIT -gt 0 ]; do
-        WAIT="$(( WAIT - 1 ))"
+        WAIT="$((WAIT - 1))"
         sleep 1
         do_ping
         if [ "${PING_STATUS}" == "pong" ]; then
@@ -192,7 +190,7 @@ core_executor=${debug},engine=${debug},jsonrpc_types=${debug},libproto=${debug},
 }
 
 do_stop() {
-    cita-forever stop > /dev/null 2>&1
+    cita-forever stop >/dev/null 2>&1
 
     # Make sure node stopped
     do_ping
@@ -234,9 +232,8 @@ do_status() {
     while IFS= read -r -d '' pid_file; do
         pid=$(cat "${pid_file}")
         pgrep -f "${pid}" || true
-    done <  <(find . -name "*.pid")
+    done < <(find . -name "*.pid")
 }
-
 
 # SCRIPTING COMMANDS
 do_clean() {
@@ -249,11 +246,11 @@ do_clean() {
     # Move data/ and logs/ into backup directory
     backup_dir=$(pwd)/backup.$(date -Iseconds)
     mkdir -p "${backup_dir}"
-    if [ -e "${NODE_DATA_DIR}" ] ; then
+    if [ -e "${NODE_DATA_DIR}" ]; then
         echo "mv ${NODE_DATA_DIR} ${backup_dir}"
         mv "${NODE_DATA_DIR}" "${backup_dir}"
     fi
-    if [ -e "${NODE_LOGS_DIR}" ] ; then
+    if [ -e "${NODE_LOGS_DIR}" ]; then
         echo "mv ${NODE_LOGS_DIR} ${backup_dir}"
         mv "${NODE_LOGS_DIR}" "${backup_dir}"
     fi
@@ -270,11 +267,11 @@ do_backup() {
     # Copy data/ and logs/ into backup directory
     backup_dir="$(pwd)/backup.$(date -Iseconds)"
     mkdir -p "${backup_dir}"
-    if [ -e "${NODE_DATA_DIR}" ] ; then
+    if [ -e "${NODE_DATA_DIR}" ]; then
         echo "cp -r ${NODE_DATA_DIR} ${backup_dir}/"
         cp -r "${NODE_DATA_DIR}" "${backup_dir}"/
     fi
-    if [ -e "${NODE_LOGS_DIR}" ] ; then
+    if [ -e "${NODE_LOGS_DIR}" ]; then
         echo "cp -r ${NODE_LOGS_DIR} ${backup_dir}/"
         cp -r "${NODE_LOGS_DIR}" "${backup_dir}"/
     fi
@@ -291,7 +288,7 @@ do_logs() {
     fi
 
     for service in "${SERVICES[@]}"; do
-        if [[ $service = "$service0" || cita-"${service}" = "$service0" ]]; then
+        if [[ $service == "$service0" || cita-"${service}" == "$service0" ]]; then
             tail -f "${NODE_LOGS_DIR}/cita-${service}.log"
             exit 0
         fi
@@ -304,11 +301,11 @@ do_logs() {
 do_logrotate() {
     local logs
     logs=$(ls -1 "${NODE_LOGS_DIR}"/cita-*.log)
-    cita-forever logrotate > /dev/null 2>&1
+    cita-forever logrotate >/dev/null 2>&1
 
     # Wait for services to rotate their logs
     sleep 2
-    for logfile in ${NODE_LOGS_DIR}/cita-*.log; do
+    for logfile in "$NODE_LOGS_DIR"/cita-*.log; do
         if [[ ${logs} != *"${logfile}"* ]]; then
             echo "./${NODE_NAME}/logs/${logfile##*/}"
         fi
@@ -319,14 +316,14 @@ clear_rabbit_mq() {
     local mq_command
     local mq_command="curl -i -u guest:guest -H content-type:application/json -XDELETE http://localhost:15672/api/queues/${TNODE}"
 
-    "$mq_command"/auth              > /dev/null 2>&1 || true
-    "$mq_command"/chain             > /dev/null 2>&1 || true
-    "$mq_command"/consensus         > /dev/null 2>&1 || true
-    "$mq_command"/jsonrpc           > /dev/null 2>&1 || true
-    "$mq_command"/network           > /dev/null 2>&1 || true
-    "$mq_command"/network_tx        > /dev/null 2>&1 || true
-    "$mq_command"/network_consensus > /dev/null 2>&1 || true
-    "$mq_command"/executor          > /dev/null 2>&1 || true
+    "$mq_command"/auth >/dev/null 2>&1 || true
+    "$mq_command"/chain >/dev/null 2>&1 || true
+    "$mq_command"/consensus >/dev/null 2>&1 || true
+    "$mq_command"/jsonrpc >/dev/null 2>&1 || true
+    "$mq_command"/network >/dev/null 2>&1 || true
+    "$mq_command"/network_tx >/dev/null 2>&1 || true
+    "$mq_command"/network_consensus >/dev/null 2>&1 || true
+    "$mq_command"/executor >/dev/null 2>&1 || true
 }
 
 node_down_check() {
@@ -348,108 +345,120 @@ node_up_check() {
 parse_command() {
     local command="$1"
     case "${command}" in
-        help)
-            help
-            exit 0
-            ;;
+    help)
+        help
+        exit 0
+        ;;
 
-        usage)
-            usage
-            exit 0
-            ;;
+    usage)
+        usage
+        exit 0
+        ;;
 
-        create)
-            config "$@"
-            exit 0
-            ;;
+    create)
+        config "$@"
+        exit 0
+        ;;
 
-        append)
-            config "$@"
-            exit 0
-            ;;
+    append)
+        config "$@"
+        exit 0
+        ;;
 
-        setup)
-            do_setup
-            ;;
+    setup)
+        do_setup
+        ;;
 
-        start)
-            # TODO: should not do so, but present tests need this
-            do_stop
-            node_down_check
+    start)
+        # TODO: should not do so, but present tests need this
+        do_stop
+        node_down_check
 
-            # Make sure the RabbitMQ fresh
-            clear_rabbit_mq
+        # Make sure the RabbitMQ fresh
+        clear_rabbit_mq
 
-            do_start "$3" "$4"
-            ;;
+        do_start "$3" "$4"
+        ;;
 
-        stop)
-            node_up_check
-            do_stop
-            ;;
+    stop)
+        node_up_check
+        do_stop
+        ;;
 
-        restart)
-            node_up_check
-            do_stop
+    restart)
+        node_up_check
+        do_stop
 
-            # Make sure the RabbitMQ fresh
-            clear_rabbit_mq
+        # Make sure the RabbitMQ fresh
+        clear_rabbit_mq
 
-            do_start "$3" "$4"
-            ;;
+        do_start "$3" "$4"
+        ;;
 
-        ping)
-            do_ping
-            if [ "${PING_STATUS}" == "pong" ]; then
-                echo "pong"
-            else
-                echo "Node '${NODE_NAME}' not responding to pings."
-                exit 1
-            fi
-            ;;
+    ping)
+        do_ping
+        if [ "${PING_STATUS}" == "pong" ]; then
+            echo "pong"
+        else
+            echo "Node '${NODE_NAME}' not responding to pings."
+            exit 1
+        fi
+        ;;
 
-        top)
-            node_up_check
-            do_top
-            ;;
-        # deprecated, use 'top' instead
-        stat)
-            node_up_check
-            do_top
-            ;;
-        # similar to 'top', but ... ?
-        status)
-            do_status
-            ;;
+    top)
+        node_up_check
+        do_top
+        ;;
+    # deprecated, use 'top' instead
+    stat)
+        node_up_check
+        do_top
+        ;;
+    # similar to 'top', but ... ?
+    status)
+        do_status
+        ;;
 
-        logrotate)
-            do_logrotate
-            ;;
+    logrotate)
+        do_logrotate
+        ;;
 
-        logs)
-            do_logs "$3"
-            ;;
+    logs)
+        do_logs "$3"
+        ;;
 
-        backup)
-            node_down_check
-            do_backup
-            ;;
+    backup)
+        node_down_check
+        do_backup
+        ;;
 
-        clean)
-            node_down_check
-            do_clean
-            ;;
+    clean)
+        node_down_check
+        do_clean
+        ;;
 
-        *)
-            usage
-            ;;
+    *)
+        usage
+        ;;
 
     esac
 }
 
+# Test CITA is running in docker.
+cita_in_docker() {
+    if [ ! -f /proc/1/cgroup ] ; then
+        return 1
+    fi
+    if grep docker /proc/1/cgroup -qa; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 main() {
-    if [ "$1" != "bebop" ]; then
-        if stat "$CITA_BIN"/cita-env > /dev/null 2>&1; then
+    if [[ "$1" != "bebop" ]] && ! cita_in_docker; then
+        if stat "$CITA_BIN"/cita-env >/dev/null 2>&1; then
             "$CITA_BIN"/cita-env bin/cita bebop "$@"
         else
             echo -e "\033[0;31mPlease run this command after build 🎨"
@@ -458,12 +467,18 @@ main() {
         exit 0
     fi
 
-    # Delete the verbose parameters
-    set -- "${@:2}"
+    # Delete the verbose parameters.
+    # If use the command 'cita bebop', it should delete 2 verbose parameters.
+    if [[ "$1" == "bebop" ]]; then
+        set -- "${@:2}"
+    else
+        set -- "${@:1}"
+    fi
+
     local command=$1
 
     # Commands not depend on $NODE_PATH
-    local indie=( help usage create append )
+    local indie=(help usage create append)
     if [[ "${indie[*]}" =~ $command ]]; then
         parse_command "$@"
     fi
@@ -490,12 +505,12 @@ main() {
     fi
 
     # Enter the node directory
-    pushd . > /dev/null
+    pushd . >/dev/null
     cd "${NODE_PATH}"
 
     parse_command "$@"
 
-    popd > /dev/null
+    popd >/dev/null
 
     exit 0
 }

@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -141,7 +141,10 @@ impl Dispatcher {
         let txs_pool = &mut self.txs_pool.borrow_mut();
         let added: Vec<SignedTransaction> = txs
             .into_iter()
-            .filter(|tx| txs_pool.enqueue(tx.clone()))
+            .filter(|tx| {
+                trace!("add txs {} to pool", tx.get_tx_hash().lower_hex());
+                txs_pool.enqueue(tx.clone())
+            })
             .collect();
         if self.wal_enable {
             self.wal.write_batch(&added);

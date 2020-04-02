@@ -4,7 +4,7 @@ import "./Role.sol";
 import "../common/ReservedAddrPublic.sol";
 
 /// @title Role factory contract to create role contract
-/// @author ["Cryptape Technologies <contact@cryptape.com>"]
+/// @author ["Rivtower Technologies <contact@rivtower.com>"]
 /// @notice The address: 0xffffffffffffffffffffffffffffffffff020008
 ///         The interface: None
 contract RoleCreator is ReservedAddrPublic {

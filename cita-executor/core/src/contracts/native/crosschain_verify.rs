@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ impl Contract for CrossChainVerify {
         &mut self,
         params: &VmExecParams,
         _context: &Context,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         method_tools::extract_to_u32(&params.data[..]).and_then(|signature| match signature {
             sig if sig == *VERIFY_TRANSACTION_FUNC => {
@@ -67,7 +67,7 @@ impl Contract for CrossChainVerify {
             _ => Err(NativeError::Internal("out of gas".to_string())),
         })
     }
-    fn create(&self) -> Box<Contract> {
+    fn create(&self) -> Box<dyn Contract> {
         Box::new(CrossChainVerify::default())
     }
 }
@@ -86,7 +86,7 @@ impl CrossChainVerify {
     fn verify_transaction(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = 10000;
         if params.gas < gas_cost {
@@ -196,7 +196,7 @@ impl CrossChainVerify {
     fn verify_state(
         &mut self,
         _params: &VmExecParams,
-        _data_provider: &mut DataProvider,
+        _data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         unimplemented!()
         // let gas_cost = U256::from(10000);
@@ -302,7 +302,7 @@ impl CrossChainVerify {
     fn verify_block_header(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = 10000;
         if params.gas < gas_cost {
@@ -396,7 +396,7 @@ impl CrossChainVerify {
     fn get_expected_block_number(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = 10000;
         if params.gas < gas_cost {

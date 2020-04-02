@@ -1,4 +1,4 @@
-// Copyright Cryptape Technologies LLC.
+// Copyright Rivtower Technologies LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ pub struct ChainManagement;
 
 impl ChainManagement {
     pub fn ext_chain_id(
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
         gas: &U256,
         sender: &Address,
     ) -> Option<(U256, U256)> {
@@ -55,7 +55,7 @@ impl ChainManagement {
     }
 
     pub fn ext_authorities(
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
         gas: &U256,
         sender: &Address,
         chain_id: U256,
