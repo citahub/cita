@@ -17,4 +17,5 @@ echo "[Info_] Run Security Audit."
 # RUSTSEC-2016-0005: rust-crypto
 # RUSTSEC-2019-0027: libsecp256k1
 # RUSTSEC-2019-0031: spin < ring < tentacle-secio
-cargo audit --ignore RUSTSEC-2016-0005 --ignore RUSTSEC-2019-0027 --ignore RUSTSEC-2019-0031
+# RUSTSEC-2020-0006: bumpalo < wasm-bindgen-backend < ring < tentacle-secio
+cargo audit --ignore RUSTSEC-2016-0005 --ignore RUSTSEC-2019-0027 --ignore RUSTSEC-2019-0031 --ignore RUSTSEC-2020-0006
