@@ -147,6 +147,12 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://github.com/mingxiaowu"><img src="https://avatars0.githubusercontent.com/u/42978282?v=4" width="50px;" alt="mingxiaowu"/><br /><sub><b>mingxiaowu</b></sub></a><br /><a href="https://github.com/citahub/cita/issues?q=author%3Amingxiaowu" title="Bug reports">🐛</a></td>
     <td align="center"><a href="https://github.com/wangfh666"><img src="https://avatars0.githubusercontent.com/u/41322861?s=400&v=4" width="50px;" alt="wangfh666"/><br /><sub><b>wangfh666</b></sub></a><br /><a href="https://github.com/citahub/cita/issues?q=author%3Awangfh666" title="Bug reports">🐛</a></td>
   </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/travis-joe"><img src="https://avatars3.githubusercontent.com/u/758756?s=400&u=afd8b7951e6417adae042ad2f81af152dbd1a353&v=4" width="50px;" alt="travis-joe"/><br /><sub><b>travis-joe</b></sub></a><br /><a href="https://github.com/citahub/cita/commits?author=travis-joe" title="Document">📖</a></td>
+    <td align="center"><a href="https://github.com/UDLD"><img src="https://avatars2.githubusercontent.com/u/16554185?s=400&u=d143d210f5b47a06cf040ec66b0f9086f79473d6&v=4" width="50px;" alt="UDLD"/><br /><sub><b>UDLD</b></sub></a><br /><a href="https://github.com/citahub/cita/commits?author=UDLD" title="Document">📖</a></td>
+    <td align="center"><a href="https://github.com/Pencil-Yao"><img src="https://avatars2.githubusercontent.com/u/20881279?s=400&v=4" width="50px;" alt="Yieazy"/><br /><sub><b>Yieazy</b></sub></a><br /><a href="https://github.com/citahub/cita/commits?author=Pencil-Yao" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/melonux"><img src="https://avatars0.githubusercontent.com/u/48902925?v=4" width="50px;" alt="ShenLei"/><br /><sub><b>ShenLei</b></sub></a><br /><a href="https://github.com/citahub/cita/commits?author=melonux" title="Code">💻</a></td>
+  </tr>
 </table>
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
