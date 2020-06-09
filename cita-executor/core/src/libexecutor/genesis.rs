@@ -24,7 +24,6 @@ use crypto::digest::Digest;
 use crypto::md5::Md5;
 use rlp::encode;
 use rustc_hex::FromHex;
-use serde_json;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;

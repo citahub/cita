@@ -18,7 +18,6 @@ use jsonrpc_types::rpc_response::Output;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::Message;
 use libproto::TryFrom;
-use serde_json;
 
 #[derive(Default)]
 pub struct MqHandler {

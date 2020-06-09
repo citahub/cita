@@ -14,7 +14,6 @@
 
 use hyper::{Body, HeaderMap as Headers, Response, StatusCode};
 use jsonrpc_types::{rpc_request::RequestInfo, rpc_response::RpcFailure};
-use serde_json;
 
 use crate::response::{HyperResponseExt, IntoResponse};
 

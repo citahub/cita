@@ -25,7 +25,7 @@ pub struct Miner;
 impl Miner {
     pub fn mine(code: Vec<u8>) -> Option<Account> {
         let db = Arc::new(MemoryDB::new(false));
-        let state = cita_vm::state::State::new(db.clone()).expect("New state failed.");
+        let state = cita_vm::state::State::new(db).expect("New state failed.");
 
         let state_data_provider = Arc::new(RefCell::new(state));
         let block_data_provider: Arc<dyn cita_vm::BlockDataProvider> =
@@ -42,13 +42,13 @@ impl Miner {
             nonce: U256::from(0),
             gas_limit: 7_999_999,
             gas_price: U256::from(0),
-            input: code.clone(),
+            input: code,
         };
         let _r = cita_vm::exec(
             block_data_provider.clone(),
             state_data_provider.clone(),
-            context.clone(),
-            config.clone(),
+            context,
+            config,
             tx,
         )
         .expect("Create genesis exec error.");

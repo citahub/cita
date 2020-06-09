@@ -202,25 +202,30 @@ impl Synchronizer {
             self.global_status = status.clone();
         }
 
-        if status.get_height() < current_height + 1 {
-            // The current node is the latest height and does not need to be synchronized
-        } else if status.get_height() == current_height + 1 {
-            // A node on the chain blocks out, synchronizing the latest block
-            self.add_latest_sync_lists(status.get_height(), origin);
+        match status.get_height() {
+            status_height if status_height == current_height + 1 => {
+                // A node on the chain blocks out, synchronizing the latest block
+                self.add_latest_sync_lists(status_height, origin);
 
-            if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT
-                && !self.is_synchronizing
-            {
-                self.start_sync_req(current_height + 1);
+                if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT
+                    && !self.is_synchronizing
+                {
+                    self.start_sync_req(status_height);
+                }
             }
-        } else {
-            // The node is far behind the data on the chain and initiates a synchronization request
-            self.add_latest_sync_lists(status.get_height(), origin);
+            status_height if status_height > current_height + 1 => {
+                // The node is far behind the data on the chain and initiates a synchronization request
+                self.add_latest_sync_lists(status.get_height(), origin);
 
-            if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT
-                || !self.is_synchronizing
-            {
-                self.start_sync_req(current_height + 1);
+                if self.remote_sync_time_out.elapsed().as_secs() > SYNC_TIME_OUT
+                    || !self.is_synchronizing
+                {
+                    self.start_sync_req(current_height + 1);
+                }
+            }
+            _ => {
+                // status_height < current_height + 1
+                // The current node is the latest height and does not need to be synchronized
             }
         }
     }

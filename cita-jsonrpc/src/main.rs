@@ -209,8 +209,7 @@ fn main() {
         let ws_config = config.ws_config.clone();
         let tx = tx_relay.clone();
         thread::spawn(move || {
-            let url =
-                ws_config.listen_ip.clone() + ":" + &ws_config.listen_port.clone().to_string();
+            let url = ws_config.listen_ip.clone() + ":" + &ws_config.listen_port;
             //let factory = WsFactory::new(ws_responses, tx_pub, 0);
             let factory = WsFactory::new(ws_responses, tx, 0);
             info!("WebSocket Listening on {}", url);
@@ -223,8 +222,7 @@ fn main() {
 
     if config.http_config.enable {
         let http_config = config.http_config.clone();
-        let addr =
-            http_config.listen_ip.clone() + ":" + &http_config.listen_port.clone().to_string();
+        let addr = http_config.listen_ip.clone() + ":" + &http_config.listen_port;
         info!("Http Listening on {}", &addr);
 
         let threads: usize = config

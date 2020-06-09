@@ -214,7 +214,7 @@ impl<B: DB + 'static> evm::DataProvider for DataProvider<B> {
             return false;
         }
         //self.store.borrow_mut().used(refund_to.clone());
-        self.store.borrow_mut().selfdestruct.insert(address.clone());
+        self.store.borrow_mut().selfdestruct.insert(*address);
         let b = self.get_balance(address);
 
         if address != refund_to {
@@ -270,7 +270,7 @@ impl<B: DB + 'static> evm::DataProvider for DataProvider<B> {
                 r.or(Err(evm::Error::CallError))
             }
             evm::OpCode::CREATE | evm::OpCode::CREATE2 => {
-                let mut request = params.clone();
+                let mut request = params;
                 request.nonce = self
                     .state_provider
                     .borrow_mut()

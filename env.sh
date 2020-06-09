@@ -13,7 +13,7 @@ readonly CONTAINER_NAME_HASH=$(echo "${SOURCE_DIR}" | md5sum | cut -d " " -f 1)
 if test -f "${SOURCE_DIR}/Cargo.toml"; then
     readonly SYSTEM_NET='bridge'
     readonly CONTAINER_NAME="cita_build${CONTAINER_NAME_HASH}"
-    readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20191128'
+    readonly DOCKER_IMAGE='cita/cita-build:ubuntu-18.04-20200606'
 else
     if [[ "$(uname)" == 'Darwin' ]]; then
         readonly SYSTEM_NET='bridge'
