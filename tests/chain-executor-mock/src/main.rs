@@ -212,9 +212,6 @@ fn send_block(
     info!("send block ({} transactions)", txs.len());
     *sys_time.lock().unwrap() = time::SystemTime::now();
     pub_sender
-        .send((
-            routing_key!(Consensus >> BlockWithProof).into(),
-            send_data.clone(),
-        ))
+        .send((routing_key!(Consensus >> BlockWithProof).into(), send_data))
         .unwrap();
 }

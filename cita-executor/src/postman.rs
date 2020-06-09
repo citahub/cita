@@ -29,7 +29,6 @@ use libproto::request::Request_oneof_req as Request;
 use libproto::router::{MsgType, RoutingKey, SubModules};
 use libproto::{request, response, Message};
 use libproto::{TryFrom, TryInto};
-use serde_json;
 use std::convert::Into;
 use std::u8;
 
@@ -212,16 +211,21 @@ impl Postman {
     // cita-chain broadcast StateSignal to indicate its state. So we could figure out
     // which blocks cita-chain lack of, then re-send the lacking blocks to cita-chain.
     fn reply_chain_state_signal(&self, state_signal: &StateSignal) -> Result<(), BlockTag> {
-        let specified_height = state_signal.get_height();
-        if specified_height < self.get_current_height() {
-            self.send_executed_info_to_chain(specified_height + 1)?;
-            for height in self.backlogs.completed_keys() {
-                if *height > specified_height + 1 {
-                    self.send_executed_info_to_chain(*height)?;
+        match state_signal.get_height() {
+            specified_height if specified_height < self.get_current_height() => {
+                self.send_executed_info_to_chain(specified_height + 1)?;
+                for height in self.backlogs.completed_keys() {
+                    if *height > specified_height + 1 {
+                        self.send_executed_info_to_chain(*height)?;
+                    }
                 }
             }
-        } else if specified_height > self.get_current_height() {
-            self.signal_to_chain();
+            specified_height if specified_height > self.get_current_height() => {
+                self.signal_to_chain();
+            }
+            _ => {
+                // specified_height == self.get_current_height()
+            }
         }
         Ok(())
     }

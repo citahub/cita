@@ -25,7 +25,6 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::convert::Into;
 use std::thread;
-use tx_pool;
 
 pub struct Dispatcher {
     txs_pool: RefCell<tx_pool::Pool>,

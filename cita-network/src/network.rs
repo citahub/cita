@@ -26,7 +26,6 @@ use libproto::snapshot::{Cmd, Resp, SnapshotResp};
 use libproto::{Message as ProtoMessage, OperateType, Response};
 use libproto::{TryFrom, TryInto};
 use pubsub::channel::{unbounded, Receiver, Sender};
-use serde_json;
 use std::iter::FromIterator;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;

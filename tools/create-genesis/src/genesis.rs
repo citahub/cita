@@ -26,7 +26,6 @@ use crate::solc::Solc;
 
 use cita_types::{clean_0x, U256};
 use ethabi::Contract;
-use json;
 use serde::{Deserialize, Serialize};
 
 pub struct GenesisCreator<'a> {

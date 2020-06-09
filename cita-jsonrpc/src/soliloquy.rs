@@ -19,7 +19,6 @@ use jsonrpc_types::ErrorCode;
 use libproto::protos::response::Response;
 use libproto::Message;
 use libproto::Request_oneof_req::software_version;
-use serde_json;
 
 pub struct Soliloquy {
     config: Config,

@@ -503,7 +503,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
         let amend_type = value.low_u32();
         match amend_type {
             AMEND_ABI => {
-                if self.transact_set_abi(&(data.to_owned().unwrap())) {
+                if self.transact_set_abi(&(data.unwrap())) {
                     Ok(None)
                 } else {
                     Err(VMError::Evm(EVMError::Internal(
@@ -512,7 +512,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 }
             }
             AMEND_CODE => {
-                if self.transact_set_code(&(data.to_owned().unwrap())) {
+                if self.transact_set_code(&(data.unwrap())) {
                     Ok(None)
                 } else {
                     Err(VMError::Evm(EVMError::Internal(
@@ -521,7 +521,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 }
             }
             AMEND_KV_H256 => {
-                if self.transact_set_kv_h256(&(data.to_owned().unwrap())) {
+                if self.transact_set_kv_h256(&(data.unwrap())) {
                     Ok(None)
                 } else {
                     Err(VMError::Evm(EVMError::Internal(
@@ -530,7 +530,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 }
             }
             AMEND_GET_KV_H256 => {
-                if let Some(v) = self.transact_get_kv_h256(&(data.to_owned().unwrap())) {
+                if let Some(v) = self.transact_get_kv_h256(&(data.unwrap())) {
                     Ok(Some(v))
                 } else {
                     Err(VMError::Evm(EVMError::Internal(
@@ -539,7 +539,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
                 }
             }
             AMEND_ACCOUNT_BALANCE => {
-                if self.transact_set_balance(&(data.to_owned().unwrap())) {
+                if self.transact_set_balance(&(data.unwrap())) {
                     Ok(None)
                 } else {
                     Err(VMError::Evm(EVMError::Internal(
@@ -607,7 +607,7 @@ pub fn create<B: DB + 'static>(
     let r = call(
         block_provider.clone(),
         state_provider.clone(),
-        store.clone(),
+        store,
         &reqchan,
     );
     match r {

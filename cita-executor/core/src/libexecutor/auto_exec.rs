@@ -56,14 +56,14 @@ pub fn auto_exec(
     let vm_exec_params = build_vm_exec_params(&params, state.clone());
     let mut sub_state = VMSubState::default();
 
-    sub_state.evm_context = build_evm_context(&context.clone());
+    sub_state.evm_context = build_evm_context(&context);
     sub_state.evm_cfg = get_interpreter_conf();
     let sub_state = Arc::new(RefCell::new(sub_state));
 
     match vm_call(
         Arc::new(block_provider),
-        state.clone(),
-        sub_state.clone(),
+        state,
+        sub_state,
         &vm_exec_params.into(),
     ) {
         Ok(res) => match res {

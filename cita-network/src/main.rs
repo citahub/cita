@@ -98,7 +98,6 @@ use crate::p2p_protocol::{
 };
 use crate::synchronizer::Synchronizer;
 use clap::App;
-use dotenv;
 use futures::prelude::*;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
@@ -145,8 +144,7 @@ fn main() {
         .expect("Wrong config file")
         .to_str()
         .unwrap()
-        .to_string()
-        .clone();
+        .to_string();
 
     // Init config
     debug!("Config path {:?}", config_path);

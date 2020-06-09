@@ -185,7 +185,7 @@ impl Service for Jsonrpc {
                     })
                     .then(move |resp| match resp {
                         Ok(resp) => Ok(resp),
-                        Err(err) => Ok(err.into_response(http_headers.clone())),
+                        Err(err) => Ok(err.into_response(http_headers)),
                     });
 
                 Box::new(fut_resp)
