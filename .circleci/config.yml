@@ -107,7 +107,7 @@ alias:
 
   - &job-default
     docker:
-      - image: cita/cita-build:ubuntu-18.04-20191128
+      - image: cita/cita-build:ubuntu-18.04-20200606
     working_directory: ~/cita-build
 
   - &job-unit-test
@@ -522,4 +522,4 @@ workflows:
             # - "Crosschain Test"
             # - "Test Snapshot Taking And Restoring"
             # - "JSON-RPC Mock Test in Charge Mode"
-            
+

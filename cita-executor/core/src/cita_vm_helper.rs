@@ -33,11 +33,8 @@ pub fn call_pure<B: DB + 'static>(
     let evm_context = store.borrow().evm_context.clone();
     let evm_cfg = store.borrow().evm_cfg.clone();
     let evm_params = request.clone();
-    let evm_data_provider = DataProvider::new(
-        block_provider.clone(),
-        state_provider.clone(),
-        store.clone(),
-    );
+    let evm_data_provider =
+        DataProvider::new(block_provider.clone(), state_provider.clone(), store);
     // Transfer value
     if !request.disable_transfer_value {
         state_provider.borrow_mut().transfer_balance(

@@ -34,7 +34,6 @@ use crate::types::errors::Error;
 use crate::types::errors::ReceiptError;
 use crate::types::errors::{AuthenticationError, ExecutionError};
 use crate::types::transaction::SignedTransaction;
-use cita_merklehash;
 use cita_types::{Address, Bloom as LogBloom, H256, U256};
 use cita_vm::{
     evm::Error as EVMError, state::State as CitaState, state::StateObjectInfo, Error as VMError,

@@ -20,7 +20,6 @@ use crate::header::{BlockNumber, Header};
 use crate::libchain::status::Status;
 use crate::log_blooms::LogBloomGroup;
 use crate::receipt::{Receipt, RichReceipt};
-use cita_merklehash;
 use hashable::Hashable;
 
 use libproto::blockchain::{
@@ -390,7 +389,7 @@ impl Chain {
 
         let chain = Chain {
             blooms_config,
-            current_header: RwLock::new(header.clone()),
+            current_header: RwLock::new(header),
             current_height,
             max_store_height,
             block_map: RwLock::new(BTreeMap::new()),

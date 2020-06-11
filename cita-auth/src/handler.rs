@@ -35,7 +35,6 @@ use lru::LruCache;
 use pubsub::channel::{Receiver, Sender};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon::ThreadPoolBuilder;
-use serde_json;
 use std::collections::{HashMap, HashSet};
 use std::convert::Into;
 use std::str::FromStr;
@@ -552,7 +551,7 @@ impl MsgHandler {
             let check_quota = block_tx_hashes.get_check_quota();
             self.config_info.check_quota = check_quota;
             self.config_info.block_quota_limit = block_quota_limit;
-            self.config_info.account_quota_limit = account_quota_limit.clone();
+            self.config_info.account_quota_limit = account_quota_limit;
             self.config_info.admin_address = if block_tx_hashes.get_admin_address().is_empty() {
                 None
             } else {

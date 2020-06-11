@@ -20,7 +20,6 @@ use crate::contracts::{
 use cita_types::{Address, H256, U256};
 use core::header::Header;
 use core::libchain::chain::TxProof;
-use ethabi;
 
 use crate::storage::Map;
 use crate::types::context::Context;
@@ -180,7 +179,7 @@ impl CrossChainVerify {
 
         let tokens = vec![
             ethabi::Token::Address(sender.into()),
-            ethabi::Token::Bytes(tx_data.clone()),
+            ethabi::Token::Bytes(tx_data),
         ];
         let result = ethabi::encode(&tokens);
         trace!("encoded {:?}", result);

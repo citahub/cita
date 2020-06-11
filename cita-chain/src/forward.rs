@@ -33,7 +33,6 @@ use libproto::{
 };
 use proof::BftProof;
 use pubsub::channel::Sender;
-use serde_json;
 
 use crate::types::block::OpenBlock;
 use crate::types::block_number::BlockTag;

@@ -21,7 +21,6 @@ use pubsub::channel::Sender;
 use std::collections::HashMap;
 use std::sync::Arc;
 use util::Mutex;
-use ws;
 
 pub enum TransferType {
     /// http output sender

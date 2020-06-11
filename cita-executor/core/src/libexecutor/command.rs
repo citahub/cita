@@ -40,7 +40,6 @@ use jsonrpc_types::rpc_types::{
     MetaData,
 };
 use libproto::ExecutedResult;
-use serde_json;
 use std::cell::RefCell;
 use std::convert::{From, Into};
 use std::fmt;
@@ -321,8 +320,7 @@ impl Commander for Executor {
             return Err(format!(
                 "Requires quota higher than upper limit({}) or some internal errors",
                 max_quota
-            )
-            .to_owned());
+            ));
         } else {
             quota_used
         };

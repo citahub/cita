@@ -128,11 +128,7 @@ impl DataProvider for DataProviderMock {
         self.db.get(address).is_some()
     }
 
-    fn call(
-        &self,
-        opcode: OpCode,
-        params: InterpreterParams,
-    ) -> (Result<InterpreterResult, Error>) {
+    fn call(&self, opcode: OpCode, params: InterpreterParams) -> Result<InterpreterResult, Error> {
         match opcode {
             OpCode::CALL => {
                 let mut it = Interpreter::new(

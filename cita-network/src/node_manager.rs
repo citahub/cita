@@ -1140,7 +1140,7 @@ impl GetPeersInfoReq {
 
         for (key, value) in service.connected_peer_keys.iter() {
             if let Some(addr) = service.connected_addrs.get(&value) {
-                peers.insert(key.clone(), addr.conn_addr.ip().to_string());
+                peers.insert(*key, addr.conn_addr.ip().to_string());
             } else {
                 warn!(
                     "[NodeManager] Can not get socket address for session {} from connected_addr. It must be something wrong!",

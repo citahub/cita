@@ -122,9 +122,7 @@ impl From<ProtoReceipt> for Receipt {
             .collect();
 
         if receipt.error.is_some() {
-            error = Some(ReceiptError::from_proto(
-                receipt.clone().take_error().get_error(),
-            ));
+            error = Some(ReceiptError::from_proto(receipt.get_error().get_error()));
         }
 
         Receipt::new(
