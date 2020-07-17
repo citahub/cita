@@ -95,8 +95,8 @@ class NetworkAddressList(list):
                 continue
             addr = addr_str.split(':')
             if len(addr) == 2 and addr[0] and addr[1]:
-                host = addr[0]
-                port = int(addr[1])
+                host = addr[0].strip()
+                port = int(addr[1].strip())
                 if port > 65535 or port < 1:
                     raise Exception(
                         'input port {} is not right'.format(addr_str))

@@ -468,11 +468,9 @@ main() {
     fi
 
     # Delete the verbose parameters.
-    # If use the command 'cita bebop', it should delete 2 verbose parameters.
+    # Left shift 1 argument to remove "bebop"
     if [[ "$1" == "bebop" ]]; then
-        set -- "${@:2}"
-    else
-        set -- "${@:1}"
+        shift
     fi
 
     local command=$1
@@ -490,6 +488,8 @@ main() {
     fi
 
     NODE_NAME=$2
+    # Remove last / if NODE_NAME have it
+    NODE_NAME=${NODE_NAME%*/}
     NODE_PATH=$(realpath "${NODE_NAME}")
     NODE_LOGS_DIR="${NODE_PATH}/logs"
     NODE_DATA_DIR="${NODE_PATH}/data"
