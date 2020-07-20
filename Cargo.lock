@@ -114,7 +114,7 @@ dependencies = [
 [[package]]
 name = "authority_manage"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "bincode",
  "cita-types",
@@ -240,7 +240,7 @@ dependencies = [
 [[package]]
 name = "blake2b"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "cc",
 ]
@@ -473,7 +473,7 @@ dependencies = [
 [[package]]
 name = "cita-crypto"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "cita-crypto-trait",
  "cita-ed25519",
@@ -484,7 +484,7 @@ dependencies = [
 [[package]]
 name = "cita-crypto-trait"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "cita-types",
 ]
@@ -502,7 +502,7 @@ dependencies = [
 [[package]]
 name = "cita-directories"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "uuid",
 ]
@@ -510,7 +510,7 @@ dependencies = [
 [[package]]
 name = "cita-ed25519"
 version = "0.6.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "cita-crypto-trait",
  "cita-types",
@@ -617,7 +617,7 @@ dependencies = [
 [[package]]
 name = "cita-merklehash"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "cita-types",
  "hashable",
@@ -655,7 +655,7 @@ dependencies = [
 [[package]]
 name = "cita-secp256k1"
 version = "0.6.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "cita-crypto-trait",
  "cita-types",
@@ -671,7 +671,7 @@ dependencies = [
 [[package]]
 name = "cita-sm2"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "cita-crypto-trait",
  "cita-types",
@@ -685,7 +685,7 @@ dependencies = [
 [[package]]
 name = "cita-types"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "ethereum-types",
  "plain_hasher",
@@ -1113,7 +1113,7 @@ dependencies = [
 [[package]]
 name = "engine"
 version = "0.6.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "cita-crypto",
  "cita-types",
@@ -1181,7 +1181,7 @@ dependencies = [
 [[package]]
 name = "error"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 
 [[package]]
 name = "error-chain"
@@ -1544,7 +1544,7 @@ dependencies = [
 [[package]]
 name = "hashable"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "blake2b",
  "cita-types",
@@ -1802,7 +1802,7 @@ checksum = "92c245af8786f6ac35f95ca14feca9119e71339aaab41e878e7cdd655c97e9e5"
 [[package]]
 name = "jsonrpc-proto"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "bincode",
  "cita-logger",
@@ -1819,7 +1819,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-types"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "cita-types",
  "jsonrpc-types-internals",
@@ -1832,7 +1832,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-types-internals"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "proc-macro2 0.4.30",
  "quote 0.6.13",
@@ -1925,7 +1925,7 @@ dependencies = [
 [[package]]
 name = "libproto"
 version = "0.6.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "cita-crypto",
  "cita-logger",
@@ -2598,7 +2598,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.6.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "bincode",
  "cita-crypto",
@@ -2622,7 +2622,7 @@ dependencies = [
 [[package]]
 name = "pubsub"
 version = "0.6.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "amqp",
  "crossbeam-channel",
@@ -2977,7 +2977,7 @@ checksum = "cabe4fa914dec5870285fa7f71f602645da47c486e68486d2b4ceb4a343e90ac"
 [[package]]
 name = "rlp"
 version = "0.2.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "byteorder 1.3.4",
  "cita-types",
@@ -3285,7 +3285,7 @@ checksum = "5c2fb2ec9bcd216a5b0d0ccf31ab17b5ed1d627960edff65bbe95d3ce221cefc"
 [[package]]
 name = "snappy"
 version = "0.1.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "libc",
 ]
@@ -3832,7 +3832,7 @@ checksum = "e604eb7b43c06650e854be16a2a03155743d3752dd1c943f6829e26b7a36e382"
 [[package]]
 name = "tx_pool"
 version = "0.6.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "cita-crypto",
  "cita-types",
@@ -3953,7 +3953,7 @@ checksum = "a1ca13c08c41c9c3e04224ed9ff80461d97e121589ff27c753a16cb10830ae0f"
 [[package]]
 name = "util"
 version = "0.6.0"
-source = "git+https://github.com/citahub/cita-common.git?branch=develop#7a23d7510a1087c9751f397a0b88a6c93ddd4065"
+source = "git+https://github.com/citahub/cita-common.git?branch=develop#5acb4259e4398403ede0faf2b464b15c66b87e8c"
 dependencies = [
  "ansi_term 0.9.0",
  "backtrace 0.3.45",
