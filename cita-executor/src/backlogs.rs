@@ -126,6 +126,13 @@ impl Backlog {
         // check proof.height
         if let Some(ref proof) = proof {
             let bft_proof = proof::BftProof::from(proof.clone());
+            if bft_proof.is_default() && height != 1 {
+                warn!(
+                    "got block from different crypto-suit chain height:{}",
+                    height
+                );
+                return false;
+            }
             let proof_height = wrap_height(bft_proof.height);
             if proof_height + 1 != height {
                 trace!(
