@@ -13,9 +13,8 @@ serde_json = "1.0"
 cita-types = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
 clap = "2"
 parking_lot = "0.6"
-futures = "0.1"
-tokio-core = "0.1"
-hyper = "0.12"
+hyper = "0.13"
+tokio = { version = "0.2", features = ["full"] }
 core = { path = "../../cita-chain/core" }
 jsonrpc-types = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }
 libproto = { git = "https://github.com/citahub/cita-common.git", branch = "develop" }

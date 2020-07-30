@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ethabi;
-
 use cita_crypto::PrivKey;
 use cita_types::{H160, H256, U256};
 use libproto::blockchain::{Transaction, UnverifiedTransaction};

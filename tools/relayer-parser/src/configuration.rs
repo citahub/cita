@@ -14,7 +14,6 @@
 
 use cita_crypto::PrivKey;
 use cita_types::U256;
-use serde_json;
 use std::collections::HashMap;
 use std::time::Duration;
 

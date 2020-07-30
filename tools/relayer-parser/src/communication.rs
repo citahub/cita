@@ -12,15 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use futures::future::Either;
-use futures::sync::{mpsc, oneshot};
-use futures::{Future, Sink, Stream};
-use hyper;
 use libproto::TryInto;
-use parking_lot::{Mutex, RwLock};
-use serde_json;
+use parking_lot::RwLock;
 use std::convert::Into;
-use tokio_core::reactor::{Core, Timeout};
 
 use crate::configuration::UpStream;
 use cita_types::{H256, U256};
@@ -30,82 +24,40 @@ use libproto::blockchain::UnverifiedTransaction;
 #[derive(Debug)]
 pub enum Error {
     BadStatus,
-    Timeout,
     Parse,
 }
 
-type RpcSender =
-    Mutex<mpsc::Sender<(hyper::Request, oneshot::Sender<Result<hyper::Chunk, Error>>)>>;
-
 pub struct RpcClient {
-    sender: RpcSender,
     uri: RwLock<hyper::Uri>,
 }
 
 impl RpcClient {
     pub fn create(upstream: &UpStream) -> ::std::sync::Arc<Self> {
-        let tb = ::std::thread::Builder::new().name("RpcClient".to_string());
         let uri = upstream.url.parse::<hyper::Uri>().unwrap();
-        let (tx, rx) =
-            mpsc::channel::<(hyper::Request, oneshot::Sender<Result<hyper::Chunk, Error>>)>(65_535);
-        let timeout_duration = upstream.timeout;
-
-        let _tb = tb
-            .spawn(move || {
-                let mut core = Core::new().unwrap();
-                let handle = core.handle();
-                let client = hyper::Client::configure()
-                    .connector(hyper::client::HttpConnector::new(4, &handle))
-                    .keep_alive(false)
-                    .build(&handle);
-
-                let messages = rx.for_each(|(req, sender)| {
-                    let timeout = Timeout::new(timeout_duration, &handle).unwrap();
-                    let post = client.request(req).and_then(|res| res.body().concat2());
-
-                    let work = post.select2(timeout).then(move |res| match res {
-                        Ok(Either::A((got, _timeout))) => {
-                            let _ = sender.send(Ok(got));
-                            Ok(())
-                        }
-                        Ok(Either::B(_)) | Err(_) => {
-                            let _ = sender.send(Err(Error::Timeout));
-                            Ok(())
-                        }
-                    });
-
-                    handle.spawn(work);
-                    Ok(())
-                });
-
-                core.run(messages).unwrap();
-            })
-            .expect("Couldn't spawn a thread.");
 
         ::std::sync::Arc::new(RpcClient {
-            sender: Mutex::new(tx),
             uri: RwLock::new(uri),
         })
     }
 
-    pub fn do_post(&self, body: &str) -> Result<hyper::Chunk, Error> {
+    pub fn do_post(&self, body: String) -> Result<Vec<u8>, Error> {
         let uri = { self.uri.read().clone() };
         trace!("Send body {:?} to {:?}.", body, uri);
-        let mut req = hyper::Request::new(hyper::Method::Post, uri);
-        req.headers_mut().set(hyper::header::ContentType::json());
-        req.set_body(body.to_owned());
-        let (tx, rx) = oneshot::channel();
-        {
-            let _ = self.sender.lock().start_send((req, tx));
-        }
-        match rx.wait() {
-            Ok(res) => {
-                let res = res.map_err(|_| Error::BadStatus)?;
-                trace!("Get response {:?}.", res);
-                Ok(res)
-            }
-            Err(_) => Err(Error::BadStatus),
-        }
+        let req = hyper::Request::builder()
+            .method(hyper::Method::POST)
+            .uri(uri)
+            .header("content-type", "application/json")
+            .body(hyper::Body::from(body))
+            .unwrap();
+
+        let mut rt = tokio::runtime::Runtime::new().unwrap();
+        let data = rt.block_on(async {
+            let client = hyper::Client::new();
+
+            let resp = client.request(req).await.unwrap();
+            hyper::body::to_bytes(resp.into_body()).await.unwrap()
+        });
+        Ok(data.to_vec())
     }
 }
 
@@ -116,7 +68,7 @@ macro_rules! rpc_send_and_get_result_from_reply {
         define_reply_type!(ReplyType, $result_type);
         let rpc_cli = RpcClient::create($upstream);
         let body: String = $request.into();
-        let data = rpc_cli.do_post(&body)?;
+        let data = rpc_cli.do_post(body.clone())?;
         let reply: ReplyType = serde_json::from_slice(&data).map_err(|_| {
             error!(
                 "send {:?} return error: {:?}",
