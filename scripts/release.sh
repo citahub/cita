@@ -40,6 +40,7 @@ for binary in \
         cita-network \
         create-key-addr \
         create-genesis \
+        cita-relayer-parser \
         ; do
     if [ "${arch}" == "x86" ]; then
         cp -rf "target/${type}/${binary}" ${install_dir}/bin/

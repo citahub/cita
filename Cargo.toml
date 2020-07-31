@@ -8,6 +8,7 @@ members = ["cita-auth"
 ,"cita-forever"
 ,"tools/create-key-addr"
 ,"tools/create-genesis"
+,"tools/relayer-parser"
 ,"tests/chain-executor-mock"
 ]
 

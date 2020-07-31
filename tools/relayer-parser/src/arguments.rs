@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use cita_types::{H256, U256};
-use clap;
 use std::str::FromStr;
 
 pub struct AppArgs {
