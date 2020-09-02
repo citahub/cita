@@ -138,7 +138,7 @@ class AddressList(list):
         for addr_str in addrs_str.split(delimiter):
             if not addr_str:
                 continue
-            addrs.add_after_check(addr_str)
+            addrs.add_after_check(addr_str.strip())
         return addrs
 
     def add_after_check(self, addr):
