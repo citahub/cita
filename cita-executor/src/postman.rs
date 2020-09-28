@@ -309,9 +309,7 @@ impl Postman {
                 let mut sync_res = msg.take_sync_response().unwrap();
                 for proto_block in sync_res.take_blocks().into_iter() {
                     let open_block = OpenBlock::from(proto_block);
-                    if !self.backlogs.insert_synchronized(open_block) {
-                        return false;
-                    }
+                    self.backlogs.insert_synchronized(open_block);
                 }
                 true
             }
