@@ -216,7 +216,7 @@ impl ExecutedBlock {
                 );
 
                 self.receipts.push(receipt);
-                ret.quota_used
+                tx_quota_used
             }
             Err(err) => {
                 // FIXME: hasn't handle some errors.
