@@ -28,7 +28,7 @@ impl Miner {
         let state = cita_vm::state::State::new(db.clone()).expect("New state failed.");
 
         let state_data_provider = Arc::new(RefCell::new(state));
-        let block_data_provider: Arc<cita_vm::BlockDataProvider> =
+        let block_data_provider: Arc<dyn cita_vm::BlockDataProvider> =
             Arc::new(cita_vm::BlockDataProviderMock::default());
         let context = cita_vm::evm::Context::default();
         let config = cita_vm::Config::default();

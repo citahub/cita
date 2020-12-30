@@ -16,9 +16,11 @@ use crate::node_manager::{
     AddRepeatedNodeReq, ConnectedSelfReq, DelConnectedNodeReq, DialedErrorReq, NodesManagerClient,
     PendingConnectedNodeReq,
 };
+use tentacle::error::HandshakeErrorKind;
 use tentacle::{
     context::ServiceContext,
     error,
+    secio::error::SecioError,
     service::{ServiceError, ServiceEvent},
     traits::ServiceHandle,
     utils::multiaddr_to_socketaddr,
@@ -46,7 +48,7 @@ impl ServiceHandle for SHandle {
 
                 // If dial to a connected node, need add it to connected address list.
                 match error {
-                    error::Error::RepeatedConnection(session_id) => {
+                    error::DialerErrorKind::RepeatedConnection(session_id) => {
                         // Do not need to do something, just log it.
                         info!(
                             "[P2pProtocol] Connected to the same node : {:?}, session id: {:?}",
@@ -55,7 +57,9 @@ impl ServiceHandle for SHandle {
                         let req = AddRepeatedNodeReq::new(address, session_id);
                         self.nodes_mgr_client.add_repeated_node(req);
                     }
-                    error::Error::ConnectSelf => {
+                    error::DialerErrorKind::HandshakeError(HandshakeErrorKind::SecioError(
+                        SecioError::ConnectSelf,
+                    )) => {
                         info!("[P2pProtocol] Connected to self, address: {:?}.", address);
                         let req = ConnectedSelfReq::new(address);
                         self.nodes_mgr_client.connected_self(req);

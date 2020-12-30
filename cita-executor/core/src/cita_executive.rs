@@ -50,7 +50,7 @@ const AMEND_ACCOUNT_BALANCE: u32 = 5;
 
 // FIXME: CITAExecutive need rename to Executive after all works ready.
 pub struct CitaExecutive<'a, B> {
-    block_provider: Arc<BlockDataProvider>,
+    block_provider: Arc<dyn BlockDataProvider>,
     state_provider: Arc<RefCell<State<B>>>,
     native_factory: &'a NativeFactory,
     context: &'a Context,
@@ -59,7 +59,7 @@ pub struct CitaExecutive<'a, B> {
 
 impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
     pub fn new(
-        block_provider: Arc<BlockDataProvider>,
+        block_provider: Arc<dyn BlockDataProvider>,
         state: Arc<RefCell<State<B>>>,
         native_factory: &'a NativeFactory,
         context: &'a Context,
@@ -101,7 +101,7 @@ impl<'a, B: DB + 'static> CitaExecutive<'a, B> {
             Action::Create => tx_gas_schedule.tx_create_gas,
             _ => tx_gas_schedule.tx_gas,
         } + match t.version {
-            0...2 => 0,
+            0..=2 => 0,
             _ => t.data.len() * tx_gas_schedule.tx_data_non_zero_gas,
         };
 

@@ -27,7 +27,7 @@ use tentacle::{
     traits::ServiceProtocol,
     ProtocolId, SessionId,
 };
-use tokio::codec::length_delimited::LengthDelimitedCodec;
+use tokio_util::codec::length_delimited::LengthDelimitedCodec;
 
 // Quota (1 byte) = 200,
 // Max 20 block in one transfer.
@@ -77,8 +77,8 @@ impl ServiceProtocol for TransferProtocol {
         );
     }
 
-    fn received(&mut self, env: ProtocolContextMutRef, data: bytes::Bytes) {
-        let mut data = BytesMut::from(data);
+    fn received(&mut self, env: ProtocolContextMutRef, data: tentacle::bytes::Bytes) {
+        let mut data = BytesMut::from(data.as_ref());
 
         if let Some(mut info) = network_message_to_pubsub_message(&mut data) {
             if info.key.eq(&"network.init".to_string()) {

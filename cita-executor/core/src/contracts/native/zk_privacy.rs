@@ -49,7 +49,7 @@ impl Contract for ZkPrivacy {
         &mut self,
         params: &VmExecParams,
         env_info: &EnvInfo,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError>
     where
         Self: Sized,
@@ -67,7 +67,7 @@ impl Contract for ZkPrivacy {
             Err(NativeError::Internal("out of gas".to_string()))
         }
     }
-    fn create(&self) -> Box<Contract> {
+    fn create(&self) -> Box<dyn Contract> {
         Box::new(ZkPrivacy::default())
     }
 }
@@ -92,7 +92,7 @@ impl ZkPrivacy {
     fn init(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(5000);
         if params.gas < gas_cost {
@@ -112,7 +112,7 @@ impl ZkPrivacy {
     fn set_balance(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
@@ -153,7 +153,7 @@ impl ZkPrivacy {
     fn get_balance(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
@@ -189,7 +189,7 @@ impl ZkPrivacy {
         &mut self,
         params: &VmExecParams,
         env_info: &EnvInfo,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10_000_000);
         if params.gas < gas_cost {
@@ -419,7 +419,7 @@ impl ZkPrivacy {
     fn receive_verify(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(1_000_000);
         if params.gas < gas_cost {

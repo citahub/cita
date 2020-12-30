@@ -74,7 +74,7 @@ impl Scalar {
     // single element
     pub fn set(
         self: &Self,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
         addr: &Address,
         value: U256,
     ) -> Result<(), NativeError> {
@@ -84,7 +84,7 @@ impl Scalar {
 
     pub fn get(
         self: &Self,
-        data_provider: &DataProvider,
+        data_provider: &dyn DataProvider,
         addr: &Address,
     ) -> Result<U256, NativeError> {
         let value = data_provider.get_storage(addr, &self.position);
@@ -94,7 +94,7 @@ impl Scalar {
     // bytes & string
     pub fn set_bytes<T>(
         self: &Self,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
         addr: &Address,
         value: &T,
     ) -> Result<(), NativeError>
@@ -122,7 +122,7 @@ impl Scalar {
 
     pub fn get_bytes<T>(
         self: &Self,
-        data_provider: &DataProvider,
+        data_provider: &dyn DataProvider,
         addr: &Address,
     ) -> Result<Box<T>, NativeError>
     where
@@ -173,7 +173,7 @@ impl Array {
 
     pub fn set(
         self: &Self,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
         addr: &Address,
         index: u64,
         value: &U256,
@@ -184,7 +184,7 @@ impl Array {
 
     pub fn get(
         self: &Self,
-        data_provider: &DataProvider,
+        data_provider: &dyn DataProvider,
         addr: &Address,
         index: u64,
     ) -> Result<U256, NativeError> {
@@ -194,7 +194,7 @@ impl Array {
 
     pub fn set_bytes<T>(
         self: &Self,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
         addr: &Address,
         index: u64,
         value: &T,
@@ -208,7 +208,7 @@ impl Array {
 
     pub fn get_bytes<T>(
         self: &Self,
-        data_provider: &DataProvider,
+        data_provider: &dyn DataProvider,
         addr: &Address,
         index: u64,
     ) -> Result<Box<T>, NativeError>
@@ -221,7 +221,7 @@ impl Array {
 
     pub fn set_len(
         self: &Self,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
         addr: &Address,
         len: u64,
     ) -> Result<(), NativeError> {
@@ -231,7 +231,7 @@ impl Array {
 
     pub fn get_len(
         self: &Self,
-        data_provider: &DataProvider,
+        data_provider: &dyn DataProvider,
         addr: &Address,
     ) -> Result<u64, NativeError> {
         let len = data_provider.get_storage(addr, &self.position);
@@ -269,7 +269,7 @@ impl Map {
 
     pub fn set<Key>(
         self: &Self,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
         addr: &Address,
         key: &Key,
         value: U256,
@@ -282,7 +282,7 @@ impl Map {
 
     pub fn get<Key>(
         self: &Self,
-        data_provider: &DataProvider,
+        data_provider: &dyn DataProvider,
         addr: &Address,
         key: &Key,
     ) -> Result<U256, NativeError>
@@ -294,7 +294,7 @@ impl Map {
 
     pub fn set_bytes<Key, Value>(
         self: &Self,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
         addr: &Address,
         key: &Key,
         value: &Value,
@@ -308,7 +308,7 @@ impl Map {
 
     pub fn get_bytes<Key, Value>(
         self: &Self,
-        data_provider: &DataProvider,
+        data_provider: &dyn DataProvider,
         addr: &Address,
         key: &Key,
     ) -> Result<Value, NativeError>
@@ -578,7 +578,7 @@ mod tests {
         assert!(map
             .set(&mut data_provider, &code_address, &key, value)
             .is_ok());
-        assert_eq!(map.get(&data_provider, &code_address, &key).unwrap(), value);;
+        assert_eq!(map.get(&data_provider, &code_address, &key).unwrap(), value);
     }
 
     #[test]

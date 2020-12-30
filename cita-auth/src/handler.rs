@@ -98,7 +98,7 @@ pub struct MsgHandler {
     black_list_cache: HashMap<Address, i8>,
     is_need_proposal_new_block: bool,
     config_info: SysConfigInfo,
-    block_txn_req: Option<(BlockTxnReq)>,
+    block_txn_req: Option<BlockTxnReq>,
     verify_block_req: Option<VerifyBlockReq>,
 }
 
@@ -1109,7 +1109,7 @@ fn snapshot_response(sender: &Sender<(String, Vec<u8>)>, ack: Resp, flag: bool) 
 // only verify if tx.version > 2
 pub fn verify_base_quota_required(tx: &Transaction) -> bool {
     match tx.get_version() {
-        0...2 => true,
+        0..=2 => true,
         _ => {
             let to = tx.get_to_v1();
             if to.is_empty() || Address::from(to) == Address::zero() {

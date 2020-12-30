@@ -18,7 +18,7 @@ use byteorder::{ByteOrder, NetworkEndian};
 use bytes::{BufMut, Bytes, BytesMut};
 use cita_types::Address;
 use logger::{error, warn};
-use std::str;
+use std::{io, str};
 
 /// Implementation of the multiplexed line-based protocol.
 ///
@@ -118,12 +118,12 @@ pub fn pubsub_message_to_network_message(info: &NetMessageUnit) -> Option<Bytes>
 
     let mut buf = BytesMut::with_capacity(length_full + CITA_FRAME_HEADER_LEN);
     let request_id = NETMSG_START + length_full as u64;
-    buf.put_u64_be(request_id);
-    buf.put_u64_be(info.version);
-    buf.put(info.addr.to_vec());
+    buf.put_u64(request_id);
+    buf.put_u64(info.version);
+    buf.put(io::Cursor::new(info.addr.to_vec()));
     buf.put_u8(length_key as u8);
     buf.put_u8(info.ttl);
-    buf.put_u16_be(0);
+    buf.put_u16(0);
 
     buf.put(info.key.as_bytes());
     buf.put_slice(&info.data);

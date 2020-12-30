@@ -842,7 +842,7 @@ impl Chain {
         })
     }
 
-    pub fn get_transaction_proof(&self, hash: TransactionHash) -> Option<(Vec<u8>)> {
+    pub fn get_transaction_proof(&self, hash: TransactionHash) -> Option<Vec<u8>> {
         self.transaction_index(hash)
             .and_then(|addr| {
                 self.block_by_hash(addr.block_hash)

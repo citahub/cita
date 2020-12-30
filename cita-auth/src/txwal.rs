@@ -23,7 +23,7 @@ use std::sync::Arc;
 /// used to persist transaction pools message
 #[derive(Clone)]
 pub struct TxWal {
-    db: Arc<Database>,
+    db: Arc<dyn Database>,
 }
 
 impl TxWal {

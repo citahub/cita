@@ -21,12 +21,11 @@ use tentacle::{
     utils::{multiaddr_to_socketaddr, socketaddr_to_multiaddr},
     ProtocolId, SessionId,
 };
-use tentacle_discovery::{
-    AddressManager, Discovery, DiscoveryProtocol, MisbehaveResult, Misbehavior,
-};
+use tentacle_discovery::{AddressManager, DiscoveryProtocol, MisbehaveResult, Misbehavior};
 
 pub const DISCOVERY_PROTOCOL_ID: ProtocolId = ProtocolId::new(0);
 pub const DISCOVERY_TIMEOUT_SECS: u64 = 150;
+pub const DISCOVERY_CHECK_INTERVAL_SECS: u64 = 3;
 
 #[derive(Clone, Debug)]
 pub struct NodesAddressManager {
@@ -40,6 +39,10 @@ impl NodesAddressManager {
 }
 
 impl AddressManager for NodesAddressManager {
+    fn is_valid_addr(&self, _addr: &Multiaddr) -> bool {
+        true
+    }
+
     fn add_new_addr(&mut self, _session_id: SessionId, addr: Multiaddr) {
         let address = multiaddr_to_socketaddr(&addr).unwrap();
         let req = AddNodeReq::new(address, NodeSource::FromDiscovery);
@@ -79,11 +82,15 @@ impl AddressManager for NodesAddressManager {
 pub fn create_discovery_meta(nodes_mgr_client: NodesManagerClient) -> ProtocolMeta {
     let addr_mgr = NodesAddressManager::new(nodes_mgr_client);
     let timeout = ::std::time::Duration::new(DISCOVERY_TIMEOUT_SECS, 0);
+    let check_interval = ::std::time::Duration::new(DISCOVERY_CHECK_INTERVAL_SECS, 0);
     MetaBuilder::default()
         .id(DISCOVERY_PROTOCOL_ID)
         .service_handle(move || {
-            let discovery = Discovery::new(addr_mgr.clone(), Some(timeout));
-            ProtocolHandle::Callback(Box::new(DiscoveryProtocol::new(discovery)))
+            ProtocolHandle::Callback(Box::new(DiscoveryProtocol::new(
+                addr_mgr.clone(),
+                Some(timeout),
+                Some(check_interval),
+            )))
         })
         .name(|_| "/cita/discovery".to_owned())
         .support_versions(vec!["0.0.2".to_owned()])

@@ -13,7 +13,7 @@
 [submodule "tests/contracts"]
 	path = tests/contracts
 	url = https://github.com/cryptape/test-contracts.git
-	branch = master
+	branch = new_cargo
 [submodule "scripts/contracts/interaction"]
 	path = scripts/contracts/interaction
 	url = https://github.com/cryptape/cita-sys-interaction.git

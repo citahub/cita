@@ -33,7 +33,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tentacle::{
-    service::{DialProtocol, ServiceControl, SessionType, TargetSession},
+    service::{ServiceControl, SessionType, TargetProtocol, TargetSession},
     utils::socketaddr_to_multiaddr,
     SessionId,
 };
@@ -374,7 +374,7 @@ impl NodesManager {
                 if let Some(ref mut ctrl) = self.service_ctrl {
                     self.dialing_node = Some(key);
                     info!("Trying to dial: {:?}", self.dialing_node);
-                    match ctrl.dial(socketaddr_to_multiaddr(key), DialProtocol::All) {
+                    match ctrl.dial(socketaddr_to_multiaddr(key), TargetProtocol::All) {
                         Ok(_) => {
                             // Need DIALING_SCORE for every dial.
                             value.score -= DIALING_SCORE;

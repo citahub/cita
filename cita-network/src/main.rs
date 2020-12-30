@@ -204,6 +204,16 @@ fn main() {
     thread::spawn(move || nodes_mgr.run());
     thread::spawn(move || network_mgr.run());
     thread::spawn(move || synchronizer_mgr.run());
-    tokio::run(service.for_each(|_| Ok(())));
+
+    let mut rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(async {
+        service.listen(addr.parse().unwrap()).await.unwrap();
+
+        loop {
+            if service.next().await.is_none() {
+                break;
+            }
+        }
+    });
     // End run system
 }

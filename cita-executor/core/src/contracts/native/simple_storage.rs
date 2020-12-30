@@ -44,7 +44,7 @@ impl Contract for SimpleStorage {
         &mut self,
         params: &VmExecParams,
         _context: &Context,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         if let Some(ref data) = params.data {
             method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
@@ -63,7 +63,7 @@ impl Contract for SimpleStorage {
             Err(NativeError::Internal("out of gas".to_string()))
         }
     }
-    fn create(&self) -> Box<Contract> {
+    fn create(&self) -> Box<dyn Contract> {
         Box::new(SimpleStorage::default())
     }
 }
@@ -93,7 +93,7 @@ impl SimpleStorage {
     fn uint_set(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let value = U256::from(
             params
@@ -111,7 +111,7 @@ impl SimpleStorage {
     fn uint_get(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         self.output.resize(32, 0);
         self.uint_value
@@ -124,7 +124,7 @@ impl SimpleStorage {
     fn string_set(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let index = U256::from(data.get(4..36).expect("no enough data")).low_u64() as usize + 4;
@@ -144,7 +144,7 @@ impl SimpleStorage {
     fn string_get(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         self.output.resize(0, 0);
         let str = self
@@ -173,7 +173,7 @@ impl SimpleStorage {
     fn array_set(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let mut pilot = 4;
@@ -188,7 +188,7 @@ impl SimpleStorage {
     fn array_get(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let index = U256::from(data.get(4..4 + 32).expect("no enough data")).low_u64();
@@ -209,7 +209,7 @@ impl SimpleStorage {
     fn map_set(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let mut pilot = 4;
@@ -224,7 +224,7 @@ impl SimpleStorage {
     fn map_get(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let data = params.data.to_owned().expect("invalid data");
         let key = U256::from(data.get(4..4 + 32).expect("no enough data"));

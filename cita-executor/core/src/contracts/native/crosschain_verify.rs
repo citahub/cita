@@ -51,7 +51,7 @@ impl Contract for CrossChainVerify {
         &mut self,
         params: &VmExecParams,
         _context: &Context,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         if let Some(ref data) = params.data {
             method_tools::extract_to_u32(&data[..]).and_then(|signature| match signature {
@@ -71,7 +71,7 @@ impl Contract for CrossChainVerify {
             Err(NativeError::Internal("out of gas".to_string()))
         }
     }
-    fn create(&self) -> Box<Contract> {
+    fn create(&self) -> Box<dyn Contract> {
         Box::new(CrossChainVerify::default())
     }
 }
@@ -90,7 +90,7 @@ impl CrossChainVerify {
     fn verify_transaction(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
@@ -203,7 +203,7 @@ impl CrossChainVerify {
     fn verify_state(
         &mut self,
         _params: &VmExecParams,
-        _data_provider: &mut DataProvider,
+        _data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         unimplemented!()
         // let gas_cost = U256::from(10000);
@@ -309,7 +309,7 @@ impl CrossChainVerify {
     fn verify_block_header(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
@@ -409,7 +409,7 @@ impl CrossChainVerify {
     fn get_expected_block_number(
         &mut self,
         params: &VmExecParams,
-        data_provider: &mut DataProvider,
+        data_provider: &mut dyn DataProvider,
     ) -> Result<InterpreterResult, NativeError> {
         let gas_cost = U256::from(10000);
         if params.gas < gas_cost {
