@@ -15,7 +15,7 @@ stages:
   - Release
   - IntegrateTest
 before_install:
-  - docker pull cita/cita-build:ubuntu-18.04-20190515
+  - docker pull cita/cita-build:ubuntu-18.04-20201231
 jobs:
   include:
 
