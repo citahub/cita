@@ -32,7 +32,7 @@ use tokio::codec::length_delimited::LengthDelimitedCodec;
 // Quota (1 byte) = 200,
 // Max 20 block in one transfer.
 // 512M can support BQL set to 2 ** 32 - 1
-pub const MAX_FRAME_LENGTH: usize = 512 * 1024 * 1204;
+pub const MAX_FRAME_LENGTH: usize = 512 * 1024 * 1024;
 pub const TRANSFER_PROTOCOL_ID: ProtocolId = ProtocolId::new(1);
 
 struct TransferProtocol {

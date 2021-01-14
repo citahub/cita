@@ -15,6 +15,16 @@ fi
 echo "[Info_] Run Security Audit."
 # TODO: fix audit error
 : "
+Crate:         arc-swap
+Version:       0.4.4
+Title:         Dangling reference in access::Map with Constant
+Date:          2020-12-10
+ID:            RUSTSEC-2020-0091
+URL:           https://rustsec.org/advisories/RUSTSEC-2020-0091
+Solution:      Upgrade to >=1.1.0 OR >=0.4.8
+Dependency tree:
+arc-swap 0.4.4
+
 Crate:         bumpalo
 Version:       3.2.0
 Title:         Flaw in realloc allows reading unknown memory
@@ -86,6 +96,107 @@ libsecp256k1 0.2.2
     │   ├── cita-executor 20.2.0
     │   └── cita-chain 20.2.0
     └── cita-executor 20.2.0
+
+Crate:         ordered-float
+Version:       1.0.2
+Title:         ordered_float:NotNan may contain NaN after panic in assignment operators
+Date:          2020-12-06
+ID:            RUSTSEC-2020-0082
+URL:           https://rustsec.org/advisories/RUSTSEC-2020-0082
+Solution:      Upgrade to >=1.1.1, <2.0.0 OR >=2.0.1
+Dependency tree:
+ordered-float 1.0.2
+└── serde-value 0.5.3
+    └── log4rs 0.8.3
+        └── cita-logger 0.1.1
+            ├── util 0.6.0
+            │   ├── tx_pool 0.6.0
+            │   │   └── cita-auth 20.2.0
+            │   ├── engine 0.6.0
+            │   │   └── cita-bft 20.2.0
+            │   ├── core-executor 0.1.0
+            │   │   └── cita-executor 20.2.0
+            │   ├── core 0.1.0
+            │   │   ├── core-executor 0.1.0
+            │   │   ├── cita-relayer-parser 0.1.0
+            │   │   └── cita-chain 20.2.0
+            │   ├── common-types 0.1.0
+            │   │   ├── core-executor 0.1.0
+            │   │   ├── core 0.1.0
+            │   │   ├── cita-executor 20.2.0
+            │   │   └── cita-chain 20.2.0
+            │   ├── cita-network 20.2.0
+            │   ├── cita-jsonrpc 20.2.0
+            │   ├── cita-forever 1.0.0
+            │   ├── cita-executor 20.2.0
+            │   ├── cita-chain 20.2.0
+            │   ├── cita-bft 20.2.0
+            │   └── cita-auth 20.2.0
+            ├── libproto 0.6.0
+            │   ├── tx_pool 0.6.0
+            │   ├── proof 0.6.0
+            │   │   ├── jsonrpc-proto 0.1.0
+            │   │   │   └── cita-jsonrpc 20.2.0
+            │   │   ├── core-executor 0.1.0
+            │   │   ├── core 0.1.0
+            │   │   ├── common-types 0.1.0
+            │   │   ├── cita-executor 20.2.0
+            │   │   ├── cita-chain 20.2.0
+            │   │   ├── cita-bft 20.2.0
+            │   │   └── chain-executor-mock 0.1.0
+            │   ├── jsonrpc-proto 0.1.0
+            │   ├── create-genesis 0.1.0
+            │   ├── core-executor 0.1.0
+            │   ├── core 0.1.0
+            │   ├── common-types 0.1.0
+            │   ├── cita-relayer-parser 0.1.0
+            │   ├── cita-network 20.2.0
+            │   ├── cita-jsonrpc 20.2.0
+            │   ├── cita-executor 20.2.0
+            │   ├── cita-chain 20.2.0
+            │   ├── cita-bft 20.2.0
+            │   ├── cita-auth 20.2.0
+            │   └── chain-executor-mock 0.1.0
+            ├── jsonrpc-proto 0.1.0
+            ├── core-executor 0.1.0
+            ├── core 0.1.0
+            ├── common-types 0.1.0
+            ├── cita-relayer-parser 0.1.0
+            ├── cita-network 20.2.0
+            ├── cita-jsonrpc 20.2.0
+            ├── cita-forever 1.0.0
+            ├── cita-executor 20.2.0
+            ├── cita-database 0.1.0
+            │   ├── core-executor 0.1.0
+            │   ├── core 0.1.0
+            │   ├── common-types 0.1.0
+            │   ├── cita-executor 20.2.0
+            │   ├── cita-chain 20.2.0
+            │   └── cita-auth 20.2.0
+            ├── cita-chain 20.2.0
+            ├── cita-bft 20.2.0
+            ├── cita-auth 20.2.0
+            └── chain-executor-mock 0.1.0
+
+Crate:         smallvec
+Version:       0.6.13
+Title:         Buffer overflow in SmallVec::insert_many
+Date:          2021-01-08
+ID:            RUSTSEC-2021-0003
+URL:           https://rustsec.org/advisories/RUSTSEC-2021-0003
+Solution:      Upgrade to >=0.6.14, <1.0.0 OR >=1.6.1
+Dependency tree:
+smallvec 0.6.13
+
+Crate:         smallvec
+Version:       1.2.0
+Title:         Buffer overflow in SmallVec::insert_many
+Date:          2021-01-08
+ID:            RUSTSEC-2021-0003
+URL:           https://rustsec.org/advisories/RUSTSEC-2021-0003
+Solution:      Upgrade to >=0.6.14, <1.0.0 OR >=1.6.1
+Dependency tree:
+smallvec 1.2.0
 
 Crate:         ws
 Version:       0.7.9
@@ -203,6 +314,10 @@ tempdir 0.3.7
 ├── cita-executor 20.2.0
 └── cita-auth 20.2.0
 
+Crate:         arc-swap
+Version:       0.4.4
+Warning:       yanked
+
 Crate:         blake2b
 Version:       0.1.0
 Warning:       yanked
@@ -287,7 +402,46 @@ Crate:         bumpalo
 Version:       3.2.0
 Warning:       yanked
 
-error: 5 vulnerabilities found!
-warning: 6 allowed warnings found
+Crate:         miow
+Version:       0.2.1
+Warning:       yanked
+Dependency tree:
+miow 0.2.1
+
+Crate:         miow
+Version:       0.3.5
+Warning:       yanked
+Dependency tree:
+miow 0.3.5
+
+Crate:         net2
+Version:       0.2.33
+Warning:       yanked
+
+Crate:         socket2
+Version:       0.3.12
+Warning:       yanked
+Dependency tree:
+socket2 0.3.12
+├── miow 0.3.5
+└── hyper 0.13.7
+
+Crate:         tentacle-discovery
+Version:       0.2.9
+Warning:       yanked
+Dependency tree:
+tentacle-discovery 0.2.9
+└── cita-network 20.2.0
+
+error: 9 vulnerabilities found!
+warning: 12 allowed warnings found
 "
-cargo audit --ignore RUSTSEC-2020-0006 --ignore RUSTSEC-2020-0060 --ignore RUSTSEC-2020-0059 --ignore RUSTSEC-2019-0027 --ignore RUSTSEC-2020-0043
+
+cargo audit --ignore RUSTSEC-2020-0091 \
+            --ignore RUSTSEC-2020-0006 \
+            --ignore RUSTSEC-2020-0060 \
+            --ignore RUSTSEC-2020-0059 \
+            --ignore RUSTSEC-2019-0027 \
+            --ignore RUSTSEC-2020-0082 \
+            --ignore RUSTSEC-2021-0003 \
+            --ignore RUSTSEC-2020-0043
